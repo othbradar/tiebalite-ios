@@ -4,6 +4,18 @@
 
 本文件记录阶段 01 可证实的来源和边界，不构成法律意见。任何分发、上架、商业使用或文件级复用决定都需要项目负责人单独批准。
 
+## 阶段 07 checkpoint
+
+- 重新核对 Android reference 仍锁定且 clean 于
+  `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
+- Personalized 是最先值得采集 fixture 的静态候选，但没有真实 binary
+  fixture、匿名成功响应或逐文件 schema 权利链。
+- 阶段 07 没有复制 `.proto`、没有生成 `.pb.swift`、没有引入
+  SwiftProtobuf、没有创建 GeneratedProtobuf target，也没有运行 live probe。
+- 状态保持 `REVIEW_REQUIRED_BEFORE_CODE_OR_SCHEMA_REUSE`；只有项目负责人
+  明确选择并完成“最小 schema 复用权利审查”或“基于脱敏 wire evidence 的
+  clean-room 最小 schema”后，才可继续生成。
+
 ## Reference 身份
 
 - submodule path：`References/TiebaLite-Android`

@@ -4,6 +4,10 @@
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
+阶段 07 checkpoint：只新增 fixture-first 的通用 HTTPS transport、
+Endpoint/AuthContext 与 decode/map seam；没有注册任何 Tieba live endpoint，
+没有发送真实请求，production composition 继续使用 DisabledHTTPClient。
+
 本阶段没有真实请求、响应 fixture 或账号验证，因此没有 `RUNTIME_EVIDENCE`。下列 endpoint 均是候选协议记录，不代表已获准在 iOS 生产代码中接入。凡仍使用明文 HTTP 的链路状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
 
 ## 公共传输证据
@@ -53,7 +57,10 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - Android 来源文件：`api/retrofit/interfaces/OfficialProtobufTiebaApi.kt`；`api/interfaces/impls/MixedTiebaApiImpl.kt`；`repository/PersonalizedRepository.kt`。
 - Android symbol：`personalizedFlow`、`personalizedProtoFlow`、`PersonalizedRepository.personalizedFlow`。
 - 请求构建来源：`ProtobufRequest.buildProtobufRequestBody`、`buildCommonRequest(ClientVersion.TIEBA_V12)`。
-- 认证要求：`optional-in-request`；无 ForceLogin，匿名服务端行为 `UNKNOWN`。
+- 认证要求：`optional-in-request`；无 ForceLogin。CODE_EVIDENCE：
+  ExplorePage.kt::ExplorePage 未登录时仍把 Personalized 设为首个页面，
+  PersonalizedPage.kt::PersonalizedPage 首次 lazy load 发送 Refresh，因此
+  Android 客户端会尝试匿名调用；服务端是否接受匿名仍为 `UNKNOWN`。
 - 请求编码：multipart/form-data，binary protobuf `data`；外层可带 stoken。
 - 请求 Protobuf：`PersonalizedRequest` / `PersonalizedRequestData`，定义于 `app/src/main/protos/Personalized.proto`。
 - 响应 Protobuf/DTO：`PersonalizedResponse`；`thread_list`、`thread_personalized`。
@@ -62,10 +69,12 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - 关键 headers：`X-BD-Data-Type: protobuf`；V12 client headers。
 - 设备/版本参数：CommonRequest、AppPosInfo、screen、client version；最小集合 `UNKNOWN`。
 - 敏感字段：可选 BDUSS/STOKEN、client/device identifiers；fixture 必须移除。
-- iOS domain mapper：`PersonalizedResponse → RecommendationPage(items, nextPageCandidate, terminalUnknown)`；按 thread id 稳定去重；直播/视频过滤是用户设置层而非 wire mapper。
+- iOS domain mapper：`PersonalizedResponse → RecommendationPage(items, nextPageCandidate, terminalUnknown)`；保留 raw `id/threadId`，canonical 去重 ID 等 fixture 决定后再稳定去重保序；直播/视频过滤是用户设置层而非 wire mapper。
 - Fixture 路径：`TestSupport/Fixtures/API/Recommendations/`（`NOT_CREATED`）。
 - Fixture 获取/生成方式：后续以受控测试账号/匿名请求脱敏抓取；另构造空、未知字段、重复 id 和 malformed 二进制。
-- 已验证行为：`CODE_EVIDENCE` 证明 Android 使用该链和 `load_type 1/2`。
+- 已验证行为：`CODE_EVIDENCE` 证明 Android 使用该链、`load_type 1/2`，
+  且未登录 UI 会尝试 Personalized；没有匿名成功响应或 binary fixture，
+  不能升级为 `RUNTIME_EVIDENCE`。
 - UNKNOWN：匿名、终止条件、page 起点以外的边界、空页、广告/直播节点、稳定顺序、限流与错误码。
 
 ### `followedForums.forumGuide`

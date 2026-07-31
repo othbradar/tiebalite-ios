@@ -13,6 +13,20 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - `CODE_EVIDENCE`：reference 未跟踪生成 Kotlin，当前没有可审计的生成输出。
 - 本阶段没有复制 schema、没有运行 Wire/SwiftProtobuf、没有生成 Swift。
 
+阶段 07 工具 checkpoint：
+
+- 本机 `protoc` 是 Homebrew `libprotoc 34.1`；
+  `protoc-gen-swift` 不存在。
+- 仓库没有 SwiftProtobuf checkout、canonical `Package.resolved`、
+  approved schema manifest、import lock 或真实 endpoint binary fixture。
+- schema 权利状态仍为
+  `REVIEW_REQUIRED_BEFORE_CODE_OR_SCHEMA_REUSE`，因此阶段 07 没有引入
+  SwiftProtobuf、没有创建 GeneratedProtobuf target，也没有把
+  `TestSupport/Fixtures/Binary/opaque.pb` 误作真实协议样本。
+- 当前只实现与 wire library 无关的 multipart bytes、fixture adapter 和
+  decode/map seam；presence、未知 tag round-trip、生成可重复性仍全部
+  `NOT_TESTED`。
+
 `INFERENCE`：iOS 只能选择 P0 所需的最小传递闭包；不能把 321 个 schema 全量导入当作“完成协议层”。生成产物必须隔离在 `Generated/Protobuf`，并由 mapper 转为领域模型。
 
 ## 生成层次

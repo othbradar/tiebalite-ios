@@ -1,217 +1,228 @@
 # TASK_STATE
 
-- 当前阶段：06
-- 状态：`SPIKE_PARTIAL`
-- 当前分支：`main`
-- 阶段 05 提交：
-  `4005387738f8c7425e93fde82b042cb589c98699`
-  （`feat: complete stage 05 design system and app shell`）
-- 阶段 06 工作树：未提交；不得进入阶段 07。
-- 允许修改范围：Debug-only `InteractionLab` Pager/Media 实验、本地图片
-  fixture、状态/生命周期 Unit tests、iPhone/iPad interaction UI tests、
-  XcodeGen/质量隔离脚本、ADR、审计报告和本文件。
-- 禁止修改范围：业务 Feature/Store、真实贴吧 API、Protobuf、Session、
-  Cookie/Keychain、生产图片缓存、Android submodule、生产 Pager/
-  MediaViewer、第三方依赖，以及阶段 07 或后续内容。
+- 当前阶段：07
+- 状态：NETWORKING_FOUNDATION_PARTIAL
+- 阻塞：BLOCKED_ON_SCHEMA_RIGHTS_AND_RUNTIME_FIXTURE
+- 当前分支：main
+- 阶段 06 提交：
+  dd1214ed5df258ae899c5748869ab8faf42c4114
+  （feat: complete stage 06 interaction spikes）
+- 阶段 07 工作树：未提交；不得进入阶段 08。
 
-## 规则、规格与技能
+## 目标与范围
 
-- 已读取根目录及 `App`、`Sources/InteractionKit`、`Tests`、`UITests`、
-  `Specs`、`Docs` 目录链上适用的 `AGENTS.md`。
-- 已读取 `Prompts/06_PAGER_AND_MEDIA_INTERACTION_SPIKES.md`、
-  `Specs/04_INTERACTION_CONTRACT.md`、`Specs/05_MOTION_CONTRACT.md`、
-  ADR-0004、ADR-0005 和进入阶段时的 `TASK_STATE`。
-- 已显式使用 `.agents/skills/ios-interaction-qa`、
-  `.agents/skills/ios-motion-audit`、`.agents/skills/xcode-quality-gate`、
-  `.agents/skills/ios-root-cause-debug`，并按 Computer Use skill 对
-  Simulator 做人工观察。三个子代理只读复审架构/状态、交互/无障碍和
-  工程/Release 隔离；所有工作树写入均由主代理完成。
+允许修改：
 
-## 阶段 05 提交与阶段 06 基线
+- Sources/Core/Networking 的通用 HTTPS transport；
+- Sources/Core/TiebaAPI 的 typed Endpoint/AuthContext/request builder/
+  fixture mapper seam；
+- 最小 ProtectedDataLease 值类型；
+- 对应 Unit tests 和 fixture-only 静态隔离脚本；
+- API/Proto/许可证证据、阶段审计和本文件。
 
-- 用户授权后精确暂存阶段 05 文件，执行 cached diff check 并提交成功：
-  `4005387738f8c7425e93fde82b042cb589c98699`。
-- 首次 `git add` 因沙箱不能创建 `.git/index.lock` 失败；以批准权限重跑
-  同一精确暂存命令成功。没有 amend、merge、rebase、push 或 tag。
-- `.idea/dataSources.xml`、`.idea/db-forest-config.xml` 已有用户暂存/
-  工作树状态，另有 `.idea/noctule.xml`、`.idea/vcs.xml` 与两个
-  `.DS_Store` 漂移；均不属于阶段 06，未修改、未 restore、未纳入阶段
-  05 提交，也不得纳入后续精确暂存。
-- 阶段 06 开始时 `make doctor` 通过：macOS 26.6、Xcode 26.6
-  （17F113）、Swift 6.3.3、Git 2.50.1、XcodeGen 2.45.4、
-  SwiftLint 0.65.0、xcbeautify 3.2.1；Simulator 可见。
-- Android reference 全程只读、clean，锁定
-  `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
-- 阶段 06 实现前完整 `make quality` 通过：
-  - Debug build：`20260731-163009-39064-build.log`
-  - Unit 43/43：`20260731-163010-39099-unit.xcresult`
-  - iPhone UI 12/12：`20260731-163031-39529-ui-smoke.xcresult`
-  - iPad build：`20260731-163338-40956-ipad-build.log`
-  - iPad UI 2/2：`20260731-163340-40987-ui-smoke-ipad.xcresult`
-  - Release：`20260731-163447-41237-release-build.log`
+明确禁止：
 
-## 阶段 06 修改
+- 业务页面、Feature Store、生产 Repository 或真实 Tieba mapper；
+- Tieba live endpoint、真实网络 probe、账号/Cookie/Keychain；
+- 复制 Android proto、生成 pb.swift、SwiftProtobuf/package lock；
+- 修改 Android submodule；
+- 进入阶段 08 或后续阶段。
 
-### Debug InteractionLab
+## 已读取的规则、规格与技能
 
-- 新增 `App/DebugInteractionLabView.swift`、
-  `App/DebugPagerLabView.swift`、`App/DebugMediaPageView.swift`。
-- 新增
-  `Sources/InteractionKit/InteractionLab/DebugPagerStateMachine.swift`、
-  `DebugPagerContainer.swift`、`DebugMediaGestureOwnership.swift`、
-  `DebugZoomImageView.swift`。
-- 更新 App Shell、Settings Debug 路由、组件画廊入口和稳定
-  accessibility identifiers。所有 Lab 文件使用 `Debug*` 命名；
-  InteractionKit 实验另有 `#if DEBUG`，Release source exclusion 再提供
-  第二层隔离。
+- 已读取根目录及 Sources/Core、Generated、Resources、TestSupport、Tests、
+  Specs、Docs 目录链上适用的 AGENTS.md。
+- 已读取 Prompts/07_NETWORKING_PROTOBUF_FOUNDATION.md、
+  Specs/API_EVIDENCE.md、Specs/PROTOBUF_MAP.md、
+  Specs/UNKNOWN_BEHAVIORS.md、Specs/DEPENDENCY_POLICY.md、
+  Specs/PROJECT_PLAN.md、Specs/STATE_MACHINES.md、Specs/MODULE_MAP.md，
+  ADR-0001/0006/0007/0008/0009/0010 和进入阶段时的 TASK_STATE。
+- 已显式使用 .agents/skills/tiebalite-api-evidence 与
+  .agents/skills/xcode-quality-gate。
+- 三个子代理仅只读审计 Android evidence、网络架构和 Proto/toolchain；
+  工作树写入全部由主代理完成。最终代码复审未发现 P0/P1。
 
-### Tests 与质量脚本
+## 阶段 06 提交与工作树保护
 
-- 新增 `Tests/PagerStateMachineTests.swift`、
-  `Tests/MediaInteractionStateTests.swift`、
-  `Tests/InteractionControllerLifecycleTests.swift`。
-- 新增 `UITests/InteractionLabTests.swift`、
-  `UITests/IPadInteractionLabTests.swift`，并扩展 typed UI harness。
-- `Makefile` 新增 `test-ui-interaction`、
-  `test-ui-interaction-ipad`，并纳入 `make quality`。
-- 更新 `project.yml`、`scripts/run_xcodebuild.sh`、
-  `scripts/project.env.example`、UITesting/Release 隔离脚本及交互静态清单
-  脚本。
-- 更新 ADR-0004、ADR-0005；新增
-  `Docs/Audits/INTERACTION_SPIKE_REPORT.md` 与
-  `Docs/Audits/PHASE06_INTERACTION_INVENTORY.md`。
+- 用户授权后以精确路径提交阶段 06，commit 为
+  dd1214ed5df258ae899c5748869ab8faf42c4114。
+- git show 核对该 commit 只有 30 个阶段 06 文件。
+- 用户原有 .idea/dataSources.xml、.idea/db-forest-config.xml 暂存/工作树
+  状态，以及 .idea/noctule.xml、.idea/vcs.xml 和两个 .DS_Store 漂移，
+  均未修改、未 restore、未纳入阶段 06 commit，也不得纳入后续提交。
+- 没有 amend、rebase、merge、push 或 tag。
 
-## 候选与关键状态
+## 阶段 07 基线
 
-- SwiftUI `TabView(.page)` 候选运行后淘汰并删除：公开 API 只能在
-  selection 提交后观察变化，无法提供 begin/cancel token 或冻结转场参与
-  页，不能证明增删/取消语义。
-- UIKit 候选使用稳定 PageID、单调 transition token、冻结
-  source/target/participant、pending order reconcile、删除 fallback
-  （下一存活 ID→前一 ID→nil）、有界 controller dictionary 与显式
-  delegate/dataSource/cache teardown。
-- Media 使用本地 small/2048×2048/delayed/failure fixture，每页一个
-  UIScrollView zoom coordinator；精确 zoomScale/contentOffset 不进入
-  SwiftUI 状态，single tap 等待 double tap recognizer 失败。
-- overlay 顺序为不透明黑色背景→Pager→状态/chrome；关闭回来源页并显示
-  `Overlay: absent`。无生产数据、网络或持久化。
-- 动效仅使用系统 Pager/UIScrollView；没有新增任意 duration/curve，
-  没有业务 DragGesture、透明全屏遮罩、极端 zIndex 或第三方依赖。
+- git status --short：只见上述用户漂移。
+- git submodule status：Android reference 锁定
+  5545326b2a8e0d784b2f3dfbcb219c7b121e61c2。
+- make doctor 在沙箱内因 CoreSimulatorService 权限退出 2；同一命令以批准
+  权限在沙箱外复跑后 0 failure、0 warning。
+- 工具：macOS 26.6、Xcode 26.6（17F113）、Swift 6.3.3、
+  XcodeGen 2.45.4、SwiftLint 0.65.0、xcbeautify 3.2.1。
+- command -v protoc：/opt/homebrew/bin/protoc；
+  protoc --version：libprotoc 34.1。
+- command -v protoc-gen-swift：退出 1，无输出。
+- 阶段 06 commit 上 make quality-fast 通过：
+  Debug build 20260731-200905-72067-build.log，
+  Unit 61/61 20260731-200906-72101-unit.xcresult。
 
-## 已确认的退出条件与 UNKNOWN
+## Evidence / Proto 前置结论
 
-阶段 06 不满足 `SPIKE_ACCEPTED`。以下均为 Debug 候选的已知缺口：
+- API_EVIDENCE 仍为 STATIC_EVIDENCE_ONLY；所有 P0 真实 fixture 都是
+  NOT_CREATED。
+- Android ExplorePage 在未登录时仍把 Personalized 作为首个页面，
+  PersonalizedPage 首次加载发送 Refresh；这只证明客户端尝试匿名，
+  不证明服务端接受匿名。
+- 没有 Personalized/FRS/PB 的真实 binary payload；既有 opaque.pb 是
+  synthetic loader fixture，不是 endpoint response。
+- schema 权利状态仍为
+  REVIEW_REQUIRED_BEFORE_CODE_OR_SCHEMA_REUSE：Android 321 个 proto 缺少
+  逐文件 provenance，GPLv3 与 README 非商业声明关系未关闭。
+- 仓库无 SwiftProtobuf checkout、canonical Package.resolved、
+  schema manifest/import lock 或 generated source；本机无
+  protoc-gen-swift。
+- 因此前置不成立，阶段 07 不得标 PASSED，也不能通过 synthetic schema
+  或复制 Android 文件伪造 Proto 验收。
 
-1. `MediaGestureSession` 只有状态模型 Unit 证据，未接入运行时 recognizer
-   begin。边界处内层 pan 与外层 Pager 都可能启用，未按手势方向固定
-   owner；同一触摸 handoff 为 `NOT_TESTED`。
-2. 成功离场只重置父层 capability/zoom 文本；缓存的同 MediaID
-   UIScrollView 未收到 reset token，真实 zoom 可能保留。现有 UI 路径在
-   离场前主动 zoom-out，不能证明离场 reset。
-3. Pager 延迟 selection commit 缺少 generation/expected-source，旧任务
-   可能覆盖同一 MainActor turn 内较新的外部 selection。
-4. 横竖屏条件布局可能 dismantle/recreate Pager representable；当前回归
-   只证明 PageID 与 viewport 可见，不证明 coordinator/相邻页生命周期
-   连续。
-5. 真实 iPad split divider、iOS 18.x runtime、VoiceOver/Accessibility
-   Escape、动态白块逐帧、完整半程取消/反向、Media safe-area/大字体、
-   100 张 full-resolution lease 均未完成。
-6. Computer Use 可以点按钮和旋转 Simulator，但不能可靠注入 drag、
-   pinch 或 scroll；三张截图仅证明 settled Pager、Media 初始页和关闭后
-   overlay，无独立逐步 artifact 证明全部人工动作。
+## 阶段 07 实现
 
-因此 UIKit Pager 与 UIScrollView Media 仅保留在 Debug InteractionLab；
-不得改名、移动或复制为生产组件。后续补测仍失败时回滚为显式前后按钮/
-单图方案，不得让 Feature 复制当前实验。
+### HTTPS transport
 
-## 红绿证据与失败记录
+- HTTPRequest 新增 timeout、response body limit 和 reject redirect policy；
+  拒绝非 HTTPS、空 host、userinfo、fragment、非法 header 和非法资源上限。
+- URLSessionHTTPClient 是 actor；production factory 使用独立 ephemeral
+  configuration，禁 shared cookie、credential 和 cache。
+- URLSessionDataLoader 使用 AsyncBytes，在 Content-Length 已知和未知时
+  都执行 byte limit；response 只保留 allowlisted headers。
+- URLSession cancellation 保持 CancellationError；offline、timeout、
+  malformed、oversize 和其他 transport 分开。
+- production composition 继续使用 DisabledHTTPClient，没有 live consumer。
 
-- 首次状态测试在实现前退出 65：
-  `20260731-164127-42139-unit.xcresult`，为预期 production symbol
-  缺失；`164239`、`164304` 又暴露 optional/Swift Testing mutation 编译
-  错误，修正后 Unit 转绿。
-- 初轮 interaction UI 3/6：
-  `20260731-165624-43983-ui-interaction.xcresult`。根因为 single-tap
-  异步断言、大字体下按钮不可达和取消拖动位移过大。
-- 第二轮 5/6：
-  `20260731-170157-44937-ui-interaction.xcresult`；reset 在横向控件外。
-  改两列 grid 后定向用例
-  `20260731-171200-cancel-targeted.xcresult` 通过。
-- 冻结唯一候选前 iPhone 5/5：
-  `20260731-174030-50886-ui-interaction.xcresult`；iPad 1/1：
-  `20260731-174540-51572-ui-interaction-ipad.xcresult`。二者早于最终横屏
-  布局修复，不能替代最终完整门禁。
-- Computer Use 重复发现横屏状态为 p2 但 Pager 视口近乎空白。可靠红例：
-  `20260731-175600-rotation-color-regression-red.xcresult`。根因是 Lab
-  单列 VStack 压缩视口，不是 PageID。横屏改为控制区/视口并排，真实
-  viewport-height 回归
-  `20260731-180800-rotation-viewport-regression-green.xcresult` 通过。
-- 中间颜色截图探针在已知可见竖屏也返回 0；`175800`、`180100`、
-  `180400` 等失败未被伪装为产品失败，探针已删除并改测真实 geometry。
-- 沙箱内 `make test-unit` 曾因 CoreSimulator destination 不可见退出 70，
-  `20260731-173832-50362-unit.log`；以批准权限运行同一命令后 Unit
-  61/61 通过：
-  `20260731-173952-50516-unit.xcresult`。
-- `make lint` 曾从 5 个再到 1 个 violation；逐项修正后 59 个 Swift
-  文件 0 violation、0 serious。
-- `simctl launch` 首次用了错误 bundle ID 并退出 4；从共享 xcconfig
-  取得实际 ID 后启动成功。直接 xcodebuild 的 LLDB debugger warning
-  为非致命 Simulator 环境提示。
-- AppShell Release 路由曾无条件引用 Debug-only case；修正闭包
-  `#if DEBUG` 后 fresh `make release-isolation` 通过：
-  `20260731-181450-58681-release-build.log`。
+### Endpoint / Auth / mapper seam
 
-## 当前验证状态
+- EndpointDescriptor 固化 symbolic ID、method、validated host/ASCII path、
+  query/body codec、response family/MIME、auth、timeout、limit、
+  redirect 和 retry=never。
+- AuthContext 分 anonymous、active(ProtectedDataLease)、
+  candidate(OperationID)。authorizer 可见 endpoint ID/host，以支持目的地
+  绑定；阶段 07 concrete 对 active/candidate 一律 fail closed。
+- query/form deterministic percent encoding；multipart binary boundary
+  可注入，验证 metadata 和 payload collision。
+- EndpointPipeline/FixtureEndpointAdapter 共用 status/MIME/decode/map
+  行为；executor 不重试，transport oversize taxonomy 统一，
+  decode/map cancellation 不被吞掉。
 
-- 冻结源码定向 Unit：61/61 PASS，
-  `20260731-182332-60336-unit.xcresult`。
-- `make quality-fast`：PASS；Debug build
-  `20260731-182415-61341-build.log`，Unit 61/61
-  `20260731-182418-61421-unit.xcresult`。
-- 最终完整 `make quality` 输出 `Quality gate completed.`：
-  - rules/8 repo skills、Android lock、deterministic XcodeGen、static
-    canaries、secret scan、SwiftLint 59 files/0 violation、forbidden
-    0 error group 全通过；
-  - Debug build：
-    `20260731-184220-65782-build.log`；
-  - Unit 61/61：
-    `20260731-184221-65805-unit.xcresult`；
-  - iPhone App Shell UI 12/12：
-    `20260731-184242-66086-ui-smoke.xcresult`；
-  - iPhone interaction UI 5/5：
-    `20260731-184551-66648-ui-interaction.xcresult`；
-  - UITesting/Debug gallery/InteractionLab 隔离：PASS；
-  - iPad build：
-    `20260731-185043-67042-ipad-build.log`；
-  - iPad App Shell UI 2/2：
-    `20260731-185044-67071-ui-smoke-ipad.xcresult`；
-  - iPad interaction UI 1/1：
-    `20260731-185150-67240-ui-interaction-ipad.xcresult`；
-  - Release build 与 source/bundle/strings/symbols isolation：
-    `20260731-185231-67389-release-build.log`，PASS。
-- `xcrun xcresulttool get test-results summary` 对最终五个 xcresult
-  独立确认：Unit 61、iPhone smoke 12、iPhone interaction 5、iPad
-  smoke 2、iPad interaction 1，全部 0 failed/0 skipped，运行于 iOS
-  26.5 Simulator。
-- 早期定向 Unit 61/61：
-  `20260731-173952-50516-unit.xcresult`。
-- 当前源码旋转定向回归：1/1 PASS，
-  `20260731-180800-rotation-viewport-regression-green.xcresult`。
-- 修复 Release 条件编译后的单独 fresh isolation：PASS，
-  `20260731-181450-58681-release-build.log`。
-- `make lint` 单独复跑：59 files，0 violation、0 serious。
-- 交互清单脚本增加 file/line 稳定排序后，两次输出 SHA-256 均为
-  `9eb8a4051e3cf1778b3132d4f297126ea27ec07ed7942a58dbefef1681b1bcc5`，
-  且与 `PHASE06_INTERACTION_INVENTORY.md` 逐字一致；上述最终
-  `make quality` 是在该修复之后运行。
-- 最终 `make doctor`：0 failure、0 warning；iPhone/iPad Simulator
-  可见，规则链、工具版本与 Android reference 均通过。
-- `bash -n scripts/*.sh`、`scripts/secret_scan.sh`、阶段 06 tracked/
-  untracked whitespace check、全工作树 `git diff --check` 与 cached
-  diff check 全通过；交互清单已重新运行并更新。
-- 最终 cached diff 仍只有用户原有的两个 `.idea` 文件；没有阶段 06
-  文件被暂存。Android submodule status 无输出，HEAD 仍为
-  `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
-- 完整门禁只证明自动化覆盖；它不把明确列出的手工缺口或四个运行时
-  风险变为已验证。阶段状态保持 `SPIKE_PARTIAL`，阶段 06 工作树保持
-  未提交，未进入阶段 07。
+### 静态隔离
+
+- 新增 make networking-isolation 并纳入 quality-fast。
+- networking-isolation 先执行 deterministic project generation，避免直接
+  运行该目标时检查陈旧 pbx。
+- 禁止 App/Sources 出现真实 Tieba host、URLSession.shared、
+  HTTPCookieStorage.shared、URLCredentialStorage.shared。
+- 禁止 UI 层 URLSession/SwiftProtobuf/GeneratedProtobuf。
+- 在 schema 权利门关闭前，禁止 project.yml 的 top-level packages、生成工程
+  remote/local package reference 与 package product dependency、App/Sources
+  中出现 SwiftProtobuf/GeneratedProtobuf 模块标识符（覆盖修饰符、selective、
+  分号、换行或注释 import），
+  并从仓库根扫描 .proto、.pb.swift、Package.resolved（排除只读 Android
+  reference、prompt kit、构建产物和 .git）。
+- AppCompositionRoot 必须继续注入 DisabledHTTPClient。
+
+## 红绿与定向验证
+
+- 实现前 make test-unit 预期红：
+  20260731-202200-74635-unit.xcresult，缺少新增 production symbols，
+  xcodebuild 退出 65。
+- 20260731-202521-74834-unit.xcresult：warning-as-error 指出未使用
+  response limit，退出 65，已修正。
+- 20260731-202734-75524-unit.xcresult：redirect decision 的 nil 缺少类型，
+  退出 65，已修正。
+- make lint 首轮因 Endpoint.swift control_statement violation 退出 2；
+  修正后 67 Swift files、0 violation、0 serious。
+- 20260731-203246-76772-unit.xcresult：URLProtocol redirect cancellation
+  seam 超时 30 秒，1 项失败；没有伪装成通过。删除错误 seam，改为直接调用
+  production delegate 并证明 completion(nil)。
+- 最新 make test-unit：
+  20260731-203823-78488-unit.xcresult，78/78 通过。
+- bash -n scripts/verify_networking_isolation.sh：PASS。
+- make networking-isolation：0 failure。
+- make secret-scan：PASS。
+- git diff --check：PASS。
+
+## 阶段出口门禁
+
+- make quality 首次运行在 secret-scan 退出 2：测试中的非敏感 CRLF canary
+  使用了 `Cookie` 字面量，被高置信规则正确拦截；改为 `X-Injected` 后单独
+  make secret-scan 通过。该失败没有作为门禁通过证据。
+- 修正后 make quality 完整通过：
+  - Debug build：20260731-204418-80899-build.log；
+  - Unit：78/78，20260731-204420-80961-unit.xcresult；
+  - iPhone UI smoke：12/12，
+    20260731-204439-81256-ui-smoke.xcresult；
+  - iPhone interaction：5/5，
+    20260731-204752-81942-ui-interaction.xcresult；
+  - iPad build：20260731-205253-82241-ipad-build.log；
+  - iPad UI smoke：2/2，
+    20260731-205254-82270-ui-smoke-ipad.xcresult；
+  - iPad interaction：1/1，
+    20260731-205413-82726-ui-interaction-ipad.xcresult；
+  - Release build/isolation：20260731-205455-82854-release-build.log；
+  - 最终输出 `Quality gate completed.`。
+- 完整门禁后的多轮只读对抗复审发现静态脚本覆盖缺口；最终修正为
+  root-wide artifact scan、quoted/inline YAML packages、generated pbx
+  remote/local/product gate、先生成工程，以及生产 Swift 源码中的 Protobuf
+  module-token gate。后者不再猜 Swift import grammar，能覆盖修饰符、
+  selective、分号、换行和注释变体。随后重新执行：
+  - bash -n scripts/verify_networking_isolation.sh：PASS；
+  - make networking-isolation：0 failure；
+  - make secret-scan：PASS；
+  - git diff --check：PASS；
+  - make quality-fast 第一次复核后运行：PASS，Debug build
+    20260731-205806-84178-build.log，Unit 78/78
+    20260731-205807-84201-unit.xcresult；
+  - 第二次 adversarial 复核补齐 selective/分号 import 与 inline/local
+    package canary 后，make quality-fast 再次 PASS，Debug build
+    20260731-210057-85951-build.log，Unit 78/78、0 failed、0 skipped，
+    20260731-210057-85963-unit.xcresult；
+  - 最后补齐 multiline/comment import、quoted YAML 与 stale pbx 防线后，
+    最终 make quality-fast 再次 PASS，Debug build
+    20260731-210430-87577-build.log，Unit 78/78、0 failed、0 skipped，
+    20260731-210431-87589-unit.xcresult。
+- `xcrun xcresulttool get test-results summary` 在沙箱内读取结果时因
+  TestReport 临时目录权限退出 64；以批准权限复跑后成功，确认上述 Unit
+  78/78、iPhone 12/12 + 5/5、iPad 2/2 + 1/1，均为 0 failed、0 skipped。
+
+## 未验证与剩余风险
+
+1. 没有 anonymous/live endpoint、真实 binary fixture、真实 Proto mapper。
+2. SwiftProtobuf exact lock、生成器、schema/import manifest、生成 hash、
+   optional presence、unknown tag round-trip 全部 NOT_TESTED。
+3. redirect 只证明 production delegate 返回 nil，不是实际 302
+   session.bytes end-to-end chain；当前 policy 只有 reject。扩展 policy 前必须
+   把 policy 逐请求传入 loader 并新增集成测试。
+4. production URLSession 的真实 timeout、取消后底层 task 停止/资源释放、
+   AsyncBytes 性能未测。
+5. Endpoint typed/redacted diagnostics 尚未接入；当前无 raw request 日志是
+   因为不记录，不等于 observability 已验收。
+6. RequestAuthorizing 当前仅是 header seam；Android static evidence 还可能
+   涉及 CommonRequest/外层 multipart auth，不能据此猜 credential 注入。
+7. active/candidate production credential、lease revalidation、session
+   expiry、跨 session stale response 未实现。
+8. Phase 06 Pager/Media 仍是 SPIKE_PARTIAL；阶段 07 不改变其已知风险。
+
+## 动画、手势、overlay、依赖
+
+- 新增动画：无。
+- 新增手势：无。
+- 新增 overlay：无。
+- 新增生产依赖：无。
+- SwiftProtobuf：未添加。
+
+## 下一阶段前置条件
+
+只有先关闭 schema 权利与 notice 决策、取得有来源/脱敏记录/SHA-256 的真实
+binary fixture、验证匿名 HTTPS 最小请求与错误/分页，并完成 exact
+SwiftProtobuf 可重复生成、unknown/presence/malformed/mapper tests，才可把
+阶段 07 从 PARTIAL 提升。当前必须停止在阶段 07，不得进入阶段 08。

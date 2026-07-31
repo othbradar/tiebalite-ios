@@ -7,7 +7,8 @@ text or third-party media.
 - `JSON/success.json`: valid JSON decoding path.
 - `JSON/malformed.json`: deterministic malformed JSON path.
 - `Binary/opaque.pb`: opaque bytes for the binary fixture loading path. No schema
-  or Tieba field meaning is claimed before phase 07.
+  endpoint provenance or Tieba field meaning is claimed; it remains a synthetic
+  loader fixture.
 - `Images/pixel.svg`: original 1×1 synthetic SVG for image resource loading.
 - `Text/hash-mismatch.txt`: deterministic hash mismatch path.
 

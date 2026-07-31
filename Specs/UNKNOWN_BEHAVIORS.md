@@ -22,13 +22,13 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 | U-02 | HTTP endpoint 的安全 HTTPS 等价路径和最小参数 | 关注吧、登录、picpage 当前 call site 是 `http://c.tieba.baidu.com` | 不调用 HTTP；从官方可观察 HTTPS 流或 reference 新 Proto call site寻找候选；单 endpoint、无凭据的公开请求先验证 TLS/编码 | 全程 HTTPS、无降级、最小字段有 evidence、成功/错误 fixture |
 | U-03 | FRS dynamic tab 与 `thread_id_list`/page 契约 | client 先消费最多 30 ids，再取下一 FRS page | 同一公开吧抓首屏及两次分页；记录 tab raw fields、请求 ids、返回顺序、空/缺项、下一 page；匿名与登录分开 | 动态 tab 值域与稳定 id、排序、终止、缺项策略均有 fixture |
 | U-04 | PB `page=0+pid`、删除/私密/缺作者及并发 | Android 有多种锚点调用；mapper 强制 author；不同 intent 可并发 | 先构造 malformed/overlap fixture；再对公开帖验证首/中/末页、pid anchor、删除楼、升降序；用延迟 stub 重放竞态 | anchor/cursor/error taxonomy + stale-response tests |
-| U-05 | 推荐匿名能力、顺序、空页与终止条件 | Android request 可附 session，响应未见已证终止字段，UI 永远允许 load more | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
+| U-05 | 推荐匿名能力、顺序、空页与终止条件 | Android 未登录 Explore 会尝试 Personalized，但无匿名响应证据；request 可附 session，响应未见已证终止字段，UI 永远允许 load more | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
 
 ## API / 认证
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | 对同一公开 fixture 分别在无 session 与测试 session 下请求；比较仅公开字段，不记录凭据 |
+| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | 对同一公开内容目标和同一请求参数，分别在无 session 与测试 session 下请求；比较仅公开字段，不记录凭据 |
 | U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 从最小无敏感字段开始逐项添加；禁止复制 Android telemetry 全集 |
 | U-08 | legacy sign 是否仍必需、是否允许 iOS 使用 | 只通过已批准协议/法律审查和 HTTPS 受控验证；在此之前不实现 |
 | U-09 | Error.error_code、user_msg、HTTP status 的真实 taxonomy | 为成功、未登录、过期、无权限、删除、限流、服务器错误采脱敏 fixture |
@@ -53,11 +53,11 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-21 | SwiftProtobuf 对全部 selected schema 的生成 API | 阶段 03 在隔离生成目录运行，记录版本与生成 hash；当前不生成 |
+| U-21 | SwiftProtobuf 对全部 selected schema 的生成 API | 权利门禁关闭后在隔离生成目录运行，锁 exact runtime/generator、import manifest 与生成 hash；阶段 07 当前无 plugin/lock/schema，不生成 |
 | U-22 | proto3 optional absent 与显式 0/空字符串 | 编码两组 golden，做 byte-level 和服务端对照 |
 | U-23 | 未知 tag 是否解码后可 round-trip 保留 | 构造含未知 tag 的二进制，decode/encode 比较 |
 | U-24 | 裸 int 状态/排序/type 完整值域 | 累积多 fixture，领域类型始终保留 `.unknown(raw)` |
-| U-25 | 321 个 schema 中 P0 真正最小闭包 | 阶段 03 用 import graph 脚本锁定，避免全量复制 |
+| U-25 | 321 个 schema 中 P0 真正最小闭包 | 权利门与真实 fixture 关闭后的生成阶段，用 import graph 脚本锁定，避免全量复制 |
 | U-26 | schema 复用的许可证/分发后果 | 在复制前完成来源与许可证决策；必要时独立编写最小兼容 schema |
 
 ## 内容节点
