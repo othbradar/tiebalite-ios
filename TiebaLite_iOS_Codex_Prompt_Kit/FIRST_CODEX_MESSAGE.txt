@@ -1,0 +1,5 @@
+请执行 Prompts/00_BOOTSTRAP_ENVIRONMENT.md。
+严格读取并遵守仓库根目录及目标目录适用的 AGENTS.md，并按需使用仓库 .agents/skills。
+当前只完成阶段 00；不得创建业务页面、不得进入阶段 01 或后续阶段。
+先检查 Git、Xcode、Simulator、Android 参考 submodule、指令文件和脚本基线，再给出允许修改范围并立即执行。
+完成时报告真实运行过的命令、结果、未验证项和剩余风险，然后停止。

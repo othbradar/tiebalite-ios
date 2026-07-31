@@ -1,0 +1,6 @@
+interface:
+  display_name: "iOS Motion Audit"
+  short_description: "Normalize animations and Reduce Motion behavior"
+  default_prompt: "Audit and normalize the selected app flows against the repository Motion contract without hiding state or layout bugs."
+policy:
+  allow_implicit_invocation: false

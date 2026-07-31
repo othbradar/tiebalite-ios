@@ -1,0 +1,6 @@
+interface:
+  display_name: "iOS Architecture Review"
+  short_description: "Read-only review of shared iOS design and diffs"
+  default_prompt: "Review the requested architecture or diff without modifying files, prioritizing concrete concurrency, state, navigation, interaction, privacy, and test risks."
+policy:
+  allow_implicit_invocation: false

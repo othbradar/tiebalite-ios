@@ -1,0 +1,6 @@
+interface:
+  display_name: "iOS Root-Cause Debug"
+  short_description: "Reproduce, test, and fix one underlying bug"
+  default_prompt: "Use evidence and a failing regression test to identify and minimally fix the requested iOS bug. Do not apply visual or timing patches."
+policy:
+  allow_implicit_invocation: true

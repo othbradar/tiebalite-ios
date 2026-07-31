@@ -1,0 +1,6 @@
+interface:
+  display_name: "iOS Feature Slice"
+  short_description: "Build one fixture-first, tested vertical behavior"
+  default_prompt: "Implement only the requested feature slice using existing architecture, deterministic fixtures, state tests, UI smoke tests, and quality gates."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,4 @@
+[submodule "References/TiebaLite-Android"]
+	path = References/TiebaLite-Android
+	url = https://github.com/zzc10086/TiebaLite.git
+	branch = 4.0-dev

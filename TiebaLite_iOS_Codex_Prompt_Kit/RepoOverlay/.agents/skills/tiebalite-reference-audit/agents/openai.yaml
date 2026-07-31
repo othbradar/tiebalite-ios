@@ -1,0 +1,6 @@
+interface:
+  display_name: "TiebaLite Reference Audit"
+  short_description: "Trace Android behavior, API, and protobuf evidence"
+  default_prompt: "Audit the requested TiebaLite Android area and update evidence-backed specs without writing iOS production code."
+policy:
+  allow_implicit_invocation: false

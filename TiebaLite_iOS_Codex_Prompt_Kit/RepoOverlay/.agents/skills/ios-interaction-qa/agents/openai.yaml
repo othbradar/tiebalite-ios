@@ -1,0 +1,6 @@
+interface:
+  display_name: "iOS Interaction QA"
+  short_description: "Test pager, media, navigation, layout, and motion"
+  default_prompt: "Run deterministic iPhone/iPad interaction regression checks, using Computer Use where GUI evidence is required, and report contract failures without guessing fixes."
+policy:
+  allow_implicit_invocation: false
