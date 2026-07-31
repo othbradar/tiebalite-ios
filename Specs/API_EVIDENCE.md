@@ -1,14 +1,20 @@
 # API / Protobuf 证据
 
-状态：`STATIC_EVIDENCE_ONLY`
+状态：`STATIC_AND_CROSS_LANGUAGE_FIXTURE_EVIDENCE`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
-阶段 07 checkpoint：只新增 fixture-first 的通用 HTTPS transport、
-Endpoint/AuthContext 与 decode/map seam；没有注册任何 Tieba live endpoint，
-没有发送真实请求，production composition 继续使用 DisabledHTTPClient。
+阶段 07 完成首个 Personalized schema/request/response 的本地协议闭环：
+从 pinned Android submodule 直接生成 51 文件闭包，以独立 JVM producer 构造
+脱敏 binary fixture，并由 SwiftProtobuf decode/map。没有注册任何 Tieba live
+host、没有发送真实请求，production composition 继续使用
+`DisabledHTTPClient`。
 
-本阶段没有真实请求、响应 fixture 或账号验证，因此没有 `RUNTIME_EVIDENCE`。下列 endpoint 均是候选协议记录，不代表已获准在 iOS 生产代码中接入。凡仍使用明文 HTTP 的链路状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
+本阶段没有真实请求、账号验证或服务端响应，因此没有
+`RUNTIME_EVIDENCE`。`CROSS_LANGUAGE_GENERATED` 只证明 pinned schema 与
+JVM/Swift wire 行为，不能证明匿名、最小 live 参数、MIME、错误码或分页。
+下列 endpoint 仍不代表已获准在 iOS 生产代码中接入。凡仍使用明文 HTTP
+的链路状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
 
 ## 公共传输证据
 
@@ -46,7 +52,8 @@ Endpoint/AuthContext 与 decode/map seam；没有注册任何 Tieba live endpoin
 - fixture 必须删除 Cookie、BDUSS、STOKEN、授权头、手机号、私密内容和可追踪设备标识。
 - 二进制 fixture 同时保存脱敏来源记录、SHA-256 和预期 mapper 输出；不得保存真实请求 header。
 - 成功、空、畸形、超时、取消、未登录、会话失效是所有 P0 endpoint 的最小集合。
-- 下列 fixture 路径均是后续阶段的目标位置，当前状态均为 `NOT_CREATED`。
+- Personalized 已有构造的跨语言 fixture；其余路径仍是后续目标，不能把
+  synthetic/cross-language fixture 标成 live capture。
 
 ## P0 endpoint
 
@@ -65,16 +72,30 @@ Endpoint/AuthContext 与 decode/map seam；没有注册任何 Tieba live endpoin
 - 请求 Protobuf：`PersonalizedRequest` / `PersonalizedRequestData`，定义于 `app/src/main/protos/Personalized.proto`。
 - 响应 Protobuf/DTO：`PersonalizedResponse`；`thread_list`、`thread_personalized`。
 - 分页字段：请求 `load_type`、`pn`、`page_thread_count=11`；响应没有已证终止字段。
+- iOS 阶段 07 request evidence：只编码 call-site 已证静态字段
+  `load_type/pn/page_thread_count=11/q_type=1/new_net_type=1`；零值字段显式
+  赋值但按 proto3 不出现在 wire。没有猜测 CommonRequest、AppPos、屏幕、
+  设备或 session；该最小请求未对服务端发送。
+- multipart evidence：固定 Android boundary
+  `--------7da3d81520810*`，binary part 为 `name=data`、`filename=file`、无
+  part Content-Type；外层 endpoint header 是 `X-BD-Data-Type: protobuf`。
 - 服务端错误字段：`Error.error_code/error_msg/user_msg`。
 - 关键 headers：`X-BD-Data-Type: protobuf`；V12 client headers。
 - 设备/版本参数：CommonRequest、AppPosInfo、screen、client version；最小集合 `UNKNOWN`。
 - 敏感字段：可选 BDUSS/STOKEN、client/device identifiers；fixture 必须移除。
-- iOS domain mapper：`PersonalizedResponse → RecommendationPage(items, nextPageCandidate, terminalUnknown)`；保留 raw `id/threadId`，canonical 去重 ID 等 fixture 决定后再稳定去重保序；直播/视频过滤是用户设置层而非 wire mapper。
-- Fixture 路径：`TestSupport/Fixtures/API/Recommendations/`（`NOT_CREATED`）。
-- Fixture 获取/生成方式：后续以受控测试账号/匿名请求脱敏抓取；另构造空、未知字段、重复 id 和 malformed 二进制。
-- 已验证行为：`CODE_EVIDENCE` 证明 Android 使用该链、`load_type 1/2`，
-  且未登录 UI 会尝试 Personalized；没有匿名成功响应或 binary fixture，
-  不能升级为 `RUNTIME_EVIDENCE`。
+- iOS domain mapper：`PersonalizedResponse → RecommendationPage(items, nextPageCandidate, terminalUnknown)`；已实现白名单 mapper，保留 raw `id/threadId`、服务器顺序、raw `threadTypes=999` 与 message presence；不决定 canonical ID、不执行直播/视频过滤。
+- Fixture 路径：
+  `TestSupport/Fixtures/API/Recommendations/personalized_cross_language.pb`；
+  SHA-256
+  `54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a`。
+- Fixture 类型：`CROSS_LANGUAGE_GENERATED`；Java 21.0.10 +
+  protobuf-java 4.35.1 `DynamicMessage` 从同一 51-file descriptor closure
+  生成，来源见相邻 `PROVENANCE.md`。
+- 已验证行为：Android 静态调用链和 request 字段；request protobuf golden、
+  Android multipart boundary/data/file 形态、optional default presence、未知
+  field round-trip、empty/missing data、service error、malformed/empty body、
+  raw integer 保留与 JVM→Swift mapper。没有匿名成功响应，不能升级为
+  `RUNTIME_EVIDENCE`。
 - UNKNOWN：匿名、终止条件、page 起点以外的边界、空页、广告/直播节点、稳定顺序、限流与错误码。
 
 ### `followedForums.forumGuide`

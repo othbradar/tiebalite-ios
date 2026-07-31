@@ -29,12 +29,23 @@ xcode_build="$(awk 'NR == 2 { print $3 }' <<<"$xcode_output")"
 swift_version="$(swift --version | awk 'NR == 1 { print $4 }')"
 xcodegen_version="$(xcodegen --version | awk 'NR == 1 { print $2 }')"
 swiftlint_version="$(swiftlint version)"
+protoc_version="$(protoc --version | awk 'NR == 1 { print $2 }')"
+protoc_gen_swift_version="$(protoc-gen-swift --version | awk 'NR == 1 { print $2 }')"
+java_version="$(java -version 2>&1 | awk -F\" 'NR == 1 { print $2 }')"
+javac_version="$(javac -version 2>&1 | awk 'NR == 1 { print $2 }')"
 
 require_version "Xcode" "$EXPECTED_XCODE_VERSION" "$xcode_version"
 require_version "Xcode build" "$EXPECTED_XCODE_BUILD" "$xcode_build"
 require_version "Swift" "$EXPECTED_SWIFT_VERSION" "$swift_version"
 require_version "XcodeGen" "$EXPECTED_XCODEGEN_VERSION" "$xcodegen_version"
 require_version "SwiftLint" "$EXPECTED_SWIFTLINT_VERSION" "$swiftlint_version"
+require_version "protoc" "$EXPECTED_PROTOC_VERSION" "$protoc_version"
+require_version \
+  "protoc-gen-swift" \
+  "$EXPECTED_PROTOC_GEN_SWIFT_VERSION" \
+  "$protoc_gen_swift_version"
+require_version "Java" "$EXPECTED_JAVA_VERSION" "$java_version"
+require_version "Javac" "$EXPECTED_JAVA_VERSION" "$javac_version"
 
 if command -v xcbeautify >/dev/null 2>&1; then
   xcbeautify_version="$(xcbeautify --version)"

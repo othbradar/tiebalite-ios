@@ -55,6 +55,8 @@ case "$CONTAINER_KIND" in
   *) echo "ERROR: CONTAINER_KIND must be project or workspace" >&2; exit 64 ;;
 esac
 
+scripts/verify_swiftpm_lock.sh
+
 mode="${1:-}"
 if [[ -z "$mode" ]]; then
   echo "usage: $0 build|release-build|unit|ui-smoke|ui-smoke-ipad|ui-interaction|ui-interaction-ipad|tests|ipad-build" >&2
@@ -153,7 +155,14 @@ uninstall_project_bundle_if_present() {
   [[ "$status" -eq 1 ]]
 }
 
-common=("${container_args[@]}" -scheme "$SCHEME" -derivedDataPath "$DERIVED_DATA_PATH")
+common=(
+  "${container_args[@]}"
+  -scheme "$SCHEME"
+  -derivedDataPath "$DERIVED_DATA_PATH"
+  -clonedSourcePackagesDirPath "$repo/.build/SourcePackages"
+  -onlyUsePackageVersionsFromResolvedFile
+  -skipPackageUpdates
+)
 
 case "$mode" in
   build)
@@ -232,3 +241,5 @@ case "$mode" in
     exit 64
     ;;
 esac
+
+scripts/verify_swiftpm_lock.sh

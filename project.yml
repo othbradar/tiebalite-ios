@@ -27,11 +27,33 @@ settings:
     SWIFT_VERSION: "6.0"
     TARGETED_DEVICE_FAMILY: "1,2"
 
+packages:
+  SwiftProtobuf:
+    url: https://github.com/apple/swift-protobuf.git
+    exactVersion: 1.38.1
+
 fileGroups:
-  - Generated
   - Resources
 
 targets:
+  GeneratedProtobuf:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Generated/Protobuf
+        excludes:
+          - GENERATION_METADATA.txt
+          - GENERATED_SHA256SUMS
+    dependencies:
+      - package: SwiftProtobuf
+    settings:
+      base:
+        DEFINES_MODULE: YES
+        PRODUCT_MODULE_NAME: GeneratedProtobuf
+        SKIP_INSTALL: YES
+        SWIFT_INSTALL_OBJC_HEADER: NO
+
   TiebaLite:
     type: application
     platform: iOS
@@ -51,6 +73,9 @@ targets:
           - AGENTS.md
       - path: TestSupport/LaunchScenarios
         group: TestSupport
+    dependencies:
+      - target: GeneratedProtobuf
+      - package: SwiftProtobuf
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -85,6 +110,8 @@ targets:
         buildPhase: resources
     dependencies:
       - target: TiebaLite
+      - target: GeneratedProtobuf
+      - package: SwiftProtobuf
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

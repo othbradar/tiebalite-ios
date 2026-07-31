@@ -7,17 +7,18 @@ target。工程生成决策见 `Docs/ADRs/ADR-0001-project-generation.md`。
 
 ## 编译 target 与逻辑模块
 
-阶段 03 初始只有：
+阶段 07 当前编译 target：
 
 | 编译 target | 内容 | 可依赖 |
 |---|---|---|
 | `TiebaLite` | App、Sources 下的生产逻辑模块；仅 UITesting 配置加入 `TestSupport/LaunchScenarios/**` | Apple SDK；已批准且实际引入的 production package |
+| `GeneratedProtobuf` | pinned Personalized 51-file closure 的 tracked 生成 Swift；静态库 | SwiftProtobuf 1.38.1 only |
 | `TiebaLiteTests` | State/mapper/repository/integration tests；单独编译所需 TestSupport 源 | `TiebaLite`、test-only helper |
 | `TiebaLiteUITests` | XCUITest flows，只向 App 传 scenario ID | App 的 UITesting build；不可链接 production secret/live fixture |
 
-目录是逻辑模块，不自动变成 target。阶段 07 只有在 Proto 权利、最小闭包、
-生成和 strict-concurrency 门禁通过后，才允许增加一个
-`GeneratedProtobuf` 内部 target。
+目录通常是逻辑模块，不自动变成 target。`GeneratedProtobuf` 已因生成代码
+编译隔离、可重复生成和 UI import gate 成为唯一新增内部 target；不能为每个
+endpoint 再拆重复 generated target。
 
 初期同一 App target 不能由编译器完全阻止越层 import/类型访问，这是已接受
 风险；以访问级别、协议、静态 forbidden scan、diff review 和测试弥补。
@@ -129,7 +130,10 @@ scenario ID，不链接 TestSupport。
 - Session、HTTP mutable state、cache/image、journal/vault：各自 actor。
 - transport response 在 repository 隔离内 decode/map；只把 Sendable domain
   交给 Store。
-- generated Message、UIImage/CGImage 的 Sendable 未编译证明前不跨 actor。
+- generated Message 不跨 repository/task 边界；SwiftProtobuf 1.38.1 自动
+  生成的 10 个 `@unchecked Sendable` 只按 ADR-0011 的 exact hash/allowlist
+  接受，message 仍不得在任务间共享可变实例。UIImage/CGImage 的 Sendable
+  边界仍须独立证明。
 - 受保护写必须携带 `ProtectedDataLease(sessionID,generation)`。
 - 不使用 `@unchecked Sendable` 作为默认逃生口。
 

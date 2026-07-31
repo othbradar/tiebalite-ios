@@ -53,12 +53,33 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-21 | SwiftProtobuf 对全部 selected schema 的生成 API | 权利门禁关闭后在隔离生成目录运行，锁 exact runtime/generator、import manifest 与生成 hash；阶段 07 当前无 plugin/lock/schema，不生成 |
-| U-22 | proto3 optional absent 与显式 0/空字符串 | 编码两组 golden，做 byte-level 和服务端对照 |
-| U-23 | 未知 tag 是否解码后可 round-trip 保留 | 构造含未知 tag 的二进制，decode/encode 比较 |
+| U-21 | SwiftProtobuf 对 selected schema 的生成 API | `CLOSED_FOR_PERSONALIZED_LOCAL`：1.38.1 runtime/generator、51-file manifest/hash、两次生成与 strict build 已验证；其他 P0 closure 仍 open |
+| U-22 | proto3 optional absent 与显式 0/空字符串 | `LOCAL_WIRE_VERIFIED`：AppPos optional false 与 absent bytes/presence 已测；服务端差异仍属 U-07 |
+| U-23 | 未知 tag 是否解码后可 round-trip 保留 | `LOCAL_WIRE_VERIFIED`：Personalized 顶层 field 2047 decode/re-encode/decode 保留；live server 行为不在结论内 |
 | U-24 | 裸 int 状态/排序/type 完整值域 | 累积多 fixture，领域类型始终保留 `.unknown(raw)` |
-| U-25 | 321 个 schema 中 P0 真正最小闭包 | 权利门与真实 fixture 关闭后的生成阶段，用 import graph 脚本锁定，避免全量复制 |
-| U-26 | schema 复用的许可证/分发后果 | 在复制前完成来源与许可证决策；必要时独立编写最小兼容 schema |
+| U-25 | 321 个 schema 中 P0 真正最小闭包 | `CLOSED_FOR_PERSONALIZED`：root 1 + direct 4 + transitive 46 = 51；其他 P0 仍 open |
+| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011 允许本地/个人/非商业 exact pinned 生成；公开分发/App Store/商业仍 `BLOCKED` |
+
+阶段 07 local closure record：
+
+```text
+ID：U-21/U-22/U-23/U-25；U-26 仅局部决策
+日期：2026-07-31
+Android build 与 commit：4.0-dev / 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
+iOS baseline：11768dd4b1416619ea396c12cf97616546cccad1（阶段 07 checkpoint）
+scenario：pinned Personalized 51-file generation + JVM→Swift fixture decode/map
+请求类别：未发送网络请求；constructed anonymous/evidence-only request bytes
+fixture：TestSupport/Fixtures/API/Recommendations/personalized_cross_language.pb
+SHA-256：54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a
+观察结果：两次 Proto generation、两次 JVM fixture generation 均逐字节一致；
+  optional false presence 与 absent 不同；unknown field 2047 round-trip 保留；
+  raw threadTypes=999 保留；schema enum count=0。
+与现有规格的差异：不再是“无 plugin/lock/schema”；只关闭 Personalized local
+  tooling/wire 子集，匿名 live、服务端 presence、其他 P0 和公开分发不变。
+新增测试：PersonalizedProtocolTests 全组；verify-protos；
+  verify-personalized-fixture；networking-isolation。
+结论标签：LOCAL_BUILD_EVIDENCE / CROSS_LANGUAGE_GENERATED；非 RUNTIME_EVIDENCE
+```
 
 ## 内容节点
 

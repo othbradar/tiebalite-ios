@@ -16,14 +16,15 @@
 | 依赖/工具 | 类别 | 状态 | 使用边界 |
 |---|---|---|---|
 | Apple SDK/Foundation/SwiftUI/UIKit/ImageIO/OSLog | 系统 | 可用 | 遵守 actor/隐私/平台契约 |
-| SwiftProtobuf | production/build | 预批准、尚未引入 | 阶段 07 exact pin；仅 Generated/Core mapper |
+| SwiftProtobuf 1.38.1 | production/build | 阶段 07 已引入、exact lock | 仅 Generated/Core mapper；revision `55d7a1cc…` |
+| protobuf-java 4.35.1 | development fixture producer | exact ignored cache | Maven URL + SHA-1/SHA-256 锁；不进入 App/Release |
 | XcodeGen | development/build generation | 已安装 | `project.yml` 唯一真相，不进 App |
 | SwiftLint | development quality | 已安装 | strict lint；版本差异阻断 |
 | xcbeautify | development output | 已安装、可选 | 只美化输出，缺失不得改变结果 |
 | ripgrep/Python/shell scripts | development checks | 已有 | 不进 App bundle |
 | TestSupport fake/fixture helper | test-only | 未来建立 | Release 不可达 |
 
-当前没有任何第三方 production package 实际写入工程。
+当前唯一第三方 production package 是 Apple SwiftProtobuf 1.38.1。
 
 ## 明确未批准
 
@@ -59,7 +60,7 @@
 
 ## SwiftProtobuf 专项
 
-阶段 07 引入前必须同时满足：
+阶段 07 已满足：
 
 - exact SwiftPM version，并提交 canonical
   `Config/SwiftPM/Package.resolved`；生成工程中的 lock 只由生成脚本
@@ -72,6 +73,23 @@
 - generated output 可确定性重建。
 
 SwiftProtobuf 自身许可证通过不能解决输入 schema 的 GPL/上游来源风险。
+
+实际锁与边界：
+
+- official URL：`https://github.com/apple/swift-protobuf.git`；exact revision
+  `55d7a1cc5666b85c13464aea1c4b4a90feccb4c8`；
+- runtime/generator 都为 1.38.1，`protoc` 为 35.1；
+- package `LICENSE.txt` 是 Apache-2.0，并含 Runtime Library Exception；
+- 只有 `GeneratedProtobuf` 与
+  `Sources/Core/TiebaAPI/PersonalizedProtocol.swift` 可依赖；
+- 10 个 generator-emitted `@unchecked Sendable` 仅按 ADR-0011 的 exact
+  generated allowlist 接受；手写源码继续禁止 bypass；
+- mapper 只输出普通 Sendable domain，production live transport 仍 disabled；
+- 删除 adapter/generated target/package/lock 即可退出，无持久数据迁移。
+
+本阶段必须记录当前 Release 产物大小；由于阶段 07 前的可比 Release artifact
+未保留，clean before/after 增量仍是未验证项，不能用 Debug 大小替代。任何
+新增 P0 closure 或 SwiftProtobuf 升级都必须补可比增量。
 
 ## 开发工具固定
 
@@ -89,6 +107,8 @@ SwiftProtobuf 自身许可证通过不能解决输入 schema 的 GPL/上游来�
 - XcodeGen 2.45.4；
 - SwiftLint 0.65.0；
 - xcbeautify 3.2.1。
+- protoc 35.1；
+- protoc-gen-swift 1.38.1。
 
 ## 更新与回滚
 

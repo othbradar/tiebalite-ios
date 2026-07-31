@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`STATIC_SCHEMA_EVIDENCE`
+状态：`PERSONALIZED_GENERATED_AND_CROSS_LANGUAGE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -11,23 +11,39 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - `CODE_EVIDENCE`：没有 `enum`、`oneof` 或 `reserved` 声明。内容类型、排序、状态与 flag 多为裸整数。
 - `CODE_EVIDENCE`：`app/build.gradle.kts::wire` 用 Square Wire 从 `src/main/protos` 生成 Android Kotlin；版本目录记录 Wire 6.4.0。
 - `CODE_EVIDENCE`：reference 未跟踪生成 Kotlin，当前没有可审计的生成输出。
-- 本阶段没有复制 schema、没有运行 Wire/SwiftProtobuf、没有生成 Swift。
+- 阶段 07 没有复制 `.proto`；生成器直接只读 pinned submodule，并仅对
+  Personalized 的 51-file closure 生成 Swift。
 
-阶段 07 工具 checkpoint：
+阶段 07 实际工具与生成锁：
 
-- 本机 `protoc` 是 Homebrew `libprotoc 34.1`；
-  `protoc-gen-swift` 不存在。
-- 仓库没有 SwiftProtobuf checkout、canonical `Package.resolved`、
-  approved schema manifest、import lock 或真实 endpoint binary fixture。
-- schema 权利状态仍为
-  `REVIEW_REQUIRED_BEFORE_CODE_OR_SCHEMA_REUSE`，因此阶段 07 没有引入
-  SwiftProtobuf、没有创建 GeneratedProtobuf target，也没有把
-  `TestSupport/Fixtures/Binary/opaque.pb` 误作真实协议样本。
-- 当前只实现与 wire library 无关的 multipart bytes、fixture adapter 和
-  decode/map seam；presence、未知 tag round-trip、生成可重复性仍全部
-  `NOT_TESTED`。
+- `protoc 35.1`、`protoc-gen-swift 1.38.1`、SwiftProtobuf runtime/package
+  `1.38.1`，revision
+  `55d7a1cc5666b85c13464aea1c4b4a90feccb4c8`。
+- canonical package lock：`Config/SwiftPM/Package.resolved`；生成工程 lock
+  由脚本单向 materialize 并逐字节比较。
+- schema manifest：`Config/Protobuf/Personalized.inputs.tsv`，51 个输入均有
+  relative path、SHA-256、relationship 和 direct imports。
+- generated output：`Generated/Protobuf` 的 51 个 `.pb.swift`、生成 metadata
+  与逐文件 SHA-256；两次 clean generation 与 tracked output 一致。
+- `GeneratedProtobuf` 是独立静态 target；UI/Feature import 被静态门禁拒绝。
+- 首个 binary fixture 是 250-byte `CROSS_LANGUAGE_GENERATED` JVM fixture，
+  不是 live endpoint evidence；原 `opaque.pb` 仍只是 loader fixture。
+
+当前 local/personal/noncommercial schema 路径由 ADR-0011 批准；公开分发、
+App Store 和商业使用继续 `BLOCKED`。
 
 `INFERENCE`：iOS 只能选择 P0 所需的最小传递闭包；不能把 321 个 schema 全量导入当作“完成协议层”。生成产物必须隔离在 `Generated/Protobuf`，并由 mapper 转为领域模型。
+
+### Personalized 已锁定闭包
+
+- root：`Personalized.proto`（1）
+- direct imports：`CommonRequest.proto`、`ThreadInfo.proto`、
+  `AppPosInfo.proto`、`Error.proto`（4）
+- transitive imports：46
+- total：51
+- enum count：0；因此 unknown-enum test 为
+  `NOT_APPLICABLE_NO_ENUM_IN_PINNED_SCHEMA`，以 raw `threadTypes=999` 保留测试
+  代替，不能虚构 enum。
 
 ## 生成层次
 
@@ -162,12 +178,21 @@ type 9/27/35/40 的原始业务含义没有运行证据；只能证明当前 And
 - Android request builder 会对部分 optional 主动传入 `0`/`""`，这会消除 absent 与显式默认值的区别。
 - call site 把非 optional scalar 当作 `0/""`、repeated 当作空列表、message 当作 nullable 使用。
 
-`UNKNOWN`：
+`LOCAL_BUILD_EVIDENCE`：
 
-- SwiftProtobuf 生成的具体 presence API 尚未生成/编译。
-- Wire 6.4.0 与计划中的 SwiftProtobuf 对 optional、未知 tag、未知字段 round-trip 是否满足预期尚未做二进制对照。
-- 服务端对 absent 与显式 `0/""` 是否有不同语义。
-- 裸整数的完整值域；不能在领域层声明闭合 enum 而没有 `.unknown(rawValue)`。
+- SwiftProtobuf 1.38.1 已生成并编译 `hasX/clearX` presence API。
+- `AppPosInfo.ap_connected` 的 absent 与 explicit `false` wire bytes 不同，
+  decode 后 presence 保留。
+- Personalized 顶层追加 field 2047 的 unknown varint，decode/re-encode/decode
+  后 `UnknownStorage` 保留且领域 mapper 结果不变。
+- pinned 51-file closure 没有 enum；fixture 的 `threadTypes=999` 由 mapper
+  原样保留。
+- JVM fixture 对 message presence（第一条 video absent、第二条显式空
+  VideoInfo）与 Swift 解码一致。
+
+仍为 `UNKNOWN`：服务端是否区分 absent 与显式默认、裸整数的真实完整值域，
+以及 Wire 6.4.0 特有实现与 Swift 的更广泛对照。不能把本地 round-trip 写成
+服务端证据，也不能声明闭合 enum。
 
 实现要求：
 
@@ -193,7 +218,7 @@ type 9/27/35/40 的原始业务含义没有运行证据；只能证明当前 And
 
 ## Fixture 与生成验证清单
 
-后续阶段至少需要：
+所有 P0 最终至少需要；阶段 07 当前只关闭 Personalized 子集：
 
 1. 每个 P0 wrapper 的最小 request 编码 golden。
 2. 正常/空/错误/缺 data/畸形 response。
@@ -204,8 +229,17 @@ type 9/27/35/40 的原始业务含义没有运行证据；只能证明当前 And
 7. PB Page/PBFloor 重叠页、正序/倒序、锚点。
 8. generated source 不含 UI import，UI target 不直接 import generated module 的结构检查。
 
-当前全部为 `NOT_CREATED/NOT_TESTED`。
+Personalized 的 1、2（success/present-empty/missing-data/server error/
+malformed）、3、4、raw `999` 和结构隔离已 `TESTED`。PbContent、FRS、PB、
+PBFloor、真实 live pagination 与其余内容边界仍
+`NOT_CREATED/NOT_TESTED`。
 
 ## 来源与复制边界
 
-Android reference 根目录含 GPL version 3 许可证文本，README 另有非商业声明，因此本项目按 GPLv3 风险保守处理；逐文件授权、上游权利链以及 README 声明与许可证的关系仍为 `UNKNOWN`。schema 的文件级复制与派生生成物可能触发许可证义务；本阶段只记录 message/字段和依赖事实，没有复制任何 `.proto`。后续若决定复用 schema，必须先按 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 完成来源标头、许可证评估和可分发性决策；否则应基于脱敏 wire evidence 独立编写最小兼容 schema。
+Android reference 根目录含 GPL version 3 许可证文本，README 另有非商业
+声明；逐文件授权、上游权利链及两者关系仍为 `UNKNOWN`。ADR-0011 仅在项目
+负责人明确的本地/个人/非商业范围允许从 exact pinned submodule 生成上述
+51-file closure，不把 `.proto` 复制进 iOS 树，也不使用 `n0099`。公开分发、
+App Store、商业使用及 notice/源码义务仍 `BLOCKED`；扩大范围前必须按
+`Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 新建权利决策，必要时切换到
+clean-room 最小兼容 schema。

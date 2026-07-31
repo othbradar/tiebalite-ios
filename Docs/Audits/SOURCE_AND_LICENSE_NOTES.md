@@ -1,20 +1,25 @@
 # 来源与许可证记录
 
-状态：`REVIEW_REQUIRED_BEFORE_CODE_OR_SCHEMA_REUSE`
+状态：`LOCAL_PERSONAL_NONCOMMERCIAL_PROTO_USE_APPROVED`；
+`PUBLIC_APP_STORE_COMMERCIAL_DISTRIBUTION_BLOCKED`
 
 本文件记录阶段 01 可证实的来源和边界，不构成法律意见。任何分发、上架、商业使用或文件级复用决定都需要项目负责人单独批准。
 
-## 阶段 07 checkpoint
+## 阶段 07 本地项目决策
 
 - 重新核对 Android reference 仍锁定且 clean 于
   `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
-- Personalized 是最先值得采集 fixture 的静态候选，但没有真实 binary
-  fixture、匿名成功响应或逐文件 schema 权利链。
-- 阶段 07 没有复制 `.proto`、没有生成 `.pb.swift`、没有引入
-  SwiftProtobuf、没有创建 GeneratedProtobuf target，也没有运行 live probe。
-- 状态保持 `REVIEW_REQUIRED_BEFORE_CODE_OR_SCHEMA_REUSE`；只有项目负责人
-  明确选择并完成“最小 schema 复用权利审查”或“基于脱敏 wire evidence 的
-  clean-room 最小 schema”后，才可继续生成。
+- 项目负责人在当前任务中明确批准：仅对本地、个人、非商业项目，可直接从
+  上述 pinned、read-only submodule 的 `app/src/main/protos` 生成首个 P0
+  Personalized 最小闭包。
+- 实际闭包为 51 个文件；路径、hash、import 关系在
+  `Config/Protobuf/Personalized.inputs.tsv`，没有复制 `.proto` 到 iOS 树。
+- `n0099` 没有作为直接或间接生成输入；其链接不构成来源授权。
+- 已生成 51 个 Swift 文件并引入 exact SwiftProtobuf 1.38.1；首个 250-byte
+  JVM cross-language fixture 是完全构造且脱敏的，不是 live response。
+- 未运行 live probe、未使用账号或 Cookie。匿名服务端成功仍为 `UNKNOWN`。
+- 公开分发、App Store、商业使用、notice/源码义务和 fork/upstream 权利链仍
+  未关闭；任何范围扩大必须新决策。此处记录项目政策，不构成法律意见。
 
 ## Reference 身份
 
@@ -72,7 +77,8 @@
 | 观察用户任务和状态语义 | 允许 | 用独立 iOS 设计与代码表达；保留证据路径 |
 | 记录公开 protocol fact（path、field number、wire shape） | 审慎允许用于规格 | 必须有本地源码/脱敏运行证据；不凭字段名猜语义 |
 | 独立实现 mapper/state machine | 允许 | 不逐行翻译；用 fixture/tests 定义行为 |
-| 复制 `.proto` 文件 | 暂停 | 先确认来源、许可证、notice、分发影响 |
+| 从 pinned submodule 生成 Personalized 51 文件闭包 | 仅本地/个人/非商业允许 | exact commit/path/hash/import lock；不复制 `.proto`；公开分发仍阻塞 |
+| 使用 `n0099` 或其他外部 schema 集 | 禁止 | 不作为直接/间接输入；需要独立来源与权利决策 |
 | 复制 Kotlin/Java/Compose | 禁止默认复制 | 需要独立授权和完整 GPL 影响评估 |
 | 复制 UI 资源/图标/品牌 | 禁止 | 产品章程禁止造成官方授权误导 |
 | 复制 Android 第三方代码 | 禁止默认复制 | 必须逐文件审计其独立许可证和 notice |
@@ -102,6 +108,31 @@
 采用哪条路径必须是显式 ADR/法律决策，阶段 01 不作选择。
 
 ## 第三方组件线索
+
+### iOS 实际引入：SwiftProtobuf
+
+- 来源：`https://github.com/apple/swift-protobuf.git`
+- exact version：`1.38.1`
+- exact revision：`55d7a1cc5666b85c13464aea1c4b4a90feccb4c8`
+- 许可证：package checkout 的 `LICENSE.txt` 为 Apache License 2.0，并含
+  Runtime Library Exception。
+- canonical lock：`Config/SwiftPM/Package.resolved`
+- owner：`GeneratedProtobuf` 与唯一 Core/TiebaAPI adapter；UI 禁止引用。
+- 退出方式：见 ADR-0011；移除 generated target、adapter、package 与 lock
+  后可回到 fixture-only transport。
+
+以上仅覆盖 SwiftProtobuf 自身，不能替代 Android schema、API/内容/品牌的
+来源和分发判断。
+
+### 开发期 fixture producer：protobuf-java
+
+- Maven Central artifact：`com.google.protobuf:protobuf-java:4.35.1`；
+- exact URL、published SHA-1 与 local SHA-256 固定在
+  `Config/ToolVersions.env`；
+- 只存于 ignored `.build/FixtureTools`，用于 synthetic JVM
+  `DynamicMessage` producer，不链接、不复制进 App 或 Release bundle；
+- bootstrap 下载不等于项目再分发该 jar；若未来 vendoring/CI 镜像分发，
+  必须另行补许可证与 notice 审查。
 
 reference Gradle 声明 Wire、Compose Destinations、Room、Retrofit/OkHttp、Sketch/ZoomImage 等依赖。它们只解释 Android 实现，不自动成为 iOS 依赖候选。
 

@@ -43,6 +43,7 @@ enum EndpointRetryPolicy: Equatable, Sendable {
 }
 
 enum EndpointDescriptorValidationError: Error, Equatable, Sendable {
+    case invalidHeader
     case invalidHost
     case invalidMIMEType
     case invalidPath
@@ -58,6 +59,7 @@ struct EndpointDescriptor: Equatable, Sendable {
     let port: Int?
     let path: String
     let queryItems: [EndpointField]
+    let fixedHeaders: [String: String]
     let bodyCodec: EndpointBodyCodec
     let responseFamily: EndpointResponseFamily
     let allowedResponseMIMETypes: [String]
@@ -74,6 +76,7 @@ struct EndpointDescriptor: Equatable, Sendable {
         port: Int? = nil,
         path: String,
         queryItems: [EndpointField] = [],
+        fixedHeaders: [String: String] = [:],
         bodyCodec: EndpointBodyCodec,
         responseFamily: EndpointResponseFamily,
         allowedResponseMIMETypes: [String],
@@ -92,6 +95,9 @@ struct EndpointDescriptor: Equatable, Sendable {
         }
         guard Self.isValidPath(path) else {
             throw EndpointDescriptorValidationError.invalidPath
+        }
+        guard Self.areValidFixedHeaders(fixedHeaders) else {
+            throw EndpointDescriptorValidationError.invalidHeader
         }
         guard timeout.isFinite, timeout > 0 else {
             throw EndpointDescriptorValidationError.invalidTimeout
@@ -115,6 +121,7 @@ struct EndpointDescriptor: Equatable, Sendable {
         self.port = port
         self.path = path
         self.queryItems = queryItems
+        self.fixedHeaders = fixedHeaders
         self.bodyCodec = bodyCodec
         self.responseFamily = responseFamily
         self.allowedResponseMIMETypes = Array(
@@ -176,5 +183,41 @@ struct EndpointDescriptor: Equatable, Sendable {
         }
         let components = mimeType.split(separator: "/", omittingEmptySubsequences: false)
         return components.count == 2 && components.allSatisfy { !$0.isEmpty }
+    }
+
+    private static func areValidFixedHeaders(
+        _ headers: [String: String]
+    ) -> Bool {
+        var normalizedNames: Set<String> = []
+        for (name, value) in headers {
+            let normalizedName = name.lowercased()
+            guard !reservedHeaderNames.contains(normalizedName),
+                  normalizedNames.insert(normalizedName).inserted,
+                  !name.isEmpty,
+                  name.utf8.allSatisfy(isHeaderNameByte),
+                  value.utf8.allSatisfy({ byte in
+                      byte == 9 || (32...126).contains(byte)
+                  }) else {
+                return false
+            }
+        }
+        return true
+    }
+
+    private static let reservedHeaderNames: Set<String> = [
+        "accept",
+        "content-length",
+        "content-type",
+        "host"
+    ]
+
+    private static func isHeaderNameByte(_ byte: UInt8) -> Bool {
+        switch byte {
+        case 33, 35...39, 42, 43, 45, 46, 48...57, 65...90,
+             94...122, 124, 126:
+            true
+        default:
+            false
+        }
     }
 }

@@ -22,8 +22,10 @@ generate() {
 }
 
 generate
+scripts/materialize_swiftpm_lock.sh "$generated_project"
 mv "$generated_project" "$first_project"
 generate
+scripts/materialize_swiftpm_lock.sh "$generated_project"
 
 diff -ru "$first_project" "$generated_project"
 printf 'OK: two clean XcodeGen runs produced identical projects.\n'

@@ -35,12 +35,17 @@ require xcrun
 require swift
 require python3
 require rg
+require protoc
+require protoc-gen-swift
+require java
+require javac
 
 printf '\n== Optional project tools ==\n'
 optional brew
 optional xcodegen
 optional swiftlint
 optional xcbeautify
+optional curl
 
 printf '\n== Versions ==\n'
 sw_vers || true

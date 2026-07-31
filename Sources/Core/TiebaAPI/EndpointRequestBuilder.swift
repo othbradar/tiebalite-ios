@@ -3,7 +3,7 @@ import Foundation
 struct MultipartBinaryPart: Equatable, Sendable {
     let name: String
     let filename: String
-    let mimeType: String
+    let mimeType: String?
     let data: Data
 }
 
@@ -19,6 +19,7 @@ enum EndpointRequestBody: Equatable, Sendable {
 
 enum EndpointRequestBuilderError: Error, Equatable, Sendable {
     case bodyCodecMismatch
+    case headerCollision
     case invalidBoundary
     case invalidBoundaryCollision
     case invalidFieldName
@@ -53,7 +54,20 @@ struct EndpointRequestBuilder: Sendable {
             throw EndpointRequestBuilderError.reservedHeader
         }
 
-        var headers = authorizationHeaders
+        var headers = endpoint.fixedHeaders
+        let fixedHeaderNames = Set(headers.keys.map { $0.lowercased() })
+        let authorizationHeaderNames = authorizationHeaders.keys.map {
+            $0.lowercased()
+        }
+        guard Set(authorizationHeaderNames).count == authorizationHeaders.count,
+              authorizationHeaderNames.allSatisfy({ name in
+                  !fixedHeaderNames.contains(name)
+              }) else {
+            throw EndpointRequestBuilderError.headerCollision
+        }
+        for (name, value) in authorizationHeaders {
+            headers[name] = value
+        }
         if !endpoint.allowedResponseMIMETypes.isEmpty {
             headers["Accept"] = endpoint.allowedResponseMIMETypes.joined(
                 separator: ", "
@@ -187,7 +201,7 @@ struct EndpointRequestBuilder: Sendable {
         }
         guard isSafeHeaderParameter(part.name),
               isSafeHeaderParameter(part.filename),
-              isSafeMIMEType(part.mimeType),
+              part.mimeType.map(isSafeMIMEType) ?? true,
               fields.allSatisfy({ isSafeHeaderParameter($0.name) }) else {
             throw EndpointRequestBuilderError.invalidMultipartMetadata
         }
@@ -223,7 +237,10 @@ struct EndpointRequestBuilder: Sendable {
                 ).utf8
             )
         )
-        data.append(Data("Content-Type: \(part.mimeType)\r\n\r\n".utf8))
+        if let mimeType = part.mimeType {
+            data.append(Data("Content-Type: \(mimeType)\r\n".utf8))
+        }
+        data.append(Data("\r\n".utf8))
         data.append(part.data)
         data.append(Data("\r\n--\(boundary)--\r\n".utf8))
         return data
@@ -231,7 +248,7 @@ struct EndpointRequestBuilder: Sendable {
 
     private static func isSafeBoundaryByte(_ byte: UInt8) -> Bool {
         switch byte {
-        case 45, 46, 48...57, 65...90, 95, 97...122:
+        case 42, 45, 46, 48...57, 65...90, 95, 97...122:
             true
         default:
             false

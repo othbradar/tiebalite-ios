@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "format": "protobuf",
+      "id": "recommendations.personalized.cross-language",
+      "path": "API/Recommendations/personalized_cross_language.pb",
+      "purpose": "JVM protobuf-java decode and domain mapping contract",
+      "sanitized": true,
+      "sha256": "54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a",
+      "source": "crossLanguageGenerated"
+    },
+    {
       "format": "json",
       "id": "json.success",
       "path": "JSON/success.json",

@@ -1,0 +1,41 @@
+error {
+}
+data {
+  thread_list {
+    id: 1001
+    threadId: 2001
+    title: "Fixture recommendation"
+    replyNum: 12
+    viewNum: 345
+    lastTimeInt: 1700000000
+    threadTypes: 1
+    isGood: 1
+    author {
+      id: 7001
+      name: "fixture_author"
+      nameShow: "Fixture Author"
+      portrait: "fixture-portrait-7001"
+    }
+    forumId: 5001
+    forumName: "fixture_forum"
+    firstPostId: 3001
+    post_id: 3001
+    authorId: 7001
+  }
+  thread_list {
+    id: 1002
+    threadId: 2002
+    threadTypes: 999
+    isNoTitle: 1
+    forumId: 5002
+    forumName: "fixture_forum_missing_author"
+    videoInfo {
+    }
+  }
+  thread_personalized {
+    tid: 1001
+    weight: "fixture-weight"
+    source: "fixture-source"
+    extra: "fixture-extra"
+  }
+}

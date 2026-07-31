@@ -1,168 +1,211 @@
 # 阶段 07 Networking / Protobuf Foundation 审计
 
-状态：NETWORKING_FOUNDATION_PARTIAL
+状态：`NETWORKING_PROTOBUF_FOUNDATION_COMPLETE`
 
-阻塞标签：BLOCKED_ON_SCHEMA_RIGHTS_AND_RUNTIME_FIXTURE
+范围标签：`LOCAL_PERSONAL_NONCOMMERCIAL` /
+`PRODUCTION_LIVE_DISABLED` / `PUBLIC_DISTRIBUTION_BLOCKED`
 
-## 范围
+## 范围与出口
 
-本阶段安全完成通用、fixture-first 的网络基础：
+阶段 07 已建立可重复、fixture-first 的首个 Personalized 协议垂直切片：
 
-- validated HTTPS HTTPRequest；
-- actor URLSessionHTTPClient 与独立 ephemeral configuration；
-- typed EndpointDescriptor、显式 AuthContext 和 origin-aware
-  RequestAuthorizing seam；
-- deterministic query/form/multipart-binary 编码；
-- fixture 与 transport 共用的 decode/map pipeline；
-- transport、HTTP、server、decode、mapping、authentication、
-  unsupported content、response limit 与 cancellation 分类；
-- fixture-only/live/protobuf 静态隔离门禁。
+- 通用 HTTPS transport、typed endpoint、显式 auth seam 和分层错误；
+- 从 pinned Android reference 只读生成的最小 Protobuf 依赖闭包；
+- exact SwiftProtobuf runtime/generator/package lock；
+- 独立 JVM 生产、protoc 交叉核对的 synthetic binary fixture；
+- request wire golden、Swift decode、Proto → Sendable domain mapper；
+- optional presence、unknown field、raw unknown integer、畸形 payload、
+  server/missing-data、取消/超时/HTTP/MIME/size 等回归；
+- project/package/generated/UI/private-capture 静态隔离。
 
-本阶段没有：
+本阶段没有创建业务页面、Feature Store 或生产 Repository，没有发 Tieba
+live 请求、读取账号/Cookie/Keychain，也没有把 concrete HTTP client 接入
+production composition。阶段 08 未开始。
 
-- 注册 Tieba endpoint 或把 URLSession concrete 接入 composition root；
-- 发真实网络请求或使用账号；
-- 复制 Android schema、生成 Swift、添加 SwiftProtobuf/其他依赖；
-- 创建业务页面、Repository、业务 mapper 或进入阶段 08。
+## 来源、权利与依赖
 
-## 前置证据结论
+ADR-0011 接受的 schema 使用范围只限本地、个人、非商业开发。输入唯一来自：
 
-Specs/API_EVIDENCE.md 仍是 STATIC_EVIDENCE_ONLY。Android 未登录 Explore
-会加载 Personalized，这只能证明客户端尝试匿名；没有服务端匿名成功证据。
-所有 P0 fixture 仍是 NOT_CREATED。
+```text
+References/TiebaLite-Android
+commit 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
+app/src/main/protos/Personalized.proto
+```
 
-Docs/Audits/SOURCE_AND_LICENSE_NOTES.md 仍为
-REVIEW_REQUIRED_BEFORE_CODE_OR_SCHEMA_REUSE：321 个 Android proto 缺少
-逐文件 provenance，仓库 GPLv3 与 README 非商业声明的关系未关闭。
+`Config/Protobuf/Personalized.inputs.tsv` 固定 root 1、direct 4、transitive
+46，共 51 个文件的相对路径、SHA-256、关系和直接 import。生成脚本拒绝
+submodule commit/clean 状态、hash、import 或 dependency closure 漂移；不复制
+`.proto`，不读取 `n0099`，不生成其余 270 个无关 schema。
 
-工具链检查：
+工具和依赖精确锁定：
 
-- /opt/homebrew/bin/protoc：libprotoc 34.1；
-- protoc-gen-swift：missing；
-- SwiftProtobuf checkout/canonical package lock：不存在；
-- Generated/Protobuf：只有目录规则文件，无 generated source；
-- opaque.pb：既有 synthetic loader fixture，不是 endpoint payload。
+- `protoc 35.1`；
+- `protoc-gen-swift 1.38.1`；
+- Apple SwiftProtobuf `1.38.1`，revision
+  `55d7a1cc5666b85c13464aea1c4b4a90feccb4c8`；
+- canonical lock：`Config/SwiftPM/Package.resolved`；
+- Xcode resolve/build/test 使用 resolved-only、skip-updates，并在结束后重新
+  比较 canonical lock。
 
-因此 Prompt 中“解析真实/sanitized endpoint binary fixture、未知字段
-round-trip、生成可重复、Proto→domain mapper”的验收前置不成立。阶段状态
-不能写 PASSED。
+SwiftProtobuf 的 Apache-2.0 + Runtime Library Exception 审查不覆盖 Android
+schema、Tieba API、品牌或内容。公开分发、App Store 和商业使用仍为
+`BLOCKED`，需要新的权利与 notice 决策。
 
-## 实现边界
+## 生成与 Swift 6 边界
 
-### Transport
+`scripts/generate_protos.sh` 只写明确的 repo output 或 `TMPDIR` 下经过
+验证的空/真实目录；写/删前执行 lexical/realpath containment，在
+规范化前拒绝原始 `..` 组件，并拒绝路径链与 output tree 的任意
+symlink。输出是
+`Generated/Protobuf` 下 51 个 `.pb.swift`、generation metadata 和
+SHA-256 清单。`scripts/verify_protos.sh` 在两个独立临时目录生成，并比较
+两者与 tracked output；五个 upstream unused-import warning 不影响字节稳定性。
 
-URLSessionHTTPClient：
+当前 generator 在 10 个复杂 copy-on-write generated message 中产生
+`@unchecked Sendable`。这是 ADR-0011 限定的 generated-only 例外：
 
-- 使用 actor；
-- production factory 创建独立 ephemeral URLSession；
-- httpCookieStorage、urlCredentialStorage、urlCache 均为 nil；
-- 不使用 shared session、shared cookie 或 shared cache；
-- request 禁 userinfo、fragment、非法 header、非 HTTPS、非法 timeout/limit；
-- delegate 当前唯一策略是拒绝全部 redirect；
-- AsyncBytes 在已知 Content-Length 和未知长度两条路径限制 body；
-- cancellation 保持 CancellationError；
-- response 仅返回 allowlisted header，不返回 Set-Cookie 或任意私有 header。
+- 静态门禁锁定 exact 文件名单、数量和生成 hash；
+- 手写 App/Core/Test 继续禁止 `@unchecked Sendable` 和
+  `@preconcurrency import`；
+- raw message 只在同步 Core/TiebaAPI decode/map 边界内存在；
+- 结构化任务只返回普通 `Sendable` domain 值。
 
-当前 production composition 仍注入 DisabledHTTPClient。Transport concrete
-可编译、可 fixture 测试，但没有 live consumer。
+`GeneratedProtobuf` 是内部静态 target。只有
+`Sources/Core/TiebaAPI/PersonalizedProtocol.swift` 可以导入
+GeneratedProtobuf/SwiftProtobuf；View、Feature 与 domain model 都看不到
+generated type。
 
-### Endpoint / Auth
+## 跨语言 fixture
 
-EndpointDescriptor 固化 symbolic ID、method、validated host/ASCII path、
-query、body codec、response family/MIME、auth requirement、timeout、body
-limit、redirect/retry policy。path 拒绝 traversal、encoded ambiguity、
-反斜线、fragment/query 和未编码 Unicode。
+`TestSupport/Fixtures/API/Recommendations/personalized_cross_language.pb`
+由 Java 21.0.10 + `protobuf-java 4.35.1` 的
+`DynamicMessage` producer 创建：
 
-AuthContext 明确区分 anonymous、active lease 和 candidate operation。
-authorizer 可见 endpoint ID 与 validated host，能在 materialize credential
-前做目的地绑定。阶段 07 的唯一 concrete authorizer：
+- 250 bytes；
+- SHA-256
+  `54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a`；
+- jar SHA-256
+  `a4345ba2aa009912ff6f90467fea2d104605256b72c50840d75f13256638a472`；
+- 两次 JVM generation、tracked bytes 和独立 `protoc --encode` 输出一致。
 
-- anonymous 返回空 header；
-- active/candidate fail closed 为 credentialUnavailable；
-- context 不匹配为 contextMismatch。
+`make bootstrap-fixture-tools` 只从 Config 锁定的 exact Maven Central URL
+下载并校验 SHA-1/SHA-256，原子安装到 ignored cache。quality 不发网络请求，
+cache 缺失、symlink 或 hash 错误均 fail closed；隔离门禁还验证缺失 cache
+不能静默降级。
 
-没有 credential、Cookie storage 或 Keychain 实现。
+fixture 只包含 synthetic ID/text 和 `fixture.invalid` URL，不含真实账号、
+Cookie、BDUSS、STOKEN、授权头、设备标识或真实内容。它的证据等级是
+`CROSS_LANGUAGE_GENERATED`，不是抓包或 live runtime evidence。
 
-### Encoding / mapping
+## Personalized 协议行为
 
-- query 使用 RFC3986-style percent bytes，form 的空格使用加号；
-- fields 稳定排序；
-- multipart boundary 可注入并验证长度、字符与 payload 碰撞；
-- binary payload 不转字符串；
-- auth material 只在 body/URL 静态验证之后请求，await 后复核 cancellation；
-- fixture adapter 与 executor 复用同一 MIME/status/decode/map pipeline；
-- decoder/mapper 抛出的 cancellation 不被改写；
-- executor 不重试。
+已证静态 request contract：
+
+- `POST /c/f/excellent/personalized?cmd=309264`；
+- `X-BD-Data-Type: protobuf`；
+- multipart boundary `--------7da3d81520810*`；
+- binary part `name=data`、`filename=file`，无 per-part Content-Type；
+- refresh/page 1 protobuf golden：
+  `0a0b2001280b30015801b80101`；
+- anonymous auth、redirect reject、retry never。
+
+host 由 fixture/test 显式注入；production Swift 中没有真实 Tieba host。
+request 只编码 Android static evidence 支持的 load/page/count/type 字段，不猜
+CommonRequest、AppPos、设备或 session 值。
+
+decoder 明确拒绝零字节，按非零 `errorCode` 映射 server failure，并在 mapper
+前检查 message presence。mapper 保留服务器顺序、独立 raw `id/threadID`、
+raw `threadTypes=999`、public author whitelist 和 optional child presence；
+不映射 `User.bduss/passwd`，不猜 canonical identity、去重、分页终止或错误
+文本。页码递增使用 overflow-safe 逻辑，终止状态保持 `.unknown`。
 
 ## 自动化覆盖
 
-新增 tests 覆盖：
+Personalized 新增 7 项 Unit：
 
-- HTTPS、host、userinfo、fragment、header、timeout、body limit；
-- host/path traversal、encoded path、Unicode path、MIME descriptor；
-- deterministic query/form/multipart golden 与 boundary collision；
-- anonymous AuthContext 不生成 credential header、active/candidate fail
-  closed、auth origin binding；
-- ephemeral cookie/credential/cache 隔离；
-- redirect decision 与实际 production delegate completion(nil)；
-- Content-Length early reject、未知长度 streaming limit、exact limit；
-- allowlisted response headers、offline/timeout/malformed/body limit；
-- HTTP 500、MIME missing/wrong、decode/server/map 分类；
-- transport/pipeline error 统一、no retry、in-flight/decode/map cancellation；
-- fixture adapter 与 domain mapper seam。
+1. exact request protobuf/multipart/header/no-credential；
+2. cross-language fixture decode/map 和 server order；
+3. present-empty、missing data、nonzero service error；
+4. optional explicit-default 与 absent presence；
+5. unknown field 2047 round-trip、raw integer 999；
+6. empty/truncated/unterminated malformed body；
+7. structured task 只返回 Sendable domain，页码 overflow-safe。
 
-redirect 的测试精度：已直接调用 production delegate 并证明
-completion(nil)；没有以真实 302 server 跑完整 session.bytes redirect
-chain。HTTPRedirectPolicy 当前只有 reject；增加其他 policy 前必须把 policy
-显式传入 loader 并补端到端回归。
+通用网络测试继续覆盖 HTTPS validation、query/form/multipart、origin-bound
+auth、ephemeral cookie/credential/cache、HTTP/MIME/decode/map taxonomy、
+redirect reject、timeout、response limit、取消、no retry 和日志脱敏。
 
-## 红绿记录
+行为先行记录：
 
-- 实现前 make test-unit：
-  20260731-202200-74635-unit.xcresult，预期因 production symbols 缺失退出
-  65。
-- 中间编译反馈：
-  20260731-202521-74834-unit.xcresult、20260731-202734-75524-unit.xcresult
-  分别暴露 warning-as-error 与 redirect decision nil 类型问题，已修正。
-- make lint 首轮因 Endpoint.swift control-statement violation 失败，
-  修正后 67 个 Swift 文件 0 violation。
-- redirect URLProtocol 尝试：
-  20260731-203246-76772-unit.xcresult 单例超时 30 秒；该 test seam 对
-  redirect cancellation 没有完成 original response，已删除错误断言，改为
-  直接验证 production delegate。失败未作为通过证据。
-- 最新定向 Unit：
-  20260731-203823-78488-unit.xcresult，78/78 通过。
+- `20260731-230440-18801-unit.xcresult`：在
+  `RecommendationPage` 尚未实现时按预期编译失败；
+- `20260731-230658-20506-unit.xcresult`：warning-as-error 拦截 deprecated
+  protobuf initializer，改用 `serializedBytes`；
+- `20260731-230721-21864-unit.xcresult`：实现后定向 Unit 通过；
+- `20260731-232129-34884-build.log`：最新 quality-fast Debug build 通过；
+- `20260731-232134-35029-unit.xcresult`：Unit 85/85、0 failed、
+  0 skipped。
 
-阶段出口 make quality 首次被 secret scan 拦截：测试中的非敏感 CRLF canary
-使用了 `Cookie` 字面量；改为 `X-Injected` 后，完整门禁通过：Unit 78/78、
-iPhone UI smoke 12/12、iPhone interaction 5/5、iPad UI smoke 2/2、iPad
-interaction 1/1，并通过 Debug/iPad/Release build 与 Release/test-support
-isolation。随后加强静态隔离脚本，覆盖 root-wide artifact、合法 YAML
-packages 变体、generated pbx remote/local/product dependency，并让目标先
-生成工程；Swift 源采用 module-token gate，不再猜 import grammar，因此覆盖
-修饰符/selective/分号/换行/注释变体。多轮复审后均重新运行
-make quality-fast，Debug build 与 Unit 78/78 通过，最终结果为
-20260731-210431-87589-unit.xcresult。命令、结果文件及一次 xcresulttool
-沙箱权限失败在
-Docs/Progress/TASK_STATE.md 完整记录。
+安全终审修复后，完整阶段出口 `make quality` 从头退出 0 并输出
+`Quality gate completed.`：
 
-## 剩余风险与解锁条件
+- Debug build：`20260801-000625-66395-build.log`；
+- Unit：`20260801-000627-66436-unit.xcresult`，85/85；
+- iPhone UI smoke：`20260801-000657-66748-ui-smoke.xcresult`，12/12；
+- iPhone interaction：
+  `20260801-001010-67628-ui-interaction.xcresult`，5/5；
+- iPad build：`20260801-001510-68110-ipad-build.log`；
+- iPad UI smoke：`20260801-001513-68162-ui-smoke-ipad.xcresult`，2/2；
+- iPad interaction：
+  `20260801-001632-68383-ui-interaction-ipad.xcresult`，1/1；
+- Release build/isolation：
+  `20260801-001714-68562-release-build.log`。
 
-1. schema 权利、notice 与分发路径明确。
-2. 取得无敏感信息的真实 Personalized binary fixture 及来源、清理说明、
-   SHA-256。
-3. 用受控 HTTPS runtime evidence 确认匿名成功、最小参数/header、错误与
-   分页/终止，不把“客户端尝试”误作“服务器接受”。
-4. exact SwiftProtobuf、generator、canonical Package.resolved、schema
-   manifest/import lock 与可重复生成全部落地。
-5. optional absent/default、未知 tag round-trip、malformed、真实 mapper
-   测试通过。
-6. 完成真实 URLSession redirect chain 集成回归；在此之前仅允许
-   reject-all 单一 policy。
-7. production timeout/cancel 后 task 停止与资源释放、AsyncBytes 性能、
-   typed redacted diagnostics 仍需验证。
-8. active/candidate production credential、lease revalidation、session
-   expiry 与跨 session stale response 仍未实现。
+五个 xcresult 均由 `xcresulttool` 确认为 0 failed、0 skipped。当前
+Release-iphonesimulator app 为 11,444 KiB，universal simulator executable
+为 11,687,320 bytes；没有阶段 06 同配置基准，因此不声称依赖体积增量。
 
-以上条件未满足时，不得接 live、不得把 transport concrete 放进 production
-composition、不得宣称阶段 07 完成，也不得进入阶段 08。
+## 静态隔离
+
+`make networking-isolation` 当前为 0 failure，并验证：
+
+- production composition 仍为 `DisabledHTTPClient`；
+- App/Sources 无 live Tieba URL、shared URLSession/cookie/credential；
+- UI 无 URLSession、SwiftProtobuf 或 generated type；
+- 只有 exact Core adapter 可以接触 generated module；
+- project/pbx 只有 official exact package，无 branch/range/local/plugin；
+- 唯一 canonical `Package.resolved`，生成 target 位置和文件数精确；
+- handwritten concurrency bypass 为零，10 个 generated 例外 exact；
+- private capture 目录内容被 ignore，不会进入构建或 Git；
+- fixture classification/hash 和 adversarial canary 均通过。
+- output ancestor/tree symlink 与 symlink + `..` 绕过均由负向 canary
+  fail closed。
+
+## 未验证与剩余风险
+
+1. 未执行 Tieba live probe；匿名服务端接受、真实 response MIME、最小
+   CommonRequest/AppPos/header、错误码和值域都仍为 `UNKNOWN`。
+2. fixture 不能裁决 canonical ID、重复页、稳定顺序、分页终止或服务器实际
+   unknown-field 分布；production mapping 的 terminal 保持 `.unknown`。
+3. public/App Store/commercial distribution 仍被 ADR-0011 阻塞。
+4. URLSession redirect 只验证 production delegate 返回 nil，未以真实 302
+   server 跑完整 `session.bytes` chain；当前只允许 reject policy。
+5. production timeout/cancel 后底层 task 资源释放、AsyncBytes 性能、typed
+   redacted request diagnostics 未做运行性能验证。
+6. active/candidate credential、lease revalidation、session expiry 与跨
+   session stale response 不在阶段 07。
+7. SwiftProtobuf 相对阶段 06 的可比 Release 体积增量尚无同配置基准；阶段
+   07 只记录当前 Release 产物大小。
+8. 阶段 06 Pager/Media 仍是既有 SPIKE_PARTIAL；本阶段没有扩大或修复其
+   运行时缺口。
+
+## 变更类型
+
+- 新增动画：无。
+- 新增手势：无。
+- 新增 overlay：无。
+- 新增业务页面：无。
+- 新增生产依赖：SwiftProtobuf 1.38.1（exact lock）。
+- Android submodule 修改：无。
+
+阶段 07 完成后必须停止；不得自动开始阶段 08。

@@ -29,6 +29,7 @@ enum FixtureFormat: String, Codable, Equatable, Sendable {
 }
 
 enum FixtureSource: String, Codable, Equatable, Sendable {
+    case crossLanguageGenerated
     case synthetic
 }
 

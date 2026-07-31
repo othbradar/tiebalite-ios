@@ -10,6 +10,8 @@ xcuserdata/
 *.xcscmblueprint
 .codex-log/
 Artifacts/
+!Artifacts/PrivateCaptures/
+Artifacts/PrivateCaptures/**
 *.xcresult
 .env.local
 scripts/project.env
