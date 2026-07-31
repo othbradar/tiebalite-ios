@@ -4,12 +4,15 @@ import UIKit
 @MainActor
 struct ScaffoldRootView: View {
     private let buildConfiguration: ScaffoldEnvironment.BuildConfiguration
+    private let harnessLabel: String?
 
     init(
         buildConfiguration: ScaffoldEnvironment.BuildConfiguration =
-            ScaffoldEnvironment.currentBuildConfiguration
+            ScaffoldEnvironment.currentBuildConfiguration,
+        harnessLabel: String? = nil
     ) {
         self.buildConfiguration = buildConfiguration
+        self.harnessLabel = harnessLabel
     }
 
     var body: some View {
@@ -27,6 +30,13 @@ struct ScaffoldRootView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .accessibilityIdentifier("app.launch-placeholder.environment")
+
+            if let harnessLabel {
+                Text(harnessLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("app.launch-placeholder.scenario")
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()

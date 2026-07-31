@@ -6,15 +6,59 @@ final class LaunchSmokeTests: XCTestCase {
     }
 
     @MainActor
-    func testLaunchShowsStablePlaceholder() {
-        let app = XCUIApplication()
-        app.launch()
+    func testEmptyShellScenario() {
+        assertPlaceholder(for: .emptyShell)
+    }
 
-        XCTAssertTrue(
-            app.descendants(matching: .any)["app.launch-placeholder.root"]
-                .waitForExistence(timeout: 5)
+    @MainActor
+    func testOfflineScenario() {
+        assertPlaceholder(for: .networkOffline)
+    }
+
+    @MainActor
+    func testSlowNetworkScenario() {
+        assertPlaceholder(for: .networkSlow)
+    }
+
+    @MainActor
+    func testSignedOutScenario() {
+        assertPlaceholder(for: .sessionSignedOut)
+    }
+
+    @MainActor
+    func testSignedInFixtureScenario() {
+        assertPlaceholder(for: .sessionSignedInFixture)
+    }
+
+    @MainActor
+    func testExpiredSessionScenario() {
+        assertPlaceholder(for: .sessionExpired)
+    }
+
+    @MainActor
+    func testUnknownScenarioFailsClosed() {
+        let app = UITestHarness.launchUnknownScenarioCanary()
+
+        UITestHarness.requirePresent(
+            .invalidScenario,
+            in: app,
+            expectedLabel: "invalid-scenario"
         )
-        XCTAssertTrue(app.staticTexts["app.launch-placeholder.title"].exists)
-        XCTAssertTrue(app.staticTexts["app.launch-placeholder.environment"].exists)
+        UITestHarness.requireAbsent(.root, in: app)
+    }
+
+    @MainActor
+    private func assertPlaceholder(for scenario: UITestLaunchScenario) {
+        let app = UITestHarness.launch(scenario: scenario)
+
+        UITestHarness.requirePresent(.root, in: app)
+        UITestHarness.requirePresent(.title, in: app)
+        UITestHarness.requirePresent(.environment, in: app)
+        UITestHarness.requirePresent(
+            .scenario,
+            in: app,
+            expectedLabel: scenario.safeLabel
+        )
+        UITestHarness.requireAbsent(.invalidScenario, in: app)
     }
 }

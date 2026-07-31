@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor bootstrap-tools tool-versions instructions reference-check generate verify-generate lint forbidden secret-scan build release-build ipad-build test-unit test-ui-smoke test-all quality-fast quality clean
+.PHONY: help doctor bootstrap-tools tool-versions instructions reference-check generate verify-generate lint forbidden static-canaries secret-scan build release-build release-isolation ipad-build test-unit test-ui-smoke ui-test-isolation test-all quality-fast quality clean
 
 help:
 	@printf '%s\n' \
@@ -14,13 +14,16 @@ help:
 	  'make verify-generate - prove two clean project generations are identical' \
 	  'make lint          - run SwiftLint' \
 	  'make forbidden     - scan prohibited interaction/state patterns' \
+	  'make static-canaries - prove static source-policy rejection/approval paths' \
 	  'make build         - build for a generic iOS Simulator' \
 	  'make release-build - build Release for a generic iOS Simulator' \
+	  'make release-isolation - prove Release excludes test support' \
 	  'make ipad-build    - build using an available iPad Simulator' \
 	  'make test-unit     - run unit tests on an available iPhone Simulator' \
 	  'make test-ui-smoke - run UI smoke tests' \
+	  'make ui-test-isolation - prove test-support target boundaries' \
 	  'make quality-fast  - lint/static/build/unit' \
-	  'make quality       - fast gate + UI smoke + iPad build + diff checks'
+	  'make quality       - fast gate + UI/iPad + test-support isolation'
 
 doctor:
 	@scripts/bootstrap_check.sh
@@ -55,6 +58,9 @@ lint: tool-versions
 forbidden:
 	@scripts/forbidden_patterns.sh
 
+static-canaries:
+	@scripts/verify_static_policy_canaries.sh
+
 secret-scan:
 	@scripts/secret_scan.sh
 
@@ -63,6 +69,9 @@ build: generate
 
 release-build: generate
 	@scripts/run_xcodebuild.sh release-build
+
+release-isolation: release-build
+	@scripts/verify_release_isolation.sh
 
 ipad-build: generate
 	@scripts/run_xcodebuild.sh ipad-build
@@ -73,13 +82,16 @@ test-unit: generate
 test-ui-smoke: generate
 	@scripts/run_xcodebuild.sh ui-smoke
 
+ui-test-isolation: test-unit test-ui-smoke
+	@scripts/verify_ui_test_isolation.sh
+
 test-all: generate
 	@scripts/run_xcodebuild.sh tests
 
-quality-fast: instructions reference-check verify-generate forbidden secret-scan lint build test-unit
+quality-fast: instructions reference-check verify-generate forbidden static-canaries secret-scan lint build test-unit
 	@git diff --check
 
-quality: quality-fast test-ui-smoke ipad-build release-build
+quality: quality-fast ui-test-isolation ipad-build release-isolation
 	@git diff --check
 	@echo 'Quality gate completed.'
 

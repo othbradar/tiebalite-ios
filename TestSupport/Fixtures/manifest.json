@@ -1,0 +1,59 @@
+{
+  "entries": [
+    {
+      "format": "json",
+      "id": "json.success",
+      "path": "JSON/success.json",
+      "purpose": "valid JSON decoding",
+      "sanitized": true,
+      "sha256": "6e5eb62f1c3edaf7e39b5c279c48103fc931a8b5e8a12a88e88e40ba623d7f7b",
+      "source": "synthetic"
+    },
+    {
+      "format": "json",
+      "id": "json.malformed",
+      "path": "JSON/malformed.json",
+      "purpose": "malformed JSON failure",
+      "sanitized": true,
+      "sha256": "dda2ec0825fe9628e3b91d6ae5545e82c8c58eddb722be56d8282f6df281879a",
+      "source": "synthetic"
+    },
+    {
+      "format": "json",
+      "id": "json.missing",
+      "path": "JSON/missing.json",
+      "purpose": "missing file failure",
+      "sanitized": true,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "synthetic"
+    },
+    {
+      "format": "protobuf",
+      "id": "protobuf.opaque",
+      "path": "Binary/opaque.pb",
+      "purpose": "opaque binary loading",
+      "sanitized": true,
+      "sha256": "f3335495f9d78edf2714457fbbaf399b63f754bef323b77f3fbb57f38fd0cbe6",
+      "source": "synthetic"
+    },
+    {
+      "format": "image",
+      "id": "image.pixel",
+      "path": "Images/pixel.svg",
+      "purpose": "image resource loading",
+      "sanitized": true,
+      "sha256": "48899dbbfadec86bdefeddd6a4eb262e609c75543b566d6be6f3e52e49046f3a",
+      "source": "synthetic"
+    },
+    {
+      "format": "binary",
+      "id": "text.hash-mismatch",
+      "path": "Text/hash-mismatch.txt",
+      "purpose": "hash mismatch failure",
+      "sanitized": true,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "synthetic"
+    }
+  ],
+  "schemaVersion": 1
+}

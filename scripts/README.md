@@ -9,7 +9,11 @@
 - `run_xcodebuild.sh`: shared build/test runner after Stage 03 fills `project.env`.
 - `verify_project_generation.sh`: generate twice in a temporary directory and require byte-identical Xcode projects.
 - `forbidden_patterns.sh`: fail on known interaction/state anti-patterns and warn on suspicious patterns.
+- `swift_source_policy.sh`: enforce logging, concurrency and deterministic-test source boundaries.
+- `verify_static_policy_canaries.sh`: prove prohibited samples fail and the approved diagnostics backend passes.
 - `secret_scan.sh`: lightweight source/diff secret checks; does not replace a dedicated scanner.
+- `verify_release_isolation.sh`: inspect fresh Release source lists, bundle, strings and symbols for test-only code.
+- `verify_ui_test_isolation.sh`: prove the UITesting App, unit target and UI target have explicit harness boundaries.
 - `collect_bug_context.sh`: collect non-sensitive environment/Git context for a bug report.
 - `interaction_inventory.sh`: inventory animation, gesture, presentation, scrolling, navigation and identity call sites for audits.
 

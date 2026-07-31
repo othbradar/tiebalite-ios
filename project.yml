@@ -28,10 +28,8 @@ settings:
     TARGETED_DEVICE_FAMILY: "1,2"
 
 fileGroups:
-  - Sources
   - Generated
   - Resources
-  - TestSupport
 
 targets:
   TiebaLite:
@@ -42,6 +40,11 @@ targets:
       - path: App
         excludes:
           - AGENTS.md
+      - path: Sources/Core
+        excludes:
+          - AGENTS.md
+      - path: TestSupport/LaunchScenarios
+        group: TestSupport
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -51,6 +54,13 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         PRODUCT_BUNDLE_IDENTIFIER: "$(TIEBALITE_APP_BUNDLE_IDENTIFIER)"
         PRODUCT_NAME: TiebaLite
+      configs:
+        Debug:
+          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift"
+        Release:
+          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift"
+        UITesting:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG UITESTING"
 
   TiebaLiteTests:
     type: bundle.unit-test
@@ -60,12 +70,20 @@ targets:
       - path: Tests
         excludes:
           - AGENTS.md
+      - path: TestSupport
+        excludes:
+          - AGENTS.md
+          - Fixtures
+      - path: TestSupport/Fixtures
+        type: folder
+        buildPhase: resources
     dependencies:
       - target: TiebaLite
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: "$(TIEBALITE_APP_BUNDLE_IDENTIFIER).tests"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) TEST_SUPPORT"
 
   TiebaLiteUITests:
     type: bundle.ui-testing

@@ -41,7 +41,6 @@ fail_rule global-screen-layout 'UIScreen\.main\.bounds' "${roots[@]}"
 fail_rule force-try 'try!' "${roots[@]}"
 fail_rule force-cast '\bas!' "${roots[@]}"
 fail_rule production-fatal 'fatalError\(' "${roots[@]}"
-fail_rule detached-task 'Task\.detached' "${roots[@]}"
 
 if [[ -d Sources/Features ]]; then
   fail_rule feature-drag-gesture 'DragGesture\s*\(' Sources/Features
@@ -60,5 +59,8 @@ fi
 warn_rule all-animation-calls '\.animation\s*\(|withAnimation\s*\(' "${roots[@]}"
 warn_rule all-overlays '\.overlay\s*\(|fullScreenCover\s*\(|\.sheet\s*\(' "${roots[@]}"
 
+policy_status=0
+scripts/swift_source_policy.sh --root "$repo" || policy_status=$?
+
 printf '\nForbidden-pattern summary: %d error group(s), %d warning group(s).\n' "$failures" "$warnings"
-[[ "$failures" -eq 0 ]]
+[[ "$failures" -eq 0 && "$policy_status" -eq 0 ]]
