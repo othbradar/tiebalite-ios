@@ -1,0 +1,142 @@
+# 未确认行为与安全验证计划
+
+状态：`OPEN`
+
+Android 静态源码不是服务端或运行时证据。本文件集中记录所有 `UNKNOWN`，防止后续根据字段名、旧客户端实现或模型记忆补全协议。
+
+## 验证原则
+
+1. 先用构造 fixture 验证 mapper/state，再申请受控 live 验证。
+2. 只使用专用测试账号和公开测试内容；不收集用户密码。
+3. 抓取前定义字段白名单；落盘前移除 Cookie、BDUSS、STOKEN、TBS、手机号、授权头和可追踪设备 id。
+4. 不关闭 TLS、不接受任意证书、不使用明文 HTTP 发送凭据。
+5. 一次实验只改变一个变量，并记录 client state、请求类别、脱敏响应 hash 和结果。
+6. 任何结论需最少一个可复现 fixture；截图不能代替 wire/state evidence。
+7. 验证产物放 `Docs/Audits/` 与 `TestSupport/Fixtures/`，并更新 `Specs/API_EVIDENCE.md`。
+
+## 最高优先级五项
+
+| ID | 证据缺口 | 当前已知 | 最小安全实验 | 升级条件 |
+|---|---|---|---|---|
+| U-01 | 登录、验证码、Cookie/token 轮换、过期、多账号退出 | Android WebView 读 BDUSS/STOKEN；过期码常量未形成状态机；明文 Room 不安全 | 先写登录 ADR；用专用测试账号覆盖成功/取消/重复回调/过期/退出，不记录 token 值，只记录字段存在性与状态转换 | HTTPS 合法方案 + 脱敏 taxonomy + Session fixture/state tests |
+| U-02 | HTTP endpoint 的安全 HTTPS 等价路径和最小参数 | 关注吧、登录、picpage 当前 call site 是 `http://c.tieba.baidu.com` | 不调用 HTTP；从官方可观察 HTTPS 流或 reference 新 Proto call site寻找候选；单 endpoint、无凭据的公开请求先验证 TLS/编码 | 全程 HTTPS、无降级、最小字段有 evidence、成功/错误 fixture |
+| U-03 | FRS dynamic tab 与 `thread_id_list`/page 契约 | client 先消费最多 30 ids，再取下一 FRS page | 同一公开吧抓首屏及两次分页；记录 tab raw fields、请求 ids、返回顺序、空/缺项、下一 page；匿名与登录分开 | 动态 tab 值域与稳定 id、排序、终止、缺项策略均有 fixture |
+| U-04 | PB `page=0+pid`、删除/私密/缺作者及并发 | Android 有多种锚点调用；mapper 强制 author；不同 intent 可并发 | 先构造 malformed/overlap fixture；再对公开帖验证首/中/末页、pid anchor、删除楼、升降序；用延迟 stub 重放竞态 | anchor/cursor/error taxonomy + stale-response tests |
+| U-05 | 推荐匿名能力、顺序、空页与终止条件 | Android request 可附 session，响应未见已证终止字段，UI 永远允许 load more | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
+
+## API / 认证
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | 对同一公开 fixture 分别在无 session 与测试 session 下请求；比较仅公开字段，不记录凭据 |
+| U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 从最小无敏感字段开始逐项添加；禁止复制 Android telemetry 全集 |
+| U-08 | legacy sign 是否仍必需、是否允许 iOS 使用 | 只通过已批准协议/法律审查和 HTTPS 受控验证；在此之前不实现 |
+| U-09 | Error.error_code、user_msg、HTTP status 的真实 taxonomy | 为成功、未登录、过期、无权限、删除、限流、服务器错误采脱敏 fixture |
+| U-10 | 60 秒 timeout 是否是产品需求 | 使用本地延迟 stub 测 1/5/30/60 秒；最终 timeout 由 iOS UX 决策，不复制 Android |
+| U-11 | redirect 是否存在以及是否会在 HTTP body 发送后发生 | 不以真实凭据测试 HTTP；只允许网络文档/无凭据安全探测，且不能据 redirect 解锁 HTTP |
+| U-12 | Proto forumGuide 能否等价替代当前 form endpoint | 先找 production call site 或以同账号对比两端脱敏结果/分页；字段齐全才可候选 |
+
+## 分页与顺序
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-13 | 推荐终止信号 | 连续取页直到空/重复/错误，限制最大页；记录 item ids 和 raw response fields |
+| U-14 | 推荐刷新应替换还是 `new + old` | 通过产品验收和 fixture 决策；不能以 Android reducer 的插入提示作为唯一依据 |
+| U-15 | FRS `thread_id_list` 与 `thread_list`、下一 pn 的重叠/顺序 | 与 U-03 配对，断言 id 序列 |
+| U-16 | ThreadList 空响应是终止、删除还是暂时错误 | 构造空/部分缺项；真实公开样本验证一次 |
+| U-17 | GeneralTab `pn` 与 `last_thread_id` 冲突时优先级 | 以相同 pn 改 last id、相同 last id 改 pn；每次仅一变量 |
+| U-18 | PB `pids` 的方向、request `r` sort 值域及恒定 `floor_sort_type=1` 的语义 | 正序/倒序/热序 fixture 对照；保留 raw pids、r 与 floor_sort_type |
+| U-19 | PB Floor `has_more` 与 `current_page < total_page` 冲突 | 构造四种冲突 fixture，真实样本仅用于确认服务端常态 |
+| U-20 | 合法空 post_list | 对已删除/私密/空回复公开可访问样本采脱敏 envelope；未确认前用 unavailable |
+
+## Protobuf / schema
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-21 | SwiftProtobuf 对全部 selected schema 的生成 API | 阶段 03 在隔离生成目录运行，记录版本与生成 hash；当前不生成 |
+| U-22 | proto3 optional absent 与显式 0/空字符串 | 编码两组 golden，做 byte-level 和服务端对照 |
+| U-23 | 未知 tag 是否解码后可 round-trip 保留 | 构造含未知 tag 的二进制，decode/encode 比较 |
+| U-24 | 裸 int 状态/排序/type 完整值域 | 累积多 fixture，领域类型始终保留 `.unknown(raw)` |
+| U-25 | 321 个 schema 中 P0 真正最小闭包 | 阶段 03 用 import graph 脚本锁定，避免全量复制 |
+| U-26 | schema 复用的许可证/分发后果 | 在复制前完成来源与许可证决策；必要时独立编写最小兼容 schema |
+
+## 内容节点
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-27 | raw type 9/27/35/40 原始语义 | 收集脱敏样本并比较相邻字段；在此之前只按当前 Android 文本行为渲染并保留 raw type |
+| U-28 | `memeInfo` 的产品语义 | 构造 meme-only fixture；真实样本出现前保持 UnsupportedNode |
+| U-29 | 未见 raw type 的分布 | 只记录 raw type 频次和字段存在性，不保存私密正文 |
+| U-30 | 图片 URL 候选顺序与 HTTPS 可用性 | 对同一公开图片逐候选 HEAD/GET 的安全验证需后续授权；不放宽 ATS |
+| U-31 | type 5 的 video/link 字段稳定性 | 正常/缺 src/坏 URL fixture；P0 保持安全降级 |
+| U-32 | voice endpoint、格式、时长单位 | 不自动请求；取得公开样本和 HTTPS evidence 后再进入 P1 |
+| U-33 | Poll type/status、匿名/已投/过期 UI | 构造全部 raw 状态；真实样本只验证展示，不执行投票 |
+| U-34 | 删除/折叠/私密楼层的 wire 形态 | 与 U-20 配对；所有未知形态降级为 UnavailablePost |
+
+## Session / 存储
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-35 | iOS 登录方式与 App Store/平台边界 | ADR 比较系统浏览器、认证会话、显式 Web login；不做隐蔽注入 |
+| U-36 | 启动 refresh 失败时是否仍可浏览公开内容 | fixture session adapter + offline UI test |
+| U-37 | Session commit/退出需清哪些 Cookie/Web data/cache | 数据分类表 + Keychain/URL cache/WebKit store integration test；覆盖 newLogin/restoredCredential 的 retry 与 continuation 差异、orphan staging 单独/与 committed credential 并存；在 commit-journal 与 cleanup-ledger 持久化前后、每个 commit/delete midpoint 和 journal 删除前注入 crash/失败，验证下次启动按优先级幂等回滚/清理且 journal 不含 secret |
+| U-38 | 多账号是否进入首版 | 产品决策；若无则模型仍须拒绝第二 session 并安全替换 |
+| U-39 | Account User message 中哪些字段可持久化 | public profile 白名单评审；默认不保存未知字段 |
+
+## 导航 / 交互 / 恢复
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-40 | 进程死亡后恢复哪些 Tab 栈和列表 | fixture App：各 Tab push 两层、设置 filter/anchor、终止进程再启动；形成 ADR |
+| U-41 | 重选当前 Tab 的精确语义 | 产品验收比较“pop root”“scroll top”“refresh”；在阶段 02 决策 |
+| U-42 | iPad sidebar/split collapse 后 route 恢复 | iPad simulator 多宽度 UI smoke |
+| U-43 | deep link 中文吧名、短链和重定向 | 本地 URL parser fixture 优先；网络 redirect 后续独立验证 |
+| U-44 | thread anchor 在数据刷新/删除后恢复 | post id fixture：存在、移动、删除三组 |
+| U-45 | Reduce Motion 下 Media/Tab/refresh 行为 | UI test 启动参数切换 Reduce Motion；功能断言不依赖动画 |
+
+## 搜索 / P1
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-46 | Hybrid search endpoint 稳定性与 Cookie 必要性 | 匿名/测试 session 对照；只保存脱敏 public result |
+| U-47 | 搜索建议慢响应顺序 | 本地 stub 反向延迟 query，验证 latest-cancel |
+| U-48 | forum/user 搜索是否分页 | 检查真实 response 的 pn/has_more，并用第二页验证 |
+| U-49 | 搜索 thread 重复率与 sort 值域 | 多页 id 序列 fixture；未知 sort 保留 raw |
+
+## Media / 交互验证
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-50 | Media 缩放与 pager 仲裁、边界加载、失败/旋转 | 使用 3 图 fixture：中图缩放/平移→翻页→首尾边界→断网/重试→旋转/分屏→返回；验证已批准的逐页 transform reset、进程恢复只回父 route，以及 iPhone/iPad 一致行为 |
+
+## Android 源码异常不等于产品行为
+
+以下只能作为回归风险线索，不应通过运行实验“固化”为 iOS 行为：
+
+- Forum 成功后 `isLoading=true`。
+- 固定 20ms/1s/1.5s/2s delay。
+- refresh/page failure 只 Toast 或静默。
+- `first/!!/toLong()` 导致畸形响应 crash。
+- 未知内容节点静默丢弃。
+- Media 单击关闭、吞掉触摸 RuntimeException。
+- 单 root NavHost 与返回键跳 home。
+- 明文 Room 凭据和 cleartext endpoint。
+
+## 关闭 UNKNOWN 的记录格式
+
+每项关闭时必须追加：
+
+```text
+ID：
+日期：
+Android/iOS build 与 commit：
+scenario：
+请求类别（不含 secret）：
+fixture 路径与 SHA-256：
+观察结果：
+与现有规格的差异：
+新增测试：
+结论标签：RUNTIME_EVIDENCE
+```
+
+没有上述记录的项目不得从 `UNKNOWN` 改为已验证。

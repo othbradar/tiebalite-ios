@@ -1,6 +1,13 @@
 # 产品章程
 
-状态：`DRAFT`，阶段 01 审计后更新为 `APPROVED`。
+状态：`APPROVED`
+
+批准依据：阶段 01 已在 Android
+`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`
+上完成只读静态审计，P0 用户任务、导航、状态、endpoint 候选、Proto 和内容节点均已有可定位证据。批准仅覆盖产品使命、只读范围与 fixture-first
+实施边界；真实 API、登录、分发和许可证未知项仍受
+`Specs/API_EVIDENCE.md`、`Specs/UNKNOWN_BEHAVIORS.md` 与
+`Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 阻塞。
 
 ## 产品定位
 
@@ -32,7 +39,7 @@
 
 ## 发布和权利边界
 
-- Android 参考项目为 GPL-3.0，且 README 有非商业用途声明。
+- Android 参考仓库根含 GPL version 3 许可证文本，且 README 有非商业用途声明；在权利链与逐文件授权确认前按 GPLv3 风险保守处理，不把仓库级文件误写成每个文件均已完成授权确认。
 - 本项目必须保留来源与许可证记录。
 - 不使用百度官方图标、官方名称误导用户，不声称官方授权。
 - 是否公开分发、上架或商业使用不属于编码阶段默认授权。
