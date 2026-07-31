@@ -47,6 +47,40 @@ struct LaunchScenarioTests {
     }
 
     @Test
+    func displayProfileIsAllowlistedAndDefaultsToSystem() throws {
+        #expect(
+            try LaunchDisplayProfileParser.parse(arguments: ["TiebaLite"])
+                == .system
+        )
+        #expect(
+            try LaunchDisplayProfileParser.parse(arguments: [
+                "TiebaLite",
+                LaunchDisplayProfileParser.flag,
+                LaunchDisplayProfile.darkAccessibilityReduced.rawValue
+            ]) == .darkAccessibilityReduced
+        )
+    }
+
+    @Test
+    @MainActor
+    func invalidDisplayProfileFailsClosedWithTheScenario() {
+        let resolution = LaunchScenarioBootstrap.resolve(arguments: [
+            "TiebaLite",
+            LaunchScenarioParser.flag,
+            LaunchScenarioID.emptyShell.rawValue,
+            LaunchDisplayProfileParser.flag,
+            "unknown-display-profile"
+        ])
+
+        switch resolution {
+        case .ready:
+            Issue.record("Unknown display profile must fail closed")
+        case let .invalid(code):
+            #expect(code == "invalid-scenario")
+        }
+    }
+
+    @Test
     @MainActor
     func scenarioFactoryBuildsReplaceableSafeDependencies() async throws {
         for scenario in LaunchScenarioID.allCases {

@@ -50,8 +50,9 @@ iPhone 使用 NavigationStack，iPad 使用 NavigationSplitView，但容器切�
 
 ```text
 AppNavigationState {
-  selectedRoot
+  selectedTab
   routesByRoot: [RootID: [RouteIdentity]]
+  settingsPath: [SettingsRoute]     // 最多一个 Debug Shell route，不持久化
   presentedMedia?                   // 进程内
   presentedAuthentication?          // 进程内
   pendingAuthenticationContinuationByAttemptID
@@ -59,6 +60,27 @@ AppNavigationState {
   restorationRevision
 }
 ```
+
+### 阶段 05 Shell 选择澄清
+
+阶段 05 提示词要求“推荐、关注的吧、设置/账户占位”三个主 Tab，而 P0
+`RootID` 仍只有推荐与关注的吧。为避免 `selectedTab`/`selectedRoot` 双写，
+Shell 使用单一 `AppTab = recommendations | followedForums | settings`；
+只有前两项可投影为 `RootID` 并拥有 canonical routes。`settings` 是无业务
+route、无 Feature Store、无持久化的静态 P1 占位。阶段 05 仅为 Debug
+组件画廊保存最多一个强类型 `settingsPath`，使容器投影不依赖 SwiftUI 私有
+path；Release 无入口，快照不保存。未来实现 P1 Settings 必须另行更新
+route/恢复决策。本文统一称 `activeRoot = selectedTab.rootID`，不另存可写
+`selectedRoot`。
+
+iOS 26.5 运行证据表明 SwiftUI 系统 Tab bar 重按当前项会直接清空其
+`NavigationStack` path，且该动作不经过 selection binding，违反本 ADR 的
+P0 重选 no-op。阶段 05 因此保留 `TabView` 作为三个栈的生命周期容器，
+隐藏其不可配置的系统 Tab bar，并在底部 `safeAreaInset` 使用三个显式
+selection button。该 selector 只写 `selectedTab`，不实现手势、页面转场或
+push/pop；NavigationStack 与系统 back/边缘返回保持系统实现。若后续系统
+提供可关闭 reselect-pop 的公开 API，可移除 selector 并恢复系统 Tab bar，
+canonical route/state 不变。
 
 `RouteIdentity` 只允许：
 
@@ -81,7 +103,8 @@ Store 自身持久化。
 ### iPhone 投影
 
 - 两个 root 各自一个系统 NavigationStack。
-- Tab 切换只改 selectedRoot，不改另一 root 的 routes/Store/anchor。
+- settings 占位拥有独立系统 NavigationStack，但不进入 `routesByRoot`。
+- Tab 切换只改 selectedTab，不改另一 root 的 routes/Store/anchor。
 - 重选当前 Tab 在 P0 是 no-op：不 pop、不滚顶、不刷新。任何改变需后续产品
   决策和测试，不沿用 Android 全局刷新。
 
@@ -89,12 +112,12 @@ Store 自身持久化。
 
 regular width 使用三列 NavigationSplitView：
 
-- sidebar：root selector；
+- sidebar：selectedTab；两个 P0 root 与静态 settings 占位的 shell selector；
 - content：当前 root 的推荐/关注吧列表；
 - detail：当前 root 的首 route，余下 routes 投影到 detail 内的
   NavigationStack。
 
-compact width 把同一 selectedRoot/routes 投影为 Tab + 完整 Stack。size
+compact width 把同一 selectedTab/routes 投影为 Tab + 完整 Stack。size
 class、旋转或 split resize 不能写回、截断或重排 canonical routes。
 SplitView selection 从 routes 派生，不作为第二份可写业务状态。
 
@@ -117,7 +140,8 @@ cold/warm deep link 都在 restoration 完成后原子应用同一 NavigationCom
 
 持久化显式版本化、白名单 Codable DTO，仅包含：
 
-- selectedRoot；
+- selectedRoot（仅两个业务 RootID；若当前 selectedTab=settings，生成快照
+  时确定性降级为 recommendations）；
 - 各 root 的稳定 RouteIdentity；
 - 各 root 的已批准非敏感列表 snapshot；
 - 以 `(rootID, RouteIdentity)` 键控的非敏感 filter/read anchor snapshot；
@@ -126,6 +150,8 @@ cold/warm deep link 都在 restoration 完成后原子应用同一 NavigationCom
 不持久化 sessionID/token、Store、opaque NavigationPath、login attempt/
 continuation、cleanup 后登录 launch request、MediaViewer、
 MediaDescriptor/URL、transient loading/error。
+也不持久化 settings 或其 Debug-only `settingsPath`；恢复只进入两个业务
+Tab。
 未知 schema version 不按 V1 猜测，整份 snapshot 丢弃并回默认
 recommendations root。仅在已知 version 内逐段校验 route grammar；遇到坏
 ID 时恢复最长合法前缀。Media/login 活跃时进程终止，只恢复父 route；

@@ -1,247 +1,290 @@
 # TASK_STATE
 
-- 当前阶段：04
+- 当前阶段：05
 - 状态：PASSED_WITH_ENVIRONMENT_LIMITATION
 - 当前分支：`main`
 - 基线 commit：
-  `2885b747369d5e198a5b53d6ebd406bde39661fb`
-  （阶段 03 绿色提交，`build: complete stage 03 project scaffold`）
-- 允许修改范围：阶段 04 的最小 `AppEnvironment`/composition root、
-  `Sources/Core` 小型依赖协议与安全日志边界、`TestSupport` 确定性
-  harness/fixture、对应 `Tests`/`UITests`、XcodeGen target/config 隔离、
-  `Makefile`/`scripts` 质量门禁，以及本文件。
-- 禁止修改范围：Android submodule/gitlink、真实贴吧 endpoint/网络请求、
-  登录/Cookie/Keychain、业务 Feature/页面/导航、Pager、MediaViewer、
-  Protobuf 生成、生产缓存实现、未批准依赖，以及阶段 05 或后续内容。
-- 已读取规则/规格/ADR：根目录及 `App`、`Sources/Core`、`Resources`、
-  `TestSupport`、`Tests`、`UITests`、`Specs`、`Docs` 的适用
-  `AGENTS.md`；`Prompts/04_DETERMINISTIC_TEST_HARNESS.md`；
-  `Specs/MODULE_MAP.md`、`Specs/PROJECT_PLAN.md`、
-  `Specs/DEPENDENCY_POLICY.md`；ADR-0002、0006、0007、0008、0009、
-  0010；上一版 `Docs/Progress/TASK_STATE.md`。已显式使用
-  `.agents/skills/xcode-quality-gate/SKILL.md`，并采用三个只读子代理
-  对并发、UI harness、工程/Release 隔离的复审建议；全部写入仅由主代理
-  完成。
+  `03ae2bd1f5923d289a43fb526b096dba2f2aec70`
+  （阶段 04 绿色提交，`test: complete stage 04 deterministic harness`）
+- 允许修改范围：阶段 05 的 `DesignSystem` token/Motion/标准状态组件、
+  App Shell、强类型 route/canonical navigation state、fixture-only
+  占位页、Debug-only 组件画廊、对应 Unit/UI tests、XcodeGen/质量脚本、
+  ADR/规格和本文件。
+- 禁止修改范围：Android submodule/gitlink、真实业务 Feature/Store、
+  贴吧 API/Protobuf、登录/Cookie/Keychain、生产缓存、Pager、
+  MediaViewer、自定义 push/pop、业务 DragGesture、未批准依赖，以及阶段
+  06 或后续内容。
+- 已读取规则/规格/ADR：根目录及 `App`、`Sources/DesignSystem`、
+  `Sources/Core`、`TestSupport`、`Tests`、`UITests`、`Specs`、`Docs`
+  的适用 `AGENTS.md`；`Prompts/05_DESIGN_SYSTEM_AND_APP_SHELL.md`；
+  `Specs/04_INTERACTION_CONTRACT.md`、`Specs/05_MOTION_CONTRACT.md`、
+  `Specs/ROUTE_MAP.md`、`Specs/MODULE_MAP.md`；ADR-0003 及最新
+  `TASK_STATE`。
+- 已显式使用 `.agents/skills/xcode-quality-gate`，并采用仓库
+  architecture/interaction/motion audit skill 的检查清单。三个只读
+  子代理分别复审 canonical state/规格、交互/无障碍、工程/Release
+  隔离；所有工作树写入均由主代理完成。未使用 `ios-feature-slice`，因为
+  本阶段明确禁止创建真实 Feature Store。
 
-## 阶段 04 基线与授权
+## 阶段 04 提交与阶段 05 基线
 
-- 用户授权提交阶段 03 后，精确暂存阶段 03 差异并运行
+- 用户授权提交阶段 04 后，精确暂存阶段 04 差异并执行
   `git diff --cached --check`，随后
-  `git commit -m "build: complete stage 03 project scaffold"` 成功创建
-  `2885b747369d5e198a5b53d6ebd406bde39661fb`；提交后
-  `git status --short` 为空。
-- 阶段 04 开始前基线：
-  - `make doctor`：0 failure、0 warning。
-  - `make build`：通过，日志
-    `Artifacts/TestResults/20260731-123859-82765-build.log`。
-  - `make test-unit`：3/3 通过，结果
-    `Artifacts/TestResults/20260731-123906-82874-unit.xcresult`。
-  - `make test-ui-smoke`：1/1 通过，结果
-    `Artifacts/TestResults/20260731-123931-83415-ui-smoke.xcresult`。
-  - Android reference clean 且仍锁定
-    `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
-- 工具基线未漂移：macOS 26.6、Xcode 26.6（17F113）、
-  Swift 6.3.3、Git 2.50.1、XcodeGen 2.45.4、SwiftLint 0.65.0、
-  xcbeautify 3.2.1。
+  `git commit -m "test: complete stage 04 deterministic harness"` 成功，
+  创建
+  `03ae2bd1f5923d289a43fb526b096dba2f2aec70`。
+- 阶段 04 提交前在受限沙箱运行 `make doctor` 时仅因
+  CoreSimulatorService 不可访问失败；提权执行相同命令后 0 failure、
+  0 warning。沙箱内 `make quality-fast` 的 unit destination 退出 70；
+  提权执行相同门禁后 unit 28/28 通过，cached diff check 通过。
+- 阶段 04 提交后、阶段 05 实现前运行完整 `make quality` 通过：
+  - Debug build：
+    `Artifacts/TestResults/20260731-143540-7419-build.log`；
+  - Unit 28/28：
+    `Artifacts/TestResults/20260731-143541-7444-unit.xcresult`；
+  - iPhone UI 7/7：
+    `Artifacts/TestResults/20260731-143601-7748-ui-smoke.xcresult`；
+  - iPad build：
+    `Artifacts/TestResults/20260731-143701-8121-ipad-build.log`；
+  - Release build：
+    `Artifacts/TestResults/20260731-143702-8146-release-build.log`。
+- 阶段 05 开始后出现 `.idea/noctule.xml`、`.idea/vcs.xml` 两个 IDE
+  元数据漂移。它们不属于本阶段，始终未修改、未暂存、未提交，也未为
+  获得 clean tree 而 restore。
+- 工具基线：macOS 26.6、Xcode 26.6（17F113）、Swift 6.3.3、
+  Git 2.50.1、XcodeGen 2.45.4、SwiftLint 0.65.0、xcbeautify 3.2.1。
+  Android reference 始终 clean 且锁定
+  `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
-## 当前实现与行为
+## 修改文件
 
-- 新增不可变 `Sendable AppEnvironment` 和 `@MainActor
-  AppCompositionRoot`。可替换依赖为 `AppClock`、`IDGenerator`、
-  `HTTPClient`、`SessionProviding`、`ImageLoading`、`DataCaching`、
-  `DiagnosticsClient`。正常 Debug/Release 使用系统时钟、单调 ID 及
-  disabled/no-store/signed-out 安全实现，不创建 URLSession、真实会话、
-  Keychain 或生产图片/磁盘缓存。
-- `HarnessMockHTTPClient` 支持显式成功、类型化错误、无限可控延迟、
-  取消和按 call ID 乱序完成；`HarnessLatestValueProbe` 可构造旧响应晚到
-  且拒绝覆盖新代次。`HarnessControlledClock`、barrier 和 sequence ID
-  不依赖墙钟、随机数或 `sleep()`。
-- continuation 使用 `Synchronization.Mutex` 保护的同步 terminal gate。
-  取消与完成以第一个 terminal 操作为线性化点，只恢复一次；预取消保持
-  `CancellationError`，取消先于 `succeed`/`advance`/`release` 时不会被
-  成功覆盖；计数等待器在预取消和已注册两种时序下都可取消并移除，
-  不遗留永久 continuation。
-- 固定且唯一的 launch 参数解析器支持六个最小场景：
-  `app.empty-shell`、`network.offline`、`network.slow`、
-  `session.signed-out`、`session.signed-in-fixture`、`session.expired`。
-  缺失、重复、未知或非精确值均 fail closed 为固定
-  `invalid-scenario`，不回退 production 环境、不回显原值。
-- UI test 公开启动入口只接受类型化场景或一个固定未知场景 canary。
-  helper 使用条件等待和稳定 identifier；present、absent、label mismatch
-  失败均附固定场景截图及脱敏摘要。摘要只列白名单 identifier，label
-  不在固定安全集合时替换为 `<redacted>`，不附原始 hierarchy、参数或错误。
-- fixture manifest 记录逻辑 ID、相对路径、格式、用途、synthetic 来源、
-  sanitized 标记与 SHA-256。loader 覆盖 JSON、opaque binary Protobuf、
-  SVG image、缺失、畸形、hash mismatch、重复 ID、路径穿越和未知 ID；
-  错误只暴露安全逻辑路径，未知 ID 不回显输入。
-- diagnostics 只接收类型化事件与白名单 metadata；Cookie、Authorization、
-  token、BDUSS、STOKEN、password、device ID、URL 和 raw error 均被丢弃。
-  `OSDiagnosticsClient` 是唯一允许直接使用 OSLog 的后端。
-- App Debug/Release 均不编译 LaunchScenario/TestSupport；App UITesting
-  仅编译 `TestSupport/LaunchScenarios`；Unit target 编译 harness 与
-  `FixtureLoader` 并复制 `Fixtures`；UI target 仅编译 `UITests`。
-  `UITESTING` 从全局 xcconfig 移到 App 的 UITesting target config，
-  Unit 使用独立 `TEST_SUPPORT`。
-- 新增静态源策略及正反 canary，阻止直接 console/OSLog、raw
-  `localizedDescription`、`@unchecked Sendable`、
-  `nonisolated(unsafe)`、`@preconcurrency`、`Task.detached`、共享
-  singleton、直接 `Task.sleep`/`asyncAfter`，并阻止测试使用当前时间、
-  `ContinuousClock()`、随机 UUID/随机 API。唯一 OSLog 后端和固定 epoch
-  样本作为通过 canary；OSLog 后端只豁免直接 OSLog 构造，文件内
-  console 输出和 raw error 仍由反向 canary 证明会被拒绝。
-- 新增 Release 与 UITesting 结构检查：实际检查 SwiftFileList、fixture
-  bundle、binary strings、demangled symbols 和正向 canary，避免仅根据
-  `project.yml` 声称隔离。XcodeGen 重复 group warning 已通过统一
-  `group: TestSupport` 消除。
+- App Shell / navigation：
+  - 新增 `App/AppSceneRoot.swift`、`App/AppShellView.swift`、
+    `App/AppRouter.swift`、`App/AppAccessibilityID.swift`、
+    `App/FixturePlaceholderViews.swift`、
+    `App/DebugComponentGalleryView.swift`；
+  - 新增 `App/Navigation/AppRoute.swift`、
+    `App/Navigation/AppNavigationStore.swift`、
+    `App/Navigation/DeepLinkParser.swift`；
+  - 更新 `App/TiebaLiteApp.swift`、`App/ScaffoldEnvironment.swift`，
+    删除旧 `App/ScaffoldRootView.swift`。
+- DesignSystem：
+  - 新增 `Sources/DesignSystem/SemanticTokens.swift`、
+    `Motion.swift`、`StateComponents.swift`、
+    `StateComponentPreviews.swift`。
+- Tests / test support：
+  - 新增 `Tests/AppNavigationStoreTests.swift`、
+    `Tests/DeepLinkParserTests.swift`、`Tests/DesignSystemTests.swift`、
+    `UITests/AppShellSmokeTests.swift`、
+    `UITests/IPadAppShellSmokeTests.swift`；
+  - 更新 launch scenario、既有 smoke/unit tests 与 typed UI harness。
+- 工程与质量脚本：
+  - 更新 `project.yml`、`Makefile`、`scripts/run_xcodebuild.sh`、
+    `scripts/forbidden_patterns.sh`、Release/UITesting 隔离脚本、
+    `scripts/project.env.example` 和 `scripts/README.md`。
+- 契约与记录：
+  - 更新 ADR-0003、`Specs/ROUTE_MAP.md`、
+    `Specs/05_MOTION_CONTRACT.md` 和本文件。
+
+## 关键设计与状态转换
+
+- 每个 `WindowGroup`/scene 由 `AppSceneRoot` 的 `@State` 持有唯一
+  `@MainActor AppNavigationStore`。
+- Shell 有三个 `AppTab`：recommendations、followedForums、settings；
+  P0 `RootID` 始终只有前两个。`routesByRoot` 为两个业务 root 各保存独立
+  强类型 `[RouteIdentity]`。Settings 仅保存最多一个 Debug Shell
+  `settingsPath=[componentGallery]`，不成为第三业务 root、Feature Store
+  或恢复数据。
+- iPhone 的三个系统 `NavigationStack` 由 `TabView` 保活；iPad
+  `NavigationSplitView` 与 compact `TabView` 只投影同一个 store。
+  regular/compact 切换不能写回、截断或重排 canonical path。
+- 运行时证明 iOS 26.5 系统 Tab bar 重按当前 Tab 会在不经过 selection
+  binding 的情况下 pop 当前 `NavigationStack`。ADR-0003 因此记录：
+  保留 `TabView` 生命周期容器、隐藏不可配置的系统 Tab bar，并在 bottom
+  `safeAreaInset` 使用三个无手势 selection button。当前 Tab 重选为
+  no-op；push/pop/back/边缘返回仍由系统 `NavigationStack` 完成。
+- route identity 只包含经验证的 forumName、正 Int64 threadID/postID；
+  grammar 限制最大深度、合法顺序、相邻 thread/subposts ID 一致和 chain
+  内不重复。重复 identity 执行 pop-to，不压入副本；非法 system path 或
+  command 对完整状态零修改。
+- Deep Link 仅允许四个精确入口：
+  `com.baidu.tieba://unidispatch/frs?kw=...`、
+  `com.baidu.tieba://unidispatch/pb?tid=...`、
+  `https://tieba.baidu.com/f?kw=...`、
+  `https://tieba.baidu.com/p/{tid}`。执行 scheme/host/path、单 query、
+  URL 长度、单次 decode、本地 forumName 和正 ID 校验；不跟 redirect、
+  不记录 URL/query。
+- DesignSystem 提供 8 个语义颜色角色、6 个 Dynamic Type typography
+  角色、spacing/corner/icon token、5 个 Motion token，以及唯一的
+  Reduce Motion 解析入口。标准组件为 InitialLoading、InlineLoading、
+  EmptyState、FullPageError、InlineError/Retry、PaginationFooter；
+  每个均有 Preview、固定 gallery fixture 和无障碍标识。
+- Debug 组件画廊只在 Debug/UITesting 编译；Release 同时通过 source
+  exclusion、`#if DEBUG`、SwiftFileList、bundle/strings/symbols 检查排除。
+  技术 canary 是 hidden 且 accessibilityHidden 的正控，不作为
+  VoiceOver hint。
+- UITesting-only layout harness 可在同一 `AppSceneRoot` 上确定性强制
+  regular/compact。没有 override 时完全继承系统 size class，防止
+  `nil` 环境值误把 iPad 投影为 compact。
+- UI runner 从受控 `Config/Shared.xcconfig` 派生精确 App bundle ID，
+  只在选定 Simulator 上卸载 TiebaLite App 和其 UI runner；先检查存在，
+  卸载必须成功，随后确认不存在。其他 App、container 和 Simulator
+  数据不受影响。
 
 ## 行为优先与失败证据
 
-- 首次尝试读取不存在的
-  `Prompts/04_TEST_HARNESS_AND_FIXTURES.md` 失败；随后通过仓库文件清单
-  定位并完整读取正确文件
-  `Prompts/04_DETERMINISTIC_TEST_HARNESS.md`。
-- 在实现 LaunchScenario/harness 前运行 `make test-unit`，退出 65；
-  `Artifacts/TestResults/20260731-125807-85182-unit.log` 明确报告
-  LaunchScenario 类型/符号缺失，证明测试先于实现失败。
-- 首版 continuation 实现运行 `make test-unit` 退出 65；
-  `Artifacts/TestResults/20260731-130243-85464-unit.log` 报两处
-  `CheckedContinuation<Void, Error>` 泛型无法推断；显式类型后修复。
-- 下一次 `make test-unit` 已执行 21 个用例，其中 18 通过、3 个
-  FixtureLoader 用例失败；`20260731-130301-85556-unit.xcresult`
-  证明根因是 `Fixtures` 未进入 test bundle。将 fixture 作为 XcodeGen
-  `sources` 中 `buildPhase: resources` 的 folder resource 后修复。
-- 首次在沙箱内复跑 Simulator 测试退出 70；
-  `Artifacts/TestResults/20260731-130537-86055-unit.log` 明确显示
-  CoreSimulatorService 日志权限/连接不可用。按权限规则提权复跑，
-  `20260731-130659-86166-unit.xcresult` 的 21/21 用例通过。
-- 首次使用 `xcrun xcresulttool get test-results tests ...` 在沙箱内因
-  无权写 TestReport 失败；只读提权重跑成功，确认当时仅有上述三个
-  fixture bundle 失败。
-- 引入同步 terminal gate 后的首次 unit build
-  `Artifacts/TestResults/20260731-132511-89223-unit.log` 退出 65：
-  给 folder resource 同时设置 parent group 导致路径被解析为仓库根
-  `Fixtures`。移除资源的 group override、保留 LaunchScenario 的统一
-  group 后修复；重新生成的工程不再有 malformed group warning。
-- 首次 `make lint` 退出 2：11 个 collection trailing comma 和 1 个
-  Data→String 规则违规；机械修正后重跑为 0 violation/0 serious。
-- 首次独立运行 `scripts/verify_ui_test_isolation.sh` 退出 1：
-  Xcode 在 SwiftFileList 内容不变时不会刷新 mtime，时间戳规则误报。
-  删除脆弱 mtime 假设，改用必须包含本阶段新增源码/二进制 canary 的
-  内容正控；重跑通过。
-- 首次逐个检查未跟踪文件 whitespace 的 zsh 循环误用变量名 `path`，
-  覆盖了 zsh 的特殊 PATH 数组，因而重复报告 `git: command not found`
-  并退出 1；改用 `/bin/bash` 和 `candidate_file` 变量后重跑为
-  0 whitespace failure。
-- 最终只读复审用临时 probe 发现 OSLog 后端路径的豁免过宽，导致该文件内
-  console/raw error 可绕过扫描；同时发现 disabled/fixture image loader
-  未优先检查预取消。已将路径豁免缩小到仅 `direct-oslog`，新增后端路径
-  反向 canary，并为两种 image loader 增加取消检查。另补 registered
-  observer 取消清理测试；修正后 targeted unit 与完整 quality 均通过。
+- 在生产类型存在前新增 navigation/deep-link/design-system tests；
+  首次 `make test-unit` 退出 65，日志
+  `Artifacts/TestResults/20260731-144249-8495-unit.log` 报预期的
+  production symbol 缺失。
+- 首版 Motion 测试 override 尝试写只读系统
+  `accessibilityReduceMotion`，unit build 退出 65：
+  `20260731-145244-8959-unit.log`。改为 TestSupport 自有环境 override。
+- 下一轮 unit 因非法 Swift array pattern grammar 退出 65：
+  `20260731-145321-9075-unit.log`；改为显式 grammar helper 后修复。
+- 首轮 iPhone UI 10 个用例有 8 个失败：
+  `20260731-145438-9708-ui-smoke.xcresult`。根因是系统 TabView 未暴露预期
+  identifier，早期中文 label fallback 被复审认定会假绿，最终完全删除。
+- 第二轮 UI 使用了 Simulator clone 中陈旧 runner，六个 launch smoke
+  失败：`20260731-145808-10252-ui-smoke.xcresult`。仅卸载
+  `dev.local.tiebaliteios` 与
+  `dev.local.tiebaliteios.uitests.xctrunner` 后，当前源码正常执行；该精确
+  重装流程随后固化并增加失败/后置检查。
+- 当前源码执行时 iPhone UI 9/10：
+  `20260731-150455-11440-ui-smoke.xcresult`。唯一失败证明系统当前 Tab
+  重按自动 pop。一次 state suppression workaround 仍为 9/10：
+  `20260731-151103-12272-ui-smoke.xcresult`，因此删除 workaround，采用
+  ADR 记录的 bottom safe-area selector；随后 10/10 通过。
+- 阶段末定向命令在沙箱内 `make test-unit` 退出 70：
+  `20260731-153810-20591-unit.log`，原因仅为 CoreSimulator destination
+  不可见；提权执行同命令后 43/43 通过：
+  `20260731-153929-20909-unit.xcresult`。
+- 首次新增 iPad layout harness 后 2/2 UI 失败：
+  `20260731-154322-22231-ui-smoke-ipad.xcresult`。xcresult 安全层级证明
+  marker 实为 compact；根因是 harness 在无 override 时仍写入
+  `horizontalSizeClass=nil`。改为 nil 时继承系统环境后 2/2 通过：
+  `20260731-154458-22870-ui-smoke-ipad.xcresult`。
+- 读取上述 xcresult 的首次沙箱命令因无权写 Xcode TestReport 临时目录
+  退出 64；只读提权执行相同 `xcresulttool` 命令后成功。
+- 冻结候选的第一次完整 `make quality` 在 iPhone UI 处退出 2：
+  unit 43/43 通过，但 UI 11/12；
+  `20260731-155227-28937-ui-smoke.xcresult` 明确显示 gallery 的独立
+  InlineLoading 与 `.loading` PaginationFooter 同时产生两个
+  `design-system.inline-loading` 元素。未放宽查询或断言，只将 footer
+  fixture 改为 `.end`；`make test-ui-smoke` 随后 12/12 通过：
+  `20260731-155636-30070-ui-smoke.xcresult`。
+- 最终从修正后的冻结源码重新执行完整 `make quality`，全部通过，详见
+  下一节。
 
 ## 最终执行命令与逐项结果
 
-- `make generate`：通过；fixture 位于 Unit Copy Resources phase，
-  LaunchScenario group 唯一；`xcodebuild -project
-  TiebaLite.xcodeproj -list` 列出预期 3 target/3 config/1 scheme，
-  无 malformed project warning。该 `-list` 在沙箱内虽退出 0，但仍输出
-  CoreSimulatorService 无权限的环境噪声。
-- `bash -n scripts/swift_source_policy.sh
-  scripts/verify_static_policy_canaries.sh
-  scripts/verify_release_isolation.sh
-  scripts/verify_ui_test_isolation.sh ...`：通过。
-- `make static-canaries`：通过，每个禁止样本均被对应 rule 拒绝，
-  唯一 OSLog 后端与固定时间样本通过。
-- `make forbidden`：0 error group、0 warning group。
-- `make secret-scan`：通过；扫描范围已包含 Config、project.yml 和
-  `scripts/project.env.example`。
-- `make lint`：最终 30 个 Swift 文件，0 violation、0 serious；仍只有
-  已知的 SwiftLint 配置提示
-  `implicitly_unwrapped_optional` 未在 `opt_in_rules` 启用。
-- `make test-unit`：补齐最终取消回归后 28/28 通过，结果
-  `Artifacts/TestResults/20260731-135005-97574-unit.xcresult`。
-- `make test-ui-smoke`：六个白名单场景加未知 fail-closed 共 7/7 通过，
-  结果
-  `Artifacts/TestResults/20260731-132928-91116-ui-smoke.xcresult`。
-- `scripts/verify_ui_test_isolation.sh`：通过；UITesting App/Unit/UI
-  target 的正负成员关系和 exact binary canary 均符合预期。
-- `make release-isolation`：Release build 通过，随后 SwiftFileList、
-  App bundle、strings 与 demangled symbols 隔离检查通过；日志
-  `Artifacts/TestResults/20260731-133132-91629-release-build.log`。
-- 将 `ui-test-isolation` 调整为独立调用时也先准备 unit/UI 产物后，再次
-  运行 `make quality`；最终阶段出口通过：
-  - instruction/skill/reference integrity、工具版本、两次 clean
-    XcodeGen、forbidden、static canaries、secret scan、SwiftLint、
-    generic Debug build、`git diff --check` 均通过；
-  - 最终 unit 为 28/28，通过结果
-    `Artifacts/TestResults/20260731-135041-98542-unit.xcresult`；
-  - 最终 UI smoke 为 7/7，通过结果
-    `Artifacts/TestResults/20260731-135058-98789-ui-smoke.xcresult`；
-  - iPad build 通过，日志
-    `Artifacts/TestResults/20260731-135158-99100-ipad-build.log`；
-  - Release build 与隔离复验通过，日志
-    `Artifacts/TestResults/20260731-135159-99118-release-build.log`；
-  - 最终输出 `Quality gate completed.`。
-- 最终日志扫描未发现 `malformed project`、`member of multiple groups`、
-  `Test Failed` 或编译 `error:`；Android reference 仍 clean 且 SHA
-  未变化。
-- `git diff --check` 及逐个未跟踪文件
-  `git diff --no-index --check /dev/null <file>`：最终均为
-  0 whitespace failure。
-- 最终 `make doctor`：0 failure、0 warning；Simulator 设备可见、规则链、
-  repo skills、脚本语法、工具版本和 Android reference 均通过。
+- `make quality`：最终输出 `Quality gate completed.`，逐项为：
+  - instruction size、8 个 repo skill 校验、Android reference lock、
+    tool versions、两次 clean XcodeGen、static canaries、secret scan
+    全通过；
+  - `make forbidden`：0 error group；唯一 warning 是
+    `Sources/DesignSystem/Motion.swift` 中批准的统一动画入口；
+  - SwiftLint：47 个 Swift 文件，0 violation、0 serious；仅保留既有
+    `implicitly_unwrapped_optional` 未启用的配置提示；
+  - Debug generic build 通过：
+    `Artifacts/TestResults/20260731-155952-31716-build.log`；
+  - Unit 43/43 通过：
+    `Artifacts/TestResults/20260731-155954-31745-unit.xcresult`；
+  - iPhone UI 12/12 通过：
+    `Artifacts/TestResults/20260731-160014-32106-ui-smoke.xcresult`；
+  - UITesting App/Unit/UI target 与 Debug gallery source/binary 隔离
+    检查通过；
+  - iPad build 通过：
+    `Artifacts/TestResults/20260731-160324-33118-ipad-build.log`；
+  - iPad UI 2/2 通过：
+    `Artifacts/TestResults/20260731-160325-33147-ui-smoke-ipad.xcresult`；
+  - Release build 通过，且 Release SwiftFileList、bundle、strings、
+    symbols 均排除 TestSupport/Debug gallery：
+    `Artifacts/TestResults/20260731-160434-33411-release-build.log`。
+- `xcrun xcresulttool get test-results summary` 对上述三个最终 result
+  bundle 逐一确认：Unit 43 passed/0 failed；iPhone UI 12/0；
+  iPad UI 2/0；均运行在 iOS 26.5 Simulator。
+- `xcrun xcresulttool export attachments` 导出最终画廊两张脱敏截图并
+  人工检查：dark + Accessibility 3 + Reduce Motion 环境摘要、loading、
+  full-page/inline error、retry 和 pagination end 均可滚动到、文本可读、
+  按钮未裁切；两个 retry 已由 UI test 实际点击。
+- 最终 `make doctor`：0 failure、0 warning；iPhone/iPad Simulator
+  可见，规则链、repo skills、工具版本和 Android reference 均通过。
+- `bash -n scripts/*.sh`：通过。
+- `git diff --check`：通过；对每个未跟踪文件逐一执行
+  `git diff --no-index --check /dev/null <file>`，0 whitespace failure。
+- `scripts/secret_scan.sh`：通过。
+- `scripts/interaction_inventory.sh`：动画调用只出现在
+  `Sources/DesignSystem/Motion.swift`；无 gesture；无 overlay/sheet；
+  两个 safe-area inset 分别为 UITesting 顶部证据 banner 和 iPhone
+  bottom selector。
+- 最终六个 build/test log 扫描未发现 `error:`、`Test Failed`、
+  malformed project 或 member-of-multiple-groups。
+- `git -C References/TiebaLite-Android status --short` 无输出；
+  HEAD 仍为阶段 04 commit
+  `03ae2bd1f5923d289a43fb526b096dba2f2aec70`。
 
 ## 回归覆盖
 
-- 依赖替换：clock、ID、HTTP、session、image、cache、diagnostics 均通过
-  `AppEnvironment` existential 实际调用。
-- HTTP：显式成功、立即错误、受控延迟、任务取消、预取消、取消先于完成、
-  逆序完成、旧代次拒绝覆盖。
-- Image：disabled 与 fixture loader 的预取消均保持
-  `CancellationError`，不映射为 unavailable/missing fixture。
-- 并发控制：固定 epoch、手动 advance、barrier release、取消先于
-  advance/release、count waiter 预取消、registered waiter 取消清理、
-  确定性 ID exhaustion。
-- Fixture：JSON decode、binary Protobuf/image load、缺失、畸形、hash
-  mismatch、duplicate ID、path traversal、unknown ID 脱敏。
-- Diagnostics：typed event、metadata allowlist，以及敏感键/URL/raw error
-  移除。
-- UI：六个最低 launch scenarios 及 unknown fail-closed；两轮均全绿。
-- 结构：Debug/Release/App UITesting/Unit/UI target 成员关系与 Release
-  资源/符号隔离。
+- Canonical navigation：两个业务 root 独立 path、切 Tab 保持、当前 Tab
+  重选 no-op、重复 identity pop-to、非法 grammar 零写入、系统 path
+  pop、Settings Debug path 与业务 path 隔离。
+- 容器：iPhone 系统 Stack、iPad SplitView、真实横竖屏旋转，以及同 scene
+  强制 regular→compact→regular 后完整 route、selected tab、
+  Settings path 均保持。
+- 系统交互：导航栏 back 与真实左边缘 swipe 均返回前一 fixture route；
+  未添加自定义返回/DragGesture。
+- Deep Link：四个 allowlisted 入口；scheme/host/path/query、空/重复参数、
+  尾斜杠、零/负/溢出 ID；非法 URL 对 selectedTab、两个 root path 与
+  settingsPath 全部零修改。
+- DesignSystem：token family 完整性；5 个 Motion token 的精确值与全部
+  Reduce Motion `.none`；六类状态组件 Preview/gallery/a11y；深色、
+  Accessibility 3、Reduce Motion 下滚动可达与 retry hit target。
+- Shell UI：三个精确 stable Tab identifier、`.isSelected` trait、
+  两 root 独立 route、当前 Tab 重选、Settings gallery 跨 Tab 保持。
+- 隔离：Release 不含 Debug gallery/TestSupport；UITesting 包含固定
+  scenario、layout harness 和 gallery 正控，Unit/UI target 成员方向正确。
 
 ## 新增或变更的动画、手势、overlay、依赖
 
-- 动画：无。
-- 手势：无。
-- overlay/presentation：无。
-- 生产第三方依赖：无。`Synchronization`、Foundation、OSLog、SwiftUI、
-  UIKit 均为系统/Swift 工具链模块；未修改依赖锁。
+- 动画：新增统一 `Motion` token/Reduce Motion 入口；当前业务占位页没有
+  自定义动画。唯一 `.animation` 调用位于 `DesignSystem/Motion.swift`。
+- 手势：无新增手势；系统 NavigationStack 左边缘返回由 UI test 验证。
+- overlay/presentation：无 overlay、sheet 或 fullScreenCover。新增两个
+  `safeAreaInset`：UITesting-only 顶部证据区域、iPhone bottom Tab
+  selector；均不覆盖系统 push/pop。
+- 生产第三方依赖：无；未修改依赖锁。
 
 ## UNKNOWN / 剩余风险
 
-- 本机只有 iOS 26.5 Simulator runtime。最低部署版本 18.0 已由 build
-  settings 和编译验证，但未在 iOS/iPadOS 18.x runtime 上执行，因此状态
-  保留 `PASSED_WITH_ENVIRONMENT_LIMITATION`。
-- iPad 仅验证 compatible build；旋转、分屏及 iPad UI 流程属于后续明确
-  阶段，本阶段没有业务 UI 可执行这些验收。
-- UI smoke 全绿，因此“失败时实际把截图/摘要写入 xcresult”的分支未通过
-  故意失败的 UI 用例触发；本阶段由私有类型化启动 API、固定场景和静态
-  allowlist 审查其安全性。
-- 静态扫描是高置信规则而非完整数据流/taint 分析；后续新增诊断字段仍需
-  code review 与 redaction 单测。
-- 隔离脚本用源码/二进制正控避免空跑，但不使用 Xcode 不可靠的生成文件
-  mtime。应通过 `make release-isolation` / `make ui-test-isolation`
-  调用，让 Make 依赖先生成本轮 build/test 产物；直接单跑脚本可能消费
-  已有 DerivedData。
-- `Synchronization.Mutex` 的 terminal gate 已在当前 Swift 6.3.3、
-  iOS 26.5 Simulator 下通过严格并发编译与竞态顺序测试；未在 iOS 18.x
-  runtime 单独执行。
-- 真实 API、Cookie/登录、业务状态、导航、Pager、MediaViewer、Proto
-  映射均仍未实现/未验证，不得从阶段 04 harness 结果推断其可用。
+- 本机只有 iOS 26.5 Simulator runtime。最低部署 18.0 通过 build setting
+  与编译，但没有在 iOS/iPadOS 18.x runtime 实跑，因此状态为
+  `PASSED_WITH_ENVIRONMENT_LIMITATION`。
+- regular/compact 的 canonical 投影由确定性 UITesting size-class
+  override 验证；真实 iPad split-window 拖拽尺寸矩阵仍属于阶段 17，
+  本阶段未声称完成。
+- VoiceOver 的 `.isSelected` trait、label/value 和 technical canary
+  隔离已由 accessibility tree/UI test 验证，但实机 VoiceOver 朗读顺序
+  未人工听测。
+- Navigation restoration DTO/持久化与 cold/warm deep-link 编排尚未
+  实现；阶段 05 只实现 parser 与 canonical mutation。Settings 不进入
+  snapshot；恢复阶段仍需 malformed Codable fixture。
+- Tieba 官方 scheme 长期稳定性、Unicode normalization 与 redirect
+  行为仍为已记录 UNKNOWN；未从记忆猜测。
+- 系统 Tab bar 在 iOS 26.5 的重选 pop 行为导致当前使用自定义 bottom
+  selection button。它不接管页面导航或手势；若后续系统提供可关闭该行为
+  的公开 API，应复核并优先恢复系统 Tab bar。
+- 真实贴吧 API、Proto、登录/session、业务 Store、Pager、MediaViewer
+  均未实现/未验证，不能由阶段 05 fixture shell 推断可用。
+- `.idea/noctule.xml`、`.idea/vcs.xml` 仍是范围外 IDE 漂移，保留在工作树
+  且未纳入任何提交。
 
 ## 下一阶段前置条件
 
-- 阶段 04 当前差异保持未提交；只有新的用户指令可以授权提交。
-- 只有新的用户指令才可开始阶段 05。开始前必须重新读取阶段 05 提示词和
-  适用规则、确认阶段 04 绿色提交及 clean baseline，并重新运行基线门禁。
-- 本阶段在此停止，不创建业务页面、导航 Shell 或任何阶段 05 内容。
+- 阶段 05 差异保持未提交；本次授权只提交了阶段 04。只有新的用户指令才
+  能授权提交阶段 05。
+- 只有新的用户指令才可开始阶段 06。开始前需精确暂存阶段 05 文件并排除
+  `.idea` 漂移，重新检查 cached diff/质量证据，提交后再读取阶段 06
+  提示词、适用规则和对应 interaction spike 规格。
+- 本阶段在此停止；不得提前创建 Pager、MediaViewer、真实业务页面或进入
+  阶段 06。

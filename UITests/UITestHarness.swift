@@ -26,12 +26,62 @@ enum UITestLaunchScenario: String, CaseIterable {
     }
 }
 
+enum UITestDisplayProfile: String {
+    case darkAccessibilityReduced = "dark-accessibility-reduced"
+    case system
+}
+
+enum UITestAppTab {
+    case followedForums
+    case recommendations
+    case settings
+
+    var elementID: UITestElementID {
+        switch self {
+        case .recommendations:
+            .tabRecommendations
+        case .followedForums:
+            .tabFollowedForums
+        case .settings:
+            .tabSettings
+        }
+    }
+}
+
 enum UITestElementID: String, CaseIterable {
-    case environment = "app.launch-placeholder.environment"
+    case componentEmpty = "design-system.empty-state"
+    case componentFullPageError = "design-system.full-page-error"
+    case componentFullPageErrorRetry = "design-system.full-page-error.retry"
+    case componentInitialLoading = "design-system.initial-loading"
+    case componentInlineError = "design-system.inline-error"
+    case componentInlineErrorRetry = "design-system.inline-error.retry"
+    case componentInlineLoading = "design-system.inline-loading"
+    case componentPagination = "design-system.pagination-footer"
+    case debugOpenGallery = "app.debug.open-component-gallery"
+    case followedForumsRoot = "app.root.followed-forums"
+    case galleryAppearance = "design-system.gallery.appearance"
+    case galleryDynamicType = "design-system.gallery.dynamic-type"
+    case galleryReduceMotion = "design-system.gallery.reduce-motion"
+    case galleryRoot = "design-system.gallery"
     case invalidScenario = "app.launch-scenario.invalid"
-    case root = "app.launch-placeholder.root"
-    case scenario = "app.launch-placeholder.scenario"
-    case title = "app.launch-placeholder.title"
+    case layoutControlCompact = "app.harness.layout.compact"
+    case layoutControlRegular = "app.harness.layout.regular"
+    case layoutCompact = "app.shell.layout.compact"
+    case layoutRegular = "app.shell.layout.regular"
+    case openForum = "app.fixture.root.open-forum"
+    case openSubposts = "app.fixture.thread.open-subposts"
+    case openThread = "app.fixture.forum.open-thread"
+    case recommendationsRoot = "app.root.recommendations"
+    case routeForum = "app.route.forum"
+    case routeSubposts = "app.route.subposts"
+    case routeThread = "app.route.thread"
+    case settingsRoot = "app.root.settings"
+    case shellRoot = "app.shell.root"
+    case shellScenario = "app.shell.scenario"
+    case shellTitle = "app.shell.title"
+    case tabFollowedForums = "app.tab.followed-forums"
+    case tabRecommendations = "app.tab.recommendations"
+    case tabSettings = "app.tab.settings"
 }
 
 enum UITestHarness {
@@ -39,8 +89,18 @@ enum UITestHarness {
     private static let invalidScenarioCanary = "unknown.fixture-scenario"
 
     @MainActor
-    static func launch(scenario: UITestLaunchScenario) -> XCUIApplication {
-        launchFixture(arguments: [scenarioFlag, scenario.rawValue])
+    static func launch(
+        scenario: UITestLaunchScenario,
+        displayProfile: UITestDisplayProfile = .system
+    ) -> XCUIApplication {
+        var arguments = [scenarioFlag, scenario.rawValue]
+        if displayProfile != .system {
+            arguments.append(contentsOf: [
+                "--display-profile",
+                displayProfile.rawValue
+            ])
+        }
+        return launchFixture(arguments: arguments)
     }
 
     @MainActor
@@ -108,11 +168,195 @@ enum UITestHarness {
     }
 
     @MainActor
+    static func tap(
+        _ identifier: UITestElementID,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = app.descendants(matching: .any)[identifier.rawValue]
+        guard element.waitForExistence(timeout: 5) else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Missing tappable fixture element: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        let predicate = NSPredicate(format: "hittable == true")
+        let expectation = XCTNSPredicateExpectation(
+            predicate: predicate,
+            object: element
+        )
+        guard XCTWaiter.wait(for: [expectation], timeout: 5) == .completed else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Fixture element is not hittable: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+        element.tap()
+    }
+
+    @MainActor
+    static func requireTabPresent(
+        _ tab: UITestAppTab,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = tabElement(tab, in: app)
+        guard element.waitForExistence(timeout: 5) else {
+            attachSafeFailureEvidence(app: app, expected: tab.elementID)
+            XCTFail(
+                "Missing App tab selector: \(tab.elementID.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+    }
+
+    @MainActor
+    static func tapTab(
+        _ tab: UITestAppTab,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = tabElement(tab, in: app)
+        guard element.waitForExistence(timeout: 5), element.isHittable else {
+            attachSafeFailureEvidence(app: app, expected: tab.elementID)
+            XCTFail(
+                "App tab selector is unavailable: \(tab.elementID.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+        element.tap()
+    }
+
+    @MainActor
+    static func requireTabSelected(
+        _ tab: UITestAppTab,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = tabElement(tab, in: app)
+        guard element.waitForExistence(timeout: 5), element.isSelected else {
+            attachSafeFailureEvidence(app: app, expected: tab.elementID)
+            XCTFail(
+                "App tab lacks selected accessibility state: "
+                    + tab.elementID.rawValue,
+                file: file,
+                line: line
+            )
+            return
+        }
+    }
+
+    @MainActor
+    static func tapSystemBack(
+        in app: XCUIApplication,
+        returningTo identifier: UITestElementID,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let backButton = app.navigationBars.buttons.element(boundBy: 0)
+        guard backButton.waitForExistence(timeout: 5), backButton.isHittable else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail("System navigation back is unavailable", file: file, line: line)
+            return
+        }
+        backButton.tap()
+        requirePresent(identifier, in: app, file: file, line: line)
+    }
+
+    @MainActor
+    static func swipeSystemBack(
+        in app: XCUIApplication,
+        returningTo identifier: UITestElementID,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let start = app.coordinate(
+            withNormalizedOffset: CGVector(dx: 0.01, dy: 0.5)
+        )
+        let end = app.coordinate(
+            withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5)
+        )
+        start.press(forDuration: 0.1, thenDragTo: end)
+        requirePresent(identifier, in: app, file: file, line: line)
+    }
+
+    @MainActor
+    static func scrollToHittable(
+        _ identifier: UITestElementID,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = app.descendants(matching: .any)[identifier.rawValue]
+        guard element.waitForExistence(timeout: 5) else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Missing scroll target: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        for _ in 0..<8 where !element.isHittable {
+            app.swipeUp()
+        }
+        guard element.isHittable else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Scroll target is not readable or hittable: "
+                    + identifier.rawValue,
+                file: file,
+                line: line
+            )
+            return
+        }
+    }
+
+    @MainActor
+    static func attachSafeVisualEvidence(
+        app: XCUIApplication,
+        name: String
+    ) {
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = name
+        screenshot.lifetime = .keepAlways
+        XCTContext.runActivity(named: "Attach safe visual evidence") {
+            $0.add(screenshot)
+        }
+    }
+
+    @MainActor
     private static func launchFixture(arguments: [String]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments
         app.launch()
         return app
+    }
+
+    @MainActor
+    private static func tabElement(
+        _ tab: UITestAppTab,
+        in app: XCUIApplication
+    ) -> XCUIElement {
+        app.descendants(matching: .any)[
+            tab.elementID.rawValue
+        ]
     }
 
     @MainActor

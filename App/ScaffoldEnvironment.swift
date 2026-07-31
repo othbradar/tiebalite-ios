@@ -17,7 +17,7 @@ struct ScaffoldEnvironment: Sendable {
     }
 
     static let appName = "TiebaLite"
-    static let statusText = "Project scaffold"
+    static let statusText = "Design system and app shell"
     static let platformText = "iOS & iPadOS 18+"
 
     static var currentBuildConfiguration: BuildConfiguration {

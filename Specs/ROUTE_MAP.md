@@ -11,6 +11,7 @@
 每个 scene 只有：
 
 ```text
+AppTab = recommendations | followedForums | settings
 RootID = recommendations | followedForums
 
 RouteIdentity =
@@ -23,6 +24,15 @@ NavigationIntent =
   | thread(anchorPostID?, authorFilter?, sort?, forumContext?)
   | subposts(targetSubpostID?, forumContext?)
 ```
+
+`selectedTab` 是 Shell 选择的唯一真相。`settings` 仅为阶段 05 静态 P1
+占位，不能转换为 `RootID`，不拥有 P0 route chain、Feature Store 或恢复
+数据；`routesByRoot` 的 key 始终且仅为两个 `RootID`。阶段 05 允许
+`settingsPath=[componentGallery]` 这一条仅 Debug 可达的 Shell 路径，用于
+跨容器测试；它不属于业务 route，不持久化，Release 没有入口。
+
+本文用 `activeRoot = selectedTab.rootID` 表示当前业务 root；选择 settings
+时 `activeRoot=nil`，不得另存一份可写 `selectedRoot`。
 
 `RouteIdentity` 参与 Hashable/path/Store key/restoration；`NavigationIntent`
 不参与 identity，也不存入 identity-only map；NavigationCommand 在
@@ -54,13 +64,14 @@ Unicode normalization 已确定，NFC/NFKC 与服务端等价性继续由 U-43 �
 ### iPhone
 
 - 两个 root 各自拥有系统 NavigationStack。
-- selectedRoot 切换只改变可见 stack。
+- settings 静态占位使用独立系统 NavigationStack，但不进入 P0 route map。
+- selectedTab 切换只改变可见 stack。
 - 当前 Tab 重选为 no-op；不 pop、不滚顶、不 refresh。
 - 系统 back/pop 完成后再释放被移除 route Store。
 
 ### iPad regular
 
-- sidebar：selectedRoot。
+- sidebar：selectedTab；业务列从 `activeRoot` 派生。
 - content：当前 root 的推荐/关注吧列表。
 - detail：routes 首项；routes tail 投影到 detail 内 NavigationStack。
 - 从 content 选择新 Forum/Thread 时替换当前 root detail chain。
@@ -69,7 +80,7 @@ Unicode normalization 已确定，NFC/NFKC 与服务端等价性继续由 U-43 �
 
 ### compact/collapse
 
-同一 selectedRoot/routes 投影为 Tab + 完整 NavigationStack。容器变化不能
+同一 selectedTab/routes 投影为 Tab + 完整 NavigationStack。容器变化不能
 修改、截断、重排 route，也不能创建第二 Store。
 
 ## NavigationCommand
@@ -87,7 +98,7 @@ P0 合法 chain grammar：
 
 | command | 前置 | canonical mutation | Store 行为 |
 |---|---|---|---|
-| `selectRoot(root)` | root 已知 | 只改 selectedRoot | 两 root Store 均保留 |
+| `selectTab(tab)` | tab 已知 | 只改 selectedTab | 两 root Store 均保留 |
 | `reselectCurrentRoot` | 已选 root | no-op | 无 Action |
 | `selectRootDetail(route,intent?)` | 从 root content | 当前 root routes=`[route]` | 复用/创建 route Store，消费 intent |
 | `push(route,intent?)` | 来源 route 可见且结果 grammar 合法 | identity 已在当前 chain 时 pop-to/reuse；否则 append | 创建/复用 Store 后恰好一次派发 intent |
@@ -114,8 +125,8 @@ P0 合法 chain grammar：
 
 restoration 完成后应用 deep link：
 
-- Forum → selectedRoot=recommendations，recommendations routes=`[forum]`；
-- Thread → selectedRoot=recommendations，recommendations routes=`[thread]`；
+- Forum → selectedTab=recommendations，recommendations routes=`[forum]`；
+- Thread → selectedTab=recommendations，recommendations routes=`[thread]`；
 - followedForums routes 不变；
 - warm/cold 结果相同；
 - App 内点击不强制换 root。
@@ -127,7 +138,7 @@ restoration 完成后应用 deep link：
 ```text
 NavigationSnapshotV1 {
   version
-  selectedRoot
+  selectedRoot // 仅两个业务 RootID
   routeIdentitiesByRoot
   safeRootStateByRoot?
   safeRouteStateByRootAndRouteIdentity?
@@ -138,11 +149,16 @@ NavigationSnapshotV1 {
 opaque NavigationPath、sessionID/token、auth attempt/continuation、
 MediaViewer/descriptor/URL、loading/error/task。
 
+阶段 05 的 settings 与 `settingsPath` 不进入 snapshot。生成快照时若
+`selectedTab=settings`，`selectedRoot` 确定性写为 recommendations；恢复
+只选择两个业务 root，不能恢复到 settings。
+
 恢复步骤：
 
 1. 未知 version 时丢弃整份 snapshot，回 recommendations root，不按 V1
    猜测。
-2. 已知 version 内验证 selectedRoot；无合法 root 时回 recommendations。
+2. 已知 version 内验证 selectedRoot；无合法 root 时回 recommendations，
+   并由它派生 selectedTab。
 3. 每 root 从首项开始验证上述 route grammar、ID 约束与重复 identity。
 4. 在首个非法 identity 截断，保留最长合法前缀。
 5. root safe state 必须匹配 root/version，route safe state 必须匹配

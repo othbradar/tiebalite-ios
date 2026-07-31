@@ -21,12 +21,22 @@ struct TiebaLiteApp: App {
 #if UITESTING
             switch launchResolution {
             case let .ready(descriptor):
-                ScaffoldRootView(harnessLabel: descriptor.safeLabel)
+                LaunchShellLayoutHarness {
+                    AppSceneRoot(
+                        compositionRoot: descriptor.compositionRoot,
+                        harnessLabel: descriptor.safeLabel
+                    )
+                    .modifier(
+                        LaunchDisplayProfileModifier(
+                            profile: descriptor.displayProfile
+                        )
+                    )
+                }
             case let .invalid(code):
                 LaunchScenarioFailureView(code: code)
             }
 #else
-            ScaffoldRootView()
+            AppSceneRoot(compositionRoot: compositionRoot)
 #endif
         }
     }

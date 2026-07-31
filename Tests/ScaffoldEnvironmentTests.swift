@@ -18,7 +18,7 @@ struct ScaffoldEnvironmentTests {
     @Test
     func launchCopyIsStaticAndNonSensitive() {
         #expect(ScaffoldEnvironment.appName == "TiebaLite")
-        #expect(ScaffoldEnvironment.statusText == "Project scaffold")
+        #expect(ScaffoldEnvironment.statusText == "Design system and app shell")
         #expect(ScaffoldEnvironment.platformText == "iOS & iPadOS 18+")
     }
 

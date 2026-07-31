@@ -21,8 +21,26 @@ source scripts/project.env
 : "${UNIT_TEST_TARGET:?}"
 : "${UI_TEST_TARGET:?}"
 : "${UI_SMOKE_TEST_IDENTIFIER:?}"
+: "${UI_SHELL_SMOKE_TEST_IDENTIFIER:?}"
+: "${IPAD_UI_SMOKE_TEST_IDENTIFIER:?}"
 : "${DERIVED_DATA_PATH:=.build/DerivedData}"
 : "${RESULTS_DIR:=Artifacts/TestResults}"
+
+app_bundle_identifier="$(
+  awk -F= '
+    /^[[:space:]]*TIEBALITE_APP_BUNDLE_IDENTIFIER[[:space:]]*=/ {
+      value = $2
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      print value
+      exit
+    }
+  ' Config/Shared.xcconfig
+)"
+if [[ -z "$app_bundle_identifier" ]]; then
+  echo "ERROR: TIEBALITE_APP_BUNDLE_IDENTIFIER is missing." >&2
+  exit 66
+fi
+ui_test_runner_bundle_identifier="${app_bundle_identifier}.uitests.xctrunner"
 
 if [[ ! -e "$CONTAINER_PATH" ]]; then
   echo "ERROR: generated container is missing: $CONTAINER_PATH" >&2
@@ -37,7 +55,7 @@ esac
 
 mode="${1:-}"
 if [[ -z "$mode" ]]; then
-  echo "usage: $0 build|release-build|unit|ui-smoke|tests|ipad-build" >&2
+  echo "usage: $0 build|release-build|unit|ui-smoke|ui-smoke-ipad|tests|ipad-build" >&2
   exit 64
 fi
 
@@ -78,6 +96,61 @@ run_build() {
   return "$status"
 }
 
+reset_project_ui_test_install() {
+  local simulator_udid="$1"
+  xcrun simctl boot "$simulator_udid" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$simulator_udid" -b >/dev/null
+  uninstall_project_bundle_if_present \
+    "$simulator_udid" \
+    "$ui_test_runner_bundle_identifier"
+  uninstall_project_bundle_if_present \
+    "$simulator_udid" \
+    "$app_bundle_identifier"
+}
+
+project_bundle_is_installed() {
+  local simulator_udid="$1"
+  local bundle_identifier="$2"
+  local installed_apps
+  if ! installed_apps="$(xcrun simctl listapps "$simulator_udid")"; then
+    echo "ERROR: unable to inspect installed Simulator applications." >&2
+    return 2
+  fi
+  printf '%s\n' "$installed_apps" \
+    | rg -F "CFBundleIdentifier = \"$bundle_identifier\";" >/dev/null
+}
+
+uninstall_project_bundle_if_present() {
+  local simulator_udid="$1"
+  local bundle_identifier="$2"
+  local status=0
+
+  project_bundle_is_installed \
+    "$simulator_udid" \
+    "$bundle_identifier" || status=$?
+  case "$status" in
+    0)
+      xcrun simctl uninstall "$simulator_udid" "$bundle_identifier"
+      ;;
+    1)
+      return
+      ;;
+    *)
+      return "$status"
+      ;;
+  esac
+
+  status=0
+  project_bundle_is_installed \
+    "$simulator_udid" \
+    "$bundle_identifier" || status=$?
+  if [[ "$status" -eq 0 ]]; then
+    echo "ERROR: project bundle remains installed: $bundle_identifier" >&2
+    return 1
+  fi
+  [[ "$status" -eq 1 ]]
+}
+
 common=("${container_args[@]}" -scheme "$SCHEME" -derivedDataPath "$DERIVED_DATA_PATH")
 
 case "$mode" in
@@ -99,17 +172,36 @@ case "$mode" in
       test -only-testing:"$UNIT_TEST_TARGET"
     ;;
   ui-smoke)
+    ui_iphone_udid="$(iphone_udid)"
+    reset_project_ui_test_install "$ui_iphone_udid"
     result="$RESULTS_DIR/${stamp}-ui-smoke.xcresult"
-    run_build ui-smoke "${common[@]}" -destination "platform=iOS Simulator,id=$(iphone_udid)" \
+    run_build ui-smoke "${common[@]}" \
+      -destination "platform=iOS Simulator,id=$ui_iphone_udid" \
       -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
       -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
-      test -only-testing:"$UI_SMOKE_TEST_IDENTIFIER"
+      test \
+      -only-testing:"$UI_SMOKE_TEST_IDENTIFIER" \
+      -only-testing:"$UI_SHELL_SMOKE_TEST_IDENTIFIER"
+    ;;
+  ui-smoke-ipad)
+    ui_ipad_udid="$(ipad_udid)"
+    reset_project_ui_test_install "$ui_ipad_udid"
+    result="$RESULTS_DIR/${stamp}-ui-smoke-ipad.xcresult"
+    run_build ui-smoke-ipad "${common[@]}" \
+      -destination "platform=iOS Simulator,id=$ui_ipad_udid" \
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
+      test -only-testing:"$IPAD_UI_SMOKE_TEST_IDENTIFIER"
     ;;
   tests)
+    tests_iphone_udid="$(iphone_udid)"
+    reset_project_ui_test_install "$tests_iphone_udid"
     result="$RESULTS_DIR/${stamp}-tests.xcresult"
-    run_build tests "${common[@]}" -destination "platform=iOS Simulator,id=$(iphone_udid)" \
+    run_build tests "${common[@]}" \
+      -destination "platform=iOS Simulator,id=$tests_iphone_udid" \
       -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
-      -only-test-configuration "$FULL_TEST_PLAN_CONFIGURATION" test
+      -only-test-configuration "$FULL_TEST_PLAN_CONFIGURATION" \
+      test -skip-testing:"$IPAD_UI_SMOKE_TEST_IDENTIFIER"
     ;;
   *)
     echo "ERROR: unknown mode: $mode" >&2

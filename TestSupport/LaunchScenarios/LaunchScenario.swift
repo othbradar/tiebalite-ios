@@ -66,6 +66,36 @@ enum LaunchScenarioRegistry {
     static let isolationCanary = "TIEBALITE_TEST_SUPPORT_CANARY"
 }
 
+enum LaunchDisplayProfile: String, Equatable, Sendable {
+    case darkAccessibilityReduced = "dark-accessibility-reduced"
+    case system
+}
+
+enum LaunchDisplayProfileParser {
+    static let flag = "--display-profile"
+
+    static func parse(arguments: [String]) throws -> LaunchDisplayProfile {
+        let flagIndices = arguments.indices.filter { arguments[$0] == flag }
+        guard flagIndices.count <= 1 else {
+            throw LaunchScenarioParseError.duplicateFlag
+        }
+        guard let flagIndex = flagIndices.first else {
+            return .system
+        }
+
+        let valueIndex = flagIndex + 1
+        guard arguments.indices.contains(valueIndex) else {
+            throw LaunchScenarioParseError.missingValue
+        }
+        guard let profile = LaunchDisplayProfile(
+            rawValue: arguments[valueIndex]
+        ) else {
+            throw LaunchScenarioParseError.unknownIdentifier
+        }
+        return profile
+    }
+}
+
 enum LaunchScenarioNetworkMode: Equatable, Sendable {
     case controlled
     case offline
@@ -79,6 +109,7 @@ struct LaunchScenarioDescriptor {
     let networkMode: LaunchScenarioNetworkMode
     let compositionRoot: AppCompositionRoot
     let isolationCanary: String
+    let displayProfile: LaunchDisplayProfile
 }
 
 @MainActor
@@ -92,7 +123,15 @@ enum LaunchScenarioBootstrap {
     static func resolve(arguments: [String]) -> LaunchScenarioResolution {
         do {
             let scenario = try LaunchScenarioParser.parse(arguments: arguments)
-            return .ready(LaunchScenarioFactory.make(scenario: scenario))
+            let displayProfile = try LaunchDisplayProfileParser.parse(
+                arguments: arguments
+            )
+            return .ready(
+                LaunchScenarioFactory.make(
+                    scenario: scenario,
+                    displayProfile: displayProfile
+                )
+            )
         } catch {
             return .invalid(code: "invalid-scenario")
         }
@@ -108,6 +147,67 @@ struct LaunchScenarioFailureView: View {
         Text(code)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityIdentifier("app.launch-scenario.invalid")
+    }
+}
+
+@MainActor
+struct LaunchDisplayProfileModifier: ViewModifier {
+    let profile: LaunchDisplayProfile
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        switch profile {
+        case .system:
+            content
+        case .darkAccessibilityReduced:
+            content
+                .preferredColorScheme(.dark)
+                .environment(\.dynamicTypeSize, .accessibility3)
+                .environment(\.motionReductionOverride, true)
+        }
+    }
+}
+
+@MainActor
+struct LaunchShellLayoutHarness<Content: View>: View {
+    @State private var sizeClassOverride: UserInterfaceSizeClass?
+
+    private let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: Spacing.small) {
+                Button("测试紧凑布局") {
+                    sizeClassOverride = .compact
+                }
+                .accessibilityIdentifier("app.harness.layout.compact")
+
+                Button("测试常规布局") {
+                    sizeClassOverride = .regular
+                }
+                .accessibilityIdentifier("app.harness.layout.regular")
+            }
+            .font(Typography.font(.caption))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.xSmall)
+            .background(SemanticColor.surface)
+
+            layoutContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var layoutContent: some View {
+        if let sizeClassOverride {
+            content.environment(\.horizontalSizeClass, sizeClassOverride)
+        } else {
+            content
+        }
     }
 }
 #endif

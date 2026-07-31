@@ -35,12 +35,37 @@ warn_rule() {
   fi
 }
 
+assert_pattern_detects() {
+  local id="$1" pattern="$2" canary="$3"
+  if ! printf '%s\n' "$canary" | rg "$pattern" >/dev/null; then
+    printf '\nERROR [%s-pattern-canary]\n' "$id" >&2
+    failures=$((failures + 1))
+  fi
+}
+
 fail_rule random-view-id '\.id\(\s*UUID\(\)\s*\)' "${roots[@]}"
 fail_rule timing-patch 'DispatchQueue\.main\.asyncAfter' "${roots[@]}"
 fail_rule global-screen-layout 'UIScreen\.main\.bounds' "${roots[@]}"
 fail_rule force-try 'try!' "${roots[@]}"
 fail_rule force-cast '\bas!' "${roots[@]}"
 fail_rule production-fatal 'fatalError\(' "${roots[@]}"
+
+if [[ -d App ]]; then
+  app_anyview_pattern='\bAnyView\b'
+  app_navigation_path_pattern='\bNavigationPath\b'
+  assert_pattern_detects \
+    app-anyview \
+    "$app_anyview_pattern" \
+    'func erase() -> AnyView { .init(EmptyView()) }'
+  assert_pattern_detects \
+    app-opaque-navigation-path \
+    "$app_navigation_path_pattern" \
+    'let path: NavigationPath = .init()'
+  fail_rule app-anyview "$app_anyview_pattern" App
+  fail_rule app-drag-gesture '\bDragGesture\b' App
+  fail_rule app-opaque-navigation-path "$app_navigation_path_pattern" App
+  fail_rule app-custom-animation '\.animation\s*\(|withAnimation\s*\(' App
+fi
 
 if [[ -d Sources/Features ]]; then
   fail_rule feature-drag-gesture 'DragGesture\s*\(' Sources/Features

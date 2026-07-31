@@ -4,7 +4,7 @@
 
 ## 唯一令牌
 
-具体数值由阶段 04 通过视觉/设备验证确定，业务代码只能引用语义令牌：
+具体数值由阶段 05 的组件画廊与设备验证确定，业务代码只能引用语义令牌：
 
 - `Motion.instant`
 - `Motion.fast`
@@ -13,6 +13,11 @@
 - `Motion.interactive`
 
 曲线和时长集中在 `DesignSystem/Motion.swift`。禁止 Feature 直接写 `.easeInOut(duration:)`、`.spring(...)` 等参数。
+
+阶段 05 基线值为：instant 无动画；fast 0.15 秒 ease-out；standard
+0.25 秒 ease-in-out；emphasized 0.35 秒 ease-in-out；interactive
+0.30 秒 ease-out。Reduce Motion 时统一解析为无自定义动画。后续视觉调整
+只能修改这一处，并重跑默认/Reduce Motion 的 iPhone 与 iPad 验收。
 
 ## 系统动效
 

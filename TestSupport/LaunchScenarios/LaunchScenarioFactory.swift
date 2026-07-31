@@ -7,7 +7,10 @@ import Foundation
 #if UITESTING || TEST_SUPPORT
 @MainActor
 enum LaunchScenarioFactory {
-    static func make(scenario: LaunchScenarioID) -> LaunchScenarioDescriptor {
+    static func make(
+        scenario: LaunchScenarioID,
+        displayProfile: LaunchDisplayProfile = .system
+    ) -> LaunchScenarioDescriptor {
         let networkMode: LaunchScenarioNetworkMode
         let httpBehavior: HarnessHTTPDefaultBehavior
         let sessionStatus: SessionStatus
@@ -65,7 +68,8 @@ enum LaunchScenarioFactory {
             safeLabel: safeLabel,
             networkMode: networkMode,
             compositionRoot: AppCompositionRoot(environment: environment),
-            isolationCanary: LaunchScenarioRegistry.isolationCanary
+            isolationCanary: LaunchScenarioRegistry.isolationCanary,
+            displayProfile: displayProfile
         )
     }
 }

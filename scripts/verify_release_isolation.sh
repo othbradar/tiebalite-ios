@@ -12,8 +12,8 @@ derived_data_path="${DERIVED_DATA_PATH:-.build/DerivedData}"
 release_intermediates="$derived_data_path/Build/Intermediates.noindex/TiebaLite.build/Release-iphonesimulator/TiebaLite.build"
 release_app="$derived_data_path/Build/Products/Release-iphonesimulator/TiebaLite.app"
 release_binary="$release_app/TiebaLite"
-forbidden_pattern='/(TestSupport|Tests|UITests)/|LaunchScenario|Harness|FixtureLoader'
-symbol_pattern='TIEBALITE_TEST_SUPPORT_CANARY|app\.empty-shell|network\.offline|LaunchScenario|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation)'
+forbidden_pattern='/(TestSupport|Tests|UITests)/|/App/Debug|LaunchScenario|Harness|FixtureLoader'
+symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY)_CANARY|app\.empty-shell|network\.offline|LaunchScenario|DebugComponentGallery|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation)'
 failures=0
 file_list_count=0
 
@@ -32,6 +32,9 @@ else
     fi
     if ! rg -F '/Sources/Core/Networking/HTTPClient.swift' "$file_list" >/dev/null; then
       fail "Release source proof is missing HTTPClient.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/DesignSystem/Motion.swift' "$file_list" >/dev/null; then
+      fail "Release source proof is missing Motion.swift: $file_list"
     fi
     if rg -n "$forbidden_pattern" "$file_list" >/dev/null; then
       fail "Release source list contains test-only input: $file_list"
@@ -57,6 +60,9 @@ else
   fi
   if ! rg -F 'AppCompositionRoot' "$strings_output" >/dev/null; then
     fail "Release binary lacks the Stage 04 production-composition positive control."
+  fi
+  if ! rg -F 'AppNavigationStore' "$strings_output" >/dev/null; then
+    fail "Release binary lacks the Stage 05 navigation positive control."
   fi
 
   if nm "$release_binary" > "$symbols_output" 2>/dev/null; then
@@ -85,4 +91,4 @@ if [[ "$failures" -ne 0 ]]; then
   echo "Release test-support isolation failed: $failures check(s)." >&2
   exit 1
 fi
-echo "OK: Release source lists, bundle, strings and symbols exclude test support."
+echo "OK: Release excludes test support and the Debug component gallery."

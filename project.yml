@@ -43,6 +43,9 @@ targets:
       - path: Sources/Core
         excludes:
           - AGENTS.md
+      - path: Sources/DesignSystem
+        excludes:
+          - AGENTS.md
       - path: TestSupport/LaunchScenarios
         group: TestSupport
     settings:
@@ -58,7 +61,7 @@ targets:
         Debug:
           EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift"
         Release:
-          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift"
+          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Debug*.swift Harness*.swift LaunchScenario*.swift"
         UITesting:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG UITESTING"
 

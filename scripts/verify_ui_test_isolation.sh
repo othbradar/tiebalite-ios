@@ -31,6 +31,9 @@ while IFS= read -r file_list; do
   if rg -F '/TestSupport/FixtureLoader.swift' "$file_list" >/dev/null; then
     fail "UITesting App source list contains the unit-only fixture loader."
   fi
+  if ! rg -F '/App/DebugComponentGalleryView.swift' "$file_list" >/dev/null; then
+    fail "UITesting App source list lacks the Debug gallery positive control."
+  fi
 done < <(
   find "$intermediates/TiebaLite.build" -type f -name 'TiebaLite.SwiftFileList' -print 2>/dev/null
 )
@@ -64,6 +67,12 @@ while IFS= read -r file_list; do
   if ! rg -F '/UITests/UITestHarness.swift' "$file_list" >/dev/null; then
     fail "UI test source list lacks its typed harness."
   fi
+  if ! rg -F '/UITests/AppShellSmokeTests.swift' "$file_list" >/dev/null; then
+    fail "UI test source list lacks AppShellSmokeTests.swift."
+  fi
+  if ! rg -F '/UITests/IPadAppShellSmokeTests.swift' "$file_list" >/dev/null; then
+    fail "UI test source list lacks IPadAppShellSmokeTests.swift."
+  fi
 done < <(
   find "$intermediates/TiebaLiteUITests.build" \
     -type f -name 'TiebaLiteUITests.SwiftFileList' -print 2>/dev/null
@@ -78,9 +87,13 @@ elif ! strings -a "$app_debug_binary" \
   | rg -F 'TIEBALITE_TEST_SUPPORT_CANARY' >/dev/null; then
   fail "UITesting binary lacks the exact isolation positive control."
 fi
+if [[ -f "$app_debug_binary" ]] && ! strings -a "$app_debug_binary" \
+  | rg -F 'TIEBALITE_DEBUG_GALLERY_CANARY' >/dev/null; then
+  fail "UITesting binary lacks the Debug gallery positive control."
+fi
 
 if [[ "$failures" -ne 0 ]]; then
   echo "UI test-support isolation failed: $failures check(s)." >&2
   exit 1
 fi
-echo "OK: UITesting App, unit target and UI target have explicit test-support boundaries."
+echo "OK: UITesting App, unit target, UI target and Debug gallery boundaries are explicit."

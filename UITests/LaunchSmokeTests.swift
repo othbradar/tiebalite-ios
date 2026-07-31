@@ -44,18 +44,20 @@ final class LaunchSmokeTests: XCTestCase {
             in: app,
             expectedLabel: "invalid-scenario"
         )
-        UITestHarness.requireAbsent(.root, in: app)
+        UITestHarness.requireAbsent(.shellRoot, in: app)
     }
 
     @MainActor
     private func assertPlaceholder(for scenario: UITestLaunchScenario) {
         let app = UITestHarness.launch(scenario: scenario)
 
-        UITestHarness.requirePresent(.root, in: app)
-        UITestHarness.requirePresent(.title, in: app)
-        UITestHarness.requirePresent(.environment, in: app)
+        UITestHarness.requirePresent(.shellRoot, in: app)
+        UITestHarness.requirePresent(.shellTitle, in: app)
+        UITestHarness.requireTabPresent(.recommendations, in: app)
+        UITestHarness.requireTabPresent(.followedForums, in: app)
+        UITestHarness.requireTabPresent(.settings, in: app)
         UITestHarness.requirePresent(
-            .scenario,
+            .shellScenario,
             in: app,
             expectedLabel: scenario.safeLabel
         )
