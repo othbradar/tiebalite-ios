@@ -2,6 +2,8 @@
 DerivedData/
 .build/
 .swiftpm/
+/TiebaLite.xcodeproj/
+*.xcworkspace/
 xcuserdata/
 *.xcuserstate
 *.xccheckout

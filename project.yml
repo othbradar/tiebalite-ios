@@ -1,0 +1,103 @@
+name: TiebaLite
+
+options:
+  minimumXcodeGenVersion: 2.45.4
+  xcodeVersion: "26.6"
+  defaultConfig: Debug
+  deploymentTarget:
+    iOS: "18.0"
+  generateEmptyDirectories: true
+  groupSortPosition: top
+
+configs:
+  Debug: debug
+  Release: release
+  UITesting: debug
+
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+  UITesting: Config/UITesting.xcconfig
+
+settings:
+  base:
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "0.1.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+fileGroups:
+  - Sources
+  - Generated
+  - Resources
+  - TestSupport
+
+targets:
+  TiebaLite:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: App
+        excludes:
+          - AGENTS.md
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: TiebaLite
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        PRODUCT_BUNDLE_IDENTIFIER: "$(TIEBALITE_APP_BUNDLE_IDENTIFIER)"
+        PRODUCT_NAME: TiebaLite
+
+  TiebaLiteTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Tests
+        excludes:
+          - AGENTS.md
+    dependencies:
+      - target: TiebaLite
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: "$(TIEBALITE_APP_BUNDLE_IDENTIFIER).tests"
+
+  TiebaLiteUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: UITests
+        excludes:
+          - AGENTS.md
+    dependencies:
+      - target: TiebaLite
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: "$(TIEBALITE_APP_BUNDLE_IDENTIFIER).uitests"
+
+schemes:
+  TiebaLite:
+    build:
+      targets:
+        TiebaLite: all
+    run:
+      config: Debug
+    test:
+      config: UITesting
+      gatherCoverageData: false
+      testPlans:
+        - path: Config/TestPlans/TiebaLite.xctestplan
+          defaultPlan: true
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

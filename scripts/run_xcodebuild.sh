@@ -14,10 +14,20 @@ source scripts/project.env
 : "${CONTAINER_KIND:?}"
 : "${CONTAINER_PATH:?}"
 : "${SCHEME:?}"
+: "${TEST_PLAN:?}"
+: "${UNIT_TEST_PLAN_CONFIGURATION:?}"
+: "${UI_SMOKE_TEST_PLAN_CONFIGURATION:?}"
+: "${FULL_TEST_PLAN_CONFIGURATION:?}"
 : "${UNIT_TEST_TARGET:?}"
 : "${UI_TEST_TARGET:?}"
+: "${UI_SMOKE_TEST_IDENTIFIER:?}"
 : "${DERIVED_DATA_PATH:=.build/DerivedData}"
 : "${RESULTS_DIR:=Artifacts/TestResults}"
+
+if [[ ! -e "$CONTAINER_PATH" ]]; then
+  echo "ERROR: generated container is missing: $CONTAINER_PATH" >&2
+  exit 66
+fi
 
 case "$CONTAINER_KIND" in
   project) container_args=(-project "$CONTAINER_PATH") ;;
@@ -27,7 +37,7 @@ esac
 
 mode="${1:-}"
 if [[ -z "$mode" ]]; then
-  echo "usage: $0 build|unit|ui-smoke|tests|ipad-build" >&2
+  echo "usage: $0 build|release-build|unit|ui-smoke|tests|ipad-build" >&2
   exit 64
 fi
 
@@ -74,26 +84,32 @@ case "$mode" in
   build)
     run_build build "${common[@]}" -destination 'generic/platform=iOS Simulator' build
     ;;
+  release-build)
+    run_build release-build "${common[@]}" -configuration Release \
+      -destination 'generic/platform=iOS Simulator' build
+    ;;
   ipad-build)
     run_build ipad-build "${common[@]}" -destination "platform=iOS Simulator,id=$(ipad_udid)" build
     ;;
   unit)
     result="$RESULTS_DIR/${stamp}-unit.xcresult"
     run_build unit "${common[@]}" -destination "platform=iOS Simulator,id=$(iphone_udid)" \
-      -resultBundlePath "$result" test -only-testing:"$UNIT_TEST_TARGET"
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$UNIT_TEST_PLAN_CONFIGURATION" \
+      test -only-testing:"$UNIT_TEST_TARGET"
     ;;
   ui-smoke)
     result="$RESULTS_DIR/${stamp}-ui-smoke.xcresult"
     run_build ui-smoke "${common[@]}" -destination "platform=iOS Simulator,id=$(iphone_udid)" \
-      -resultBundlePath "$result" test -only-testing:"$UI_TEST_TARGET"
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
+      test -only-testing:"$UI_SMOKE_TEST_IDENTIFIER"
     ;;
   tests)
     result="$RESULTS_DIR/${stamp}-tests.xcresult"
-    args=("${common[@]}" -destination "platform=iOS Simulator,id=$(iphone_udid)" -resultBundlePath "$result")
-    if [[ -n "${TEST_PLAN:-}" ]]; then
-      args+=(-testPlan "$TEST_PLAN")
-    fi
-    run_build tests "${args[@]}" test
+    run_build tests "${common[@]}" -destination "platform=iOS Simulator,id=$(iphone_udid)" \
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$FULL_TEST_PLAN_CONFIGURATION" test
     ;;
   *)
     echo "ERROR: unknown mode: $mode" >&2

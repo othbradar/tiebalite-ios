@@ -1,0 +1,50 @@
+{
+  "configurations" : [
+    {
+      "id" : "3D26EC16-9A22-4583-AF9A-5A4CB2AD13CF",
+      "name" : "Unit",
+      "options" : {
+      }
+    },
+    {
+      "id" : "84972D0D-80E8-45CF-8DDB-21DC94C2CC0F",
+      "name" : "UI Smoke",
+      "options" : {
+      }
+    },
+    {
+      "id" : "D1F6FFCB-B6A2-4E99-BB40-BFDE29BBE2D5",
+      "name" : "Full",
+      "options" : {
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:TiebaLite.xcodeproj",
+      "identifier" : "36F445C372F8244704678125",
+      "name" : "TiebaLite"
+    },
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:TiebaLite.xcodeproj",
+        "identifier" : "D43ACE84783CD3019591001C",
+        "name" : "TiebaLiteTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:TiebaLite.xcodeproj",
+        "identifier" : "BB8E6E5B3ADABE1563790B15",
+        "name" : "TiebaLiteUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,18 +1,21 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor bootstrap-tools instructions reference-check generate lint forbidden secret-scan build ipad-build test-unit test-ui-smoke test-all quality-fast quality clean
+.PHONY: help doctor bootstrap-tools tool-versions instructions reference-check generate verify-generate lint forbidden secret-scan build release-build ipad-build test-unit test-ui-smoke test-all quality-fast quality clean
 
 help:
 	@printf '%s\n' \
 	  'make doctor        - check macOS/Xcode/Git/simulator/skills environment' \
 	  'make bootstrap-tools - install development tools from Brewfile' \
+	  'make tool-versions - enforce the accepted build-tool versions' \
 	  'make instructions  - validate AGENTS instruction-size chains and repo skills' \
 	  'make reference-check - verify the Android reference is clean and locked' \
 	  'make generate      - generate the Xcode project with XcodeGen' \
+	  'make verify-generate - prove two clean project generations are identical' \
 	  'make lint          - run SwiftLint' \
 	  'make forbidden     - scan prohibited interaction/state patterns' \
 	  'make build         - build for a generic iOS Simulator' \
+	  'make release-build - build Release for a generic iOS Simulator' \
 	  'make ipad-build    - build using an available iPad Simulator' \
 	  'make test-unit     - run unit tests on an available iPhone Simulator' \
 	  'make test-ui-smoke - run UI smoke tests' \
@@ -21,6 +24,10 @@ help:
 
 doctor:
 	@scripts/bootstrap_check.sh
+	@scripts/check_tool_versions.sh
+
+tool-versions:
+	@scripts/check_tool_versions.sh
 
 instructions:
 	@python3 scripts/check_instruction_size.py
@@ -31,16 +38,19 @@ reference-check:
 
 bootstrap-tools:
 	@command -v brew >/dev/null 2>&1 || { echo 'Homebrew is required for this target.' >&2; exit 1; }
-	@brew bundle
+	@brew bundle install --no-upgrade
 
-generate:
+generate: tool-versions
 	@command -v xcodegen >/dev/null 2>&1 || { echo 'xcodegen missing; run make bootstrap-tools.' >&2; exit 1; }
 	@test -f project.yml || { echo 'project.yml missing; Stage 03 has not created the project.' >&2; exit 1; }
-	@xcodegen generate
+	@xcodegen generate --spec project.yml --no-env
 
-lint:
+verify-generate: tool-versions
+	@scripts/verify_project_generation.sh
+
+lint: tool-versions
 	@command -v swiftlint >/dev/null 2>&1 || { echo 'swiftlint missing; run make bootstrap-tools.' >&2; exit 1; }
-	@swiftlint lint --strict
+	@swiftlint lint --strict --no-cache
 
 forbidden:
 	@scripts/forbidden_patterns.sh
@@ -50,6 +60,9 @@ secret-scan:
 
 build: generate
 	@scripts/run_xcodebuild.sh build
+
+release-build: generate
+	@scripts/run_xcodebuild.sh release-build
 
 ipad-build: generate
 	@scripts/run_xcodebuild.sh ipad-build
@@ -63,10 +76,10 @@ test-ui-smoke: generate
 test-all: generate
 	@scripts/run_xcodebuild.sh tests
 
-quality-fast: instructions reference-check forbidden secret-scan lint build test-unit
+quality-fast: instructions reference-check verify-generate forbidden secret-scan lint build test-unit
 	@git diff --check
 
-quality: quality-fast test-ui-smoke ipad-build
+quality: quality-fast test-ui-smoke ipad-build release-build
 	@git diff --check
 	@echo 'Quality gate completed.'
 
