@@ -84,7 +84,7 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - 关键 headers：Official Android client headers；具体最小合法集合 `UNKNOWN`。
 - 设备/版本参数：common Android params 和 legacy sign；不得复制。
 - 敏感字段：STOKEN、TBS、可能的 Cookie/device id。
-- iOS domain mapper：`ForumGuideBean → FollowedForumPage`；稳定 forum id/name；网络页逐页提交或合并策略由 repository 决定。
+- iOS domain mapper：`ForumGuideBean → FollowedForumPage`；稳定 forum id/name。Repository 可在内部逐页聚合，但对 Store 只原子返回同一 session 的完整集合，或返回带 failedPage 的失败；不得发布部分 membership。
 - Fixture 路径：`TestSupport/Fixtures/API/FollowedForums/`（`NOT_CREATED`）。
 - Fixture 获取/生成方式：必须先确认 HTTPS 等价 endpoint，再用测试账号脱敏采集；不得通过 HTTP 采集凭据。
 - 已验证行为：Android 当前 Home 的权威 call site 是 form endpoint；Proto `forumGuideNewFlow` 未发现 Home caller。

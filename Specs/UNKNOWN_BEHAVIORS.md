@@ -87,8 +87,8 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-40 | 进程死亡后恢复哪些 Tab 栈和列表 | fixture App：各 Tab push 两层、设置 filter/anchor、终止进程再启动；形成 ADR |
-| U-41 | 重选当前 Tab 的精确语义 | 产品验收比较“pop root”“scroll top”“refresh”；在阶段 02 决策 |
+| U-40 | ADR-0003 已选择的 versioned route/safe-state snapshot 在进程死亡后的真实恢复正确性 | fixture App：各 Tab push 两层、设置 filter/anchor、终止进程再启动；验证最长合法前缀与排除 media/auth/session |
+| U-41 | ADR-0003 已选择的当前 Tab 重选 no-op 在系统 Tab/VoiceOver 下是否始终无副作用 | UI test 重选 root/子页各 20 次，断言 path、anchor、请求数和可访问焦点不变 |
 | U-42 | iPad sidebar/split collapse 后 route 恢复 | iPad simulator 多宽度 UI smoke |
 | U-43 | deep link 中文吧名、短链和重定向 | 本地 URL parser fixture 优先；网络 redirect 后续独立验证 |
 | U-44 | thread anchor 在数据刷新/删除后恢复 | post id fixture：存在、移动、删除三组 |

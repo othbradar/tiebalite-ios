@@ -1,0 +1,171 @@
+# P0 Route 与容器映射
+
+状态：`APPROVED_WITH_RUNTIME_UNKNOWNS`
+
+本文件是阶段 02 的实现 route 契约；阶段 01 的 Android/产品证据仍见
+`Specs/NAVIGATION_MAP.md`。决策来源为
+`Docs/ADRs/ADR-0003-navigation-and-ipad.md`。
+
+## Canonical 模型
+
+每个 scene 只有：
+
+```text
+RootID = recommendations | followedForums
+
+RouteIdentity =
+  forum(validatedForumName)
+  | thread(threadID)
+  | subposts(threadID, postID)
+
+NavigationIntent =
+  forum(initialTabID?, sort?, classify?)
+  | thread(anchorPostID?, authorFilter?, sort?, forumContext?)
+  | subposts(targetSubpostID?, forumContext?)
+```
+
+`RouteIdentity` 参与 Hashable/path/Store key/restoration；`NavigationIntent`
+不参与 identity，也不存入 identity-only map；NavigationCommand 在
+`(sceneID,rootID,identity)` Store 创建/复用后于 MainActor 恰好一次派发
+intent。MediaViewer 和 Authentication 是 presentation，不是持久 route。
+
+Store identity 是 `(sceneID, rootID, RouteIdentity)`。同一业务对象从两个
+root 打开是两个 Store；同 root 的同一 identity 加新 intent 复用 Store。
+
+## P0 route
+
+| route/presentation | 最小 identity/input | 一次性 intent | auth | 持久化 | iPhone | iPad regular |
+|---|---|---|---|---|---|---|
+| recommendations root | RootID | 无 | public；live 匿名 UNKNOWN | root + safe list snapshot ref | Tab 内 root list | content list |
+| followedForums root | RootID | session capability | required | root；不持 membership/sessionID | Tab 内 root list/login state | content list/login state |
+| forum | 非空且通过边界校验的 forumName | initial tab/sort/classify | public；live 匿名 UNKNOWN | identity + approved safe filter | push | detail root |
+| thread | 正 Int64 threadID | anchor/filter/sort/forum context | public；live 匿名 UNKNOWN | identity + approved safe read state | push | detail root/tail |
+| subposts | 正 threadID + postID | targetSubpostID/forum context | inherit thread | identity；target 是否保留由 safe snapshot | push | detail tail |
+| MediaViewer presentation | source root/route/item + ordered descriptors + initial media ID | boundary context | inherit source | 否 | 唯一 full-screen presentation | 同一唯一 presentation |
+| Authentication presentation | attemptID + 平台容器输入 | continuation 在 coordinator | 不适用 | 否 | 受控 sheet/full-screen | 受控 presentation |
+
+forumName 只做单次 percent decode、trim、空值和本地资源上限校验；不宣称
+Unicode normalization 已确定，NFC/NFKC 与服务端等价性继续由 U-43 跟踪。
+未知服务端大小限制不猜测。数值 ID 溢出、零/负值或缺失时拒绝命令，不构造
+占位业务 ID。
+
+## 容器映射
+
+### iPhone
+
+- 两个 root 各自拥有系统 NavigationStack。
+- selectedRoot 切换只改变可见 stack。
+- 当前 Tab 重选为 no-op；不 pop、不滚顶、不 refresh。
+- 系统 back/pop 完成后再释放被移除 route Store。
+
+### iPad regular
+
+- sidebar：selectedRoot。
+- content：当前 root 的推荐/关注吧列表。
+- detail：routes 首项；routes tail 投影到 detail 内 NavigationStack。
+- 从 content 选择新 Forum/Thread 时替换当前 root detail chain。
+- detail 内 Forum → Thread → Subposts 追加 tail。
+- SplitView selection 全由 canonical routes 派生，不单独持久化。
+
+### compact/collapse
+
+同一 selectedRoot/routes 投影为 Tab + 完整 NavigationStack。容器变化不能
+修改、截断、重排 route，也不能创建第二 Store。
+
+## NavigationCommand
+
+P0 合法 chain grammar：
+
+- recommendations：`[]`、`[forum]`、`[thread]`、`[forum,thread]`、
+  `[thread,subposts]`、`[forum,thread,subposts]`；
+- followedForums：`[]`、`[forum]`、`[forum,thread]`、
+  `[forum,thread,subposts]`；
+- subposts 的 threadID 必须等于紧邻前置 thread 的 threadID；
+- 同一 chain 内禁止重复 RouteIdentity，最大深度为 3。
+
+每次 command 和 snapshot 恢复都验证上述 grammar。
+
+| command | 前置 | canonical mutation | Store 行为 |
+|---|---|---|---|
+| `selectRoot(root)` | root 已知 | 只改 selectedRoot | 两 root Store 均保留 |
+| `reselectCurrentRoot` | 已选 root | no-op | 无 Action |
+| `selectRootDetail(route,intent?)` | 从 root content | 当前 root routes=`[route]` | 复用/创建 route Store，消费 intent |
+| `push(route,intent?)` | 来源 route 可见且结果 grammar 合法 | identity 已在当前 chain 时 pop-to/reuse；否则 append | 创建/复用 Store 后恰好一次派发 intent |
+| `pop` | routes 非空 | 删除末项 | 转场完成后释放末项 Store |
+| `replaceTail(route)` | detail selection change | 替换受影响 tail | 释放旧 tail Store |
+| `presentMedia(input)` | source context/descriptor 输入通过结构校验 | 只写 presentedMedia；initial ID 缺失也允许进入稳定 unavailable | 父 Store 不变，不按 index 替代 |
+| `dismissMedia` | media active | 清 presentedMedia | 不 refresh 父 Store |
+| `presentAuthentication(attempt)` | continuation 已原子注册 | 写 ephemeral presentation | Session 不持 returnRoute |
+| `completeAuthentication` | matching attempt | 清 presentation、consume continuation | 最多显式重试原任务一次 |
+
+任何 command 的参数校验失败时 canonical state 不变，仅产生安全领域错误。
+
+## Deep Link
+
+支持的第一版输入：
+
+- `com.baidu.tieba://unidispatch/frs?kw=...`
+- `com.baidu.tieba://unidispatch/pb?tid=...`
+- `https://tieba.baidu.com/f?kw=...`
+- `https://tieba.baidu.com/p/{tid}`
+
+解析使用 scheme/host/path 白名单、单次 decode、长度/数值检查。官方 scheme
+长期稳定性、中文编码与 redirect 仍是 UNKNOWN。
+
+restoration 完成后应用 deep link：
+
+- Forum → selectedRoot=recommendations，recommendations routes=`[forum]`；
+- Thread → selectedRoot=recommendations，recommendations routes=`[thread]`；
+- followedForums routes 不变；
+- warm/cold 结果相同；
+- App 内点击不强制换 root。
+
+不跟随未批准 redirect，不把 URL/query 写日志。
+
+## 状态恢复 DTO
+
+```text
+NavigationSnapshotV1 {
+  version
+  selectedRoot
+  routeIdentitiesByRoot
+  safeRootStateByRoot?
+  safeRouteStateByRootAndRouteIdentity?
+}
+```
+
+可保存：route identity、已批准的非敏感 filter/read anchor。不得保存：Store、
+opaque NavigationPath、sessionID/token、auth attempt/continuation、
+MediaViewer/descriptor/URL、loading/error/task。
+
+恢复步骤：
+
+1. 未知 version 时丢弃整份 snapshot，回 recommendations root，不按 V1
+   猜测。
+2. 已知 version 内验证 selectedRoot；无合法 root 时回 recommendations。
+3. 每 root 从首项开始验证上述 route grammar、ID 约束与重复 identity。
+4. 在首个非法 identity 截断，保留最长合法前缀。
+5. root safe state 必须匹配 root/version，route safe state 必须匹配
+   `(rootID, RouteIdentity)`/version；不匹配时只丢对应 safe state。
+6. 完成恢复后再原子应用 pending deep link。
+
+## Session 变化
+
+- expired 不删除公开 Forum/Thread route。
+- followedForums 立即隐藏旧 membership，绑定旧 lease 的写入失效。
+- expired 的 interactive 新登录先 durable cleanup 到 signedOut，再创建 attempt。
+- auth continuation 只在进程内；重启后取消，不猜 route。
+- 登出保留公开 route；受保护 Store 转为 signedOut/sessionExpired state。
+
+## 验收
+
+- 两 root 独立压入不同链并切换 20 次。
+- 同 root 同 thread 的不同 anchor 不产生重复 route/Store。
+- regular/compact 往返后 canonical routes 完全相同。
+- cold/warm deep link 相同，另一 root 不变。
+- snapshot 坏版本丢弃整份；已知版本内坏 ID/非法 grammar 恢复最长合法前缀。
+- media/login 活跃时进程退出只恢复父 route。
+- iPhone/iPad 系统 back 可用，无自定义全局返回手势。
+
+上述容器、恢复和 deep-link 验收在工程建立前均为 `NOT_TESTED`；U-40、
+U-42、U-43 保持开放到对应 deterministic/UI 证据完成。

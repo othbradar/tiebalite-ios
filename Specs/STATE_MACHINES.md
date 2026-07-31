@@ -1,6 +1,6 @@
 # P0 状态机
 
-状态：`READY_FOR_PHASE_02_INPUT_WITH_UNKNOWNS`
+状态：`APPROVED_FOR_PHASE_03_SCAFFOLD_WITH_UNKNOWNS`
 
 本文件定义 iOS 可测试的领域状态。Android reducer 是 `CODE_EVIDENCE`，但其中缺少的错误、取消和过期响应状态由根规则补齐，不复制 Android 的 Toast-only 或布尔堆叠实现。
 
@@ -41,6 +41,30 @@ loaded / empty
 8. 空首屏与失败首屏不同；空下一页只在 endpoint 契约证明 terminal 时结束。
 9. session 变化不会隐式销毁公开内容。
 10. 状态 transition 必须可用纯 fixture 测试，不依赖时间延迟。
+
+### Effect 执行与取消协议
+
+Feature Store 依照 ADR-0002，以同步 reducer 产生 effect descriptor。每个异步
+结果必须携带：
+
+```text
+EffectIdentity =
+  featureInstanceID + effectKind + generation + requestID
+  + cursor/page? + ProtectedDataLease?
+```
+
+| 事件 | 必须取消 | 仍保留 | Event 提交条件 |
+|---|---|---|---|
+| 新 initial/refresh | 同 timeline 旧 initial/refresh/page | 其他 tab/timeline | generation/requestID 匹配 |
+| sort/filter/classify 改变 | 当前 timeline 全部旧 effect | 其他 tab state/effect | 新 filter snapshot + generation 匹配 |
+| loadNext retry | 同 cursor 的旧 attempt | previous content | generation/cursor/new requestID 匹配 |
+| route pop/deactivate | 该 route-owned effect | root/其他 route | route identity 仍 active |
+| Tab 切换 | 默认不取消 | 两 root Store/effect | 原 identity 仍有效 |
+| session generation 撤销 | 所有旧 protected effect | public effect | lease 仍有效且 sessionID 匹配 |
+
+Task cancellation 是资源回收，不是提交正确性的唯一保障；reducer/repository
+写入前仍需复核 identity/lease。`CancellationError` 不转成可见错误。禁止以
+deinit、固定延迟或 View `onAppear` 无防重请求代替生命周期。
 
 ## 推荐流
 
@@ -233,22 +257,31 @@ MediaViewerState =
   | boundaryFailure(items, direction, cursor, error)
   | closing(returnContext)
 
-PerMediaTransform = identity | zoomed(scale, translation)
+MediaPageCapability =
+  (atMinimumZoom, horizontalBoundary: none | leading | trailing | both)
 ```
 
 事件：
 
 - `present(source, initialMediaID)`：按 media id 定位；找不到时显示 unavailable，不把旧 index 指向其他图。
-- `page(direction)`：当前页未缩放或横向 pan 已到边界时才交给 pager。
-- `pinch/doubleTap/pan`：只更新当前 media transform；换页后每页状态策略固定为重置 identity。
+- `page(direction)`：手势开始时依据当前 `MediaPageCapability` 固定 owner；
+  同一手势到达边界不半途交给 pager，下一次朝外拖才可翻页。
+- `pinch/doubleTap/pan`：精确 zoomScale/contentOffset 只由当前 MediaID 的
+  UIScrollView coordinator 持有；Store 只接收离散 capability，不保存第二份
+  transform。
 - `singleTap`：切换 chrome；不关闭。
 - `loadItem/retryItem`：占位尺寸与黑底保持。
 - `reachBoundary`：一次只发一个 prev/next request；失败提供重试。
 - `close`：恢复来源 route/anchor，不刷新父列表。
-- size/rotation change：重新约束 transform，不泄漏到相邻 media。
+- 翻页完成后才重置离场页；取消/反向不重置当前页；页面按 MediaID 复用前
+  强制 reset。
+- size/rotation change：coordinator clamp 当前 transform，不泄漏到相邻
+  media。
 - 进程恢复：不恢复 MediaViewer overlay；只恢复父 route。当前进程内的完整 `MediaDescriptor` 才是可呈现输入，单独 pic id 不足以重建 URL 和边界加载上下文。
 
-`UNKNOWN`：Android 第三方手势范围不作为 iOS 输入；iOS 最终参数和 UIKit/SwiftUI 归属需阶段 02/ADR。
+`UNKNOWN`：Android 第三方手势范围不作为 iOS 输入。UIScrollView
+coordinator/Pager 的所有权已由 ADR-0005 选择，但阈值、公开 API 仲裁和资源
+上界仍需阶段 06 spike，ADR 当前为 Proposed。
 
 ## Session
 
@@ -274,13 +307,12 @@ SessionState =
   | signedIn(sessionID, accountSummary)
   | refreshing(sessionID, previous)
   | expired(sessionID, reason, recoverable)
-  | preparingCleanup(cleanupAttemptID, scopes, destination, fallback, completionAttemptID?)
-  | signingOut(sessionID?, cleanupAttemptID, ledgerID, pendingScopes, destination, completionAttemptID?)
-  | failed(operationID?, phase, error, recoverable, fallback, validationSource?, retryContextRef?, conservativeCleanupScope, cleanupDestination?, pendingCleanupLedgerID?, pendingCommitJournalID?)
+  | preparingCleanup(cleanupOperationID, requestID, scopes, destination, fallback, completionAttemptID?)
+  | signingOut(sessionID?, cleanupOperationID, requestID, ledgerID, pendingScopes, destination, completionAttemptID?)
+  | failed(operationID?, phase, error, recoverable, fallback, validationSource?, retryContextRef?, completionAttemptID?, conservativeCleanupScope, cleanupDestination?, pendingCleanupLedgerID?, pendingCommitJournalID?)
 
 AuthenticationOrigin =
   signedOut
-  | expired(sessionID, reason, recoverable)
 
 ValidationSource = newLogin | restoredCredential
 CleanupDestination = signedOut | AuthenticationOrigin
@@ -298,6 +330,12 @@ ConservativeCleanupDescriptor =
 CommitJournal =
   (journalID, operationID, phase, conservativeCleanupDescriptor,
    recoveryDestination, idempotencyVersion)
+
+CleanupLedger =
+  (ledgerID, cleanupOperationID, scopes, destination, idempotencyVersion)
+
+ProtectedDataLease =
+  (sessionID, generation)
 ```
 
 这是 `Specs/03_ARCHITECTURE_CONTRACT.md` 中
@@ -312,7 +350,9 @@ cleanup-preparation 类型只关联 scopes/destination/fallback，日志和 Feat
 app-owned namespace/operation tag 与非敏感 destination，不含 handle、token
 或账户值；下表省略时 scope 默认 `none`、destination 默认 `nil`。
 `failed.validationSource` 仅保存 `newLogin/restoredCredential` 非敏感来源，在
-validation/commit 失败中必须存在，其他 phase 为 nil。
+validation/commit 失败中必须存在，其他 phase 为 nil。cleanup phase 的
+`failed.operationID` 始终是稳定的 `cleanupOperationID`，不能拿可空的
+`completionAttemptID` 代替；后者只关联进程内认证 completion。
 scope 集合定义为：
 
 - `temporaryAuthArtifacts(op)`：仅本次认证临时 handle/metadata。
@@ -326,16 +366,17 @@ scope 集合定义为：
 |---|---|---|
 | `appStarted(noCredential,noPendingJournal)` | restoring | signedOut |
 | `appStarted(restoredHandle,noOrphanArtifacts)` | restoring | validating(startup attempt, handle, signedOut, restoredCredential)；不创建导航 continuation |
-| `appStarted(orphanTemporaryAuthArtifacts,noCommittedCredential)` | restoring | preparingCleanup(detected operation-tagged temporary/candidate scope, destination: signedOut, fallback: signedOut, completionAttemptID: nil) |
-| `appStarted(orphanTemporaryAuthArtifacts,committedCredentialPresent)` | restoring | preparingCleanup(allAppOwnedProtectedData, destination: signedOut, fallback: signedOut, completionAttemptID: nil)；不能清 staging 后绕过既有凭据 |
-| `appStarted(pendingCleanupLedger)` | restoring | signingOut(restored ledgerID/scopes/destination, completionAttemptID: nil；不重新猜范围) |
+| `appStarted(orphanTemporaryAuthArtifacts,noCommittedCredential)` | restoring | preparingCleanup(new cleanupOperationID, new requestID, detected operation-tagged temporary/candidate scope, destination: signedOut, fallback: signedOut, completionAttemptID: nil) |
+| `appStarted(orphanTemporaryAuthArtifacts,committedCredentialPresent)` | restoring | preparingCleanup(new cleanupOperationID, new requestID, allAppOwnedProtectedData, destination: signedOut, fallback: signedOut, completionAttemptID: nil)；不能清 staging 后绕过既有凭据 |
+| `appStarted(pendingCleanupLedger)` | restoring | signingOut(restored cleanupOperationID, new requestID, restored ledgerID/scopes/destination, completionAttemptID: nil；不重新猜范围) |
 | `appStarted(pendingCommitJournal)` | restoring | rollingBackCommit(restored journalID/descriptor/recoveryDestination, completionAttemptID: nil) |
 | `credentialRestoreFailure` | restoring | failed(phase: credentialRestore, fallback: signedOut, conservativeCleanupScope: allAppOwnedProtectedData, cleanupDestination: signedOut)；fail closed |
 | `cleanupLedgerRestoreFailure` | restoring | failed(phase: cleanupLedgerRestore, fallback: signedOut, conservativeCleanupScope: allAppOwnedProtectedData, cleanupDestination: signedOut)；禁止 dismiss |
 | `commitJournalRestoreFailure` | restoring | failed(phase: commitJournalRestore, fallback: signedOut, conservativeCleanupScope: allAppOwnedProtectedData, cleanupDestination: signedOut)；禁止 dismiss |
 | `retryRestore` | failed(credentialRestore/cleanupLedgerRestore/commitJournalRestore) | restoring |
-| `beginConservativeCleanup` | failed(credentialRestore/cleanupLedgerRestore/commitJournalRestore, conservative descriptor) | preparingCleanup(exact conservative scope/destination, fallback: signedOut, completionAttemptID: nil)；replacement ledger durable 前不删除旧 journal/ledger |
-| `startLogin` | signedOut/expired | authenticating(new attemptID, origin: current stable state)；attemptID 同步交给导航 coordinator |
+| `beginConservativeCleanup` | failed(credentialRestore/cleanupLedgerRestore/commitJournalRestore, conservative descriptor) | preparingCleanup(new cleanupOperationID, new requestID, exact conservative scope/destination, fallback: signedOut, completionAttemptID: nil)；replacement ledger durable 前不删除旧 journal/ledger |
+| `startLogin` | clean signedOut | authenticating(new attemptID, origin: signedOut)；attemptID 同步交给导航 coordinator |
+| `requestReauthentication(cleanupOperationID)` | matching expired 且无 cleanup 在途 | preparingCleanup(same cleanupOperationID, new requestID, allAppOwnedProtectedData, destination: signedOut, fallback: exact expired, completionAttemptID: nil)；进入状态并撤销 protected lease 后才返回 accepted receipt |
 | `retryAuthentication` | failed(authentication, no pending cleanup) | authenticating(new attemptID, origin: fallback) |
 | `authenticationCompleted(handle)` | matching authenticating | validating(same attemptID, handle, same origin, newLogin) |
 | `authenticationCancelled` | authenticating | exact origin |
@@ -345,37 +386,37 @@ scope 集合定义为：
 | `commitJournalPersisted` | preparingCommit | committing(same context + journalID)；journal durable 后才允许第一笔 Keychain/session/cache 写 |
 | `commitJournalPersistenceFailure` | preparingCommit | failed(phase: commitPreparation, fallback: origin, validationSource: source, retryContextRef, exact conservative descriptor, no journal)；确认零 commit 写入 |
 | `retryCommitPreparation` | failed(commitPreparation, retryContextRef) | preparingCommit(same source-aware descriptor) |
-| `dismissCommitPreparationFailure` | failed(commitPreparation, validationSource, retryContextRef or conservative descriptor) | preparingCleanup(exact descriptor, completionAttemptID: operationID only for newLogin; nil for restoredCredential) |
+| `dismissCommitPreparationFailure` | failed(commitPreparation, validationSource, retryContextRef or conservative descriptor) | preparingCleanup(new cleanupOperationID, new requestID, exact descriptor, completionAttemptID: operationID only for newLogin; nil for restoredCredential) |
 | `sessionCommitSuccessAndJournalRemoved` | matching committing | signedIn(new sessionID)；释放 validation context；仅 newLogin 向导航发布 attemptID，restoredCredential 不发布导航事件 |
 | `sessionCommitFailure(rollbackComplete,journalRemoved)` | committing | failed(phase: commit, fallback: origin, validationSource: source, retryContextRef, exact source-aware descriptor) |
 | `sessionCommitFailure(rollbackIncomplete)` | committing | rollingBackCommit(same journalID/descriptor/recoveryDestination, completionAttemptID: attemptID only for newLogin; nil for restoredCredential) |
 | `sessionCommitFinalizeFailure` | committing | rollingBackCommit(same journalID/descriptor/recoveryDestination, completionAttemptID: attemptID only for newLogin; nil for restoredCredential) |
 | `commitRollbackSuccessAndJournalRemoved` | rollingBackCommit | exact recovery destination；若 completionAttemptID 非空则发布 authentication failure |
-| `commitRollbackFailure` | rollingBackCommit | failed(operationID: completionAttemptID, phase: commitRecovery, exact conservative descriptor, pendingCommitJournalID)；fail closed |
+| `commitRollbackFailure` | rollingBackCommit | failed(operationID: journal.operationID, phase: commitRecovery, completionAttemptID, exact conservative descriptor, pendingCommitJournalID)；fail closed |
 | `retryCommitRecovery` | failed(commitRecovery, pendingCommitJournalID) | rollingBackCommit(same durable journal, same completionAttemptID) |
 | `validationFailure(recoverable,newLogin)` | validating | failed(phase: validation, fallback: origin, validationSource: newLogin, retryContextRef, conservativeCleanupScope: temporaryAuthArtifacts(attemptID), cleanupDestination: origin) |
 | `validationFailure(recoverable,restoredCredential)` | validating | failed(phase: validation, fallback: signedOut, validationSource: restoredCredential, retryContextRef, conservativeCleanupScope: allAppOwnedProtectedData, cleanupDestination: signedOut) |
 | `retryValidation(contextResolved,newLogin)` | failed(validation/commit, validationSource: newLogin, retryContextRef, no cleanup/commit journal) | 先解析 handle/origin/source 并创建 new attemptID，再原子迁移 continuation；只有迁移成功后才进入 validating |
 | `retryValidation(contextResolved,restoredCredential)` | failed(validation/commit, validationSource: restoredCredential, retryContextRef, no cleanup/commit journal) | 解析 handle/origin/source 后创建内部 new attemptID 并进入 validating；restored 流不期待、创建或迁移导航 continuation |
-| `retryValidation(contextMissing,newLogin)` | failed(validation/commit, validationSource: newLogin, conservative descriptor) | 不创建 new attemptID、不迁移 key；以旧 operationID 为 completionAttemptID 进入 preparingCleanup |
-| `retryValidation(contextMissing,restoredCredential)` | failed(validation/commit, validationSource: restoredCredential, conservative descriptor) | 不创建 new attemptID、不迁移 key；以 nil completionAttemptID 进入 preparingCleanup |
-| `validationFailure(invalidCredential,newLogin)` | validating | preparingCleanup(temporaryAuthArtifacts(attemptID), destination: origin, fallback: origin, completionAttemptID: attemptID) |
-| `validationFailure(invalidCredential,restoredCredential)` | validating | preparingCleanup(allAppOwnedProtectedData, destination: signedOut, fallback: signedOut, completionAttemptID: nil)，并发布 expired 原因 |
+| `retryValidation(contextMissing,newLogin)` | failed(validation/commit, validationSource: newLogin, conservative descriptor) | 不创建 new attemptID、不迁移 key；创建 cleanupOperationID/requestID，以旧 operationID 为 completionAttemptID 进入 preparingCleanup |
+| `retryValidation(contextMissing,restoredCredential)` | failed(validation/commit, validationSource: restoredCredential, conservative descriptor) | 不创建 new attemptID、不迁移 key；创建 cleanupOperationID/requestID，以 nil completionAttemptID 进入 preparingCleanup |
+| `validationFailure(invalidCredential,newLogin)` | validating | preparingCleanup(new cleanupOperationID, new requestID, temporaryAuthArtifacts(attemptID), destination: origin, fallback: origin, completionAttemptID: attemptID) |
+| `validationFailure(invalidCredential,restoredCredential)` | validating | preparingCleanup(new cleanupOperationID, new requestID, allAppOwnedProtectedData, destination: signedOut, fallback: signedOut, completionAttemptID: nil)，并发布 expired 原因 |
 | `dismissFailure` | failed(authentication, no pending cleanup) | exact fallback |
-| `dismissValidationFailure` | failed(validation/commit, validationSource, retryContextRef or conservative scope) | preparingCleanup(conservative scope, destination: fallback, fallback: fallback, completionAttemptID: operationID only for newLogin; nil for restoredCredential) |
+| `dismissValidationFailure` | failed(validation/commit, validationSource, retryContextRef or conservative scope) | preparingCleanup(new cleanupOperationID, new requestID, conservative scope, destination: fallback, fallback: fallback, completionAttemptID: operationID only for newLogin; nil for restoredCredential) |
 | `refreshStarted` | signedIn | refreshing(previous) |
 | `refreshSuccess` | refreshing | signedIn |
 | `refreshFailure(recoverable)` | refreshing | signedIn(previous) 并发布安全错误事件 |
-| `refreshFailure(expired)` | refreshing | expired；取消受保护请求 |
-| `serverExpired` | signedIn/refreshing | expired；取消受保护请求 |
-| `signOut` | signedIn/expired | preparingCleanup(all app-owned protected scopes, destination: signedOut, fallback: exact source, completionAttemptID: nil)；立即 suspend Feature 能力并取消受保护请求 |
-| `cleanupLedgerPersisted` | preparingCleanup | signingOut(ledgerID, exact scopes/destination/completionAttemptID)；Feature 能力保持撤销 |
-| `cleanupLedgerPersistenceFailure` | preparingCleanup | failed(operationID: completionAttemptID, phase: cleanupPreparation, fallback: exact fallback, retryContextRef, conservativeCleanupScope: exact scopes, cleanupDestination: exact destination, no ledger)；确认零删除后方可恢复 fallback 能力 |
-| `retryCleanupPreparation` | failed(cleanupPreparation, retryContextRef, no ledger) | 优先由 ref 恢复 exact scopes/destination/fallback；ref 损坏时使用独立 conservative descriptor，再次进入 preparingCleanup |
-| `dismissCleanupPreparationFailure` | failed(cleanupPreparation, retryContextRef, no ledger) | 仅当原事件是用户 signOut、零删除已确认且 fallback 的原 session artifacts 完整时回 exact signedIn/expired；其他 scope fail closed、只能 retry |
-| `cleanupSuccessAndLedgerRemoved` | signingOut | exact destination |
-| `cleanupFailure` | signingOut | failed(operationID: completionAttemptID, phase: cleanup, fallback: destination, conservativeCleanupScope: pending scopes, cleanupDestination: destination, pendingCleanupLedgerID)；不得恢复 signedIn |
-| `retryCleanup` | failed(cleanup, pendingCleanupLedgerID) | signingOut(same durable ledger, new attempt, same completionAttemptID) |
+| `refreshFailure(expired,sourceSessionID)` | refreshing(matching sessionID) | 原子递增 generation/撤销 lease 后进入 expired；取消受保护请求 |
+| `serverExpired(sourceSessionID)` | signedIn/refreshing 且 sourceSessionID 匹配 | 原子递增 generation/撤销 lease 后进入 expired；取消受保护请求 |
+| `signOut` | signedIn/expired | preparingCleanup(new cleanupOperationID, new requestID, all app-owned protected scopes, destination: signedOut, fallback: exact source, completionAttemptID: nil)；先原子撤销 lease，再 suspend Feature 能力并取消受保护请求 |
+| `cleanupLedgerPersisted(cleanupOperationID,requestID,ledgerID)` | matching preparingCleanup | signingOut(same cleanupOperationID, new deletion requestID, ledgerID, exact scopes/destination/completionAttemptID)；Feature 能力保持撤销 |
+| `cleanupLedgerPersistenceFailure(cleanupOperationID,requestID)` | matching preparingCleanup | failed(operationID: cleanupOperationID, phase: cleanupPreparation, fallback: exact fallback, retryContextRef, completionAttemptID, conservativeCleanupScope: exact scopes, cleanupDestination: exact destination, no ledger)；确认零删除后方可恢复 fallback 能力 |
+| `retryCleanupPreparation` | failed(cleanupPreparation, operationID: cleanupOperationID, retryContextRef, no ledger) | 保留同一 cleanupOperationID，创建新 requestID；优先由 ref 恢复 exact scopes/destination/fallback，ref 损坏时使用独立 conservative descriptor，再次进入 preparingCleanup |
+| `dismissCleanupPreparationFailure` | failed(cleanupPreparation, operationID: cleanupOperationID, retryContextRef, no ledger) | 仅当原事件是用户 signOut、零删除已确认且 fallback 的原 session artifacts 完整时回 exact signedIn/expired；递增到从未发放过的新 generation，signedIn 才签发新 lease，expired 保持 capability 撤销；旧 lease 永不重新激活。其他 scope fail closed、只能 retry |
+| `cleanupSuccessAndLedgerRemoved(cleanupOperationID,requestID)` | matching signingOut | exact destination；发布脱敏 cleanup completion，若进程内存在 matching reauthentication launch request，则到 signedOut 后才创建全新 authentication attempt |
+| `cleanupFailure(cleanupOperationID,requestID)` | matching signingOut | failed(operationID: cleanupOperationID, phase: cleanup, fallback: destination, completionAttemptID, conservativeCleanupScope: pending scopes, cleanupDestination: destination, pendingCleanupLedgerID)；不得恢复 signedIn |
+| `retryCleanup` | failed(cleanup, operationID: cleanupOperationID, pendingCleanupLedgerID) | signingOut(same cleanupOperationID, new requestID, same durable ledger, same completionAttemptID) |
 
 认证 continuation 生命周期由导航 coordinator 独占：
 
@@ -406,25 +447,61 @@ scope 集合定义为：
 | process restart | 内存 continuation 全部取消；可恢复 cleanup ledger/commit journal，但不得在新进程猜测或自动重试旧业务任务 |
 | 任意 terminal event 找不到 key | 记录脱敏 diagnostics；不猜 route、不重试业务 |
 
+expired 重新认证的“清理后启动”使用另一张进程内表
+`pendingAuthenticationLaunchAfterCleanupByCleanupOperationID`：
+
+- 在发送 `requestReauthentication` 前原子创建稳定 cleanupOperationID 和
+  对应 key；创建失败不开始 cleanup。Session 只在 matching expired 且没有
+  cleanup 在途时采用同一个 ID，并返回不可含糊的 accepted/rejected receipt。
+- 发送失败或 rejected receipt 时，导航 coordinator 只删除 matching
+  cleanupOperationID 的预注册 key；accepted 后即使调用 task 收到取消，也
+  保留 key 贯穿 preparation/deletion retry，直到 matching terminal event。
+- cleanup/retry 期间保留 key；cleanup 成功到 signedOut 后消费 key，再按
+  `startLogin` 的正常规则创建全新 attemptID/continuation。
+- cleanup 失败或 ledger 恢复期间不得提前打开登录容器。
+- 进程重启会丢弃 key；durable ledger 仍完成清理并停在 signedOut，不自动
+  弹出浏览器，也不猜旧业务 continuation。
+
 不变量：
 
 - attemptID/sessionID 不匹配的回调和 response 被丢弃。
+- interactive newLogin 只能从 clean signedOut 开始；expired 必须先完成
+  `allAppOwnedProtectedData` durable cleanup。因而 newLogin commit journal
+  只描述 candidate artifacts，不承担旧 session 替换。
 - 同一 authentication completion 最多建立一个 session；领域事件不依赖 WebView、系统浏览器或其他平台登录容器。
 - new-login credential handle 在 commit 前只能位于按 operationID 标记的 staging namespace，不能作为 active restored credential；进程重启发现 orphan staging artifact 时先写 cleanup ledger 并清理。
 - 远端验证成功不直接发布 `signedIn`；在第一笔 Keychain/session/cache commit 写之前，必须原子持久化不含 secret 的 CommitJournal。Keychain write、当前 session 发布、受保护 cache 绑定在 `committing` 中完成可回滚提交。
 - CommitJournal 只含 operation tag、phase、source-aware conservative descriptor、安全 recovery destination 和幂等版本；不含 credential handle/value。只有 `sessionCommitSuccessAndJournalRemoved` 或 `commitRollbackSuccessAndJournalRemoved` 才能清 journal。
 - 进程在 commit 任意写入点退出时，下次启动先按 journal 进入 `rollingBackCommit`；rollback-incomplete/finalize failure 继续使用原 journal，不能在 replacement ledger 持久化前丢失 partial-artifact 记录。
 - 登出必须清 Keychain 凭据、app-owned session、受保护 cache 和本次认证产生的临时数据；WebKit/系统浏览器数据的可清范围由登录 ADR 与 U-37 决定，不能假装全部可控。
-- 进入 `preparingCleanup` 时先 suspend Session capability、递增受保护请求 generation 并取消在途写，再计算 scope 和写 ledger；此窗口不允许新 credential/cache 写。只有 ledger 写失败且确认零删除后，才可按 fallback 恢复 capability。
-- 每次进入 `signingOut` 前，必须先原子持久化不含 secret 的 cleanup ledger（ledgerID、scope 类型、幂等版本和安全归一化 destination）；只有 `cleanupSuccessAndLedgerRemoved` 才清 ledger。进程在 signingOut 任意点退出，下次启动先恢复同一 ledger，不能留下未跟踪的 crash window。
+- 进入 `preparingCleanup` 时先 suspend Session capability、原子递增受保护
+  generation/撤销全部旧 `ProtectedDataLease` 并取消在途写，再计算 scope 和
+  写 ledger；此窗口不允许新 credential/cache 写。Repository/cache 的每次
+  protected write 在提交前复核 lease，取消竞态后的晚到结果只能丢弃。只有
+  ledger 写失败且确认零删除后，才可按 fallback 恢复 capability；恢复时
+  必须递增为从未发放过的新 generation，旧 lease 永不重新激活。
+- `cleanupOperationID` 从首次进入 cleanup 到 preparation retry、durable
+  deletion retry 和 terminal event 始终不变；每次异步尝试另建 requestID，
+  旧 requestID 回调全部丢弃。
+- 每次进入 `signingOut` 前，必须先原子持久化不含 secret 的 CleanupLedger
+  （ledgerID、cleanupOperationID、scope 类型、幂等版本和安全归一化
+  destination）；只有 matching `cleanupSuccessAndLedgerRemoved` 才清
+  ledger。进程在 signingOut 任意点退出，下次启动恢复同一 operation ID 和
+  ledger、创建新 requestID，不能留下未跟踪的 crash window。
 - cleanup 失败时 durable ledger 保持存在且 Feature 能力保持撤销；若 ledger 首次持久化失败，则删除尚未开始并回到明确 failure/fallback，不得声称已退出。
 - cleanup-preparation failure 不能把仍含临时/失效 credential 的状态降格为 clean `signedOut`；只有用户 signOut 前的完整 signedIn/expired source 可在“零删除”证明后恢复。
 - recoverable refresh failure 保留同一 session 的 previous summary；只有已分类为 expired/invalid credential 的结果才能迁移到 `expired`。
+- session invalidation signal 必须携带发出请求时的 sessionID；旧 session 的
+  401/业务失败不能 expire 当前新 session。真实 error code 未经 fixture/
+  RUNTIME_EVIDENCE 不得映射为 expired。
 - retryContextRef 缺失/损坏时禁止猜 credential、origin、source、scope 或 destination；`failed.validationSource` 与独立保存的 conservative cleanup descriptor 只允许决定 completion 是否存在及保守清理，不能重建 credential。descriptor 缺失本身是 fail-closed restore error，不得 dismiss 为 clean signedOut。
 - cleanup-ledger restore failure 与普通 credential restore failure是不同事件；两者都只能 retry restore 或先写 replacement ledger 后执行 conservative cleanup，不能直接 dismiss 绕过遗留数据。
 - 启动恢复优先级固定为：可读 cleanup ledger → 可读 commit journal → orphan staging cleanup → committed credential validation → signedOut。发现 orphan staging 与 committed credential 并存时，必须先以 `allAppOwnedProtectedData` 写 ledger 并保守清理到 signedOut，不能只清 staging 后遗留 active credential/cache；任何 journal 读取/解码失败都 fail closed，不得跳到后续分支。
 - 日志、state description、测试附件只持 credential handle，不持凭据值。
 - 公开 Forum/Thread 状态不因退出被销毁。
+- internal SessionState 不直接作为 SwiftUI `@Observable` state；UI 只接收
+  不含 handle/ref/journal/ledger 的 `SessionViewSnapshot(capability,
+  publicAccountSummary?, revision)`，revision 单调递增。
 
 `UNKNOWN`：登录方式、token rotation、真实 expired taxonomy；在确认前 session adapter 必须 fixture-first。
 
@@ -433,22 +510,34 @@ scope 集合定义为：
 ```text
 AppNavigationState {
   selectedRoot
-  pathByRoot
-  storeByRouteIdentity
+  routesByRoot
   presentedMedia?
+  presentedAuthentication?
   pendingDeepLink?
   pendingAuthenticationContinuationByAttemptID
+  pendingAuthenticationLaunchAfterCleanupByCleanupOperationID
+  restorationRevision
 }
 ```
 
 - Tab 切换只改 `selectedRoot`。
-- route 由 stable ID/name Hashable 表示，不放生成 Proto。
+- 当前 Tab 重选为 no-op，不 pop、不滚顶、不 refresh。
+- route identity 只含 stable ID/name；anchor/filter/sort/target 是一次性
+  NavigationIntent，不参与 Hashable/Store key，也不放生成 Proto。
+  NavigationCommand 在 `(sceneID,rootID,identity)` Store 创建/复用后于
+  MainActor 恰好一次派发 intent，不把它存入仅按 identity 键控的 map。
 - deep link 先解析/校验；Forum/Thread 外部链接确定性进入 `recommendationsRoot`，cold/warm 相同。App 内 push 保持来源 root。
-- Store identity 是 `(rootID, routeIdentity)`，同一业务 ID 在不同 root 的状态互不覆盖。
-- size class 改变只改变容器呈现，不重置路径。
+- Store identity 是 `(sceneID, rootID, routeIdentity)`，同一业务 ID 在不同
+  scene/root 的状态互不覆盖。
+- size class 改变只改变同一 routes 的容器投影，不写回第二份 SplitView
+  selection。
 - 认证 continuation 只由导航 coordinator 按 attemptID 持有，SessionState 不持 returnRoute；创建、保留、原子迁移和 consume 时机严格使用上表。缺 key 或 process restart 时不得猜 route 或自动重试业务请求。
-- session route 是受控 sheet/push；成功后回到原 route 并显式重试原受保护任务。
-- 进程恢复的精确持久化集合仍是 `UNKNOWN`，但至少 route identity 与非敏感 filter/read anchor 可编码。
+- authentication 是受控、进程内、不可恢复 presentation；成功后回到原
+  route 并最多显式重试原受保护任务一次。
+- versioned restoration 只保存 selectedRoot、route identity 与已批准的
+  非敏感 filter/read anchor；Store、opaque NavigationPath、sessionID、
+  auth continuation、MediaViewer/descriptor、loading/error/task 均不保存。
+  运行恢复正确性仍由 U-40/U-42 保持 `UNKNOWN/NOT_TESTED`。
 
 ## 错误分类
 
@@ -482,4 +571,14 @@ AppNavigationState {
 - malformed mapper；
 - route 返回/Tab 切换/size change 状态保持。
 
-Media 另覆盖 transform/pager 仲裁、item/boundary failure、旋转；Session 另覆盖无/有效/失效 restored handle、orphan staging、pending cleanup/commit journal 启动恢复、重复 completion、旧 attempt、continuation 迁移/缺失、认证/验证/refresh failure、commit journal 写入前后及每个 Keychain/session/cache midpoint crash、rollback 完整/不完整、cleanup-ledger 写入 crash window、Keychain/cleanup failure 与 cleanup retry。
+Media 另覆盖 zoom coordinator 单一几何真相、gesture owner、取消/完成 reset、
+pager 仲裁、item/boundary failure、旋转；Session 另覆盖无/有效/失效
+restored handle、orphan staging、pending cleanup/commit journal 启动恢复、
+重复 completion、旧 attempt、continuation 迁移/缺失、expired 先
+cleanup→signedOut 再创建新 attempt、旧 session invalidation、lease 撤销后
+晚到 cache write、认证/验证/refresh failure、commit journal 写入前后及每个
+Keychain/session/cache midpoint crash、rollback 完整/不完整、cleanup-ledger
+写入 crash window、cleanupOperationID 跨 preparation/deletion retry 稳定且
+requestID 更新、重复/竞态 reauthentication 的 accepted/rejected receipt
+不会遗留 launch key、safe dismiss 不复活旧 lease、Keychain/cleanup
+failure 与 cleanup retry。

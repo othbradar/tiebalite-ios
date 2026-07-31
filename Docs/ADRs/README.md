@@ -1,11 +1,18 @@
 # Architecture Decision Records
 
-从 `Specs/10_DECISION_LOG_TEMPLATE.md` 复制创建。编号递增，例如：
+从 `Specs/10_DECISION_LOG_TEMPLATE.md` 复制创建。阶段 02 已建立：
 
-- `ADR-0001-project-generation.md`
-- `ADR-0002-navigation-and-ipad.md`
-- `ADR-0003-pager.md`
-- `ADR-0004-media-viewer.md`
-- `ADR-0005-session-login.md`
+| ADR | 状态 |
+|---|---|
+| `ADR-0001-project-generation.md` | Accepted |
+| `ADR-0002-feature-state-and-dependency-injection.md` | Accepted |
+| `ADR-0003-navigation-and-ipad.md` | Accepted |
+| `ADR-0004-pager-container.md` | Proposed，等待阶段 06 spike |
+| `ADR-0005-media-viewer.md` | Proposed，等待阶段 06 spike |
+| `ADR-0006-networking-and-protobuf.md` | Accepted，live endpoint 仍受 evidence gate |
+| `ADR-0007-session-and-login.md` | Proposed，当前仅 fixture-only |
+| `ADR-0008-cache-and-images.md` | Accepted，disk/decoded cache 仍需证据 |
+| `ADR-0009-testing-and-launch-scenarios.md` | Accepted |
+| `ADR-0010-observability-and-privacy.md` | Accepted |
 
 Accepted ADR 是实现约束；变更必须新建 superseding ADR，不能静默改历史。

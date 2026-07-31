@@ -14,7 +14,7 @@
 
 | 功能 | Android 证据与数据源 | 登录 | iOS 验收流程 | 状态 |
 |---|---|---:|---|---|
-| App Shell / 主 Tab | `MainPage.kt::MainPage`；home/explore/notification/user；单 root NavHost | 产品无认证要求 | P0 两个 root（推荐/关注吧）各自独立 push 两层，切换往返仍保留栈、列表与滚动；重选语义须在阶段 02 决策后再固化测试；iPhone/iPad 宽度切换不丢 route | `CODE_EVIDENCE` + `INFERENCE` |
+| App Shell / 主 Tab | `MainPage.kt::MainPage`；home/explore/notification/user；单 root NavHost | 产品无认证要求 | P0 两个 root（推荐/关注吧）各自独立 push 两层，切换往返仍保留栈、列表与滚动；当前 root 重选按 ADR-0003 固定为 no-op；iPhone/iPad 只投影同一 canonical routes，宽度切换不丢 route | `CODE_EVIDENCE` + 阶段 02 决策 |
 | 深链基础 | `MainActivityV2.kt::checkIntent` 把 forumName/threadId 映射到 Forum/Thread | 产品公开；endpoint 认证另见目标页面 | 仅凭稳定 ID/name 从冷启动打开吧/帖子；坏参数安全拒绝；不依赖预载 Proto；cold/warm 均进入 recommendations root | `CODE_EVIDENCE` + `INFERENCE` |
 | 推荐流 | `PersonalizedPage/ViewModel` → `PersonalizedRepository` → Personalized Proto | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | fixture 启动：成功、空、失败；刷新保留旧内容；分页去重且保序；尾部失败可重试；同页互斥；旧响应不能覆盖新请求 | `CODE_EVIDENCE`; auth/终止 `UNKNOWN` |
 | 关注的吧 | `HomeViewModel` → `allForumGuideFlow` → `ForumGuideBean` | 产品要求登录 | 未登录显示明确登录入口；按 session 原子聚合多页；后续页失败/重试可测；刷新保留同 session 旧列表；账号切换立即隐藏旧 membership；点击进入正确 forumName | `CODE_EVIDENCE`; HTTPS/失效码 `UNKNOWN` |
@@ -73,6 +73,6 @@ P1 是已有范围的库存，不等于 endpoint 接入批准。用户资料、�
 2. 关注吧：未登录 → 显式登录 scenario → 原子聚合多页 → 制造后续页失败/重试 → 进入吧 → 返回 → 账号切换不显示旧列表 → 模拟过期 → 重新认证或退出。
 3. FRS：以 forumName 打开 → latest/good/动态 tab → 改排序 → 触底 → 重复页 → 失败重试 → 返回保留 tab/滚动。
 4. PB：以 threadId 打开 → 首楼/回复/楼中楼 → 锚定 pid → 前后页 → 图片查看 → 关闭返回 → 删除/缺作者/未知节点 fixture 不崩溃。
-5. Session：认证/验证成功与失败、newLogin 与 restoredCredential 分别重试（restored 不创建导航 continuation）、commit-journal 各写入 midpoint crash/回滚、orphan staging 单独存在及与 committed credential 并存、取消、重复回调、refresh 可恢复失败、过期、cleanup-ledger 写入失败、退出 cleanup 失败/重试、无/有效/失效 credential 与 pending cleanup/commit journal 的重启恢复；任何日志和附件不含 Cookie/token。
+5. Session：认证/验证成功与失败、newLogin 与 restoredCredential 分别重试（restored 不创建导航 continuation）、expired 先撤销 lease 并 durable cleanup 到 signedOut 后才创建新登录 attempt、commit-journal 各写入 midpoint crash/回滚、orphan staging 单独存在及与 committed credential 并存、取消、重复回调、旧 session 失效信号和晚到 protected write、refresh 可恢复失败、过期、cleanup-ledger 写入失败、退出 cleanup 失败/重试、无/有效/失效 credential 与 pending cleanup/commit journal 的重启恢复；任何日志和附件不含 Cookie/token。
 
 状态机细节见 `Specs/STATE_MACHINES.md`；尚不能执行的真实网络条件见 `Specs/UNKNOWN_BEHAVIORS.md`。
