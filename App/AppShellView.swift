@@ -62,6 +62,10 @@ private struct IPhoneAppShellView: View {
             NavigationStack(path: settingsPathBinding) {
                 SettingsPlaceholderView {
                     navigation.openSettingsRoute(.componentGallery)
+                } openInteractionLab: {
+#if DEBUG
+                    navigation.openSettingsRoute(.interactionLab)
+#endif
                 }
                 .navigationDestination(for: SettingsRoute.self) { route in
                     SettingsRouteDestinationView(route: route)
@@ -212,6 +216,10 @@ private struct IPadAppShellView: View {
             NavigationStack {
                 SettingsPlaceholderView {
                     navigation.openSettingsRoute(.componentGallery)
+                } openInteractionLab: {
+#if DEBUG
+                    navigation.openSettingsRoute(.interactionLab)
+#endif
                 }
             }
         }
@@ -305,6 +313,10 @@ private struct SettingsRouteDestinationView: View {
                 message: "阶段 05 仅提供静态占位。",
                 systemImage: "gearshape"
             )
+#endif
+#if DEBUG
+        case .interactionLab:
+            DebugInteractionLabView()
 #endif
         }
     }

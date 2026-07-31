@@ -34,6 +34,12 @@ while IFS= read -r file_list; do
   if ! rg -F '/App/DebugComponentGalleryView.swift' "$file_list" >/dev/null; then
     fail "UITesting App source list lacks the Debug gallery positive control."
   fi
+  if ! rg -F '/App/DebugInteractionLabView.swift' "$file_list" >/dev/null; then
+    fail "UITesting App source list lacks the Debug interaction lab."
+  fi
+  if ! rg -F '/Sources/InteractionKit/InteractionLab/DebugPagerContainer.swift' "$file_list" >/dev/null; then
+    fail "UITesting App source list lacks the isolated Pager spike."
+  fi
 done < <(
   find "$intermediates/TiebaLite.build" -type f -name 'TiebaLite.SwiftFileList' -print 2>/dev/null
 )
@@ -73,6 +79,12 @@ while IFS= read -r file_list; do
   if ! rg -F '/UITests/IPadAppShellSmokeTests.swift' "$file_list" >/dev/null; then
     fail "UI test source list lacks IPadAppShellSmokeTests.swift."
   fi
+  if ! rg -F '/UITests/InteractionLabTests.swift' "$file_list" >/dev/null; then
+    fail "UI test source list lacks InteractionLabTests.swift."
+  fi
+  if ! rg -F '/UITests/IPadInteractionLabTests.swift' "$file_list" >/dev/null; then
+    fail "UI test source list lacks IPadInteractionLabTests.swift."
+  fi
 done < <(
   find "$intermediates/TiebaLiteUITests.build" \
     -type f -name 'TiebaLiteUITests.SwiftFileList' -print 2>/dev/null
@@ -89,11 +101,15 @@ elif ! strings -a "$app_debug_binary" \
 fi
 if [[ -f "$app_debug_binary" ]] && ! strings -a "$app_debug_binary" \
   | rg -F 'TIEBALITE_DEBUG_GALLERY_CANARY' >/dev/null; then
-  fail "UITesting binary lacks the Debug gallery positive control."
+    fail "UITesting binary lacks the Debug gallery positive control."
+fi
+if [[ -f "$app_debug_binary" ]] && ! strings -a "$app_debug_binary" \
+  | rg -F 'TIEBALITE_INTERACTION_LAB_CANARY' >/dev/null; then
+    fail "UITesting binary lacks the interaction lab positive control."
 fi
 
 if [[ "$failures" -ne 0 ]]; then
   echo "UI test-support isolation failed: $failures check(s)." >&2
   exit 1
 fi
-echo "OK: UITesting App, unit target, UI target and Debug gallery boundaries are explicit."
+echo "OK: UITesting App, unit target, UI target, Debug gallery and interaction-lab boundaries are explicit."

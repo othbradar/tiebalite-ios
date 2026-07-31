@@ -63,6 +63,55 @@ enum UITestElementID: String, CaseIterable {
     case galleryDynamicType = "design-system.gallery.dynamic-type"
     case galleryReduceMotion = "design-system.gallery.reduce-motion"
     case galleryRoot = "design-system.gallery"
+    case interactionCandidate = "interaction.lab.candidate"
+    case interactionCurrentPage = "interaction.pager.current-id"
+    case interactionLabTitle = "interaction.lab.title"
+    case interactionMediaChrome = "interaction.media.chrome"
+    case interactionMediaClose = "interaction.media.close"
+    case interactionMediaCurrent = "interaction.media.current-id"
+    case interactionMediaAccessibilityNext =
+        "interaction.media.accessibility.next"
+    case interactionMediaAccessibilityPrevious =
+        "interaction.media.accessibility.previous"
+    case interactionMediaFailure = "interaction.media.error.failure"
+    case interactionMediaLoading = "interaction.media.loading.delayed"
+    case interactionMediaOpenMultiple = "interaction.media.open.multiple"
+    case interactionMediaOpenSingle = "interaction.media.open.single"
+    case interactionMediaOverlayState = "interaction.media.overlay-state"
+    case interactionMediaReleaseDelayed =
+        "interaction.media.release-delayed"
+    case interactionMediaRetryFailure = "interaction.media.retry.failure"
+    case interactionMediaSource = "interaction.media.source-anchor"
+    case interactionMediaViewer = "interaction.media.viewer"
+    case interactionMediaZoom = "interaction.media.zoom-state"
+    case interactionPagerArmDelete =
+        "interaction.pager.action.arm-delete"
+    case interactionPagerArmInsert =
+        "interaction.pager.action.arm-insert"
+    case interactionPagerArmRefresh =
+        "interaction.pager.action.arm-refresh"
+    case interactionPagerArmReorder =
+        "interaction.pager.action.arm-reorder"
+    case interactionPagerAccessibilityNext =
+        "interaction.pager.accessibility.next"
+    case interactionPagerAccessibilityPrevious =
+        "interaction.pager.accessibility.previous"
+    case interactionPagerCompletion =
+        "interaction.pager.completion-count"
+    case interactionPagerControllerCount =
+        "interaction.pager.controller-count"
+    case interactionPagerPageP1 = "interaction.pager.page.p1"
+    case interactionPagerPageP2 = "interaction.pager.page.p2"
+    case interactionPagerPageP3 = "interaction.pager.page.p3"
+    case interactionPagerPosition = "interaction.pager.position"
+    case interactionPagerRefresh = "interaction.pager.refresh-state"
+    case interactionPagerReset = "interaction.pager.action.reset"
+    case interactionPagerTransition =
+        "interaction.pager.transition-state"
+    case interactionPagerViewportHeight =
+        "interaction.pager.viewport-height"
+    case interactionSectionMedia = "interaction.lab.section.media"
+    case interactionSectionPager = "interaction.lab.section.pager"
     case invalidScenario = "app.launch-scenario.invalid"
     case layoutControlCompact = "app.harness.layout.compact"
     case layoutControlRegular = "app.harness.layout.regular"
@@ -82,6 +131,7 @@ enum UITestElementID: String, CaseIterable {
     case tabFollowedForums = "app.tab.followed-forums"
     case tabRecommendations = "app.tab.recommendations"
     case tabSettings = "app.tab.settings"
+    case debugOpenInteractionLab = "app.debug.open-interaction-lab"
 }
 
 enum UITestHarness {
@@ -167,6 +217,105 @@ enum UITestHarness {
         }
     }
 
+    @MainActor
+    static func waitUntilAbsent(
+        _ identifier: UITestElementID,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = app.descendants(matching: .any)[identifier.rawValue]
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(
+            predicate: predicate,
+            object: element
+        )
+        guard XCTWaiter.wait(for: [expectation], timeout: 5) == .completed else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Fixture element did not disappear: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+    }
+
+    @MainActor
+    static func requireLabel(
+        _ identifier: UITestElementID,
+        equals expectedLabel: String,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = app.descendants(matching: .any)[identifier.rawValue]
+        guard element.waitForExistence(timeout: 5) else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Missing fixture label: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        let predicate = NSPredicate(format: "label == %@", expectedLabel)
+        let expectation = XCTNSPredicateExpectation(
+            predicate: predicate,
+            object: element
+        )
+        guard XCTWaiter.wait(for: [expectation], timeout: 5) == .completed else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Unexpected fixture label: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+    }
+
+    @MainActor
+    static func requireLabelNotEqual(
+        _ identifier: UITestElementID,
+        to rejectedLabel: String,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let element = app.descendants(matching: .any)[identifier.rawValue]
+        guard element.waitForExistence(timeout: 5) else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Missing fixture label: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        let predicate = NSPredicate(
+            format: "label != %@",
+            rejectedLabel
+        )
+        let expectation = XCTNSPredicateExpectation(
+            predicate: predicate,
+            object: element
+        )
+        guard XCTWaiter.wait(for: [expectation], timeout: 5) == .completed else {
+            attachSafeFailureEvidence(app: app, expected: identifier)
+            XCTFail(
+                "Fixture label did not change: \(identifier.rawValue)",
+                file: file,
+                line: line
+            )
+            return
+        }
+    }
+}
+
+extension UITestHarness {
     @MainActor
     static func tap(
         _ identifier: UITestElementID,
@@ -339,6 +488,14 @@ enum UITestHarness {
         XCTContext.runActivity(named: "Attach safe visual evidence") {
             $0.add(screenshot)
         }
+    }
+
+    @MainActor
+    static func element(
+        _ identifier: UITestElementID,
+        in app: XCUIApplication
+    ) -> XCUIElement {
+        app.descendants(matching: .any)[identifier.rawValue]
     }
 
     @MainActor

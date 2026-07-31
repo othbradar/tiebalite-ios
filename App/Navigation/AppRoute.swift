@@ -134,6 +134,9 @@ enum RouteIdentity: Codable, Hashable, Sendable {
 
 enum SettingsRoute: Codable, Hashable, Sendable {
     case componentGallery
+#if DEBUG
+    case interactionLab
+#endif
 }
 
 enum NavigationCommand: Equatable, Sendable {

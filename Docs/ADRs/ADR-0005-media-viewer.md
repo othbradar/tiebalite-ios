@@ -1,6 +1,6 @@
 # ADR-0005：唯一 MediaViewer
 
-- 状态：Proposed
+- 状态：Proposed（阶段 06 Spike Partial，仅 Debug）
 - 日期：2026-07-31
 - 决策者：阶段 02 候选决策，待阶段 06 spike
 - 关联阶段：02、06、09
@@ -73,7 +73,7 @@ contentOffset、contentSize 和手势状态。领域 Media Store 只持：
 
 ### 手势仲裁
 
-- gesture begin 时固定 owner。
+- 目标契约是在 gesture begin 时固定 owner。
 - minimum zoom：Pager 可拥有明确水平拖动。
 - zoomed 且不在水平边界：UIScrollView 独占整个 gesture。
 - 同一 gesture 到达边界时不移交。
@@ -118,6 +118,36 @@ Pager/cache/转场并违反依赖门禁。B 仍需 spike，不能直接成为生
   增长；关闭后 weak/deinit probe 证明释放。
 - VoiceOver 页数、关闭、Accessibility Escape 正确；Reduce Motion 不改变
   功能。
+
+## 阶段 06 运行结论
+
+阶段 06 只验证 B 的 Debug 实验，没有批准生产 MediaViewer：
+
+- 每个本地 fixture MediaID 使用独立 `UIScrollView` coordinator；精确
+  zoom/offset 不进入 SwiftUI Store。单击 recognizer 显式等待双击失败，
+  没有延迟判定。
+- 离散 `MediaPageCapability` 与 `MediaGestureSession` 状态模型可在手势
+  begin 固定 owner；单元测试覆盖 minimum zoom、zoomed interior、已有
+  边界的下一次手势、垂直/模糊意图、完成/取消后的逐 ID zoom reset。
+  但该 session 尚未接入运行时 recognizer begin；Debug viewer 目前按最新
+  capability 动态切换 Pager，不能作为“同一触摸不移交”的实现证据。
+- 成功翻页后当前实现只把父层 capability/zoom 文本设回 minimum；相同
+  MediaID 的缓存 `DebugZoomScrollView` 不会收到 reset identity/token，
+  所以返回旧页时真实 zoom 可能仍保留。现有 UI 路径先主动 zoom-out 再
+  离场，不能证明离场 reset 或逐 ID zoom 隔离。
+- XCUITest 覆盖单图/多图、延迟图、失败/重试、双击、pinch、zoom 后禁止
+  翻页、主动恢复 minimum zoom 后翻页、chrome 和关闭清理。Computer Use
+  通过明确可访问按钮验证上一张/下一张、延迟态与关闭后
+  `Overlay: absent`，但无法可靠注入 pinch/pan。
+- 旋转后的精确 zoom clamp、真实 iPad split resize、运行时 fixed-owner
+  接线及同一触摸到达边界后的 handoff、真实离场 zoom reset、
+  Accessibility Escape/真实 VoiceOver、100 张
+  full-resolution lease 上界尚未完成手工运行。因此状态为
+  `SPIKE_PARTIAL`；所有实现继续位于 Debug InteractionLab 并被 Release
+  排除，不能接业务 Feature。
+
+回滚方案保持为单图加显式前后按钮；补齐矩阵前不得创建生产
+`Features/MediaViewer`、第二套 Pager 或新图片/手势依赖。
 
 ## 迁移/退出成本
 

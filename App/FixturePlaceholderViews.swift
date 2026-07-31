@@ -36,9 +36,14 @@ struct FixtureRootPlaceholderView: View {
 @MainActor
 struct SettingsPlaceholderView: View {
     let openDebugGallery: () -> Void
+    let openInteractionLab: () -> Void
 
-    init(openDebugGallery: @escaping () -> Void = {}) {
+    init(
+        openDebugGallery: @escaping () -> Void = {},
+        openInteractionLab: @escaping () -> Void = {}
+    ) {
         self.openDebugGallery = openDebugGallery
+        self.openInteractionLab = openInteractionLab
     }
 
     var body: some View {
@@ -56,7 +61,10 @@ struct SettingsPlaceholderView: View {
                 )
 
 #if DEBUG
-                DebugScenarioMenuView(openGallery: openDebugGallery)
+                DebugScenarioMenuView(
+                    openGallery: openDebugGallery,
+                    openInteractionLab: openInteractionLab
+                )
 #endif
             }
             .frame(maxWidth: .infinity)

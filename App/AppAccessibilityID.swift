@@ -1,5 +1,6 @@
 enum AppAccessibilityID {
     static let debugOpenGallery = "app.debug.open-component-gallery"
+    static let debugOpenInteractionLab = "app.debug.open-interaction-lab"
     static let followedForumsRoot = "app.root.followed-forums"
     static let galleryAppearance = "design-system.gallery.appearance"
     static let galleryDynamicType = "design-system.gallery.dynamic-type"

@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor bootstrap-tools tool-versions instructions reference-check generate verify-generate lint forbidden static-canaries secret-scan build release-build release-isolation ipad-build test-unit test-ui-smoke test-ui-smoke-ipad ui-test-isolation test-all quality-fast quality clean
+.PHONY: help doctor bootstrap-tools tool-versions instructions reference-check generate verify-generate lint forbidden static-canaries secret-scan build release-build release-isolation ipad-build test-unit test-ui-smoke test-ui-smoke-ipad test-ui-interaction test-ui-interaction-ipad ui-test-isolation test-all quality-fast quality clean
 
 help:
 	@printf '%s\n' \
@@ -22,6 +22,8 @@ help:
 	  'make test-unit     - run unit tests on an available iPhone Simulator' \
 	  'make test-ui-smoke - run iPhone UI smoke tests' \
 	  'make test-ui-smoke-ipad - run the iPad App Shell smoke test' \
+	  'make test-ui-interaction - run the iPhone interaction lab matrix' \
+	  'make test-ui-interaction-ipad - run the iPad interaction lab matrix' \
 	  'make ui-test-isolation - prove test-support target boundaries' \
 	  'make quality-fast  - lint/static/build/unit' \
 	  'make quality       - fast gate + UI/iPad + test-support isolation'
@@ -86,6 +88,12 @@ test-ui-smoke: generate
 test-ui-smoke-ipad: generate
 	@scripts/run_xcodebuild.sh ui-smoke-ipad
 
+test-ui-interaction: generate
+	@scripts/run_xcodebuild.sh ui-interaction
+
+test-ui-interaction-ipad: generate
+	@scripts/run_xcodebuild.sh ui-interaction-ipad
+
 ui-test-isolation: test-unit test-ui-smoke
 	@scripts/verify_ui_test_isolation.sh
 
@@ -95,7 +103,7 @@ test-all: generate
 quality-fast: instructions reference-check verify-generate forbidden static-canaries secret-scan lint build test-unit
 	@git diff --check
 
-quality: quality-fast ui-test-isolation ipad-build test-ui-smoke-ipad release-isolation
+quality: quality-fast ui-test-isolation test-ui-interaction ipad-build test-ui-smoke-ipad test-ui-interaction-ipad release-isolation
 	@git diff --check
 	@echo 'Quality gate completed.'
 

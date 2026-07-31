@@ -15,8 +15,11 @@ emit() {
   if [[ ${#roots[@]} -eq 0 ]]; then
     echo '(no App/Sources directories)'
   else
-    rg -n --glob '*.swift' --glob '!Generated/**' --glob '!References/**' \
-      "$pattern" "${roots[@]}" 2>/dev/null || echo '(none)'
+    if ! rg -n --glob '*.swift' --glob '!Generated/**' \
+      --glob '!References/**' "$pattern" "${roots[@]}" 2>/dev/null \
+      | LC_ALL=C sort -t: -k1,1 -k2,2n; then
+      echo '(none)'
+    fi
   fi
 }
 
@@ -26,7 +29,7 @@ run_inventory() {
   echo "Repository: $repo"
   echo "Commit: $(git rev-parse HEAD 2>/dev/null || echo UNKNOWN)"
   emit 'Animations and transitions' '\.animation\s*\(|withAnimation\s*\(|\.transition\s*\(|matchedGeometryEffect|UIView(PropertyAnimator|\.animate)|CATransaction'
-  emit 'Gestures' 'DragGesture\s*\(|MagnificationGesture\s*\(|MagnifyGesture\s*\(|TapGesture\s*\(|LongPressGesture\s*\(|\.gesture\s*\(|simultaneousGesture|highPriorityGesture|UIGestureRecognizer'
+  emit 'Gestures' 'DragGesture\s*\(|MagnificationGesture\s*\(|MagnifyGesture\s*\(|TapGesture\s*\(|LongPressGesture\s*\(|\.gesture\s*\(|simultaneousGesture|highPriorityGesture|UIGestureRecognizer|UI(Tap|Pan|Pinch|LongPress|Swipe|Rotation|ScreenEdgePan)GestureRecognizer'
   emit 'Presentation and overlays' '\.overlay\s*\(|\.background\s*\(|\.sheet\s*\(|fullScreenCover\s*\(|popover\s*\(|safeAreaInset\s*\(|ignoresSafeArea\s*\(|\.zIndex\s*\('
   emit 'Scrolling and paging' 'ScrollView\s*\(|List\s*\{|scrollPosition\s*\(|scrollTargetBehavior|TabView\s*\(|UIPageViewController|UICollectionView|UIScrollView'
   emit 'Navigation' 'NavigationStack|NavigationSplitView|NavigationPath|navigationDestination|dismiss\s*\(|presentationMode'

@@ -1,6 +1,6 @@
 # ADR-0004：唯一 PagerContainer
 
-- 状态：Proposed
+- 状态：Proposed（阶段 06 Spike Partial，仅 Debug）
 - 日期：2026-07-31
 - 决策者：阶段 02 候选决策，待阶段 06 spike
 - 关联阶段：02、06
@@ -82,6 +82,41 @@ SwiftUI 候选不能因代码少直接胜出；UIKit 候选也不能凭经验假
 - loading/error 页参与滑动时 frame 和背景稳定。
 - VoiceOver 可报告当前页/总页数并执行可访问分页动作。
 - 测试不用 `sleep()`；使用 transition token、delegate probe 和 expectation。
+
+## 阶段 06 运行结论
+
+阶段 06 比较了 A/B，但没有批准生产实现：
+
+- A 的 Debug `TabView(.page)` 候选只在 selection 已提交后才能触发数据
+  变更，公开 API 不能给出转场 begin/cancel token、冻结参与页或取消回调。
+  统一 fixture 的运行证据记录在
+  `Artifacts/TestResults/20260731-170157-44937-ui-interaction.xcresult`；
+  候选源码随后完整删除。
+- B 的 `UIPageViewController` 候选能以 delegate 区分完成/取消，并通过
+  稳定 PageID、pending order、单调 token、有界 hosting-controller
+  cache 和显式 dismantle 实现契约。它只保留在
+  `Sources/InteractionKit/InteractionLab/Debug*.swift`，Release
+  SwiftFileList 明确排除。
+- 自动化覆盖逐次等待完成的 20 次交替翻页、短距离慢拖取消尝试、状态机
+  取消、转场中插入/删除/重排、refresh Bool/final-idle 探针、系统边缘
+  返回、旋转、Reduce Motion、100 页有界缓存及 teardown；没有把顺序
+  翻页写成快速 burst，也没有把短拖或 Bool 探针写成完整的半程取消/
+  反向或真实刷新保留内容矩阵。
+  人工检查另外发现并修复了横屏 Lab 单列布局把 Pager 压缩为近空视口的
+  问题；回归以实测 viewport height 验证。
+- 只读复审发现两个仍未关闭的 coordinator 风险：延迟 selection commit
+  仅检查绑定值不同，缺少同步代次/expected-source，可能覆盖同一 turn
+  内较新的外部 selection；横竖屏用条件分支在 `HStack`/`VStack` 之间
+  搬动 representable，viewport 回归不能证明同一 coordinator 与相邻页
+  生命周期连续。这两项均没有自动化运行证据，因此 B 不能晋升生产。
+- Computer Use 无法向 Simulator 注入可靠的触摸拖拽，也未能操作真实
+  iPad split-view divider；本机也只有 iOS 26.5 runtime。因此手工矩阵未
+  完整，整体判定为 `SPIKE_PARTIAL`，不能命名或迁移为生产
+  `PagerContainer`，后续 Feature 禁止复制。
+
+若后续补齐 stale-commit、旋转 lifecycle、真实触摸、VoiceOver 和 split
+resize 后 B 仍失败，回滚到显式前后按钮/Tab 的非交互降级；不得恢复 A
+的提交后钩子或引入私有手势关系。
 
 ## 迁移/退出成本
 

@@ -12,8 +12,8 @@ derived_data_path="${DERIVED_DATA_PATH:-.build/DerivedData}"
 release_intermediates="$derived_data_path/Build/Intermediates.noindex/TiebaLite.build/Release-iphonesimulator/TiebaLite.build"
 release_app="$derived_data_path/Build/Products/Release-iphonesimulator/TiebaLite.app"
 release_binary="$release_app/TiebaLite"
-forbidden_pattern='/(TestSupport|Tests|UITests)/|/App/Debug|LaunchScenario|Harness|FixtureLoader'
-symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY)_CANARY|app\.empty-shell|network\.offline|LaunchScenario|DebugComponentGallery|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation)'
+forbidden_pattern='/(TestSupport|Tests|UITests)/|/App/Debug|/Sources/InteractionKit/InteractionLab/|LaunchScenario|Harness|FixtureLoader'
+symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY|INTERACTION_LAB)_CANARY|app\.empty-shell|network\.offline|LaunchScenario|Debug(ComponentGallery|InteractionLab|SwiftUITabPager|ZoomImage)|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation)'
 failures=0
 file_list_count=0
 
@@ -91,4 +91,4 @@ if [[ "$failures" -ne 0 ]]; then
   echo "Release test-support isolation failed: $failures check(s)." >&2
   exit 1
 fi
-echo "OK: Release excludes test support and the Debug component gallery."
+echo "OK: Release excludes test support, the Debug gallery and the interaction lab."

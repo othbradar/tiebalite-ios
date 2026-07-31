@@ -23,6 +23,8 @@ source scripts/project.env
 : "${UI_SMOKE_TEST_IDENTIFIER:?}"
 : "${UI_SHELL_SMOKE_TEST_IDENTIFIER:?}"
 : "${IPAD_UI_SMOKE_TEST_IDENTIFIER:?}"
+: "${INTERACTION_UI_TEST_IDENTIFIER:?}"
+: "${IPAD_INTERACTION_UI_TEST_IDENTIFIER:?}"
 : "${DERIVED_DATA_PATH:=.build/DerivedData}"
 : "${RESULTS_DIR:=Artifacts/TestResults}"
 
@@ -55,7 +57,7 @@ esac
 
 mode="${1:-}"
 if [[ -z "$mode" ]]; then
-  echo "usage: $0 build|release-build|unit|ui-smoke|ui-smoke-ipad|tests|ipad-build" >&2
+  echo "usage: $0 build|release-build|unit|ui-smoke|ui-smoke-ipad|ui-interaction|ui-interaction-ipad|tests|ipad-build" >&2
   exit 64
 fi
 
@@ -193,6 +195,26 @@ case "$mode" in
       -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
       test -only-testing:"$IPAD_UI_SMOKE_TEST_IDENTIFIER"
     ;;
+  ui-interaction)
+    interaction_iphone_udid="$(iphone_udid)"
+    reset_project_ui_test_install "$interaction_iphone_udid"
+    result="$RESULTS_DIR/${stamp}-ui-interaction.xcresult"
+    run_build ui-interaction "${common[@]}" \
+      -destination "platform=iOS Simulator,id=$interaction_iphone_udid" \
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$FULL_TEST_PLAN_CONFIGURATION" \
+      test -only-testing:"$INTERACTION_UI_TEST_IDENTIFIER"
+    ;;
+  ui-interaction-ipad)
+    interaction_ipad_udid="$(ipad_udid)"
+    reset_project_ui_test_install "$interaction_ipad_udid"
+    result="$RESULTS_DIR/${stamp}-ui-interaction-ipad.xcresult"
+    run_build ui-interaction-ipad "${common[@]}" \
+      -destination "platform=iOS Simulator,id=$interaction_ipad_udid" \
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$FULL_TEST_PLAN_CONFIGURATION" \
+      test -only-testing:"$IPAD_INTERACTION_UI_TEST_IDENTIFIER"
+    ;;
   tests)
     tests_iphone_udid="$(iphone_udid)"
     reset_project_ui_test_install "$tests_iphone_udid"
@@ -201,7 +223,9 @@ case "$mode" in
       -destination "platform=iOS Simulator,id=$tests_iphone_udid" \
       -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
       -only-test-configuration "$FULL_TEST_PLAN_CONFIGURATION" \
-      test -skip-testing:"$IPAD_UI_SMOKE_TEST_IDENTIFIER"
+      test \
+      -skip-testing:"$IPAD_UI_SMOKE_TEST_IDENTIFIER" \
+      -skip-testing:"$IPAD_INTERACTION_UI_TEST_IDENTIFIER"
     ;;
   *)
     echo "ERROR: unknown mode: $mode" >&2
