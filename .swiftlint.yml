@@ -1,0 +1,92 @@
+excluded:
+  - Generated
+  - References
+  - .build
+  - DerivedData
+  - Artifacts
+
+opt_in_rules:
+  - array_init
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - empty_count
+  - empty_string
+  - explicit_init
+  - fallthrough
+  - first_where
+  - force_unwrapping
+  - identical_operands
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - literal_expression_end_indentation
+  - lower_acl_than_parent
+  - modifier_order
+  - overridden_super_call
+  - prefer_self_type_over_type_of_self
+  - redundant_nil_coalescing
+  - sorted_imports
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+  - vertical_parameter_alignment_on_call
+
+analyzer_rules:
+  - unused_declaration
+  - unused_import
+
+force_cast: error
+force_try: error
+force_unwrapping:
+  severity: error
+implicitly_unwrapped_optional:
+  severity: warning
+
+line_length:
+  warning: 140
+  error: 180
+  ignores_comments: true
+  ignores_urls: true
+
+file_length:
+  warning: 600
+  error: 900
+
+type_body_length:
+  warning: 350
+  error: 500
+
+function_body_length:
+  warning: 80
+  error: 130
+
+cyclomatic_complexity:
+  warning: 12
+  error: 20
+
+identifier_name:
+  min_length:
+    warning: 2
+  excluded:
+    - id
+    - x
+    - y
+    - i
+
+custom_rules:
+  no_random_view_identity:
+    included: "^(App|Sources)/.*\\.swift$"
+    regex: "\\.id\\(\\s*UUID\\(\\)\\s*\\)"
+    message: "Never use .id(UUID()) to force a SwiftUI refresh; fix state or identity ownership."
+    severity: error
+  no_timing_patch:
+    included: "^(App|Sources)/.*\\.swift$"
+    regex: "DispatchQueue\\.main\\.asyncAfter"
+    message: "Do not use asyncAfter as a state/layout/animation repair."
+    severity: error
+  no_screen_bounds_layout:
+    included: "^(App|Sources)/.*\\.swift$"
+    regex: "UIScreen\\.main\\.bounds"
+    message: "Use container geometry and size classes, not global screen bounds."
+    severity: error

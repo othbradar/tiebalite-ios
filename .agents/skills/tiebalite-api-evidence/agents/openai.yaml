@@ -1,0 +1,6 @@
+interface:
+  display_name: "Tieba API Evidence"
+  short_description: "Trace endpoints and protobuf without guessing"
+  default_prompt: "Trace the requested Tieba endpoint or protobuf field to source evidence, sanitized fixtures, request/mapper contracts, and tests."
+policy:
+  allow_implicit_invocation: true
