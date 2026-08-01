@@ -1,61 +1,6 @@
 import SwiftUI
 import UIKit
 
-enum ThreadContentImagePhase: Equatable, Sendable {
-    case failure
-    case loaded(ImagePayload)
-    case loading
-
-    var accessibilityValue: String {
-        switch self {
-        case .failure:
-            "加载失败"
-        case .loaded:
-            "已加载"
-        case .loading:
-            "正在加载"
-        }
-    }
-}
-
-enum ThreadContentImageLoad {
-    static func resolve(
-        _ request: ThreadImageRequestDescriptor,
-        using imageLoader: any ImageLoading
-    ) async throws -> ThreadContentImagePhase {
-        guard request.isLoadable else {
-            return .failure
-        }
-        do {
-            let payload = try await imageLoader.load(
-                ImageRequest(resourceID: request.resourceID)
-            )
-            try Task.checkCancellation()
-            return .loaded(payload)
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            return .failure
-        }
-    }
-}
-
-enum ThreadContentImagePresentation {
-    static let minimumLayoutAspectRatio = 0.5
-    static let maximumLayoutAspectRatio = 3.0
-
-    static func layoutAspectRatio(
-        dimensions: ThreadMediaDimensions,
-        phase: ThreadContentImagePhase
-    ) -> Double {
-        _ = phase
-        return min(
-            maximumLayoutAspectRatio,
-            max(minimumLayoutAspectRatio, dimensions.layoutAspectRatio)
-        )
-    }
-}
-
 private enum ThreadContentLayout {
     static let minimumInteractiveDimension: CGFloat = 44
 }
@@ -217,20 +162,25 @@ private struct ThreadContentImageView: View {
     let imageLoader: any ImageLoading
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
-    @State private var phase = ThreadContentImagePhase.loading
+    @State private var requestGeneration: UInt64 = 0
+    @State private var renderState = ThreadContentImageRenderState.idle
 
     var body: some View {
         Group {
-            if let mediaIntent {
+            if let availableIntent = currentRenderState.mediaIntent(
+                from: mediaIntent
+            ) {
                 Button {
-                    onOpenMedia(mediaIntent)
+                    onOpenMedia(availableIntent)
                 } label: {
                     stableImageFrame
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(content.alternativeText)
-                .accessibilityHint("生成媒体浏览意图")
-                .accessibilityValue(phase.accessibilityValue)
+                .accessibilityHint(ThreadContentImageCopy.openMediaHint)
+                .accessibilityValue(
+                    currentRenderState.phase.accessibilityValue
+                )
                 .accessibilityIdentifier(
                     ThreadContentAccessibilityID.imageAction(content.mediaID)
                 )
@@ -241,18 +191,36 @@ private struct ThreadContentImageView: View {
         }
         .accessibilityElement(children: .contain)
         .task(id: content.request) {
-            phase = .loading
+            let request = content.request
+            requestGeneration &+= 1
+            let generation = requestGeneration
+            renderState = .loading(request)
             do {
-                phase = try await ThreadContentImageLoad.resolve(
-                    content.request,
+                let resolved = try await ThreadContentImageLoad.resolve(
+                    request,
                     using: imageLoader
                 )
+                guard requestGeneration == generation,
+                      !Task.isCancelled else {
+                    return
+                }
+                renderState = resolved
             } catch is CancellationError {
-                return
+                guard requestGeneration == generation else {
+                    return
+                }
+                renderState = .cancelled(request)
             } catch {
-                phase = .failure
+                guard requestGeneration == generation else {
+                    return
+                }
+                renderState = .failedToFetch(request)
             }
         }
+    }
+
+    private var currentRenderState: ThreadContentImageRenderState {
+        renderState.projected(for: content.request)
     }
 
     private var stableImageFrame: some View {
@@ -260,7 +228,7 @@ private struct ThreadContentImageView: View {
         .aspectRatio(
             ThreadContentImagePresentation.layoutAspectRatio(
                 dimensions: content.dimensions,
-                phase: phase
+                phase: currentRenderState.phase
             ),
             contentMode: .fit
         )
@@ -283,7 +251,7 @@ private struct ThreadContentImageView: View {
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(content.alternativeText)
-        .accessibilityValue(phase.accessibilityValue)
+        .accessibilityValue(currentRenderState.phase.accessibilityValue)
         .accessibilityIdentifier(
             ThreadContentAccessibilityID.imageState(content.mediaID)
         )
@@ -291,34 +259,46 @@ private struct ThreadContentImageView: View {
 
     @ViewBuilder
     private var phaseContent: some View {
-        switch phase {
+        switch currentRenderState {
+        case .idle:
+            imageStatusContent(
+                systemImage: "photo",
+                message: ThreadContentImageCopy.idleMessage
+            )
         case .loading:
             VStack(spacing: Spacing.small) {
                 ProgressView()
-                Text("图片加载中")
+                Text(ThreadContentImageCopy.loadingMessage)
                     .font(Typography.font(.caption))
             }
             .foregroundStyle(SemanticColor.secondaryText)
-        case let .loaded(payload):
-            if let image = UIImage(data: payload.data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .accessibilityHidden(true)
-            } else {
-                imageFailureContent
-            }
-        case .failure:
-            imageFailureContent
+        case let .rendered(_, image):
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .accessibilityHidden(true)
+        case .failedToDecode, .failedToFetch:
+            imageStatusContent(
+                systemImage: "photo.badge.exclamationmark",
+                message: ThreadContentImageCopy.failureMessage
+            )
+        case .cancelled:
+            imageStatusContent(
+                systemImage: "photo",
+                message: ThreadContentImageCopy.cancelledMessage
+            )
         }
     }
 
-    private var imageFailureContent: some View {
+    private func imageStatusContent(
+        systemImage: String,
+        message: String
+    ) -> some View {
         VStack(spacing: Spacing.small) {
-            Image(systemName: "photo.badge.exclamationmark")
+            Image(systemName: systemImage)
                 .font(.system(size: IconSize.large))
                 .accessibilityHidden(true)
-            Text("图片暂不可用")
+            Text(message)
                 .font(Typography.font(.caption))
         }
         .foregroundStyle(SemanticColor.secondaryText)

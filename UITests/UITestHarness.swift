@@ -140,6 +140,10 @@ enum UITestElementID: String, CaseIterable {
         "thread-reader.content.node.t91001.p92001.sfirstPost.n22"
     case threadContentExternalIntent =
         "thread-reader.renderer-lab.external-link"
+    case threadContentImageDecodeFailureAction =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n12.action"
+    case threadContentImageDecodeFailureState =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n12.state"
     case threadContentImageFailureAction =
         "thread-reader.content.image.t91001.p92001.sfirstPost.n11.action"
     case threadContentImageFailureState =

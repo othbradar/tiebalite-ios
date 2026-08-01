@@ -133,8 +133,18 @@ final class AppShellSmokeTests: XCTestCase {
             to: "External intent: none",
             in: app
         )
+        UITestHarness.requirePresent(
+            .threadContentMediaIntent,
+            in: app,
+            expectedLabel: "Media intent: none"
+        )
 
-        UITestHarness.scrollToHittable(.threadContentImageSuccessAction, in: app)
+        let nonRenderedFrames = requireNonRenderedImageStates(in: app)
+
+        UITestHarness.scrollBackToHittable(
+            .threadContentImageSuccessAction,
+            in: app
+        )
         UITestHarness.requireValue(
             .threadContentImageSuccessAction,
             equals: "已加载",
@@ -144,6 +154,12 @@ final class AppShellSmokeTests: XCTestCase {
             .threadContentImageSuccessAction,
             in: app
         ).frame
+
+        for frame in nonRenderedFrames {
+            XCTAssertEqual(successFrame.width, frame.width, accuracy: 1)
+            XCTAssertEqual(successFrame.height, frame.height, accuracy: 1)
+        }
+
         UITestHarness.tap(.threadContentImageSuccessAction, in: app)
         UITestHarness.requireLabelNotEqual(
             .threadContentMediaIntent,
@@ -151,33 +167,6 @@ final class AppShellSmokeTests: XCTestCase {
             in: app
         )
         UITestHarness.requireAbsent(.interactionMediaViewer, in: app)
-
-        UITestHarness.scrollToHittable(.threadContentImageLoadingAction, in: app)
-        UITestHarness.requireValue(
-            .threadContentImageLoadingAction,
-            equals: "正在加载",
-            in: app
-        )
-        let loadingFrame = UITestHarness.element(
-            .threadContentImageLoadingAction,
-            in: app
-        ).frame
-
-        UITestHarness.scrollToHittable(.threadContentImageFailureAction, in: app)
-        UITestHarness.requireValue(
-            .threadContentImageFailureAction,
-            equals: "加载失败",
-            in: app
-        )
-        let failureFrame = UITestHarness.element(
-            .threadContentImageFailureAction,
-            in: app
-        ).frame
-
-        XCTAssertEqual(successFrame.width, loadingFrame.width, accuracy: 1)
-        XCTAssertEqual(successFrame.height, loadingFrame.height, accuracy: 1)
-        XCTAssertEqual(successFrame.width, failureFrame.width, accuracy: 1)
-        XCTAssertEqual(successFrame.height, failureFrame.height, accuracy: 1)
 
         UITestHarness.scrollToHittable(.threadContentUnknown, in: app)
         UITestHarness.requirePresent(.threadContentUnknown, in: app)
@@ -208,6 +197,59 @@ final class AppShellSmokeTests: XCTestCase {
             in: app,
             expectedLabel: "Reduce Motion: On"
         )
+    }
+
+    @MainActor
+    private func requireNonRenderedImageStates(
+        in app: XCUIApplication
+    ) -> [CGRect] {
+        [
+            requireNonRenderedImageState(
+                state: .threadContentImageLoadingState,
+                action: .threadContentImageLoadingAction,
+                label: "合成图片",
+                value: "正在加载",
+                in: app
+            ),
+            requireNonRenderedImageState(
+                state: .threadContentImageFailureState,
+                action: .threadContentImageFailureAction,
+                label: "合成图片",
+                value: "加载失败",
+                in: app
+            ),
+            requireNonRenderedImageState(
+                state: .threadContentImageDecodeFailureState,
+                action: .threadContentImageDecodeFailureAction,
+                label: "不可解码图片",
+                value: "加载失败",
+                in: app
+            )
+        ]
+    }
+
+    @MainActor
+    private func requireNonRenderedImageState(
+        state: UITestElementID,
+        action: UITestElementID,
+        label: String,
+        value: String,
+        in app: XCUIApplication
+    ) -> CGRect {
+        UITestHarness.scrollToHittable(state, in: app)
+        UITestHarness.requirePresent(
+            state,
+            in: app,
+            expectedLabel: label
+        )
+        UITestHarness.requireValue(state, equals: value, in: app)
+        UITestHarness.requireAbsent(action, in: app)
+        UITestHarness.requirePresent(
+            .threadContentMediaIntent,
+            in: app,
+            expectedLabel: "Media intent: none"
+        )
+        return UITestHarness.element(state, in: app).frame
     }
 
     @MainActor

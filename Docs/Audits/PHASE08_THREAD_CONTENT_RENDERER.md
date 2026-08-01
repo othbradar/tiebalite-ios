@@ -15,7 +15,8 @@
 - Proto 隔离的 `Sendable` / `Equatable` 领域值与稳定 ID；
 - 同步、确定性 `ThreadInfo/PbContent/PollInfo/PollOption` mapper；
 - 只消费领域值的 SwiftUI `ThreadContentRenderer`；
-- 注入式图片 loader 的 loading/success/failure 稳定布局；
+- 注入式图片 loader 的 idle/loading/rendered/fetch failure/decode failure/
+  cancelled 状态与稳定布局；
 - 图片与安全外链只产生 intent，不直接导航、播放或请求；
 - Debug-only Renderer Lab 及 iPhone/iPad 确定性 UI smoke。
 
@@ -96,10 +97,13 @@ MainActor 副作用。
 
 - text/line break/long text 使用 Dynamic Type；
 - link/image/video 可交互命中区不小于 44pt；
-- image loading/success/failure 共用同一尺寸框，布局 ratio 限制在
-  `0.5...3.0`，取消不映射为 failure；
+- image idle/loading/rendered/fetch failure/decode failure/cancelled 共用同一
+  尺寸框，布局 ratio 限制在 `0.5...3.0`，取消不映射为 failure；
 - 无安全候选时不调用 loader；
-- image 点击仅输出包含稳定 media ID/顺序的 `ThreadMediaIntent`；
+- loader 返回 bytes 不等于可显示成功；只有同步 decode/prepare 成功后才进入
+  rendered 并使用“已加载” accessibility value；
+- 只有 rendered 图片点击才输出包含稳定 media ID/顺序的
+  `ThreadMediaIntent`；loading/failure/cancelled 不提供媒体 action 或 hint；
 - link/video 点击仅输出已验证的 `ExternalLinkIntent`；
 - emoji/mention/video/voice/unknown/poll/empty/deleted/blocked 都有可访问
   降级表示；
@@ -147,6 +151,63 @@ contract test；全仓 Unit 为 111 项。最终 `make quality` 从头退出 0�
 - iPhone Renderer：`20260801-083757-54280-ui-renderer.xcresult`，1/1；
 - iPad Renderer：`20260801-084038-56604-ui-renderer-ipad.xcresult`，1/1。
 
+## 阶段 08 图片展示状态定向修复
+
+修复基线为阶段 08 commit
+`3b803553f61839aa166aed53ff494d542f17e7ee`。根因是
+`ThreadContentImageLoad.resolve` 在取得任意 bytes 后立即返回 loaded，实际
+`UIImage` 解码却延迟到 View；因此不可解码 bytes 会显示统一失败占位，但
+accessibility value 仍是“已加载”，并且仅因领域候选存在就暴露媒体 Button。
+只读复审又发现状态没有绑定具体请求：稳定节点从请求 A 更新为 B 后，B 的 task
+启动前可能短暂复用 A 的 rendered 状态与 B 的 label/intent；同请求重启时，旧
+任务的取消结果也缺少代次保护。
+
+修复前先新增 `successfulFetchWithUndecodableBytesDoesNotReportLoaded`，分别在
+`stage08-red-1.xcresult`、`stage08-red-2.xcresult`、
+`stage08-red-3.xcresult` 三次独立执行中稳定失败（xcodebuild exit 65）。修复后：
+
+- 展示 phase 明确拆为 idle、loading、rendered、failed-to-fetch、
+  failed-to-decode、cancelled；
+- `ThreadContentImageRenderState` 在 MainActor 上将 bytes 同步 prepare 为可显示
+  `UIImage`，用关联值保证 rendered、实际图片与请求描述原子一致；
+- 两类失败复用“图片暂不可用”/“加载失败”，当前无重试能力，因此没有
+  action、打开媒体 hint 或 MediaIntent；
+- 只有与当前请求、初始媒体项都一致的 rendered 才生成 Button 并保留
+  intent-only 回调；请求不匹配的旧状态立即投影为 idle；
+- 取消仍传播 `CancellationError`；View 使用单调请求代次，旧完成或旧取消均
+  不能覆盖新 task，包括请求描述相同的重启；
+- Renderer Lab n9/n10/n11/n12 分别固定为 rendered/loading/fetch failure/
+  decode failure，invalid bytes fixture 不连接网络。
+
+初次修复后，只读行为复审新增
+`renderedStateRejectsIntentForAReplacementRequest`。其在
+`stage08-request-binding-red-1-all.xcresult`、
+`stage08-request-binding-red-2.xcresult`、
+`stage08-request-binding-red-3.xcresult` 三次真实 suite 执行中稳定失败
+（xcodebuild exit 65）；修复后
+`stage08-request-binding-green.xcresult` 为 8/8。一次方法级 selector
+`stage08-request-binding-red-1.xcresult` 实际筛选为 0 项，不能作为通过证据。
+复审还发现 loader 未被协议约束必须用 `CancellationError` 恢复；若已取消 task
+随后收到普通 loader error，会被误映射为 fetch failure。确定性回归
+`cancelledImageLoadCannotBecomeFetchFailure` 在
+`stage08-cancel-error-red.xcresult` 失败（exit 65），普通 error catch 增加
+`Task.checkCancellation()` 后，`stage08-cancel-error-green.xcresult` 通过。
+回归移动至图片状态套件后，`stage08-image-state-final.xcresult` 为 9/9。
+
+最终完整 Unit `20260801-103959-16839-unit.xcresult` 为 120 个逻辑测试、
+129 次执行、0 失败/跳过。最终定向 UI：iPhone Renderer
+`20260801-104059-18459-ui-renderer.xcresult` 为 1/1（113.990s）；iPad Renderer
+`20260801-104330-20268-ui-renderer-ipad.xcresult` 为 1/1（54.994s）。首轮 UI 失败包
+`20260801-095817-89956-ui-renderer.xcresult` 与
+`20260801-100438-93967-ui-renderer-ipad.xcresult` 分别暴露测试回滚方向及
+split-view 详情列滚动归属问题，修正均仅位于 UI test support。
+
+最终 `make quality-fast` exit 0。最终 `make quality` 从头 exit 0 并输出
+`Quality gate completed.`：Unit 为 120 个逻辑测试/129 次执行，iPhone UI
+smoke 13/13、interaction 5/5，iPad UI smoke 3/3、interaction 1/1；Debug、
+iPad、Release build，UITesting/Release isolation 与 diff check 全部通过。最终
+只读行为复审无阻塞发现。
+
 ## 未验证与剩余风险
 
 1. 未发 live request；服务端 raw 分布、真实 malformed 形态、媒体可达性
@@ -157,8 +218,9 @@ contract test；全仓 Unit 为 111 项。最终 `make quality` 从头退出 0�
    text 内的 `\n`。
 4. 当前 Proto closure 不含 `Post.proto`/PBPage wrapper；普通楼层、楼中楼、
    fold/delete/block 的 wire 与 ThreadScreen 未验证。
-5. 生产图片网络/cache/session/lease 实现不在阶段 08；本阶段只验证
-   注入 seam 和 fixture loader。
+5. 不可解码 bytes 的状态语义已关闭；生产图片网络/cache/session/lease、
+   candidate 选择、下采样及大图 decode 性能仍不在阶段 08，本阶段只验证
+   注入 seam 和小型固定 fixture。
 6. 当前 UI/Unit 使用 iOS 26.5 Simulator；iOS 18.x、真机、VoiceOver
    实机操作与真实 iPad 分屏未验证。
 7. 公开/App Store/商业分发仍被 ADR-0011 的权利边界阻塞。

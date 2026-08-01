@@ -392,13 +392,15 @@ struct ThreadContentProtoMapperTests {
 @Suite("Thread content renderer contracts")
 struct ThreadContentRendererContractTests {
     @Test
-    func injectedImageLoaderReturnsPayloadAndMapsOrdinaryFailure() async throws {
-        let request = fixtureImageRequest()
-        let payload = ImagePayload(data: Data([0x01, 0x02]), mediaType: "image/png")
+    @MainActor
+    func injectedImageLoaderSeparatesRenderedAndFetchFailure() async throws {
+        let request = fixtureImageRequest(
+            resourceID: DebugThreadContentRendererFixtures.loadedImageResourceID
+        )
 
-        let loaded = try await ThreadContentImageLoad.resolve(
+        let rendered = try await ThreadContentImageLoad.resolve(
             request,
-            using: ImmediateImageLoader(result: .success(payload))
+            using: HarnessRendererImageLoader()
         )
         let failed = try await ThreadContentImageLoad.resolve(
             request,
@@ -407,13 +409,14 @@ struct ThreadContentRendererContractTests {
             )
         )
 
-        #expect(loaded == .loaded(payload))
-        #expect(failed == .failure)
+        #expect(rendered.phase == .rendered)
+        #expect(failed.phase == .failedToFetch)
     }
 
     @Test
+    @MainActor
     func imageRequestWithoutSafeCandidatesFailsBeforeCallingTheLoader() async throws {
-        let phase = try await ThreadContentImageLoad.resolve(
+        let renderState = try await ThreadContentImageLoad.resolve(
             ThreadImageRequestDescriptor(
                 resourceID: "fixture.invalid-image",
                 candidates: []
@@ -421,10 +424,11 @@ struct ThreadContentRendererContractTests {
             using: UnexpectedImageLoader()
         )
 
-        #expect(phase == .failure)
+        #expect(renderState.phase == .failedToFetch)
     }
 
     @Test
+    @MainActor
     func imageLoadCancellationIsNotDisplayedAsFailure() async throws {
         let loader = BlockingImageLoader()
         let task = Task {
@@ -448,9 +452,12 @@ struct ThreadContentRendererContractTests {
     }
 
     @Test(arguments: [
+        ThreadContentImagePhase.idle,
         ThreadContentImagePhase.loading,
-        .loaded(ImagePayload(data: Data([0x01]), mediaType: "image/png")),
-        .failure
+        .rendered,
+        .failedToFetch,
+        .failedToDecode,
+        .cancelled
     ])
     func loadingSuccessAndFailureUseTheSameLayoutRatio(
         phase: ThreadContentImagePhase
@@ -476,7 +483,7 @@ struct ThreadContentRendererContractTests {
         ) == ThreadContentImagePresentation.maximumLayoutAspectRatio)
         #expect(ThreadContentImagePresentation.layoutAspectRatio(
             dimensions: tall,
-            phase: .failure
+            phase: .failedToFetch
         ) == ThreadContentImagePresentation.minimumLayoutAspectRatio)
     }
 
@@ -506,9 +513,11 @@ struct ThreadContentRendererContractTests {
         #expect(first != second)
     }
 
-    private func fixtureImageRequest() -> ThreadImageRequestDescriptor {
+    private func fixtureImageRequest(
+        resourceID: String = "fixture.image"
+    ) -> ThreadImageRequestDescriptor {
         ThreadImageRequestDescriptor(
-            resourceID: "fixture.image",
+            resourceID: resourceID,
             candidates: [ThreadImageCandidate(
                 role: .source,
                 destination: ValidatedWebDestination(

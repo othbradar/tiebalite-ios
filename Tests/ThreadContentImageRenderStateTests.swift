@@ -1,0 +1,225 @@
+import Foundation
+import Testing
+@testable import TiebaLite
+
+@Suite("Thread content image render state regressions")
+@MainActor
+struct ThreadImageRenderStateTests {
+    @Test
+    func successfulFetchWithUndecodableBytesDoesNotReportLoaded() async throws {
+        let renderState = try await ThreadContentImageLoad.resolve(
+            fixtureImageRequest(
+                resourceID:
+                    DebugThreadContentRendererFixtures.decodeFailedImageResourceID
+            ),
+            using: HarnessRendererImageLoader()
+        )
+
+        #expect(renderState.phase == .failedToDecode)
+        #expect(renderState.phase.accessibilityValue == "加载失败")
+    }
+
+    @Test
+    func validImageBytesReachRenderedState() async throws {
+        let renderState = try await ThreadContentImageLoad.resolve(
+            fixtureImageRequest(
+                resourceID: DebugThreadContentRendererFixtures.loadedImageResourceID
+            ),
+            using: HarnessRendererImageLoader()
+        )
+
+        #expect(renderState.phase == .rendered)
+        #expect(renderState.phase.accessibilityValue == "已加载")
+    }
+
+    @Test
+    func requestFailureRemainsDistinctFromDecodeFailure() async throws {
+        let renderState = try await ThreadContentImageLoad.resolve(
+            fixtureImageRequest(
+                resourceID: DebugThreadContentRendererFixtures.failedImageResourceID
+            ),
+            using: HarnessRendererImageLoader()
+        )
+
+        #expect(renderState.phase == .failedToFetch)
+        #expect(renderState.phase.accessibilityValue == "加载失败")
+    }
+
+    @Test
+    func cancelledImageLoadCannotBecomeFetchFailure() async throws {
+        let loader = CancellationAsFailureImageLoader()
+        let task = Task {
+            try await ThreadContentImageLoad.resolve(
+                fixtureImageRequest(),
+                using: loader
+            )
+        }
+        try await loader.waitUntilStarted()
+
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            Issue.record("Expected image load cancellation")
+        } catch is CancellationError {
+            return
+        } catch {
+            Issue.record("Cancellation changed into an image failure")
+        }
+    }
+
+    @Test
+    func everyPhaseHasDeterministicAccessibilityValue() {
+        let expectedValues: [(ThreadContentImagePhase, String)] = [
+            (.idle, "尚未加载"),
+            (.loading, "正在加载"),
+            (.rendered, "已加载"),
+            (.failedToFetch, "加载失败"),
+            (.failedToDecode, "加载失败"),
+            (.cancelled, "加载已取消")
+        ]
+
+        for (phase, expectedValue) in expectedValues {
+            #expect(phase.accessibilityValue == expectedValue)
+        }
+        #expect(expectedValues.count == ThreadContentImagePhase.allCases.count)
+    }
+
+    @Test
+    func nonRenderedStatesExposeNoMediaIntent() {
+        let request = fixtureImageRequest()
+        let intent = fixtureMediaIntent()
+        let nonRenderedStates: [ThreadContentImageRenderState] = [
+            .idle,
+            .loading(request),
+            .failedToFetch(request),
+            .failedToDecode(request),
+            .cancelled(request)
+        ]
+
+        for state in nonRenderedStates {
+            #expect(state.mediaIntent(from: intent) == nil)
+        }
+    }
+
+    @Test
+    func renderedStatePreservesMediaIntent() async throws {
+        let request = fixtureImageRequest(
+            resourceID: DebugThreadContentRendererFixtures.loadedImageResourceID
+        )
+        let renderState = try await ThreadContentImageLoad.resolve(
+            request,
+            using: HarnessRendererImageLoader()
+        )
+        let intent = fixtureMediaIntent(request: request)
+
+        #expect(renderState.mediaIntent(from: intent) == intent)
+    }
+
+    @Test
+    func renderedStateRejectsIntentForAReplacementRequest() async throws {
+        let renderedRequest = fixtureImageRequest(
+            resourceID: DebugThreadContentRendererFixtures.loadedImageResourceID
+        )
+        let replacementRequest = fixtureImageRequest(
+            resourceID: "fixture.image.replacement"
+        )
+        let renderState = try await ThreadContentImageLoad.resolve(
+            renderedRequest,
+            using: HarnessRendererImageLoader()
+        )
+
+        #expect(
+            renderState.mediaIntent(
+                from: fixtureMediaIntent(request: replacementRequest)
+            ) == nil
+        )
+        #expect(
+            renderState.projected(for: replacementRequest).phase == .idle
+        )
+    }
+
+    @Test
+    func repeatedDecodeFailurePresentationIsDeterministic() async throws {
+        let request = fixtureImageRequest(
+            resourceID:
+                DebugThreadContentRendererFixtures.decodeFailedImageResourceID
+        )
+        let loader = HarnessRendererImageLoader()
+
+        let first = try await ThreadContentImageLoad.resolve(
+            request,
+            using: loader
+        )
+        let second = try await ThreadContentImageLoad.resolve(
+            request,
+            using: loader
+        )
+
+        #expect(first.phase == second.phase)
+        #expect(first.phase == .failedToDecode)
+        #expect(
+            first.phase.accessibilityValue
+                == second.phase.accessibilityValue
+        )
+        #expect(first.mediaIntent(from: fixtureMediaIntent()) == nil)
+        #expect(second.mediaIntent(from: fixtureMediaIntent()) == nil)
+    }
+
+    private func fixtureImageRequest(
+        resourceID: String = "fixture.image.decode-failure"
+    ) -> ThreadImageRequestDescriptor {
+        ThreadImageRequestDescriptor(
+            resourceID: resourceID,
+            candidates: [ThreadImageCandidate(
+                role: .source,
+                destination: ValidatedWebDestination(
+                    absoluteString: "https://fixture.invalid/decode-failure.png",
+                    scheme: .https
+                )
+            )]
+        )
+    }
+
+    private func fixtureMediaIntent(
+        request: ThreadImageRequestDescriptor? = nil
+    ) -> ThreadMediaIntent {
+        let source = ThreadContentSource(
+            threadID: 91_001,
+            postID: 92_001,
+            scope: .firstPost
+        )
+        let nodeID = ThreadContentNodeID(source: source, ordinal: 9)
+        let mediaID = ThreadMediaID(sourceNodeID: nodeID)
+        let resolvedRequest = request ?? fixtureImageRequest()
+        return ThreadMediaIntent(
+            initialMediaID: mediaID,
+            items: [ThreadMediaItem(
+                mediaID: mediaID,
+                sourceNodeID: nodeID,
+                request: resolvedRequest,
+                dimensions: .known(width: 640, height: 480),
+                alternativeText: "合成图片"
+            )]
+        )
+    }
+}
+
+private final class CancellationAsFailureImageLoader: ImageLoading, Sendable {
+    private let started = HarnessContinuationGate<Void>()
+    private let response = HarnessContinuationGate<ImagePayload>()
+
+    func load(_ request: ImageRequest) async throws -> ImagePayload {
+        _ = request
+        started.succeed(())
+        return try await withTaskCancellationHandler {
+            try await response.wait()
+        } onCancel: {
+            response.fail(ImageLoadingError.unavailable)
+        }
+    }
+
+    func waitUntilStarted() async throws {
+        try await started.wait()
+    }
+}

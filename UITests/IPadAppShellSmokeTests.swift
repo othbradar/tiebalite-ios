@@ -75,25 +75,59 @@ final class IPadAppShellSmokeTests: XCTestCase {
             equals: "已加载",
             in: app
         )
+        UITestHarness.requirePresent(
+            .threadContentMediaIntent,
+            in: app,
+            expectedLabel: "Media intent: none"
+        )
 
         UITestHarness.tap(.layoutControlCompact, in: app)
         UITestHarness.requirePresent(.layoutCompact, in: app)
         UITestHarness.requirePresent(.threadContentLabRoot, in: app)
-        UITestHarness.scrollToHittable(.threadContentImageLoadingAction, in: app)
+        UITestHarness.scrollToHittable(.threadContentImageLoadingState, in: app)
         UITestHarness.requireValue(
-            .threadContentImageLoadingAction,
+            .threadContentImageLoadingState,
             equals: "正在加载",
             in: app
         )
+        UITestHarness.requireAbsent(.threadContentImageLoadingAction, in: app)
 
         UITestHarness.tap(.layoutControlRegular, in: app)
         device.orientation = .portrait
         UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.requirePresent(.threadContentLabRoot, in: app)
         UITestHarness.requireValue(
-            .threadContentImageLoadingAction,
+            .threadContentImageLoadingState,
             equals: "正在加载",
             in: app
+        )
+        UITestHarness.scrollRendererToHittable(
+            .threadContentImageFailureState,
+            in: app
+        )
+        UITestHarness.requireValue(
+            .threadContentImageFailureState,
+            equals: "加载失败",
+            in: app
+        )
+        UITestHarness.requireAbsent(.threadContentImageFailureAction, in: app)
+        UITestHarness.scrollRendererToHittable(
+            .threadContentImageDecodeFailureState,
+            in: app
+        )
+        UITestHarness.requireValue(
+            .threadContentImageDecodeFailureState,
+            equals: "加载失败",
+            in: app
+        )
+        UITestHarness.requireAbsent(
+            .threadContentImageDecodeFailureAction,
+            in: app
+        )
+        UITestHarness.requirePresent(
+            .threadContentMediaIntent,
+            in: app,
+            expectedLabel: "Media intent: none"
         )
         UITestHarness.requirePresent(.threadContentUnknown, in: app)
 

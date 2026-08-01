@@ -6,8 +6,11 @@
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
   （`feat: complete stage 07 networking and protobuf foundation`）
-- 阶段 08 提交：包含本文件的
-  `feat: complete stage 08 thread content domain and renderer`
+- 阶段 08 提交：
+  `3b803553f61839aa166aed53ff494d542f17e7ee`
+  （`feat: complete stage 08 thread content domain and renderer`）
+- 阶段 08 图片状态定向修复：包含本文件的
+  `fix: align thread image accessibility with render state`
 - production live：`DISABLED`
 - 阶段 09：`NOT_STARTED`
 - 阶段 09 门禁：`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`
@@ -21,7 +24,7 @@ Renderer：
 - 生成并交叉验证脱敏 `ThreadInfo.firstPostContent` binary fixture；
 - 建立 Proto/SwiftUI 解耦的 `Sendable` / `Equatable` domain；
 - 实现保序、稳定 ID、unknown/malformed/presence 降级 mapper；
-- 实现只读 SwiftUI Renderer、注入式图片三态与 intent-only 点击；
+- 实现只读 SwiftUI Renderer、注入式图片六态与 intent-only 点击；
 - 建立 Debug-only Renderer Lab 和 iPhone/iPad 回归。
 
 未建立业务 ThreadScreen、Repository、Endpoint、分页、PB Page/普通楼层
@@ -37,6 +40,10 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 - 已显式使用 `.agents/skills/tiebalite-api-evidence`、
   `.agents/skills/ios-feature-slice` 和
   `.agents/skills/xcode-quality-gate`。
+- 图片状态定向修复额外显式使用
+  `.agents/skills/ios-root-cause-debug` 与
+  `.agents/skills/xcode-quality-gate`；三个只读子代理复核状态模型、测试和
+  提交边界。
 - 三个子代理只读复核 Proto closure/fixture、XcodeGen/target 隔离、
   Renderer/测试/Git 风险；所有工作树写入均由主代理完成。
 
@@ -44,6 +51,8 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 
 - baseline HEAD 为阶段 07 final commit
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`。
+- 图片状态定向修复 baseline HEAD 为阶段 08 commit
+  `3b803553f61839aa166aed53ff494d542f17e7ee`，祖先检查退出 0。
 - Android reference 保持 clean、exact
   `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - 用户原有 `.idea/dataSources.xml`、`.idea/db-forest-config.xml` 的
@@ -91,10 +100,14 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 
 - Renderer 只消费 domain 与注入的 `ImageLoading`，无 URLSession/
   HTTPClient/Repository 直连。
-- 图片 loading/success/failure 共用稳定框，ratio 限制为
-  `0.5...3.0`；无安全候选时不调用 loader，取消不显示为失败。
-- image 只输出稳定 `ThreadMediaIntent`，link/video 只输出
-  `ExternalLinkIntent`；不直接 push/open/play。
+- 图片 idle/loading/rendered/failed-to-fetch/failed-to-decode/cancelled 共用
+  稳定框，ratio 限制为 `0.5...3.0`；无安全候选时不调用 loader，取消不
+  显示为普通失败。
+- 取得 bytes 不等于已显示；只有 decode/prepare 成功且状态请求与当前请求一致
+  才使用“已加载”并输出稳定 `ThreadMediaIntent`。两类失败复用“加载失败”，
+  无 action/hint/MediaIntent；请求不匹配的旧状态投影为 idle，单调请求代次
+  拦截旧完成与旧取消；link/video 仍只输出 `ExternalLinkIntent`，不直接
+  push/open/play。
 - link/image/video 可交互区至少 44pt；文本支持换行、选择、
   Dynamic Type 与超长内容。
 - emoji/mention/video/voice/unknown/poll/empty/deleted/blocked 均有可访问
@@ -122,6 +135,36 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
   `20260801-083757-54280-ui-renderer.xcresult`，1/1，96.831s。
 - iPad 定向 Renderer：
   `20260801-084038-56604-ui-renderer-ipad.xcresult`，1/1，39.745s。
+
+图片状态定向修复的行为先行证据：
+
+- 修复前新增 invalid-bytes fixture 回归；
+  `stage08-red-1.xcresult`、`stage08-red-2.xcresult`、
+  `stage08-red-3.xcresult` 三次均稳定失败（exit 65），证明 loader 成功后
+  phase/accessibility 仍误报 loaded/“已加载”。
+- 初次修复后 `stage08-image-state-green-2.xcresult` 通过，包含 7 个逻辑用例：
+  合法解码、fetch failure、decode failure、六态 accessibility value、
+  成功/失败 MediaIntent 与重复确定性；既有真实取消传播用例保留。
+- 只读行为复审发现请求 A 的 rendered 状态可能在请求 B task 启动前复用，且
+  同请求旧取消缺少代次保护；新增请求替换回归在
+  `stage08-request-binding-red-1-all.xcresult`、
+  `stage08-request-binding-red-2.xcresult`、
+  `stage08-request-binding-red-3.xcresult` 三次 suite 执行均稳定失败
+  （exit 65）。绑定请求并加入 generation guard 后，
+  `stage08-request-binding-green.xcresult` 为 8/8。
+- `stage08-request-binding-red-1.xcresult` 的方法级 selector 实际筛选 0 项，虽
+  xcodebuild exit 0，但明确不计为通过证据。
+- 复审补充的“已取消 task + loader 普通错误”回归在
+  `stage08-cancel-error-red.xcresult` 失败（exit 65）；普通 error catch 先检查
+  task cancellation 后，`stage08-cancel-error-green.xcresult` 通过，取消不再
+  被错误映射为 fetch failure。
+- 最终聚焦图片状态套件 `stage08-image-state-final.xcresult` 为 9/9。
+- iPhone Renderer：
+  `20260801-100220-92089-ui-renderer.xcresult`，1/1，114.590s；同时覆盖
+  dark、Accessibility Dynamic Type、Reduce Motion。
+- iPad Renderer：
+  `20260801-100830-96413-ui-renderer-ipad.xcresult`，1/1，56.192s；覆盖
+  regular/compact、旋转与两类失败 action 缺失。
 
 ## 本轮真实执行的命令与结果
 
@@ -184,6 +227,64 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 - 辅助进程检查 `pgrep` 因环境缺少 sysmond 退出 3；不影响 Xcode
   命令或验收结果。
 
+### 图片状态定向修复已执行命令
+
+- `git status --short`、`git diff --stat`、`git diff --cached --stat`：确认
+  仅有既存 `.idea`/`.DS_Store` 漂移；两项 `.idea` 仍保持用户预暂存状态。
+- `git rev-parse HEAD`：
+  `3b803553f61839aa166aed53ff494d542f17e7ee`；
+  `git merge-base --is-ancestor 3b803553... HEAD`：exit 0。
+- 修改前 `make quality-fast`：exit 0；Unit bundle
+  `20260801-093910-79912-unit.xcresult` Test Succeeded。
+- 三次修复前定向 xcodebuild：均 exit 65；修复后两次定向 xcodebuild：
+  `stage08-image-state-green-1.xcresult` 与改名/拆文件后的
+  `stage08-image-state-green-2.xcresult` 均 Test Succeeded。
+- 首次 `make lint`：exit 2，真实发现 UI 测试函数体、测试类型名和 Renderer
+  文件长度共 3 项违规；拆出单一图片展示状态文件并提取测试 helper 后，后续
+  三次 `make lint` 均为 80 files、0 violation。
+- 首次 `make test-ui-renderer`：exit 2（底层 xcodebuild 65），失败于测试
+  只向下滚；修正 test support 后复跑 1/1。
+- 首次 `make test-ui-renderer-ipad`：exit 2（底层 xcodebuild 65）；导出的
+  hierarchy 证明 n11/n12 存在，截图证明 split-view 全局 swipe 未滚动详情列；
+  将手势限定到 Renderer 测试根后复跑 1/1。
+- 首次最终 `make quality` 在 iPhone UI smoke 运行中被主动中断，make exit 1
+  （底层 `test-ui-smoke` Error 73）；原因是只读复审发现上述请求归属阻塞项，
+  该次不计质量结论，修复后必须从头重跑。
+- 最终 `make instructions` 与 `make secret-scan`：exit 0。
+- 最终首轮 `make lint`：exit 2，取消回归令 `ThreadContentTests.swift` 达 643
+  行；将该直接回归及 loader 移至本任务图片状态测试文件后复跑为 80 files、
+  0 violation。
+- 最终 `make test-unit`：exit 0；
+  `20260801-103959-16839-unit.xcresult` 为 120 个逻辑测试、129 次执行、
+  0 失败/跳过。
+- 最终 `make test-ui-renderer`：exit 0；
+  `20260801-104059-18459-ui-renderer.xcresult`，1/1，113.990s，覆盖 dark、
+  Accessibility Dynamic Type 与 Reduce Motion。
+- 最终 `make test-ui-renderer-ipad`：exit 0；
+  `20260801-104330-20268-ui-renderer-ipad.xcresult`，1/1，54.994s，覆盖
+  regular/compact 投影与旋转。
+- 最终 `make quality-fast`：exit 0；Debug build
+  `20260801-104543-22813-build.log`，Unit
+  `20260801-104546-22887-unit.xcresult`，所有生成、静态、隔离和 diff 门禁通过。
+- 最终 `make quality`：从头 exit 0，并输出 `Quality gate completed.`：
+  - Debug build：`20260801-104657-25457-build.log`；
+  - Unit：`20260801-104658-25495-unit.xcresult`，120 个逻辑测试、
+    129 次执行、0 失败/跳过；
+  - iPhone UI smoke：`20260801-104728-25787-ui-smoke.xcresult`，13/13；
+  - iPhone interaction：
+    `20260801-105241-26551-ui-interaction.xcresult`，5/5；
+  - iPad build：`20260801-105743-26977-ipad-build.log`；
+  - iPad UI smoke：`20260801-105746-27033-ui-smoke-ipad.xcresult`，3/3；
+  - iPad interaction：
+    `20260801-110002-27314-ui-interaction-ipad.xcresult`，1/1；
+  - Release build：`20260801-110045-27466-release-build.log`；
+  - UITesting isolation、Release isolation 与最终 `git diff --check` 均通过。
+- 最终只读行为复审：A→B 请求归属、generation、取消优先级、视觉/
+  accessibility 与 MediaIntent 一致性均无剩余阻塞。
+- `xcrun xcresulttool get test-results summary` 与
+  `xcrun xcresulttool export attachments`：读取 iPad 失败包并导出 63 个测试
+  附件到临时目录，仅用于确定测试滚动归属。
+
 ## 新增或变更的动画、手势、overlay、依赖
 
 - 新增动画：无。
@@ -202,17 +303,16 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
    quote 的完整 live 语义未知。
 3. PBPage、普通楼层 Post/fold/delete、楼中楼、分页、ThreadScreen 和
    滚动位置未实现/验证。
-4. `ImageLoading` 当前只接收 resource ID；生产 URL/version cache key、
-   candidate 选择、下采样、大图解码和 lease 需后续设计。
-5. loader 成功但 `UIImage` 数据不可解码时，当前视觉会降级为失败，
-   action 的 accessibility value 仍可为“已加载”。
-6. document/poll 顶层 accessibility ID 未包含 source；同屏多个
+4. 不可解码 bytes 的状态语义已修复；`ImageLoading` 当前仍只接收
+   resource ID，生产 URL/version cache key、candidate 选择、下采样、大图
+   解码性能和 lease 需后续设计。
+5. document/poll 顶层 accessibility ID 未包含 source；同屏多个
    Renderer 时可重复。极端超长 poll 标题/选项在 Accessibility 大字下仍需
    专项裁切测试。
-7. UI/Unit 使用 iOS 26.5 Simulator；iOS 18.x、真机、VoiceOver
+6. UI/Unit 使用 iOS 26.5 Simulator；iOS 18.x、真机、VoiceOver
    实操和真实 iPad 分屏未验证。
-8. 公开/App Store/商业分发仍被 ADR-0011 权利边界阻塞。
-9. 阶段 06 Pager/Media 仍为 `SPIKE_PARTIAL`。
+7. 公开/App Store/商业分发仍被 ADR-0011 权利边界阻塞。
+8. 阶段 06 Pager/Media 仍为 `SPIKE_PARTIAL`；本修复未开始 06B 收口。
 
 ## 下一阶段前置条件
 

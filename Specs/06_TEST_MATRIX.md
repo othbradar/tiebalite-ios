@@ -66,12 +66,16 @@
 
 - `ThreadInfo.firstPostContent` cross-language fixture 覆盖 P0 raw、poll、
   unknown/presence/malformed/保序/稳定 ID。
-- Renderer fixture 覆盖短/多段/换行/超长文本、图片三态、多图、
+- Renderer/test fixture 组合覆盖短/多段/换行/超长文本、图片六态；UI Lab
+  固定 rendered/loading/fetch failure/decode failure，unit fixture 另覆盖
+  idle/cancelled、请求替换隔离、重复确定性与取消传播；同时覆盖多图、
   安全/拒绝链接、emoji、mention、video/voice 降级、poll、unknown、
   empty/deleted/blocked。
 - iPhone 定向 smoke 覆盖深色、Accessibility 大字号、Reduce Motion、
-  图片 success/loading/failure 稳定 frame 和 intent-only 导航。
-- iPad 定向 smoke 覆盖 regular/compact 投影、旋转后内容保持。
+  图片 rendered/loading/fetch failure/decode failure 稳定 frame；失败态无
+  action/MediaIntent，成功态保持 intent-only 导航。
+- iPad 定向 smoke 覆盖 regular/compact 投影、旋转后内容保持，以及 loading、
+  fetch/decode failure 均无图片 action。
 - 本子集不表示 ThreadScreen、PB Page/楼层分页、滚动位置、
   楼中楼或 MediaViewer 已完成。
 

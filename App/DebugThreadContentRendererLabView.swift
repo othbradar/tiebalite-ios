@@ -119,6 +119,8 @@ struct DebugThreadContentRendererLabView: View {
 }
 
 enum DebugThreadContentRendererFixtures {
+    static let decodeFailedImageResourceID =
+        "renderer-fixture.image.decode-failure"
     static let loadedImageResourceID = "renderer-fixture.image.success"
     static let loadingImageResourceID = "renderer-fixture.image.loading"
     static let failedImageResourceID = "renderer-fixture.image.failure"
@@ -211,18 +213,13 @@ enum DebugThreadContentRendererFixtures {
             )
         }
         append(rawType: 3) { id in
-            .image(ThreadImageContent(
+            imagePayload(
                 rawType: 3,
-                mediaID: ThreadMediaID(sourceNodeID: id),
-                request: ThreadImageRequestDescriptor(
-                    resourceID: "renderer-fixture.image.invalid",
-                    candidates: []
-                ),
-                dimensions: .known(width: 1_000, height: 100),
-                alternativeText: "无效图片",
-                originalByteCount: nil,
-                showsOriginalControlHint: false
-            ))
+                id: id,
+                resourceID: decodeFailedImageResourceID,
+                destination: imageDestination,
+                alternativeText: "不可解码图片"
+            )
         }
         append(rawType: 4) { _ in
             .mention(ThreadMentionContent(
@@ -361,7 +358,8 @@ enum DebugThreadContentRendererFixtures {
         rawType: Int32,
         id: ThreadContentNodeID,
         resourceID: String,
-        destination: ValidatedWebDestination
+        destination: ValidatedWebDestination,
+        alternativeText: String? = nil
     ) -> ThreadContentPayload {
         .image(ThreadImageContent(
             rawType: rawType,
@@ -374,7 +372,8 @@ enum DebugThreadContentRendererFixtures {
                 )]
             ),
             dimensions: .known(width: 640, height: 480),
-            alternativeText: rawType == 20 ? "替代图片" : "合成图片",
+            alternativeText: alternativeText
+                ?? (rawType == 20 ? "替代图片" : "合成图片"),
             originalByteCount: nil,
             showsOriginalControlHint: false
         ))

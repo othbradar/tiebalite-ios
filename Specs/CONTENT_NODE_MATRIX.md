@@ -50,7 +50,7 @@ Proto。`Post.proto` 需要额外 25 个输入且未获 ADR-0011 批准；普通
 | `type=40` | 同上 | `type#1=40`, `text#2` | 与普通文本同分支；业务原义 `UNKNOWN` | raw 40 | `DEGRADED` |
 | `type=1` link | `Extensions.kt::renders` raw 1；`PbContentRender.kt::PbContentText` URL annotation | `type#1=1`, label `text#2`, target `link#3` | 加 link icon/主色 label；现有 Android 路径内没有 scheme 校验 | HTTP/HTTPS、`javascript:`、空 label/target 构造 | `SUPPORTED`（非 HTTP(S) 只显示 label） |
 | `type=2` emoji | `Extensions.kt::renders` raw 2 | `type#1=2`, registry key `text#2`, code `c#11` | 注册 `(text,c)` 后显示 `#(c)`；资源表/未知资源最终行为 `UNKNOWN` | 合成 code、空/未知 code 领域 fixture | `DEGRADED`（可读 fallback） |
-| `type=3` image | `Extensions.kt::PbContent.picUrl` 与 `renders` raw 3；`PbContentRender.kt::PicContentRender` | `type#1=3`; candidates `originSrc#25,bigCdnSrc#9,bigSrc#6,dynamic#16,cdnSrc#8,cdnSrcActive#36,src#4`; size `bsize#5`; `originSize#27`, `showOriginalBtn#35` | 强制拆 `bsize`；坏值可崩；候选策略受 Android 设置影响；连续图片进入 waterfall | 正常、多候选、坏 URL、空字段、非正/越界/极端比例、多图及 image success/loading/failure | `SUPPORTED`（只保留经验证 HTTPS candidate） |
+| `type=3` image | `Extensions.kt::PbContent.picUrl` 与 `renders` raw 3；`PbContentRender.kt::PicContentRender` | `type#1=3`; candidates `originSrc#25,bigCdnSrc#9,bigSrc#6,dynamic#16,cdnSrc#8,cdnSrcActive#36,src#4`; size `bsize#5`; `originSize#27`, `showOriginalBtn#35` | 强制拆 `bsize`；坏值可崩；候选策略受 Android 设置影响；连续图片进入 waterfall | 正常、多候选、坏 URL、空字段、非正/越界/极端比例、多图及 idle/loading/rendered/fetch failure/decode failure/cancelled | `SUPPORTED`（只保留经验证 HTTPS candidate） |
 | `type=4` mention | `Extensions.kt::renders` raw 4；`PbContentRender.kt::PbContentText` user annotation | `type#1=4`, label `text#2`, `uid#15` int64 | 点击时直接 `toLong()` 导航；缺省 uid 为 0 且 Android 没有合法性 guard | uid 7301、uid 缺省 0、空 label 构造 | `DEGRADED`（保留 uid/label，阶段 08 不建 profile route） |
 | `type=5`, `src`、`link` 非空 | `Extensions.kt::renders` raw 5；`PbContentRender.kt::VideoContentRender` | `type#1=5`, web `text#2`, video `link#3`, thumbnail `src#4`, `bsize#5` | 构造 VideoPlayer；坏尺寸可崩 | player-shaped synthetic node | `DEGRADED`（thumbnail + 外链 intent，不播放） |
 | `type=5`, `src` 非空、`link` 空 | 同上 | 同字段，`link#3` 缺省空 | 显示 thumbnail，点击 WebView(`text`) | thumbnail-only node | `DEGRADED` |
@@ -92,6 +92,24 @@ Proto。`Post.proto` 需要额外 25 个输入且未获 ADR-0011 批准；普通
    记录完整 Proto、正文、URL、Cookie/token。
 10. Mapper 同步、纯值转换，不访问网络、磁盘、Keychain 或 MainActor；Proto 不
     穿过 Core mapper 边界进入 Feature/View。
+
+## Renderer 图片状态不变量
+
+1. `idle`、`loading`、`rendered`、`failedToFetch`、`failedToDecode`、
+   `cancelled` 是互不等价的展示状态；取消继续保持可观察，不映射为普通失败。
+2. loader 返回 bytes 只表示取数完成，不表示已显示。只有 bytes 成功解码并准备为
+   可显示图片后才能进入 `rendered`，此时 accessibility value 才可为“已加载”。
+3. fetch/decode failure 统一显示现有失败文案并使用“加载失败” value；当前失败
+   占位不支持重试，因此不提供 action 或打开媒体 hint。
+4. 每个非 idle 状态必须关联产生它的 `ThreadImageRequestDescriptor`；当稳定节点
+   被新请求复用时，旧状态投影为 idle，不能借用新节点的 label、value 或 intent。
+5. 只有与当前请求一致的 `rendered` 可将候选 `ThreadMediaIntent` 暴露为可执行
+   图片 action；其余状态及请求不匹配状态均不得发送 MediaIntent。
+6. 每次 task 启动使用单调请求代次；过期完成或取消不得覆盖更新代次，即使新旧
+   请求描述相同也不例外；已取消 task 即使 loader 随后抛普通错误，也必须继续
+   保持 cancellation 语义，不能降级为 fetch failure。
+7. 所有状态保持同一确定性尺寸框；状态语义修正不改变 wire、mapper、候选排序
+   或图片网络管线。
 
 ## Cross-language fixture
 

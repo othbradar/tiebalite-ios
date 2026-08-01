@@ -23,6 +23,11 @@ final class HarnessRendererImageLoader: ImageLoading, Sendable {
             }
         case DebugThreadContentRendererFixtures.failedImageResourceID:
             throw ImageLoadingError.unavailable
+        case DebugThreadContentRendererFixtures.decodeFailedImageResourceID:
+            return ImagePayload(
+                data: Data([0x00, 0x01, 0x02, 0x03]),
+                mediaType: "image/png"
+            )
         default:
             throw ImageLoadingError.missingFixture
         }
