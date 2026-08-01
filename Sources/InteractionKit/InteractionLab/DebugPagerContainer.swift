@@ -8,6 +8,7 @@ where PageID: Hashable & Sendable {
     let liveIDs: [PageID]
     let resolvedTransitionCount: Int
     let controllerCount: Int
+    let coordinatorSequence: UInt64
 }
 
 enum PagerContainerEvent<PageID>: Equatable, Sendable
@@ -92,6 +93,8 @@ where PageID: Hashable & Sendable, PageContent: View {
         ] = [:]
         private weak var installedController: UIPageViewController?
         private var selectionCommitTask: Task<Void, Never>?
+        private var selectionCommitGeneration: UInt64 = 0
+        private let coordinatorSequence: UInt64
 
         var cachedControllerCount: Int {
             controllers.count
@@ -103,6 +106,7 @@ where PageID: Hashable & Sendable, PageContent: View {
 
         init(parent: PagerContainer) {
             self.parent = parent
+            coordinatorSequence = PagerCoordinatorSequenceSource.next()
             state = PagerStateMachine(
                 pageIDs: parent.pageIDs,
                 committedID: parent.selection
@@ -118,6 +122,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         }
 
         func synchronize(_ controller: UIPageViewController) {
+            invalidateDeferredSelectionCommit()
             controller.view.backgroundColor = parent.backgroundColor
             configureInternalScrollViews(in: controller)
             refreshCachedContent()
@@ -144,8 +149,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         }
 
         func dismantle(_ controller: UIPageViewController) {
-            selectionCommitTask?.cancel()
-            selectionCommitTask = nil
+            invalidateDeferredSelectionCommit()
             controller.delegate = nil
             controller.dataSource = nil
             controllers.removeAll(keepingCapacity: false)
@@ -202,6 +206,7 @@ where PageID: Hashable & Sendable, PageContent: View {
                 return
             }
 
+            invalidateDeferredSelectionCommit()
             parent.selection = state.committedID
             showCommittedPageIfNeeded(
                 in: pageViewController,
@@ -322,21 +327,37 @@ where PageID: Hashable & Sendable, PageContent: View {
                     transition: state.transition
                 ),
                 resolvedTransitionCount: state.resolvedTransitionCount,
-                controllerCount: controllers.count
+                controllerCount: controllers.count,
+                coordinatorSequence: coordinatorSequence
             )
         }
 
         private func scheduleSelectionCommit(_ selection: PageID?) {
             selectionCommitTask?.cancel()
             let binding = parent.$selection
-            selectionCommitTask = Task { @MainActor in
+            let expectedSource = binding.wrappedValue
+            selectionCommitGeneration &+= 1
+            let generation = selectionCommitGeneration
+            selectionCommitTask = Task { @MainActor [weak self] in
                 await Task.yield()
-                guard !Task.isCancelled,
+                guard let self,
+                      !Task.isCancelled,
+                      self.selectionCommitGeneration == generation,
+                      binding.wrappedValue == expectedSource,
                       binding.wrappedValue != selection else {
                     return
                 }
                 binding.wrappedValue = selection
+                if self.selectionCommitGeneration == generation {
+                    self.selectionCommitTask = nil
+                }
             }
+        }
+
+        private func invalidateDeferredSelectionCommit() {
+            selectionCommitGeneration &+= 1
+            selectionCommitTask?.cancel()
+            selectionCommitTask = nil
         }
 
         private func configureInternalScrollViews(
@@ -348,6 +369,16 @@ where PageID: Hashable & Sendable, PageContent: View {
                 scrollView.isScrollEnabled = parent.pagingEnabled
             }
         }
+    }
+}
+
+@MainActor
+private enum PagerCoordinatorSequenceSource {
+    private static var nextSequence: UInt64 = 1
+
+    static func next() -> UInt64 {
+        defer { nextSequence &+= 1 }
+        return nextSequence
     }
 }
 

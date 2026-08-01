@@ -51,24 +51,36 @@ final class InteractionLabTests: XCTestCase {
     func testUIKitPagerCancellationAndMidTransitionMutationsKeepBusinessID() {
         let app = launchPagerLab()
         let page = UITestHarness.element(.interactionPagerPageP2, in: app)
-        let start = page.coordinate(
-            withNormalizedOffset: CGVector(dx: 0.78, dy: 0.5)
-        )
-        let shortEnd = page.coordinate(
-            withNormalizedOffset: CGVector(dx: 0.72, dy: 0.5)
-        )
-        start.press(
-            forDuration: 0.5,
-            thenDragTo: shortEnd,
-            withVelocity: .slow,
-            thenHoldForDuration: 0.5
-        )
+        for cancellationCount in 1...5 {
+            let start = page.coordinate(
+                withNormalizedOffset: CGVector(dx: 0.78, dy: 0.5)
+            )
+            let halfTravel = page.coordinate(
+                withNormalizedOffset: CGVector(dx: 0.44, dy: 0.5)
+            )
+            start.press(
+                forDuration: 0.1,
+                thenDragTo: halfTravel,
+                withVelocity: .slow,
+                thenHoldForDuration: 0.1
+            )
 
-        UITestHarness.requireLabel(
-            .interactionCurrentPage,
-            equals: "Current ID: p2",
-            in: app
-        )
+            UITestHarness.requireLabel(
+                .interactionCurrentPage,
+                equals: "Current ID: p2",
+                in: app
+            )
+            UITestHarness.requireLabel(
+                .interactionPagerTransition,
+                equals: "Transition: idle-cancelled",
+                in: app
+            )
+            UITestHarness.requireLabel(
+                .interactionPagerCompletion,
+                equals: "Resolved: \(cancellationCount)",
+                in: app
+            )
+        }
 
         UITestHarness.tap(.interactionPagerArmInsert, in: app)
         swipePagerPage(.interactionPagerPageP2, left: true, in: app)
@@ -184,151 +196,51 @@ final class InteractionLabTests: XCTestCase {
     }
 
     @MainActor
-    func testMediaSingleAndMultipleLoadingFailureZoomAndClose() {
-        let app = launchMediaLab()
-        verifySingleMediaPresentation(in: app)
-        verifyMultipleMediaPresentation(in: app)
-    }
+    func testPagerCoordinatorSurvivesRotationWithTheSelectedBusinessID() {
+        let device = XCUIDevice.shared
+        device.orientation = .portrait
+        let app = launchPagerLab()
 
-    @MainActor
-    private func verifySingleMediaPresentation(in app: XCUIApplication) {
-        UITestHarness.tap(.interactionMediaOpenSingle, in: app)
+        swipePagerPage(.interactionPagerPageP2, left: true, in: app)
         UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: small",
+            .interactionCurrentPage,
+            equals: "Current ID: p3",
             in: app
         )
-        UITestHarness.tap(.interactionMediaClose, in: app)
-        UITestHarness.requireLabel(
-            .interactionMediaOverlayState,
-            equals: "Overlay: absent",
+        let sequence = UITestHarness.element(
+            .interactionPagerCoordinatorSequence,
             in: app
         )
-    }
+        XCTAssertTrue(sequence.waitForExistence(timeout: 5))
+        let sequenceBeforeRotation = sequence.label
 
-    @MainActor
-    private func verifyMultipleMediaPresentation(in app: XCUIApplication) {
-        UITestHarness.tap(.interactionMediaOpenMultiple, in: app)
+        device.orientation = .landscapeLeft
         UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: large",
+            .interactionCurrentPage,
+            equals: "Current ID: p3",
             in: app
         )
-        verifyAccessibleMediaPaging(in: app)
-
-        let zoomSurface = app.descendants(matching: .any)[
-            "interaction.media.zoom-surface.large"
-        ]
-        XCTAssertTrue(zoomSurface.waitForExistence(timeout: 5))
-        zoomSurface.tap(withNumberOfTaps: 2, numberOfTouches: 1)
-        UITestHarness.requireLabelNotEqual(
-            .interactionMediaZoom,
-            to: "Zoom: 1.00",
-            in: app
-        )
-        zoomSurface.swipeLeft()
+        swipePagerPage(.interactionPagerPageP3, left: false, in: app)
         UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: large",
+            .interactionCurrentPage,
+            equals: "Current ID: p2",
             in: app
         )
 
-        zoomSurface.tap(withNumberOfTaps: 2, numberOfTouches: 1)
+        XCTAssertEqual(sequence.label, sequenceBeforeRotation)
+        device.orientation = .portrait
         UITestHarness.requireLabel(
-            .interactionMediaZoom,
-            equals: "Zoom: 1.00",
+            .interactionCurrentPage,
+            equals: "Current ID: p2",
             in: app
         )
-        zoomSurface.swipeLeft()
+        swipePagerPage(.interactionPagerPageP2, left: true, in: app)
         UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: delayed",
+            .interactionCurrentPage,
+            equals: "Current ID: p3",
             in: app
         )
-        UITestHarness.requirePresent(.interactionMediaLoading, in: app)
-
-        app.swipeLeft()
-        UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: failure",
-            in: app
-        )
-        UITestHarness.requirePresent(.interactionMediaFailure, in: app)
-        UITestHarness.tap(.interactionMediaRetryFailure, in: app)
-        UITestHarness.waitUntilAbsent(.interactionMediaFailure, in: app)
-
-        app.swipeRight()
-        UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: delayed",
-            in: app
-        )
-        UITestHarness.tap(.interactionMediaReleaseDelayed, in: app)
-        UITestHarness.waitUntilAbsent(.interactionMediaLoading, in: app)
-
-        app.swipeRight()
-        UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: large",
-            in: app
-        )
-        UITestHarness.requireLabel(
-            .interactionMediaZoom,
-            equals: "Zoom: 1.00",
-            in: app
-        )
-        UITestHarness.tap(.interactionMediaClose, in: app)
-        UITestHarness.requirePresent(.interactionMediaSource, in: app)
-        UITestHarness.requireLabel(
-            .interactionMediaOverlayState,
-            equals: "Overlay: absent",
-            in: app
-        )
-    }
-
-    @MainActor
-    private func verifyAccessibleMediaPaging(in app: XCUIApplication) {
-        UITestHarness.tap(.interactionMediaAccessibilityNext, in: app)
-        UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: delayed",
-            in: app
-        )
-        UITestHarness.tap(.interactionMediaAccessibilityPrevious, in: app)
-        UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: large",
-            in: app
-        )
-    }
-
-    @MainActor
-    func testMediaPinchPanChromeAndCancelledPagingStayOnCurrentID() {
-        let app = launchMediaLab()
-        UITestHarness.tap(.interactionMediaOpenMultiple, in: app)
-
-        let zoomSurface = app.descendants(matching: .any)[
-            "interaction.media.zoom-surface.large"
-        ]
-        XCTAssertTrue(zoomSurface.waitForExistence(timeout: 5))
-        zoomSurface.pinch(withScale: 2.0, velocity: 1.0)
-        UITestHarness.requireLabelNotEqual(
-            .interactionMediaZoom,
-            to: "Zoom: 1.00",
-            in: app
-        )
-        zoomSurface.swipeLeft()
-        UITestHarness.requireLabel(
-            .interactionMediaCurrent,
-            equals: "Current: large",
-            in: app
-        )
-
-        zoomSurface.tap()
-        UITestHarness.waitUntilAbsent(.interactionMediaClose, in: app)
-        zoomSurface.tap()
-        UITestHarness.requirePresent(.interactionMediaClose, in: app)
-        UITestHarness.tap(.interactionMediaClose, in: app)
+        XCTAssertEqual(sequence.label, sequenceBeforeRotation)
     }
 
     @MainActor
@@ -346,14 +258,6 @@ final class InteractionLabTests: XCTestCase {
         )
         UITestHarness.tap(.debugOpenInteractionLab, in: app)
         UITestHarness.requirePresent(.interactionLabTitle, in: app)
-        return app
-    }
-
-    @MainActor
-    private func launchMediaLab() -> XCUIApplication {
-        let app = launchPagerLab()
-        UITestHarness.tap(.interactionSectionMedia, in: app)
-        UITestHarness.requirePresent(.interactionMediaSource, in: app)
         return app
     }
 

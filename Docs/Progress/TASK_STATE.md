@@ -12,6 +12,7 @@
 - 阶段 08 图片状态定向修复：包含本文件的
   `fix: align thread image accessibility with render state`
 - production live：`DISABLED`
+- 阶段 06：`SPIKE_PARTIAL`（阶段 06B 已执行，mandatory 项仍未关闭）
 - 阶段 09：`NOT_STARTED`
 - 阶段 09 门禁：`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`
 
@@ -312,7 +313,8 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 6. UI/Unit 使用 iOS 26.5 Simulator；iOS 18.x、真机、VoiceOver
    实操和真实 iPad 分屏未验证。
 7. 公开/App Store/商业分发仍被 ADR-0011 权利边界阻塞。
-8. 阶段 06 Pager/Media 仍为 `SPIKE_PARTIAL`；本修复未开始 06B 收口。
+8. 阶段 06B 已执行并保留 `SPIKE_PARTIAL`；详见本文件末尾与
+   `Docs/Audits/INTERACTION_SPIKE_REPORT.md`。
 
 ## 下一阶段前置条件
 
@@ -320,9 +322,38 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 且阶段 06 `SPIKE_PARTIAL` 验收被正式关闭，阶段 09 保持
 `PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。待关闭的阶段 06 风险包括：
 
-1. stale selection commit generation / expected-source 归属；
-2. 旋转期间 coordinator continuity；
-3. 运行时 fixed-owner 手势交接；
-4. cached scroll/zoom 离场重置；
-5. 真实 iPad 分屏、iOS 18.x 与 VoiceOver 验收；
+1. 运行时 fixed-owner 手势交接；
+2. iPhone Media 旋转后的 chrome/safe-area 裁切；
+3. 真实 non-empty refresh、burst/reverse、纵向滚动抖动与页面几何；
+4. 非默认 PageID 的 regular/compact 保持、真实 iPad 分屏、iOS 18.x 与
+   VoiceOver 验收；
+5. 非法图片 bytes、异步 load/cancel/stale callback；
 6. resource lease 与 100 张 full-resolution 资源压力证据。
+
+## 阶段 06B Pager / Media Spike 收口
+
+- baseline HEAD：`b205af6d0bd91d51cb7bc83b6e70f6da7fe93fbe`；Android reference
+  始终 clean/exact
+  `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
+- 已关闭：stale deferred selection ownership、iPhone 双向旋转 coordinator
+  continuity、5 次 34% 宽度拖动取消、cached scroll 实际 zoom/offset reset、
+  极端宽高比 resize 有限值、Reduce Motion zoom 分支、Zoom weak release、
+  iPhone 5 次 open/close、iPad Media settled 旋转/切图/关闭。34% 拖动不计作
+  严格半程覆盖。
+- 新复现：Computer Use 在 iPhone Media zoom/pan 后旋转，业务 ID 与 zoom
+  仍正确，但 chrome 按钮不可见/裁出可视区；证据截图：
+  `Artifacts/TestResults/phase06b-media-rotation-chrome-clipped.png`。
+- 运行环境只有 iOS 26.5（23F77）；没有 iOS 18.x runtime。真实 split-view
+  divider 与 VoiceOver 未验证。
+- `MediaGestureSession` 没有接到 recognizer begin，runtime fixed-owner 仍是
+  阶段硬阻塞；未引入私有 recognizer API 或新的自定义手势来绕过。
+- 阶段 08 图片六态与 MediaIntent 边界未修改；未创建 ThreadScreen、生产
+  MediaViewer、live 网络、缓存、候选、下采样或 lease。
+- 最终 `make quality` exit 0 并输出 `Quality gate completed.`；严格
+  `xcresulttool` 结果为 Unit 125/125（设备参数执行 134）、iPhone smoke
+  13/13、iPhone interaction 7/7、iPad smoke 3/3、iPad interaction 2/2，
+  全部 0 failed/0 skipped/0 expected failure。绿色自动化不替代未完成的
+  mandatory 实机验收。
+- 状态决定：`PHASE_06_INTERACTION_SPIKES = SPIKE_PARTIAL`；
+  `PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED` 保持；阶段 09 仍为
+  `NOT_STARTED`，本轮未读取或执行阶段 09。

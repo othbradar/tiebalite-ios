@@ -39,8 +39,29 @@ struct DebugMediaFixture: Identifiable, Equatable, Sendable {
 struct DebugZoomImageView: UIViewRepresentable {
     let mediaID: String
     let image: UIImage
+    let resetGeneration: UInt64
+    let reduceMotion: Bool
     let onSingleTap: () -> Void
     let onCapabilityChanged: (MediaPageCapability, Double) -> Void
+
+    init(
+        mediaID: String,
+        image: UIImage,
+        resetGeneration: UInt64 = 0,
+        reduceMotion: Bool = false,
+        onSingleTap: @escaping () -> Void,
+        onCapabilityChanged: @escaping (
+            MediaPageCapability,
+            Double
+        ) -> Void
+    ) {
+        self.mediaID = mediaID
+        self.image = image
+        self.resetGeneration = resetGeneration
+        self.reduceMotion = reduceMotion
+        self.onSingleTap = onSingleTap
+        self.onCapabilityChanged = onCapabilityChanged
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -49,7 +70,11 @@ struct DebugZoomImageView: UIViewRepresentable {
     func makeUIView(context: Context) -> DebugZoomScrollView {
         let scrollView = DebugZoomScrollView()
         context.coordinator.install(on: scrollView)
-        scrollView.configure(image: image, mediaID: mediaID)
+        scrollView.configure(
+            image: image,
+            mediaID: mediaID,
+            resetGeneration: resetGeneration
+        )
         return scrollView
     }
 
@@ -59,7 +84,13 @@ struct DebugZoomImageView: UIViewRepresentable {
     ) {
         context.coordinator.parent = self
         if scrollView.mediaID != mediaID {
-            scrollView.configure(image: image, mediaID: mediaID)
+            scrollView.configure(
+                image: image,
+                mediaID: mediaID,
+                resetGeneration: resetGeneration
+            )
+        } else {
+            scrollView.applyResetGeneration(resetGeneration)
         }
         context.coordinator.reportCapability(scrollView)
     }
@@ -183,7 +214,7 @@ struct DebugZoomImageView: UIViewRepresentable {
                 scrollView.minimumZoomScale + 0.01 {
                 scrollView.setZoomScale(
                     scrollView.minimumZoomScale,
-                    animated: true
+                    animated: parent.animatesZoomTransition
                 )
             } else {
                 let targetScale = min(
@@ -203,10 +234,14 @@ struct DebugZoomImageView: UIViewRepresentable {
                 )
                 scrollView.zoom(
                     to: zoomRect,
-                    animated: true
+                    animated: parent.animatesZoomTransition
                 )
             }
         }
+    }
+
+    var animatesZoomTransition: Bool {
+        !reduceMotion
     }
 }
 
@@ -214,6 +249,7 @@ struct DebugZoomImageView: UIViewRepresentable {
 final class DebugZoomScrollView: UIScrollView {
     let mediaImageView = UIImageView()
     private(set) var mediaID: String?
+    private(set) var appliedResetGeneration: UInt64 = 0
 
     private var previousBoundsSize: CGSize = .zero
 
@@ -262,13 +298,28 @@ final class DebugZoomScrollView: UIScrollView {
         centerZoomedImage()
     }
 
-    func configure(image: UIImage, mediaID: String) {
+    func configure(
+        image: UIImage,
+        mediaID: String,
+        resetGeneration: UInt64 = 0
+    ) {
         self.mediaID = mediaID
+        appliedResetGeneration = resetGeneration
         mediaImageView.image = image
         accessibilityIdentifier = "interaction.media.zoom-surface.\(mediaID)"
         setZoomScale(minimumZoomScale, animated: false)
         contentOffset = .zero
         setNeedsLayout()
+    }
+
+    func applyResetGeneration(_ resetGeneration: UInt64) {
+        guard resetGeneration != appliedResetGeneration else {
+            return
+        }
+        appliedResetGeneration = resetGeneration
+        setZoomScale(minimumZoomScale, animated: false)
+        contentOffset = .zero
+        centerZoomedImage()
     }
 
     func centerZoomedImage() {

@@ -105,6 +105,8 @@ enum UITestElementID: String, CaseIterable {
         "interaction.pager.completion-count"
     case interactionPagerControllerCount =
         "interaction.pager.controller-count"
+    case interactionPagerCoordinatorSequence =
+        "interaction.pager.coordinator-sequence"
     case interactionPagerPageP1 = "interaction.pager.page.p1"
     case interactionPagerPageP2 = "interaction.pager.page.p2"
     case interactionPagerPageP3 = "interaction.pager.page.p3"

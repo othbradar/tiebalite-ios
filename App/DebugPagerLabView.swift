@@ -21,23 +21,18 @@ struct DebugPagerLabView: View {
     @State private var liveIDs = ["p1", "p2", "p3"]
     @State private var resolvedTransitionCount = 0
     @State private var controllerCount = 3
+    @State private var coordinatorSequence: UInt64 = 0
     @State private var pagerViewportHeight: CGFloat = 0
     @State private var refreshing = false
 
     var body: some View {
         GeometryReader { proxy in
-            if proxy.size.width > proxy.size.height {
-                HStack(spacing: Spacing.small) {
-                    controlPanel
-                    pagerViewport
-                }
-            } else {
-                VStack(spacing: Spacing.small) {
-                    statusGrid
-                    pagerAccessibilityControls
-                    pagerViewport
-                    mutationControls
-                }
+            let layout = proxy.size.width > proxy.size.height
+                ? AnyLayout(HStackLayout(spacing: Spacing.small))
+                : AnyLayout(VStackLayout(spacing: Spacing.small))
+            layout {
+                controlPanel
+                pagerViewport
             }
         }
     }
@@ -73,6 +68,10 @@ struct DebugPagerLabView: View {
             Text("Controllers: \(controllerCount)")
                 .accessibilityIdentifier(
                     "interaction.pager.controller-count"
+                )
+            Text("Coordinator: \(coordinatorSequence)")
+                .accessibilityIdentifier(
+                    "interaction.pager.coordinator-sequence"
                 )
             Text(refreshing ? "Refresh: active" : "Refresh: idle")
                 .accessibilityIdentifier("interaction.pager.refresh-state")
@@ -230,6 +229,7 @@ struct DebugPagerLabView: View {
             liveIDs = snapshot.liveIDs
             resolvedTransitionCount = snapshot.resolvedTransitionCount
             controllerCount = snapshot.controllerCount
+            coordinatorSequence = snapshot.coordinatorSequence
             refreshing = false
         }
     }

@@ -118,6 +118,32 @@ SwiftUI 候选不能因代码少直接胜出；UIKit 候选也不能凭经验假
 resize 后 B 仍失败，回滚到显式前后按钮/Tab 的非交互降级；不得恢复 A
 的提交后钩子或引入私有手势关系。
 
+## 阶段 06B 收口结论
+
+阶段 06B 关闭了两个可复现的 coordinator 根因，但仍不足以批准生产实现：
+
+- deferred selection commit 现在带单调 generation 和 expected-source；每次
+  synchronize、transition resolve 与 dismantle 都先取消旧提交。修复前
+  `20260801-120058-40012-unit.xcresult` 可稳定让旧 fallback 覆盖较新的
+  外部 selection；修复后完整 Unit 通过。
+- Lab 的横竖屏布局改为同一子树上的 `AnyLayout`，不再用条件分支重建
+  representable；Debug-only 单调 coordinator sequence 先在
+  `20260801-120538-43562-ui-interaction.xcresult` 证明旋转发生重建，修复后
+  双向旋转与翻页在 `20260801-123531-60392-ui-interaction.xcresult` 保持
+  同一 sequence。
+- 34% 页面宽度拖动取消在真实 iPhone Simulator 连续执行 5 次，逐次断言
+  `idle-cancelled`、业务 ID 和 completion count；20 次交替切页也通过。
+  这未达到严格半程，且仍是逐次 settled 操作，不等同于无等待 burst 或
+  同一触摸反向轨迹。
+- 100 页 controller cache 仍有界，Zoom coordinator/scroll weak release
+  新增实测；但 Pager child hosting-controller deinit、真实 non-empty refresh
+  保留内容、loading/failure 几何、纵向滚动夹带水平抖动、非默认 PageID 的
+  regular/compact 重建与真实 split divider 仍缺运行证据。
+- 本机唯一可用 runtime 是 iOS 26.5；iOS 18.x 与 VoiceOver 未验证。
+
+因此 ADR 状态继续是 `Proposed（阶段 06 Spike Partial，仅 Debug）`；阶段
+06B 不批准迁移、改名或复制 Debug Pager。
+
 ## 迁移/退出成本
 
 两候选只能存在于隔离 spike 目录。胜者进入唯一生产路径，败者完整删除。

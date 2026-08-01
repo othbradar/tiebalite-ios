@@ -7,6 +7,8 @@ struct DebugMediaPage: View {
     let fixture: DebugMediaFixture
     let delayedReleased: Bool
     let failureRecovered: Bool
+    let resetGeneration: UInt64
+    let reduceMotion: Bool
     let retryFailure: () -> Void
     let toggleChrome: () -> Void
     let capabilityChanged: (MediaPageCapability, Double) -> Void
@@ -55,6 +57,8 @@ struct DebugMediaPage: View {
                     DebugZoomImageView(
                         mediaID: fixture.id,
                         image: image,
+                        resetGeneration: resetGeneration,
+                        reduceMotion: reduceMotion,
                         onSingleTap: toggleChrome,
                         onCapabilityChanged: capabilityChanged
                     )
@@ -147,6 +151,7 @@ private struct DebugMediaViewer: View {
         String: MediaPageCapability
     ] = [:]
     @State private var zoomScaleByID: [String: Double] = [:]
+    @State private var resetGenerationByID: [String: UInt64] = [:]
     @State private var transitionSourceID: String?
 
     init(
@@ -273,6 +278,8 @@ private struct DebugMediaViewer: View {
                 fixture: fixture,
                 delayedReleased: delayedReleased,
                 failureRecovered: failureRecovered,
+                resetGeneration: resetGenerationByID[mediaID] ?? 0,
+                reduceMotion: reduceMotion || reductionOverride,
                 retryFailure: {
                     failureRecovered = true
                 },
@@ -352,6 +359,7 @@ private struct DebugMediaViewer: View {
         guard presentation.items.indices.contains(targetIndex) else {
             return
         }
+        resetTransform(for: currentID)
         self.currentID = presentation.items[targetIndex].id
     }
 
@@ -384,8 +392,7 @@ private struct DebugMediaViewer: View {
                 self.transitionSourceID = nil
                 return
             }
-            capabilityByID[transitionSourceID] = .minimumZoom
-            zoomScaleByID[transitionSourceID] = 1
+            resetTransform(for: transitionSourceID)
             self.transitionSourceID = nil
         }
     }
@@ -393,8 +400,15 @@ private struct DebugMediaViewer: View {
     private func closeViewer() {
         capabilityByID.removeAll(keepingCapacity: false)
         zoomScaleByID.removeAll(keepingCapacity: false)
+        resetGenerationByID.removeAll(keepingCapacity: false)
         transitionSourceID = nil
         close()
+    }
+
+    private func resetTransform(for mediaID: String) {
+        resetGenerationByID[mediaID, default: 0] &+= 1
+        capabilityByID[mediaID] = .minimumZoom
+        zoomScaleByID[mediaID] = 1
     }
 }
 #endif

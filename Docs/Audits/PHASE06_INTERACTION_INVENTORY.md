@@ -1,7 +1,11 @@
 # Interaction inventory
 
 Repository: /Users/othbradar/PycharmProjects/tiebalite重构
-Commit: 4005387738f8c7425e93fde82b042cb589c98699
+Original Phase 06 commit: 4005387738f8c7425e93fde82b042cb589c98699
+Phase 06B baseline: b205af6d0bd91d51cb7bc83b6e70f6da7fe93fbe
+
+The original frozen inventory remains below. The Phase 06B delta at the end is
+authoritative for changed line numbers and newly added test surfaces.
 
 ## Animations and transitions
 
@@ -90,3 +94,54 @@ Sources/InteractionKit/InteractionLab/DebugPagerContainer.swift:67:    func upda
 Sources/InteractionKit/InteractionLab/DebugPagerContainer.swift:75:    static func dismantleUIViewController(
 Sources/InteractionKit/InteractionLab/DebugZoomImageView.swift:56:    func updateUIView(
 Sources/InteractionKit/InteractionLab/DebugZoomImageView.swift:67:    static func dismantleUIView(
+
+## Phase 06B delta
+
+### Identity and deferred state
+
+- `DebugPagerContainer.Coordinator.selectionCommitGeneration` is monotonic.
+- Every synchronize/resolve/dismantle invalidates a pending selection commit.
+- A deferred commit requires matching generation and expected binding source.
+- `PagerCoordinatorSequenceSource` is monotonic Debug diagnostics; it is not a
+  PageID and does not use UUID.
+- `DebugMediaViewer.resetGenerationByID` is keyed only by stable MediaID.
+
+### UIKit animation and gesture surface
+
+- Existing recognizers remain exactly one single-tap and one double-tap per
+  `DebugZoomImageView.Coordinator`; dismantle removes both.
+- Single tap still requires double tap to fail.
+- Pinch and pan remain the built-in `UIScrollView` recognizers.
+- Double-tap UIKit zoom uses `animated: !reduceMotion`; no custom duration,
+  curve, animation modifier or new recognizer was added.
+- The unresolved runtime owner remains capability-driven Pager enablement;
+  `MediaGestureSession` is not wired to recognizer begin.
+
+### Presentation and generated evidence
+
+- The only Spike presentation remains the existing Debug `fullScreenCover`.
+- No new overlay was added. The existing status/chrome layers remain after the
+  Pager in the Z-order and use bounded hit testing.
+- Computer Use failure evidence:
+  `Artifacts/TestResults/phase06b-media-rotation-chrome-clipped.png`.
+
+### Added/changed tests
+
+- `InteractionControllerLifecycleTests`: stale deferred commit, cached zoom
+  reset, Reduce Motion zoom branch, four viewport/extreme-ratio finite geometry,
+  weak coordinator/scroll release.
+- `InteractionLabTests`: 5 half-travel cancellations, two-direction rotation
+  coordinator sequence and 20 stable-ID alternations.
+- `MediaInteractionLabTests`: cached reset through real accessibility paging,
+  pinch/pan/current-ID, delayed/failure/retry and 5 open/close cycles.
+- `IPadInteractionLabTests`: iPad Media zoom, rotation, accessibility paging,
+  reset and close.
+
+### Forbidden-pattern result
+
+No `.id(UUID())`, random identity, `DispatchQueue.main.asyncAfter`,
+`Task.sleep`, `UIScreen.main.bounds`, `DragGesture`, magic zIndex, transparent
+full-screen blocker, private recognizer API, live network or second Pager/Viewer
+was added. `Task.yield()` remains a single actor-turn deferred binding commit;
+generation/source ownership, rather than timing, determines whether it may
+write.

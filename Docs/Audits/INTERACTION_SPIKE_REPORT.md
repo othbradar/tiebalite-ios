@@ -262,3 +262,125 @@ SHA-256 均为
 0 failed/0 skipped，iPhone/iPad 均为 iOS 26.5 Simulator。
 绿色门禁不关闭前述未执行手工矩阵与已知 Debug 候选风险，阶段结论仍为
 `SPIKE_PARTIAL`。
+
+## Phase 06B 定向收口（2026-08-01）
+
+### 状态裁决
+
+- baseline：`b205af6d0bd91d51cb7bc83b6e70f6da7fe93fbe`。
+- 最终裁决：`PHASE_06_INTERACTION_SPIKES = SPIKE_PARTIAL`。
+- 后续门禁保持：`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。
+- 阶段 09 仍是 `NOT_STARTED`；本轮未读取或执行阶段 09。
+- 阶段 08 Renderer/MediaIntent 图片六态未修改；无生产接线、live 网络、
+  cache/downsample/candidate/lease、ThreadScreen 或生产 MediaViewer。
+
+任何一项 mandatory 未验证都禁止 `SPIKE_ACCEPTED`。本轮即使自动化绿色，
+仍因 runtime fixed-owner、横屏 chrome 裁切、iOS 18/VoiceOver/真实 split 等
+明确阻塞而保持 Partial。
+
+### 原未决项与 06B 结果
+
+| ID | 风险与 symbol | 原验收 / 原有证据 | 06B 缺失或新增测试 | 维度 | 阶段 09 硬前置 | 结果 |
+|---|---|---|---|---|---|---|
+| P1 | `scheduleSelectionCommit` 旧提交覆盖新 selection | stale completion 不得覆盖；原无 controller 回归 | 先红后加 generation/expected-source；完整 Unit 绿 | Pager/identity | 是 | CLOSED |
+| P2 | 横竖布局重建 Pager coordinator | 旋转后 ID/frame/identity；原只看默认 ID | sequence 红证明确有重建；`AnyLayout` 后竖→横→竖翻页同 sequence | Pager/resize | 是 | CLOSED（iPhone） |
+| P3 | burst、半程取消、同触摸反向 | 原 20 次逐次往返、6% 短拖 | 34% 宽度拖动连续 5 次有 cancelled 状态；未达严格半程，burst/反向轨迹仍无 | Pager/gesture | 是 | PARTIAL |
+| P4 | refresh/loading/failure 内容和几何 | 数据更新不露空页；原仅 Bool/final idle | 没有真实 retained revision、loading/failure 等高 frame UI fixture | Pager/visual | 是 | OPEN |
+| P5 | child/controller 生命周期 | 100 页有界 cache、delegate/dataSource 清理 | Zoom weak release 已加；Pager child deinit/昂贵内容重建仍未探测 | Pager/perf | 是 | PARTIAL |
+| M1 | `MediaGestureSession` 未接 recognizer begin | owner 在触摸开始固定；原只有纯模型 | 运行时仍按最新 capability 动态启停 Pager | Media/gesture | 是 | OPEN |
+| M2 | cached `DebugZoomScrollView` 未实际 reset | 完成离场 reset，取消保留 | valid red 后 reset generation；Unit + iPhone/iPad UI 返回同 ID 为 1.00 | Media/identity | 是 | CLOSED |
+| M3 | rotation/resize 与极端比例 | transform 合法、无 NaN/Infinity | tiny/wide/tall/unknown × 4 viewport Unit；iPad rotate UI | Media/iPad/resize | 是 | PARTIAL（settled） |
+| M4 | async loading/cancel/stale/invalid bytes/burst | load 三态、取消、旧 callback 不反写 | Spike 只有 delayed/failure 本地状态；阶段 08 六态不能代替 Media viewer 运行证据 | Media/load | 是 | OPEN |
+| M5 | 关闭与 full-res 资源上界 | 关闭释放，100 张不单调增长 | weak Zoom release + 5 次开关；无真实 task/observer/100 lease | Media/lifecycle | 是 | PARTIAL |
+| I1 | iPad split、iOS 18、VoiceOver | 两宽度、旋转、page value/Escape | iPad settled Media 绿；仅有 iOS 26.5，无 divider/VoiceOver | iPad/a11y | 是 | OPEN |
+| A1 | dark/大字/Reduce Motion | 状态与功能完整、无必要信息仅靠动画 | Pager reduced UI；Media UIKit zoom 分支 Unit；无完整 Media dark/大字布局断言 | motion/a11y | 是 | PARTIAL |
+| V1 | 全帧露白、错页、遮挡、zoom leak | 初始/转场/旋转全程背景与 chrome 正确 | settled 自动化未见错页；Computer Use 实际复现 iPhone chrome 旋转裁切 | visual/safe area | 是 | FAILED |
+
+### 先红后绿与新增证据
+
+- stale commit 红：`20260801-120058-40012-unit.xcresult`；修复后完整 Unit
+  通过。
+- rotation coordinator 红：
+  `20260801-120538-43562-ui-interaction.xcresult`（5/6，sequence 变化）；
+  修复后 `20260801-121216-45794-ui-interaction.xcresult` 6/6。
+- cached zoom reset 的首个 fixture 在
+  `20260801-122059-51449-unit.xcresult` 因未安装 coordinator 而没有建立
+  zoom>1 前提，不计产品红；修正 fixture 后有效红为
+  `20260801-122224-53158-unit.xcresult`，scale 2.0 在 reset 后仍为 2.0。
+  reset generation 后完整 Unit 转绿。
+- `20260801-121959-50059-unit.xcresult` 是新增 initializer 的编译失败；
+  `20260801-123408-57307-unit.xcresult` 是 Swift Testing `allSatisfy`
+  `rethrows` 宏编译失败；两者均修正并保留为真实执行记录。
+- 首次新增后 `make lint` 因 `InteractionLabTests` 416 行超过 350 退出 2；
+  Media tests 拆到同一 XCTest 类的独立 extension 后 81 files、0 violation。
+- 当前聚焦绿色：Unit
+  `20260801-123450-58690-unit.xcresult` 为 125/125 顶层逻辑测试（134 次
+  参数运行），iPhone interaction
+  `20260801-123531-60392-ui-interaction.xcresult` 为 7/7，iPad interaction
+  `20260801-124313-62847-ui-interaction-ipad.xcresult` 为 2/2；三者均
+  `Passed`、0 failed、0 skipped、0 expected failure，iOS 26.5/23F77。
+
+### Simulator 实际矩阵
+
+| 设备/场景 | 次数 | 结果 |
+|---|---:|---|
+| iPhone 竖屏 stable-ID p2↔p3 | 20 次切换 | 通过；视觉 ID/index 与 resolved count 一致 |
+| iPhone 34% drag cancel | 5 次 | 通过；每次 p2、`idle-cancelled`、count +1；不计作严格半程覆盖 |
+| iPhone 竖→横→竖 coordinator | 1 个双向周期、每向翻页 | 通过；同 sequence |
+| iPhone Media open/close | 5 次 | 通过；每次 `Overlay: absent` |
+| iPhone Media zoom/pan | XCUITest 1 次 + Computer Use 1 次 | 2.50 / pinch 后 current `large` 不变 |
+| iPhone Media zoom/pan 后旋转 | Computer Use 1 次 | 失败；chrome 不可见/裁出，截图已保存 |
+| iPad Media 竖→横、切图、reset、close | 1 个完整 UI 周期 | 通过；2/2 suite 中的新增用例 |
+| iPad regular/compact 默认 p2 | 1 个 UI 周期 | 通过；非默认 ID 与真实 divider 未测 |
+| dark + Accessibility Dynamic Type + Reduce Motion | Pager 1 个 UI 周期；Media reduce Unit | 部分通过；Media 完整布局/VoiceOver 未测 |
+| iOS 18.x | 0 | runtime 不存在，不得声称验证 |
+
+`xcrun simctl list runtimes -j` 只返回 iOS 26.5（23F77）。固定设备是
+iPhone 17 Pro `70D93841-1FEB-445A-8FAD-B1C29B981D5D` 与 iPad Pro
+13-inch (M5) `EE89FBE1-9DCA-49DC-8432-8A9C856A28FF`。Computer Use
+失败截图：
+`Artifacts/TestResults/phase06b-media-rotation-chrome-clipped.png`。
+
+### 06B 身份、手势与生命周期结论
+
+- Pager 身份只使用业务 PageID；coordinator sequence 只用于 Debug 诊断；
+  无 UUID。Media state/reset 只按稳定 MediaID。
+- Pager 仍是唯一 Debug `UIPageViewController` 候选；Media 仍复用该 Pager；
+  没有第二套 Pager/Viewer。
+- zoom/pan 由每页唯一 `UIScrollView` 管理；single tap 等待 double tap。
+  runtime fixed-owner 未接线，所以不能宣称满足边界 handoff 契约。
+- 只读复审另指出 `updateUIView` 同步 `reportCapability` 会回写父级状态，
+  尚无去重或嵌套更新回归；当前仅记录为未验证竞态风险，不作已关闭声明。
+- 完成离场复位 source cached view；取消不复位。关闭清 SwiftUI 字典与
+  transition source；dismantle 清 delegate/recognizers，weak probe 通过。
+- 新增动画 0、自定义手势 0、overlay 0、依赖 0。仅把已有 UIKit 双击 zoom
+  的 animated flag 接到 Reduce Motion。
+- 未使用随机 identity、asyncAfter、sleep、magic zIndex、透明全屏 blocker、
+  全局禁动画、私有 API、清空全局缓存或降低/删除失败断言。
+
+### 06B 最终质量门禁
+
+- `make instructions`、`make generate`、`make verify-protos`、
+  `make secret-scan`、`make networking-isolation` 与最终 `make lint` 均
+  exit 0；lint 扫描 81 个文件、0 violation。`verify-protos` 只有原有 5 个
+  unused-import warning。
+- 独立命令均 exit 0：`make test-unit`、`make test-ui-interaction`、
+  `make test-ui-smoke`、`make test-ui-smoke-ipad`、
+  `make test-ui-interaction-ipad` 与 `make quality-fast`。
+- 最终 `make quality` 从头 exit 0，并输出 `Quality gate completed.`：
+  - Debug build：`20260801-131831-85595-build.log`；
+  - Unit：`20260801-131833-85627-unit.xcresult`；
+  - iPhone UI smoke：`20260801-131903-85916-ui-smoke.xcresult`；
+  - iPhone interaction：`20260801-132414-86650-ui-interaction.xcresult`；
+  - iPad build：`20260801-133140-87228-ipad-build.log`；
+  - iPad UI smoke：`20260801-133143-87282-ui-smoke-ipad.xcresult`；
+  - iPad interaction：`20260801-133400-87518-ui-interaction-ipad.xcresult`；
+  - Release build/isolation：`20260801-133529-87706-release-build.log`。
+- `xcresulttool get test-results summary` 逐包确认 Unit 125/125 顶层逻辑
+  测试（设备参数执行 134）、iPhone smoke 13/13、iPhone interaction 7/7、
+  iPad smoke 3/3、iPad interaction 2/2；全部 `Passed`，且 failed、skipped、
+  expected failure 均为 0。设备均是 iOS 26.5（23F77）Simulator。
+- iPad 两个结果包每个用例均记录非失败 runtime warning：Info.plist 后续将要求
+  支持全部 orientation。该 warning 不改变通过计数，但保留为未清理证据。
+- 绿色门禁不覆盖前述真实 chrome 裁切与未验证 mandatory 项，因此不改变
+  `SPIKE_PARTIAL` 裁决，也不解除阶段 09 门禁。

@@ -149,6 +149,36 @@ Pager/cache/转场并违反依赖门禁。B 仍需 spike，不能直接成为生
 回滚方案保持为单图加显式前后按钮；补齐矩阵前不得创建生产
 `Features/MediaViewer`、第二套 Pager 或新图片/手势依赖。
 
+## 阶段 06B 收口结论
+
+阶段 06B 关闭了 cached transform 与部分尺寸/释放风险，但发现新的真实
+横屏阻塞：
+
+- 每个 MediaID 新增单调 reset generation。只有完成离场或显式可访问切图
+  才触发；取消不触发。`DebugZoomScrollView` 收到新 generation 后实际把
+  zoomScale、contentOffset 和 capability 复位。有效红证据为
+  `20260801-122224-53158-unit.xcresult`，绿色 Unit 与 iPhone/iPad UI 均验证
+  返回同一 cached MediaID 时 `Zoom: 1.00`。
+- 极小、超宽、超高和未知尺寸 fixture 在四个 iPhone/iPad viewport resize
+  后 frame、inset、offset 与 zoom 均为有限值；iPad Media 竖横屏保持业务
+  ID 与 zoom，并可访问切图、复位和关闭。
+- 双击 zoom 是否动画现在直接遵守 Reduce Motion；未增加 duration、curve、
+  Motion token 或第二套动画。
+- coordinator dismantle 清 delegate/两个 tap recognizer，weak probe 证明
+  coordinator 与 scroll view 可释放；iPhone 连续 5 次打开/关闭均回到
+  `Overlay: absent`。这不等同于 100 张 full-resolution lease 压力测试。
+- Computer Use 在 iPhone 上实际完成双击到 2.50、pan 后保持 `large`，随后
+  旋转复现 chrome 按钮不可见/裁出可视区；截图为
+  `Artifacts/TestResults/phase06b-media-rotation-chrome-clipped.png`。未使用
+  zIndex、透明 overlay 或延迟参数猜修。
+- `MediaGestureSession` 仍只在模型层固定 owner。运行时继续按最新
+  capability 动态启停 Pager，不能证明同一触摸到边界后不移交；非法图片
+  bytes、异步取消/stale callback、快速 burst、VoiceOver Escape 和真实
+  split divider 也未在 Media Spike 内完成。
+
+因此 ADR 状态继续是 `Proposed（阶段 06 Spike Partial，仅 Debug）`；不得
+建立生产 MediaViewer 或解除后续阶段门禁。
+
 ## 迁移/退出成本
 
 Pager 与 ZoomPage 通过离散能力接口连接，可分别替换。不得为修复失败复制
