@@ -68,6 +68,8 @@ enum LaunchScenarioRegistry {
 }
 
 enum LaunchDisplayProfile: String, Equatable, Sendable {
+    case darkAccessibilityMaximumReduced =
+        "dark-accessibility-maximum-reduced"
     case darkAccessibilityReduced = "dark-accessibility-reduced"
     case system
 }
@@ -164,6 +166,11 @@ struct LaunchDisplayProfileModifier: ViewModifier {
             content
                 .preferredColorScheme(.dark)
                 .environment(\.dynamicTypeSize, .accessibility3)
+                .environment(\.motionReductionOverride, true)
+        case .darkAccessibilityMaximumReduced:
+            content
+                .preferredColorScheme(.dark)
+                .environment(\.dynamicTypeSize, .accessibility5)
                 .environment(\.motionReductionOverride, true)
         }
     }

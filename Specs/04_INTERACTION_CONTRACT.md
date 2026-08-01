@@ -30,6 +30,17 @@
 
 - 单击切换 chrome；双击按点击位置缩放；捏合缩放；缩放后平移。
 - `zoomScale > minimumZoomScale` 时，横向手势优先用于图片平移；仅达到边界并满足明确阈值时才允许翻页。
+- 每次触摸只能在 recognizer begin 时依据当前 MediaID、
+  `zoomScale`、`contentOffset`、水平边界与初始方向选择一个
+  owner：`pager`、`mediaPan` 或 `none`。owner 在
+  ended/cancelled/failed 前不可改变，同一触摸不得同时提交
+  Pager 和图片平移。
+- minimum zoom 且明确水平时可由 Pager 拥有；缩放后的
+  interior 手势由 `mediaPan` 拥有；同一手势到达边界不移交。
+  只有下一次从已有边界明确朝外开始的水平手势才可交给
+  Pager；minimum zoom 下的垂直或模糊方向为 `none`。
+- 页面或 MediaID 切换、session 取消或失败后，旧 session
+  不得提交页面变化；Reduce Motion 不改变 owner 决策。
 - 翻页完成后新页面使用自身 zoom 状态；离开后复用必须重置。
 - 图片加载/失败期间保持页面尺寸和背景，不能露白。
 - 关闭返回帖子后，原图片单元和帖子滚动位置保持。

@@ -141,6 +141,30 @@ struct InteractionControllerLifecycleTests {
     }
 
     @Test
+    func minimumZoomPanRemainsEnabledForRuntimeBeginArbitration() {
+        let image = makeImage(size: CGSize(width: 64, height: 64))
+        let view = DebugZoomImageView(
+            mediaID: "minimum",
+            image: image,
+            onSingleTap: {},
+            onCapabilityChanged: { _, _ in }
+        )
+        let coordinator = view.makeCoordinator()
+        let scrollView = DebugZoomScrollView(
+            frame: CGRect(x: 0, y: 0, width: 320, height: 480)
+        )
+        coordinator.install(on: scrollView)
+        scrollView.configure(image: image, mediaID: "minimum")
+        scrollView.layoutIfNeeded()
+
+        coordinator.reportCapability(scrollView)
+
+        #expect(scrollView.capability == .minimumZoom)
+        #expect(scrollView.panGestureRecognizer.isEnabled)
+        coordinator.dismantle(scrollView)
+    }
+
+    @Test
     func committedDepartureResetGenerationResetsTheCachedZoomTransform() {
         let image = UIGraphicsImageRenderer(
             size: CGSize(width: 128, height: 128)
@@ -300,5 +324,52 @@ struct InteractionControllerLifecycleTests {
         }
         #expect(scrollView.bounds.width > 0)
         #expect(scrollView.bounds.height > 0)
+        let range = scrollView.legalContentOffsetRange
+        #expect(scrollView.contentOffset.x >= range.minimumX - 0.5)
+        #expect(scrollView.contentOffset.x <= range.maximumX + 0.5)
+        #expect(scrollView.contentOffset.y >= range.minimumY - 0.5)
+        #expect(scrollView.contentOffset.y <= range.maximumY + 0.5)
+    }
+
+}
+
+extension InteractionControllerLifecycleTests {
+    @Test
+    func firstAttachedMetricsWaitForUsableBaseGeometry() {
+        let image = makeImage(size: CGSize(width: 512, height: 512))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let scrollView = DebugZoomScrollView(frame: window.bounds)
+        var attachedMetrics: [DebugMediaViewportMetrics] = []
+        let view = DebugZoomImageView(
+            mediaID: "first-attach",
+            image: image,
+            onSingleTap: {},
+            onCapabilityChanged: { _, _ in },
+            onViewportMetricsChanged: { metrics in
+                guard metrics.attachedToWindow,
+                      metrics.viewportWidth > 0,
+                      metrics.viewportHeight > 0,
+                      metrics.windowWidth > 0,
+                      metrics.windowHeight > 0 else {
+                    return
+                }
+                attachedMetrics.append(metrics)
+            }
+        )
+        let coordinator = view.makeCoordinator()
+        coordinator.install(on: scrollView)
+        scrollView.configure(image: image, mediaID: "first-attach")
+
+        window.addSubview(scrollView)
+        coordinator.reportCapability(scrollView)
+        window.layoutIfNeeded()
+        scrollView.layoutIfNeeded()
+
+        #expect(!attachedMetrics.isEmpty)
+        for metrics in attachedMetrics {
+            #expect(metrics.hasFiniteLegalGeometry)
+        }
+        coordinator.dismantle(scrollView)
+        scrollView.removeFromSuperview()
     }
 }

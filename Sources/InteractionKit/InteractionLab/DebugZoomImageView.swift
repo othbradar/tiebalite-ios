@@ -2,6 +2,90 @@
 import SwiftUI
 import UIKit
 
+struct DebugMediaInputMetrics: Equatable, Sendable {
+    var eventSequence: UInt64 = 0
+    var singleTapCount: UInt64 = 0
+    var doubleTapCount: UInt64 = 0
+    var panBeginCount: UInt64 = 0
+    var panEndCount: UInt64 = 0
+}
+
+struct DebugMediaViewportMetrics: Equatable, Sendable {
+    let layoutGeneration: UInt64
+    let zoomScale: Double
+    let viewportWidth: Double
+    let viewportHeight: Double
+    let contentOffsetX: Double
+    let contentOffsetY: Double
+    let contentSizeWidth: Double
+    let contentSizeHeight: Double
+    let minimumOffsetX: Double
+    let maximumOffsetX: Double
+    let minimumOffsetY: Double
+    let maximumOffsetY: Double
+    let imageFrameWidth: Double
+    let imageFrameHeight: Double
+    let visibleFocalPointX: Double
+    let visibleFocalPointY: Double
+    let retainedFocalPointX: Double
+    let retainedFocalPointY: Double
+    let safeAreaTop: Double
+    let safeAreaLeft: Double
+    let safeAreaBottom: Double
+    let safeAreaRight: Double
+    let windowWidth: Double
+    let windowHeight: Double
+    let attachedToWindow: Bool
+
+    var hasFiniteLegalGeometry: Bool {
+        let values = [
+            zoomScale,
+            viewportWidth,
+            viewportHeight,
+            contentOffsetX,
+            contentOffsetY,
+            contentSizeWidth,
+            contentSizeHeight,
+            minimumOffsetX,
+            maximumOffsetX,
+            minimumOffsetY,
+            maximumOffsetY,
+            imageFrameWidth,
+            imageFrameHeight,
+            visibleFocalPointX,
+            visibleFocalPointY,
+            retainedFocalPointX,
+            retainedFocalPointY,
+            safeAreaTop,
+            safeAreaLeft,
+            safeAreaBottom,
+            safeAreaRight,
+            windowWidth,
+            windowHeight
+        ]
+        return values.allSatisfy(\.isFinite)
+            && attachedToWindow
+            && viewportWidth > 0
+            && viewportHeight > 0
+            && imageFrameWidth > 0
+            && imageFrameHeight > 0
+            && contentSizeWidth > 0
+            && contentSizeHeight > 0
+            && windowWidth > 0
+            && windowHeight > 0
+            && minimumOffsetX <= maximumOffsetX
+            && minimumOffsetY <= maximumOffsetY
+            && safeAreaTop >= 0
+            && safeAreaLeft >= 0
+            && safeAreaBottom >= 0
+            && safeAreaRight >= 0
+            && contentOffsetX >= minimumOffsetX - 0.5
+            && contentOffsetX <= maximumOffsetX + 0.5
+            && contentOffsetY >= minimumOffsetY - 0.5
+            && contentOffsetY <= maximumOffsetY + 0.5
+    }
+}
+
 enum DebugMediaFixtureKind: String, CaseIterable, Sendable {
     case delayed
     case failure
@@ -41,26 +125,39 @@ struct DebugZoomImageView: UIViewRepresentable {
     let image: UIImage
     let resetGeneration: UInt64
     let reduceMotion: Bool
+    let ownershipController: MediaGestureOwnershipController<String>?
     let onSingleTap: () -> Void
     let onCapabilityChanged: (MediaPageCapability, Double) -> Void
+    let onInputMetricsChanged: (DebugMediaInputMetrics) -> Void
+    let onViewportMetricsChanged: (DebugMediaViewportMetrics) -> Void
 
     init(
         mediaID: String,
         image: UIImage,
         resetGeneration: UInt64 = 0,
         reduceMotion: Bool = false,
+        ownershipController: MediaGestureOwnershipController<String>? = nil,
         onSingleTap: @escaping () -> Void,
         onCapabilityChanged: @escaping (
             MediaPageCapability,
             Double
-        ) -> Void
+        ) -> Void,
+        onInputMetricsChanged: @escaping (
+            DebugMediaInputMetrics
+        ) -> Void = { _ in },
+        onViewportMetricsChanged: @escaping (
+            DebugMediaViewportMetrics
+        ) -> Void = { _ in }
     ) {
         self.mediaID = mediaID
         self.image = image
         self.resetGeneration = resetGeneration
         self.reduceMotion = reduceMotion
+        self.ownershipController = ownershipController
         self.onSingleTap = onSingleTap
         self.onCapabilityChanged = onCapabilityChanged
+        self.onInputMetricsChanged = onInputMetricsChanged
+        self.onViewportMetricsChanged = onViewportMetricsChanged
     }
 
     func makeCoordinator() -> Coordinator {
@@ -83,15 +180,8 @@ struct DebugZoomImageView: UIViewRepresentable {
         context: Context
     ) {
         context.coordinator.parent = self
-        if scrollView.mediaID != mediaID {
-            scrollView.configure(
-                image: image,
-                mediaID: mediaID,
-                resetGeneration: resetGeneration
-            )
-        } else {
-            scrollView.applyResetGeneration(resetGeneration)
-        }
+        context.coordinator.synchronizeContent(on: scrollView)
+        context.coordinator.synchronizeRegistration(on: scrollView)
         context.coordinator.reportCapability(scrollView)
     }
 
@@ -109,6 +199,10 @@ struct DebugZoomImageView: UIViewRepresentable {
         private weak var scrollView: DebugZoomScrollView?
         private var singleTapRecognizer: UITapGestureRecognizer?
         private var doubleTapRecognizer: UITapGestureRecognizer?
+        private var registeredMediaID: String?
+        private weak var registeredOwnershipController:
+            MediaGestureOwnershipController<String>?
+        private var inputMetrics = DebugMediaInputMetrics()
 
         init(parent: DebugZoomImageView) {
             self.parent = parent
@@ -130,23 +224,96 @@ struct DebugZoomImageView: UIViewRepresentable {
             )
             doubleTap.numberOfTapsRequired = 2
             singleTap.require(toFail: doubleTap)
+            singleTap.require(toFail: scrollView.panGestureRecognizer)
 
             scrollView.addGestureRecognizer(singleTap)
             scrollView.addGestureRecognizer(doubleTap)
+            scrollView.panGestureRecognizer.addTarget(
+                self,
+                action: #selector(panChanged(_:))
+            )
+            scrollView.onLayoutMetricsChanged = { [weak self, weak scrollView] metrics in
+                guard let self else {
+                    return
+                }
+                parent.onViewportMetricsChanged(metrics)
+                if let scrollView {
+                    parent.onCapabilityChanged(
+                        scrollView.capability,
+                        Double(scrollView.zoomScale)
+                    )
+                }
+            }
             singleTapRecognizer = singleTap
             doubleTapRecognizer = doubleTap
+            synchronizeRegistration(on: scrollView)
+        }
+
+        func synchronizeRegistration(on scrollView: DebugZoomScrollView) {
+            let ownershipController = parent.ownershipController
+            let registrationChanged = registeredMediaID != parent.mediaID
+                || registeredOwnershipController !== ownershipController
+            if registrationChanged {
+                if let registeredMediaID,
+                   let registeredOwnershipController {
+                    registeredOwnershipController.unregister(
+                        mediaID: registeredMediaID,
+                        scrollView: scrollView
+                    )
+                }
+                self.registeredMediaID = nil
+                registeredOwnershipController = nil
+            }
+            guard registeredMediaID == nil,
+                  let ownershipController else {
+                return
+            }
+            ownershipController.register(
+                mediaID: parent.mediaID,
+                scrollView: scrollView
+            )
+            registeredMediaID = parent.mediaID
+            registeredOwnershipController = ownershipController
+        }
+
+        func synchronizeContent(on scrollView: DebugZoomScrollView) {
+            let imageChanged = scrollView.mediaImageView.image
+                !== parent.image
+            if scrollView.mediaID != parent.mediaID || imageChanged {
+                scrollView.configure(
+                    image: parent.image,
+                    mediaID: parent.mediaID,
+                    resetGeneration: parent.resetGeneration
+                )
+            } else {
+                scrollView.applyResetGeneration(parent.resetGeneration)
+            }
         }
 
         func dismantle(_ scrollView: DebugZoomScrollView) {
+            if let registeredMediaID,
+               let registeredOwnershipController {
+                registeredOwnershipController.unregister(
+                    mediaID: registeredMediaID,
+                    scrollView: scrollView
+                )
+            }
             if let singleTapRecognizer {
                 scrollView.removeGestureRecognizer(singleTapRecognizer)
             }
             if let doubleTapRecognizer {
                 scrollView.removeGestureRecognizer(doubleTapRecognizer)
             }
+            scrollView.panGestureRecognizer.removeTarget(
+                self,
+                action: #selector(panChanged(_:))
+            )
+            scrollView.onLayoutMetricsChanged = nil
             scrollView.delegate = nil
             singleTapRecognizer = nil
             doubleTapRecognizer = nil
+            registeredMediaID = nil
+            registeredOwnershipController = nil
             self.scrollView = nil
         }
 
@@ -191,17 +358,23 @@ struct DebugZoomImageView: UIViewRepresentable {
         }
 
         func reportCapability(_ scrollView: DebugZoomScrollView) {
+            guard !scrollView.isPerformingGeometryUpdate,
+                  scrollView.hasUsableBaseGeometry else {
+                return
+            }
             let capability = scrollView.capability
-            scrollView.panGestureRecognizer.isEnabled =
-                !capability.atMinimumZoom
             parent.onCapabilityChanged(
                 capability,
                 Double(scrollView.zoomScale)
             )
+            parent.onViewportMetricsChanged(scrollView.viewportMetrics)
         }
 
         @objc
         private func singleTapped() {
+            inputMetrics.eventSequence &+= 1
+            inputMetrics.singleTapCount &+= 1
+            parent.onInputMetricsChanged(inputMetrics)
             parent.onSingleTap()
         }
 
@@ -210,6 +383,9 @@ struct DebugZoomImageView: UIViewRepresentable {
             guard let scrollView else {
                 return
             }
+            inputMetrics.eventSequence &+= 1
+            inputMetrics.doubleTapCount &+= 1
+            parent.onInputMetricsChanged(inputMetrics)
             if scrollView.zoomScale >
                 scrollView.minimumZoomScale + 0.01 {
                 scrollView.setZoomScale(
@@ -238,135 +414,28 @@ struct DebugZoomImageView: UIViewRepresentable {
                 )
             }
         }
+
+        @objc
+        private func panChanged(_ recognizer: UIPanGestureRecognizer) {
+            switch recognizer.state {
+            case .began:
+                inputMetrics.eventSequence &+= 1
+                inputMetrics.panBeginCount &+= 1
+                parent.onInputMetricsChanged(inputMetrics)
+            case .ended, .cancelled, .failed:
+                inputMetrics.eventSequence &+= 1
+                inputMetrics.panEndCount &+= 1
+                parent.onInputMetricsChanged(inputMetrics)
+            case .possible, .changed:
+                break
+            @unknown default:
+                break
+            }
+        }
     }
 
     var animatesZoomTransition: Bool {
         !reduceMotion
-    }
-}
-
-@MainActor
-final class DebugZoomScrollView: UIScrollView {
-    let mediaImageView = UIImageView()
-    private(set) var mediaID: String?
-    private(set) var appliedResetGeneration: UInt64 = 0
-
-    private var previousBoundsSize: CGSize = .zero
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        backgroundColor = .black
-        minimumZoomScale = 1
-        maximumZoomScale = 4
-        bouncesZoom = true
-        alwaysBounceHorizontal = false
-        alwaysBounceVertical = false
-        isDirectionalLockEnabled = true
-        showsHorizontalScrollIndicator = false
-        showsVerticalScrollIndicator = false
-        delaysContentTouches = false
-
-        mediaImageView.backgroundColor = .black
-        mediaImageView.contentMode = .scaleAspectFit
-        mediaImageView.isAccessibilityElement = false
-        addSubview(mediaImageView)
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        nil
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        guard bounds.size.width > 0,
-              bounds.size.height > 0,
-              bounds.size != previousBoundsSize else {
-            centerZoomedImage()
-            return
-        }
-
-        let retainedScale = max(
-            minimumZoomScale,
-            min(zoomScale, maximumZoomScale)
-        )
-        setZoomScale(minimumZoomScale, animated: false)
-        mediaImageView.frame = CGRect(origin: .zero, size: bounds.size)
-        contentSize = bounds.size
-        previousBoundsSize = bounds.size
-        setZoomScale(retainedScale, animated: false)
-        centerZoomedImage()
-    }
-
-    func configure(
-        image: UIImage,
-        mediaID: String,
-        resetGeneration: UInt64 = 0
-    ) {
-        self.mediaID = mediaID
-        appliedResetGeneration = resetGeneration
-        mediaImageView.image = image
-        accessibilityIdentifier = "interaction.media.zoom-surface.\(mediaID)"
-        setZoomScale(minimumZoomScale, animated: false)
-        contentOffset = .zero
-        setNeedsLayout()
-    }
-
-    func applyResetGeneration(_ resetGeneration: UInt64) {
-        guard resetGeneration != appliedResetGeneration else {
-            return
-        }
-        appliedResetGeneration = resetGeneration
-        setZoomScale(minimumZoomScale, animated: false)
-        contentOffset = .zero
-        centerZoomedImage()
-    }
-
-    func centerZoomedImage() {
-        let horizontalInset = max(
-            0,
-            (bounds.width - mediaImageView.frame.width) / 2
-        )
-        let verticalInset = max(
-            0,
-            (bounds.height - mediaImageView.frame.height) / 2
-        )
-        contentInset = UIEdgeInsets(
-            top: verticalInset,
-            left: horizontalInset,
-            bottom: verticalInset,
-            right: horizontalInset
-        )
-    }
-
-    var capability: MediaPageCapability {
-        let atMinimum = zoomScale <= minimumZoomScale + 0.01
-        guard !atMinimum else {
-            return .minimumZoom
-        }
-
-        let minimumX = -adjustedContentInset.left
-        let maximumX = max(
-            minimumX,
-            contentSize.width - bounds.width + adjustedContentInset.right
-        )
-        let atLeading = contentOffset.x <= minimumX + 1
-        let atTrailing = contentOffset.x >= maximumX - 1
-        let boundary: MediaHorizontalBoundary
-        switch (atLeading, atTrailing) {
-        case (true, true):
-            boundary = .both
-        case (true, false):
-            boundary = .leading
-        case (false, true):
-            boundary = .trailing
-        case (false, false):
-            boundary = .interior
-        }
-        return MediaPageCapability(
-            atMinimumZoom: false,
-            horizontalBoundary: boundary
-        )
     }
 }
 

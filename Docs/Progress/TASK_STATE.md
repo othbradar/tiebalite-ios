@@ -12,7 +12,8 @@
 - 阶段 08 图片状态定向修复：包含本文件的
   `fix: align thread image accessibility with render state`
 - production live：`DISABLED`
-- 阶段 06：`SPIKE_PARTIAL`（阶段 06B 已执行，mandatory 项仍未关闭）
+- 阶段 06：`SPIKE_PARTIAL`（阶段 06C-A 已关闭 M1/M3/V1，剩余
+  mandatory 项仍未关闭）
 - 阶段 09：`NOT_STARTED`
 - 阶段 09 门禁：`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`
 
@@ -320,15 +321,17 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 
 阶段 08 完成后停止，不自动开始阶段 09。除非另有明确用户指令
 且阶段 06 `SPIKE_PARTIAL` 验收被正式关闭，阶段 09 保持
-`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。待关闭的阶段 06 风险包括：
+`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。06C-A 已关闭 runtime
+fixed-owner、Media resize clamp/frame 和 iPhone 旋转 chrome/safe-area 裁切。
+剩余的阶段 06 风险包括：
 
-1. 运行时 fixed-owner 手势交接；
-2. iPhone Media 旋转后的 chrome/safe-area 裁切；
-3. 真实 non-empty refresh、burst/reverse、纵向滚动抖动与页面几何；
-4. 非默认 PageID 的 regular/compact 保持、真实 iPad 分屏、iOS 18.x 与
-   VoiceOver 验收；
-5. 非法图片 bytes、异步 load/cancel/stale callback；
-6. resource lease 与 100 张 full-resolution 资源压力证据。
+1. Pager P3 的 burst/严格半程/反向与纵向滚动抖动；
+2. Pager P4 的真实 non-empty refresh/loading/failure 保留内容和几何；
+3. Pager P5 的 child/controller 与重内容生命周期上界；
+4. Media M4 的异步 load/cancel/stale callback 运行证据；
+5. Media M5 的 resource lease 与 100 张 full-resolution 资源压力证据；
+6. I1 的非默认 PageID regular/compact 保持、真实 iPad split divider、
+   iOS 18.x 与 VoiceOver 实操。
 
 ## 阶段 06B Pager / Media Spike 收口
 
@@ -357,3 +360,41 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 - 状态决定：`PHASE_06_INTERACTION_SPIKES = SPIKE_PARTIAL`；
   `PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED` 保持；阶段 09 仍为
   `NOT_STARTED`，本轮未读取或执行阶段 09。
+
+## 阶段 06C-A Media 手势与旋转硬阻塞收口
+
+- baseline HEAD：`d33f10f3104989e0b543fd7172608bd12b6b33aa`；Android reference
+  仍 clean/exact `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
+- 状态：M1 runtime fixed-owner、M3 resize clamp/frame 和 V1 iPhone
+  zoom/pan 旋转 chrome 裁切均 `CLOSED`。阶段 06 仍为
+  `SPIKE_PARTIAL`，阶段 09 仍 `NOT_STARTED` 且 `BLOCKED`。
+- M1：在唯一 Debug Pager 上安装 ownership gate，于
+  `gestureRecognizerShouldBegin` 一次性记录 session ID/generation/MediaID、
+  began zoom/offset/velocity/translation、owner/reason。owner 在 ended/
+  cancelled/failed 前不变；MediaID 或 generation 不匹配的旧 session
+  不能 resolve Pager。
+- V1：single tap 现在等待 double tap 和 media pan 失败，pan 不再
+  误隐藏 chrome。chrome 使用独立 Media root coordinate space、同一
+  layout pass 的 root/frame/safe-area 投影，与 zoom/contentOffset 无关。
+- M3：zoom scroll 使用真实 aspect-fit image frame，不把 letterbox
+  计入 pan range；resize 保留 normalized focal point 并对新 viewport
+  完整 clamp x/y offset。同 MediaID 的新 image identity 会重建几何。
+- Debug-only accessibility metrics 记录 root/chrome/session/input/viewport、window、
+  safe area、layout/coordinator generation 及 invalid counter；Release 仍排除全部
+  Debug labs。
+- iPhone 实际执行 10 次 Pager 往返（20 转场）、10 次 zoomed
+  media pan 与 10 个竖→横→竖周期；iPad 执行 5 个 zoom/pan
+  旋转周期；dark + Accessibility 5 + Reduce Motion 执行 1 套完整矩阵。
+  修复前证据为 `phase06ca-before-pan-hides-chrome.png` 和
+  `phase06ca-before-landscape-chrome-hidden.png`；修复后 10 周期证据为
+  `phase06ca-after-ten-rotation-cycles.png`。
+- 最终 `make quality` exit 0 并输出 `Quality gate completed.`；
+  `xcresulttool` 确认 Unit 146/146 顶层测试（155 次含参数执行）、
+  iPhone smoke 13/13、iPhone interaction 9/9、iPad smoke 3/3、
+  iPad interaction 2/2，全部 0 failed/0 skipped/0 expected failure。
+- 新增生产动画 0、产品手势 0、overlay 0、依赖 0、live network 0。
+  未使用 asyncAfter/sleep/UUID/magic zIndex/透明 blocker/全局禁动画等
+  禁止假修复。
+- 未开始 06C-B；P3/P4/P5/M4/M5、真实 iPad split divider、iOS 18.x
+  和 VoiceOver 仍是明确未验证项。详细根因、红绿结果包与最终证据见
+  `Docs/Audits/INTERACTION_SPIKE_REPORT.md`。

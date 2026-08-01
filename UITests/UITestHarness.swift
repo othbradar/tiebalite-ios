@@ -1,5 +1,4 @@
 import XCTest
-
 enum UITestLaunchScenario: String, CaseIterable {
     case emptyShell = "app.empty-shell"
     case networkOffline = "network.offline"
@@ -30,10 +29,10 @@ enum UITestLaunchScenario: String, CaseIterable {
 }
 
 enum UITestDisplayProfile: String {
+    case darkAccessibilityMaximumReduced = "dark-accessibility-maximum-reduced"
     case darkAccessibilityReduced = "dark-accessibility-reduced"
     case system
 }
-
 enum UITestAppTab {
     case followedForums
     case recommendations
@@ -74,6 +73,7 @@ enum UITestElementID: String, CaseIterable {
     case interactionMediaChrome = "interaction.media.chrome"
     case interactionMediaClose = "interaction.media.close"
     case interactionMediaCurrent = "interaction.media.current-id"
+    case interactionMediaOwner = "interaction.media.gesture-owner"
     case interactionMediaAccessibilityNext =
         "interaction.media.accessibility.next"
     case interactionMediaAccessibilityPrevious =

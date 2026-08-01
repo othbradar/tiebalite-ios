@@ -384,3 +384,186 @@ iPhone 17 Pro `70D93841-1FEB-445A-8FAD-B1C29B981D5D` 与 iPad Pro
   支持全部 orientation。该 warning 不改变通过计数，但保留为未清理证据。
 - 绿色门禁不覆盖前述真实 chrome 裁切与未验证 mandatory 项，因此不改变
   `SPIKE_PARTIAL` 裁决，也不解除阶段 09 门禁。
+
+## Phase 06C-A Media 手势与旋转硬阻塞收口（2026-08-01）
+
+### 目标、范围与状态裁决
+
+- baseline HEAD：`d33f10f3104989e0b543fd7172608bd12b6b33aa`。
+- 本轮只关闭 M1 runtime fixed-owner、M3 resize 后完整
+  clamp/frame 与 V1 iPhone zoom/pan 后旋转 chrome 裁切；三项均
+  `CLOSED`。
+- 阶段 06 总状态仍为 `SPIKE_PARTIAL`；P3/P4/P5/M4/M5/I1 等
+  mandatory 项未被本轮代替。
+- 阶段 09 仍为 `NOT_STARTED` 且门禁仍为
+  `PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。协调主代理未读取或
+  实现阶段 09；未开始 06C-B。
+- 只修改 Debug Media Spike、InteractionKit Debug 候选、固定 fixture
+  测试、合同和审计记录。未创建生产 MediaViewer、ThreadScreen、
+  cache、lease、candidate、downsample 或 live network。
+
+### 修复前复现与可观测性边界
+
+- 设备：iPhone 17 Pro
+  `70D93841-1FEB-445A-8FAD-B1C29B981D5D`，iOS 26.5（23F77）
+  Simulator。
+- 固定步骤：打开 multiple fixture，在 `large` 页双击到 2.50，水平
+  pan，再执行竖→横旋转。修复前截图确认 `Current: large`、
+  `Position: 2/4`、`Zoom: 2.50`、`Boundary: interior`；旧 owner 文本
+  只是实时 capability 投影 `zoom-page`，不是 recognizer-begin session
+  证据。
+- 第一个实际根因在复现中被分离：single tap 只等待 double tap
+  失败，未等待 scroll pan 失败，所以一次 pan 可同时切换
+  `chromeVisible`。证据：
+  `Artifacts/TestResults/phase06ca-before-pan-hides-chrome.png`。
+- 继续旋转后，旧 chrome 虽为 ZStack sibling，但没有命名根坐标空间、
+  同一 layout pass 的 root/frame 快照或显式 safe-area 投影；
+  full-screen presentation 的方向更新后实际出现 chrome 不可见、
+  status 纵向裁出和大块黑色空洞。证据：
+  `Artifacts/TestResults/phase06ca-before-landscape-chrome-hidden.png` 与
+  `Artifacts/TestResults/phase06b-media-rotation-chrome-clipped.png`。
+- 旧 Debug overlay 未暴露 contentOffset、viewport/chrome frame、safeAreaInsets、
+  window bounds、coordinate space 或 coordinator sequence，因此这些修复前
+  数值不可回溯地标为 `NOT_OBSERVABLE`，本报告不伪造数字。
+  06C-A 随后先增加 Release 排除的 accessibility diagnostics，并用相同
+  场景记录所有字段与 invalid counter。
+
+### 根因与最小修复
+
+1. **M1 / 手势 owner 动态变化**：旧实现由最新
+   `zoomScale/contentOffset` 计算 `pagingEnabled`，并在 scroll callback 中
+   反复切换 media pan recognizer；没有对应一次真实触摸的 begin
+   时刻和不可变 owner。
+2. **V1 / pan 误触与 chrome 坐标**：single tap 没有与 pan 建立
+   failure relationship，pan 会把 chrome 关闭；同时 chrome 未以当前
+   root/safe area 的同一次几何快照布局和验证，旋转后可被旧
+   presentation 坐标裁出。
+3. **M3 / resize 几何**：旧 `DebugZoomScrollView` 把整个 viewport
+   当作图片 frame，即把 aspect-fit letterbox 也当作可 pan 内容；
+   resize 只恢复 scale，没有保留可见 focal point，也没有对新
+   viewport 做完整 offset clamp。同 MediaID 替换新 UIImage identity
+   时还会沿用旧几何。
+
+### Runtime fixed-owner 模型与连接点
+
+- `MediaGestureSession` 包含单调 `gestureSessionID`、generation、MediaID、
+  began zoom/contentOffset、初始 velocity/translation 和 intent、chosen owner、
+  reason、latest capability 及 ended/cancelled/failed/invalidated phase。
+- owner 仅有 `none`、`pager`、`mediaPan`。方向模糊且 minimum zoom 时
+  为 `none`；minimum zoom 的水平输入为 `pager`；zoomed interior 为
+  `mediaPan`；已缩放且从边界朝外的下一次触摸可交给 Pager。
+- 真实连接点是安装在唯一 Debug Pager 容器上的
+  `MediaOwnershipPanGestureRecognizer` 与
+  `gestureRecognizerShouldBegin(_:)`。它在 begin 读取当前注册的
+  `DebugZoomScrollView`，一次性决定 owner；`canPrevent`、
+  `canBePrevented` 和受限 simultaneous 规则只允许 chosen owner 提交。
+  没有把所有 recognizer 改为 simultaneous，没有替换 Pager 原 delegate，
+  也没有禁用系统返回手势。
+- `.changed` 只更新 `latestCapability` 诊断值，不改 owner。页面或
+  MediaID 切换使 generation 前进并使旧 session 失效；只有来源、
+  session ID 与 generation 都匹配的 ended Pager session 才能 resolve。
+- controller 只弱引用 zoom scroll view；uninstall/dismantle 恢复 Pager
+  `maximumNumberOfTouches`、移除 gate/target/delegate 并使 active session 失效。
+
+### Resize、focal point 与 chrome 不变量
+
+- `DebugZoomScrollView` 现在用原图尺寸计算真实 aspect-fit
+  image frame，contentSize 不再包含 letterbox。每次有效 bounds
+  变化保留 normalized focal point，重建 base geometry，恢复合法 scale，
+  再将 x/y contentOffset 夹到新的 adjusted-inset range。
+- 未知或非法图片尺寸退化为 viewport；同 MediaID 的新 UIImage
+  identity 会重置旧 transform 并重算 aspect-fit。指标覆盖 image frame、
+  contentSize/range、visible/retained focal point、safe area、window bounds、
+  attached state 和 layout generation。
+- chrome 是与 Pager/zoom 同级的独立 sibling，在命名 Media root
+  coordinate space 中用同一 GeometryReader pass 投影 root、safe-area
+  和 frame。只对真实控件范围命中；没有新透明拦截层。
+- viewport/chrome invalid counter 只在首个合法几何后 arm，之后会捕获
+  NaN、Infinity、zero/negative size、越界 offset 或 current view 脱离
+  window；测试要求所有稳定周期都精确为 0。
+
+### 先红后绿与审查收口
+
+- 修复前 V1 手工场景稳定复现，证据为上述两张 06C-A
+  截图及 06B 原截图。
+- runtime generation/session 回归曾分别在
+  `20260801-162635-30298-unit.xcresult`、
+  `20260801-163725-35270-unit.xcresult` 与
+  `20260801-164700-39280-unit.xcresult` 暴露 stale 失效和 begin 顺序问题；
+  对应 generation/source/installation 守卫后完整 Unit 转绿。
+- `20260801-184226-70518-unit.xcresult` 稳定暴露两个 M3
+  回归：极端 aspect-fit 仍把 letterbox 算入 pan range，同 MediaID
+  更换 controller/image 时沿用旧几何；
+  `20260801-185054-74741-unit.xcresult` 修复后转绿。
+- `20260801-200750-96161-unit.xcresult` 再次以两个失败证明
+  同 ID 新 image identity 未重置和 NaN/root-invalid 未进计数器；
+  `20260801-201418-98267-unit.xcresult` 是投影 Sendable 值前的
+  Swift 6 编译失败，不计产品红。
+  `20260801-201511-99788-unit.xcresult` 与最终
+  `20260801-204810-11285-unit.xcresult` 完整通过。
+- `20260801-185147-76359-ui-interaction.xcresult` 的严格 full iPhone
+  套件为 7/9，暴露 delayed 返回输入不稳定和初始无效 viewport
+  误计数；修正 stable app coordinate 与几何 arming 后，
+  `20260801-192650-85231-ui-interaction.xcresult` 为 9/9。
+- 第一次最终 `make quality` 在
+  `20260801-205548-15092-ui-interaction.xcresult` 得到 8/9：最大
+  Dynamic Type 下 30% 屏宽的返回拖动已进入 Pager owner，但
+  未确定越过系统转场提交阈值。这是测试输入失败，不是
+  产品状态污染。保持远离系统边缘，将明确“应提交”输入扩大为
+  50% 后，`20260801-phase06ca-targeted-full-suite-threshold-ui.xcresult`
+  1/1 通过，随后最终 full-suite 9/9 通过。该回归仍要求
+  session ID 精确 +1、source/owner/phase 匹配且 media-pan counter 不变；
+  临界距离、严格半程取消和反向仍属未处理 P3。
+- 三个最终独立只读 review 均通过：fixed-owner 真实连接
+  runtime begin，owner 在同一 session 不变，chrome 不在 zoom
+  坐标中，same-ID image revision 会重算几何，没有越出本轮范围。
+
+### Simulator 实际重复矩阵
+
+| 设备/场景 | 实际次数 | 结果 |
+|---|---:|---|
+| iPhone zoom=1 Pager | 10 次往返（20 个提交转场） | 每次 session +1、owner `pager`、source ID 精确匹配，通过 |
+| iPhone zoom>1 media pan | 10 次 | 每次 owner `mediaPan`、MediaID/index 不变、pan begin/end 各 +1，通过 |
+| iPhone portrait→landscape→portrait | 10 个完整周期 | zoom 2.50、非中心 focal point、MediaID/index 与 coordinator sequence 保持；chrome/viewport invalid 精确为 0，通过 |
+| iPad zoom/pan→rotation | 5 个完整周期 | 同一状态层、owner/focal/clamp/chrome 断言通过 |
+| dark + Accessibility 5 + Reduce Motion | 1 套完整 Media 矩阵 | Pager 往返、zoom/pan、双向旋转、chrome 点击与 close 通过 |
+
+修复后对比图为
+`Artifacts/TestResults/phase06ca-after-ten-rotation-cycles.png`；与修复前图
+相同的 `large`/2.50/interior 场景在 10 个周期后 chrome 仍位于可见
+safe-area 且 owner 为 runtime `media-pan`。
+
+### 最终质量门禁
+
+- `make quality` 从头 exit 0，输出 `Quality gate completed.`：
+  - Debug build：`20260801-211828-19740-build.log`；
+  - Unit：`20260801-211829-19770-unit.xcresult`；
+  - iPhone UI smoke：`20260801-211901-20063-ui-smoke.xcresult`；
+  - iPhone interaction：`20260801-212412-20799-ui-interaction.xcresult`；
+  - iPad build：`20260801-214318-22616-ipad-build.log`；
+  - iPad UI smoke：`20260801-214321-22667-ui-smoke-ipad.xcresult`；
+  - iPad interaction：`20260801-214537-23061-ui-interaction-ipad.xcresult`；
+  - Release build/isolation：`20260801-215152-23703-release-build.log`。
+- `xcresulttool get test-results summary` 独立确认：Unit 146/146 顶层测试
+  （含参数执行 155 次）、iPhone smoke 13/13、iPhone interaction 9/9、
+  iPad smoke 3/3、iPad interaction 2/2；五包均 `Passed`，且
+  failed/skipped/expected failure 均为 0。
+- 最终门禁扫描 90 个 Swift 文件、0 lint violation、静态禁止模式
+  0 error group、secret scan 与 networking isolation 通过、Android reference
+  clean/exact `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
+
+### 新增行为与剩余风险
+
+- 新增生产动画 0。仍只有原 Debug UIKit 双击 zoom 动画，并继续
+  尊重 Reduce Motion。
+- 新增产品手势 0。新的 Debug ownership gate 是一个不移动内容、
+  不创建新产品交互的 recognizer 仲裁器。
+- 新增 overlay 0；仅保留既有 Debug `fullScreenCover` 和不命中的
+  诊断 status layer。新增依赖 0，live request 0。
+- 未使用 `asyncAfter`、`Task.sleep`、UUID 强制刷新、magic zIndex、
+  透明全屏 blocker、全局禁动画、重建整个 Renderer 或删除/降低断言。
+- 本轮未验证且仍阻塞阶段 06 整体验收的项包括：Pager P3
+  burst/严格半程/反向、P4 retained loading/failure/refresh、P5 child/
+  重内容生命周期，Media M4 async load/cancel/stale 和 M5 100 张
+  full-resolution lease/resource 上界，以及 I1 真实 iPad split divider、
+  iOS 18.x runtime 与 VoiceOver 实操。

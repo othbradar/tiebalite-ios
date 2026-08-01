@@ -59,6 +59,13 @@ struct LaunchScenarioTests {
                 LaunchDisplayProfile.darkAccessibilityReduced.rawValue
             ]) == .darkAccessibilityReduced
         )
+        #expect(
+            try LaunchDisplayProfileParser.parse(arguments: [
+                "TiebaLite",
+                LaunchDisplayProfileParser.flag,
+                LaunchDisplayProfile.darkAccessibilityMaximumReduced.rawValue
+            ]) == .darkAccessibilityMaximumReduced
+        )
     }
 
     @Test

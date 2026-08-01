@@ -28,6 +28,7 @@ where PageID: Hashable & Sendable, PageContent: View {
     let backgroundColor: UIColor
     let reduceMotion: Bool
     let pagingEnabled: Bool
+    let mediaGestureOwnership: MediaGestureOwnershipController<PageID>?
     let onEvent: (PagerContainerEvent<PageID>) -> Void
     @ViewBuilder let content: (PageID) -> PageContent
 
@@ -37,6 +38,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         backgroundColor: UIColor,
         reduceMotion: Bool,
         pagingEnabled: Bool = true,
+        mediaGestureOwnership: MediaGestureOwnershipController<PageID>? = nil,
         onEvent: @escaping (PagerContainerEvent<PageID>) -> Void = { _ in },
         @ViewBuilder content: @escaping (PageID) -> PageContent
     ) {
@@ -45,39 +47,9 @@ where PageID: Hashable & Sendable, PageContent: View {
         self.backgroundColor = backgroundColor
         self.reduceMotion = reduceMotion
         self.pagingEnabled = pagingEnabled
+        self.mediaGestureOwnership = mediaGestureOwnership
         self.onEvent = onEvent
         self.content = content
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
-    }
-
-    func makeUIViewController(
-        context: Context
-    ) -> UIPageViewController {
-        let controller = UIPageViewController(
-            transitionStyle: .scroll,
-            navigationOrientation: .horizontal
-        )
-        context.coordinator.install(on: controller)
-        context.coordinator.synchronize(controller)
-        return controller
-    }
-
-    func updateUIViewController(
-        _ pageViewController: UIPageViewController,
-        context: Context
-    ) {
-        context.coordinator.parent = self
-        context.coordinator.synchronize(pageViewController)
-    }
-
-    static func dismantleUIViewController(
-        _ pageViewController: UIPageViewController,
-        coordinator: Coordinator
-    ) {
-        coordinator.dismantle(pageViewController)
     }
 
     @MainActor
@@ -92,8 +64,11 @@ where PageID: Hashable & Sendable, PageContent: View {
             PageID: PagerHostingController<PageID, PageContent>
         ] = [:]
         private weak var installedController: UIPageViewController?
+        private weak var installedMediaGestureOwnership:
+            MediaGestureOwnershipController<PageID>?
         private var selectionCommitTask: Task<Void, Never>?
         private var selectionCommitGeneration: UInt64 = 0
+        private var mediaGestureSessionID: UInt64?
         private let coordinatorSequence: UInt64
 
         var cachedControllerCount: Int {
@@ -150,9 +125,12 @@ where PageID: Hashable & Sendable, PageContent: View {
 
         func dismantle(_ controller: UIPageViewController) {
             invalidateDeferredSelectionCommit()
+            installedMediaGestureOwnership?.uninstall(from: controller.view)
+            installedMediaGestureOwnership = nil
             controller.delegate = nil
             controller.dataSource = nil
             controllers.removeAll(keepingCapacity: false)
+            mediaGestureSessionID = nil
             installedController = nil
         }
 
@@ -187,6 +165,8 @@ where PageID: Hashable & Sendable, PageContent: View {
                   transition.token == token else {
                 return
             }
+            mediaGestureSessionID = parent.mediaGestureOwnership?
+                .sessionAllowsPagerTransition(sourceID: transition.sourceID)
             parent.onEvent(.began(transition))
         }
 
@@ -199,15 +179,38 @@ where PageID: Hashable & Sendable, PageContent: View {
             guard let transition = state.transition else {
                 return
             }
+            let latestExternalSelection = parent.selection
+            let resolvedCompletion: Bool
+            if let ownership = parent.mediaGestureOwnership {
+                resolvedCompletion = completed
+                    && mediaGestureSessionID.map {
+                        ownership.allowsPagerResolution(
+                            sessionID: $0,
+                            sourceID: transition.sourceID,
+                            completed: completed
+                        )
+                    } == true
+            } else {
+                resolvedCompletion = completed
+            }
+            mediaGestureSessionID = nil
             guard state.resolveTransition(
                 token: transition.token,
-                completed: completed
+                completed: resolvedCompletion
             ) else {
                 return
             }
 
+            if parent.mediaGestureOwnership != nil,
+               latestExternalSelection != transition.sourceID,
+               latestExternalSelection.map(parent.pageIDs.contains) == true {
+                _ = state.selectImmediately(latestExternalSelection)
+            }
+
             invalidateDeferredSelectionCommit()
-            parent.selection = state.committedID
+            if parent.selection != state.committedID {
+                parent.selection = state.committedID
+            }
             showCommittedPageIfNeeded(
                 in: pageViewController,
                 animated: false
@@ -216,7 +219,7 @@ where PageID: Hashable & Sendable, PageContent: View {
             parent.onEvent(
                 .resolved(
                     snapshot: snapshot(),
-                    completed: completed
+                    completed: resolvedCompletion
                 )
             )
         }
@@ -363,12 +366,57 @@ where PageID: Hashable & Sendable, PageContent: View {
         private func configureInternalScrollViews(
             in controller: UIPageViewController
         ) {
+            if installedMediaGestureOwnership !== parent.mediaGestureOwnership {
+                installedMediaGestureOwnership?.uninstall(from: controller.view)
+                installedMediaGestureOwnership = parent.mediaGestureOwnership
+            }
             for case let scrollView as UIScrollView
                 in controller.view.subviews {
                 scrollView.backgroundColor = parent.backgroundColor
                 scrollView.isScrollEnabled = parent.pagingEnabled
+                parent.mediaGestureOwnership?.install(
+                    on: controller.view,
+                    pagerPanRecognizer: scrollView.panGestureRecognizer,
+                    pagerCoordinatorSequence: coordinatorSequence,
+                    currentMediaID: { [weak self] in
+                        self?.parent.selection
+                    }
+                )
             }
         }
+    }
+}
+
+extension PagerContainer {
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIViewController(
+        context: Context
+    ) -> UIPageViewController {
+        let controller = UIPageViewController(
+            transitionStyle: .scroll,
+            navigationOrientation: .horizontal
+        )
+        context.coordinator.install(on: controller)
+        context.coordinator.synchronize(controller)
+        return controller
+    }
+
+    func updateUIViewController(
+        _ pageViewController: UIPageViewController,
+        context: Context
+    ) {
+        context.coordinator.parent = self
+        context.coordinator.synchronize(pageViewController)
+    }
+
+    static func dismantleUIViewController(
+        _ pageViewController: UIPageViewController,
+        coordinator: Coordinator
+    ) {
+        coordinator.dismantle(pageViewController)
     }
 }
 
