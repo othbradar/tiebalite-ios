@@ -68,6 +68,7 @@ targets:
       - path: Sources/DesignSystem
         excludes:
           - AGENTS.md
+      - path: Sources/Features/ThreadReader
       - path: Sources/InteractionKit
         excludes:
           - AGENTS.md

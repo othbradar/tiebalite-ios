@@ -1,17 +1,17 @@
 # 模块与依赖地图
 
-状态：`APPROVED_FOR_PHASE_03_SCAFFOLD`
+状态：`IMPLEMENTED_THROUGH_PHASE_08_RENDERER_LAB`
 
 本文件把根目录结构解释为逻辑模块和 owner；它不表示阶段 02 已创建 Swift
 target。工程生成决策见 `Docs/ADRs/ADR-0001-project-generation.md`。
 
 ## 编译 target 与逻辑模块
 
-阶段 07 当前编译 target：
+阶段 08 当前编译 target：
 
 | 编译 target | 内容 | 可依赖 |
 |---|---|---|
-| `TiebaLite` | App、Sources 下的生产逻辑模块；仅 UITesting 配置加入 `TestSupport/LaunchScenarios/**` | Apple SDK；已批准且实际引入的 production package |
+| `TiebaLite` | App、Core、DesignSystem、ThreadReader Renderer、InteractionKit；仅 UITesting 配置加入 `TestSupport/LaunchScenarios/**` | Apple SDK；已批准且实际引入的 production package |
 | `GeneratedProtobuf` | pinned Personalized 51-file closure 的 tracked 生成 Swift；静态库 | SwiftProtobuf 1.38.1 only |
 | `TiebaLiteTests` | State/mapper/repository/integration tests；单独编译所需 TestSupport 源 | `TiebaLite`、test-only helper |
 | `TiebaLiteUITests` | XCUITest flows，只向 App 传 scenario ID | App 的 UITesting build；不可链接 production secret/live fixture |
@@ -85,6 +85,13 @@ concrete 只能在 Core/TiebaAPI。协议不能泄漏 Endpoint、URLRequest、DT
 generated Message。若以后确需 Feature-local façade，只能由 App adapter
 桥接；Core concrete 不 import Feature、也不直接 conform Feature-owned
 protocol。
+
+阶段 08 的具体边界：`ThreadContentProtoMapper` 是第二个精确
+allowlisted generated adapter；它只向内输出 `ThreadContentDocument`。
+`ThreadContentRenderer` 只依赖该 domain 与可注入 `ImageLoading`，图片/链接
+点击只输出 `ThreadMediaIntent` / `ExternalLinkIntent`，不实现
+ThreadScreen、Repository、Pager 或 MediaViewer。Debug Renderer Lab 只在
+Debug/UITesting 编译，Release 排除。
 
 登录验证/续期同样不允许 Session 直接构造 transport。Core/Session 拥有无
 HTTP/DTO 的 `SessionValidationClient`/`CredentialRefreshClient` 协议，

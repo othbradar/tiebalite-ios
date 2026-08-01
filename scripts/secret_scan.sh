@@ -13,6 +13,7 @@ for candidate in \
   Tests \
   UITests \
   Config \
+  scripts/fixtures \
   Specs \
   Docs \
   project.yml \

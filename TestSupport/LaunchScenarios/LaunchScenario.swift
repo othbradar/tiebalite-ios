@@ -13,6 +13,7 @@ enum LaunchScenarioID: String, CaseIterable, Equatable, Sendable {
     case emptyShell = "app.empty-shell"
     case networkOffline = "network.offline"
     case networkSlow = "network.slow"
+    case threadContentRenderer = "renderer.thread-content"
     case sessionExpired = "session.expired"
     case sessionSignedInFixture = "session.signed-in-fixture"
     case sessionSignedOut = "session.signed-out"

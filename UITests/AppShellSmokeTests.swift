@@ -111,6 +111,106 @@ final class AppShellSmokeTests: XCTestCase {
     }
 
     @MainActor
+    func testThreadContentRendererLabUsesDomainFixturesAndStableIntents() {
+        let app = UITestHarness.launch(
+            scenario: .threadContentRenderer,
+            displayProfile: .darkAccessibilityReduced
+        )
+
+        UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.scrollToHittable(
+            .debugOpenThreadContentRenderer,
+            in: app
+        )
+        UITestHarness.tap(.debugOpenThreadContentRenderer, in: app)
+        UITestHarness.requirePresent(.threadContentLabRoot, in: app)
+        requireThreadContentAccessibilityProfile(in: app)
+
+        UITestHarness.scrollToHittable(.threadContentLink, in: app)
+        UITestHarness.tap(.threadContentLink, in: app)
+        UITestHarness.requireLabelNotEqual(
+            .threadContentExternalIntent,
+            to: "External intent: none",
+            in: app
+        )
+
+        UITestHarness.scrollToHittable(.threadContentImageSuccessAction, in: app)
+        UITestHarness.requireValue(
+            .threadContentImageSuccessAction,
+            equals: "已加载",
+            in: app
+        )
+        let successFrame = UITestHarness.element(
+            .threadContentImageSuccessAction,
+            in: app
+        ).frame
+        UITestHarness.tap(.threadContentImageSuccessAction, in: app)
+        UITestHarness.requireLabelNotEqual(
+            .threadContentMediaIntent,
+            to: "Media intent: none",
+            in: app
+        )
+        UITestHarness.requireAbsent(.interactionMediaViewer, in: app)
+
+        UITestHarness.scrollToHittable(.threadContentImageLoadingAction, in: app)
+        UITestHarness.requireValue(
+            .threadContentImageLoadingAction,
+            equals: "正在加载",
+            in: app
+        )
+        let loadingFrame = UITestHarness.element(
+            .threadContentImageLoadingAction,
+            in: app
+        ).frame
+
+        UITestHarness.scrollToHittable(.threadContentImageFailureAction, in: app)
+        UITestHarness.requireValue(
+            .threadContentImageFailureAction,
+            equals: "加载失败",
+            in: app
+        )
+        let failureFrame = UITestHarness.element(
+            .threadContentImageFailureAction,
+            in: app
+        ).frame
+
+        XCTAssertEqual(successFrame.width, loadingFrame.width, accuracy: 1)
+        XCTAssertEqual(successFrame.height, loadingFrame.height, accuracy: 1)
+        XCTAssertEqual(successFrame.width, failureFrame.width, accuracy: 1)
+        XCTAssertEqual(successFrame.height, failureFrame.height, accuracy: 1)
+
+        UITestHarness.scrollToHittable(.threadContentUnknown, in: app)
+        UITestHarness.requirePresent(.threadContentUnknown, in: app)
+        UITestHarness.scrollToHittable(.threadContentAfterUnknown, in: app)
+        UITestHarness.requirePresent(.threadContentAfterUnknown, in: app)
+        UITestHarness.attachSafeVisualEvidence(
+            app: app,
+            name: "Thread content dark large type reduced motion fixture"
+        )
+    }
+
+    @MainActor
+    private func requireThreadContentAccessibilityProfile(
+        in app: XCUIApplication
+    ) {
+        UITestHarness.requirePresent(
+            .threadContentLabAppearance,
+            in: app,
+            expectedLabel: "Appearance: Dark"
+        )
+        UITestHarness.requirePresent(
+            .threadContentLabDynamicType,
+            in: app,
+            expectedLabel: "Dynamic Type: Accessibility"
+        )
+        UITestHarness.requirePresent(
+            .threadContentLabReduceMotion,
+            in: app,
+            expectedLabel: "Reduce Motion: On"
+        )
+    }
+
+    @MainActor
     private func pushForumAndThread(in app: XCUIApplication) {
         UITestHarness.requirePresent(.recommendationsRoot, in: app)
         UITestHarness.tap(.openForum, in: app)

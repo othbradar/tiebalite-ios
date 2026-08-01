@@ -10,6 +10,15 @@
       "source": "crossLanguageGenerated"
     },
     {
+      "format": "protobuf",
+      "id": "thread-content.first-post.cross-language",
+      "path": "API/ThreadContent/thread_content_cross_language.pb",
+      "purpose": "ThreadInfo first-post content wire and domain mapping contract",
+      "sanitized": true,
+      "sha256": "d37a7486974718d660a4b43466d914156c66d36f3f83982507915575e68cdf12",
+      "source": "crossLanguageGenerated"
+    },
+    {
       "format": "json",
       "id": "json.success",
       "path": "JSON/success.json",

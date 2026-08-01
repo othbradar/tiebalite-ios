@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor bootstrap-tools bootstrap-fixture-tools tool-versions instructions reference-check generate-protos verify-protos generate-personalized-fixture verify-personalized-fixture generate resolve-packages verify-swiftpm-lock verify-generate lint forbidden static-canaries secret-scan networking-isolation build release-build release-isolation ipad-build test-unit test-ui-smoke test-ui-smoke-ipad test-ui-interaction test-ui-interaction-ipad ui-test-isolation test-all quality-fast quality clean
+.PHONY: help doctor bootstrap-tools bootstrap-fixture-tools tool-versions instructions reference-check generate-protos verify-protos generate-personalized-fixture verify-personalized-fixture generate-thread-content-fixture verify-thread-content-fixture generate resolve-packages verify-swiftpm-lock verify-generate lint forbidden static-canaries secret-scan networking-isolation build release-build release-isolation ipad-build test-unit test-ui-smoke test-ui-smoke-ipad test-ui-renderer test-ui-renderer-ipad test-ui-interaction test-ui-interaction-ipad ui-test-isolation test-all quality-fast quality clean
 
 help:
 	@printf '%s\n' \
@@ -15,6 +15,8 @@ help:
 	  'make verify-protos - verify deterministic Proto generation and drift' \
 	  'make generate-personalized-fixture - rebuild the JVM cross-language fixture' \
 	  'make verify-personalized-fixture - verify JVM fixture determinism (tool cache required)' \
+	  'make generate-thread-content-fixture - rebuild the ThreadInfo content fixture' \
+	  'make verify-thread-content-fixture - verify thread fixture cross-language bytes' \
 	  'make generate      - generate the Xcode project with XcodeGen' \
 	  'make resolve-packages - resolve only the canonical SwiftPM lock' \
 	  'make verify-swiftpm-lock - verify exact SwiftProtobuf package identity and revision' \
@@ -22,7 +24,7 @@ help:
 	  'make lint          - run SwiftLint' \
 	  'make forbidden     - scan prohibited interaction/state patterns' \
 	  'make static-canaries - prove static source-policy rejection/approval paths' \
-	  'make networking-isolation - enforce the fixture-only Stage 07 gate' \
+	  'make networking-isolation - enforce fixture/Proto/renderer isolation' \
 	  'make build         - build for a generic iOS Simulator' \
 	  'make release-build - build Release for a generic iOS Simulator' \
 	  'make release-isolation - prove Release excludes test support' \
@@ -30,6 +32,8 @@ help:
 	  'make test-unit     - run unit tests on an available iPhone Simulator' \
 	  'make test-ui-smoke - run iPhone UI smoke tests' \
 	  'make test-ui-smoke-ipad - run the iPad App Shell smoke test' \
+	  'make test-ui-renderer - run the iPhone ThreadContent Renderer Lab smoke' \
+	  'make test-ui-renderer-ipad - run the iPad ThreadContent Renderer Lab smoke' \
 	  'make test-ui-interaction - run the iPhone interaction lab matrix' \
 	  'make test-ui-interaction-ipad - run the iPad interaction lab matrix' \
 	  'make ui-test-isolation - prove test-support target boundaries' \
@@ -61,6 +65,12 @@ generate-personalized-fixture: tool-versions reference-check
 
 verify-personalized-fixture: tool-versions reference-check
 	@scripts/verify_personalized_fixture.sh
+
+generate-thread-content-fixture: tool-versions reference-check
+	@scripts/generate_thread_content_fixture.sh
+
+verify-thread-content-fixture: tool-versions reference-check
+	@scripts/verify_thread_content_fixture.sh
 
 bootstrap-tools:
 	@command -v brew >/dev/null 2>&1 || { echo 'Homebrew is required for this target.' >&2; exit 1; }
@@ -125,6 +135,12 @@ test-ui-smoke: generate
 test-ui-smoke-ipad: generate
 	@scripts/run_xcodebuild.sh ui-smoke-ipad
 
+test-ui-renderer: generate
+	@scripts/run_xcodebuild.sh ui-renderer
+
+test-ui-renderer-ipad: generate
+	@scripts/run_xcodebuild.sh ui-renderer-ipad
+
 test-ui-interaction: generate
 	@scripts/run_xcodebuild.sh ui-interaction
 
@@ -137,7 +153,7 @@ ui-test-isolation: test-unit test-ui-smoke
 test-all: generate
 	@scripts/run_xcodebuild.sh tests
 
-quality-fast: instructions reference-check verify-protos verify-personalized-fixture verify-swiftpm-lock verify-generate forbidden static-canaries secret-scan networking-isolation lint build test-unit
+quality-fast: instructions reference-check verify-protos verify-personalized-fixture verify-thread-content-fixture verify-swiftpm-lock verify-generate forbidden static-canaries secret-scan networking-isolation lint build test-unit
 	@git diff --check
 
 quality: quality-fast ui-test-isolation test-ui-interaction ipad-build test-ui-smoke-ipad test-ui-interaction-ipad release-isolation

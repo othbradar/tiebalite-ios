@@ -1,265 +1,228 @@
 # TASK_STATE
 
-- 当前阶段：07
-- 状态：`PHASE_07_COMPLETE_LOCAL_FIXTURE_FOUNDATION`
+- 当前阶段：08
+- 状态：`PHASE_08_THREAD_CONTENT_DOMAIN_RENDERER_COMPLETE`
 - 当前分支：`main`
-- 阶段 06 提交：
-  `dd1214ed5df258ae899c5748869ab8faf42c4114`
-  （`feat: complete stage 06 interaction spikes`）
-- 阶段 07 checkpoint：
-  `11768dd4b1416619ea396c12cf97616546cccad1`
-  （`feat: checkpoint stage 07 networking foundation`）
+- 阶段 07 提交：
+  `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
+  （`feat: complete stage 07 networking and protobuf foundation`）
+- 阶段 08 提交：包含本文件的
+  `feat: complete stage 08 thread content domain and renderer`
 - production live：`DISABLED`
-- 阶段 08：`NOT_STARTED`
+- 阶段 09：`NOT_STARTED`
+- 阶段 09 门禁：`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`
 
 ## 目标与范围
 
-阶段 07 只建立 Networking、SwiftProtobuf 和首个 Personalized
-fixture-driven 协议基础：
+阶段 08 只完成首楼正文内容领域模型、Proto adapter 和隔离
+Renderer：
 
-- 通用 HTTPS transport、typed Endpoint/Auth/request/pipeline；
-- pinned Android schema 最小闭包和确定性 Swift 生成；
-- exact SwiftProtobuf lock；
-- cross-language generated binary fixture；
-- request golden、decode、Proto → domain mapper 和回归；
-- 静态隔离、证据、许可证与 UNKNOWN 记录。
+- 根据锁定 Android reference 建立 P0 内容节点矩阵；
+- 生成并交叉验证脱敏 `ThreadInfo.firstPostContent` binary fixture；
+- 建立 Proto/SwiftUI 解耦的 `Sendable` / `Equatable` domain；
+- 实现保序、稳定 ID、unknown/malformed/presence 降级 mapper；
+- 实现只读 SwiftUI Renderer、注入式图片三态与 intent-only 点击；
+- 建立 Debug-only Renderer Lab 和 iPhone/iPad 回归。
 
-未创建业务页面、Feature Store 或生产 Repository；未接 live endpoint，未发
-真实网络请求，未读取账号/Cookie/Keychain，未修改 Android submodule，也未
-进入阶段 08。
+未建立业务 ThreadScreen、Repository、Endpoint、分页、PB Page/普通楼层
+wire、Pager 或 MediaViewer；未发 live request，未读取账号/Cookie/
+Keychain，未修改 Android submodule，未读取或执行阶段 09。
 
 ## 已读取的规则、规格与技能
 
-- 已读取根目录及 Sources/Core、Generated、TestSupport、Tests、Specs、Docs
-  目录链上适用的 `AGENTS.md`。
-- 已读取 `Prompts/07_NETWORKING_PROTOBUF_FOUNDATION.md`、关联 Specs、
-  ADR-0001/0006/0007/0008/0009/0010/0011 和进入阶段时的本文件。
-- 已显式使用 `.agents/skills/tiebalite-api-evidence` 与
+- 已读取根目录及 App、Sources/Core、Sources/Features、Specs、Docs、
+  TestSupport、Tests、UITests 目录链上适用的 `AGENTS.md`。
+- 已读取 `Prompts/08_THREAD_CONTENT_DOMAIN_AND_RENDERER.md`、关联
+  Specs、最新 ADR 与进入阶段时的本文件。
+- 已显式使用 `.agents/skills/tiebalite-api-evidence`、
+  `.agents/skills/ios-feature-slice` 和
   `.agents/skills/xcode-quality-gate`。
-- 三个子代理只读核对 Proto closure/API 命名、SwiftPM/XcodeGen 锁和
-  测试/隔离设计；所有工作树写入均由主代理完成。
+- 三个子代理只读复核 Proto closure/fixture、XcodeGen/target 隔离、
+  Renderer/测试/Git 风险；所有工作树写入均由主代理完成。
 
 ## Git 与用户工作保护
 
+- baseline HEAD 为阶段 07 final commit
+  `4b80ed455051b4a7f57aceb3d740d8952cdc371b`。
 - Android reference 保持 clean、exact
   `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
-- checkpoint 只提交当时 18 个阶段 07 网络基础文件。
 - 用户原有 `.idea/dataSources.xml`、`.idea/db-forest-config.xml` 的
   staged/unstaged 状态，以及 `.idea/noctule.xml`、`.idea/vcs.xml`、
-  根目录与 prompt kit 的 `.DS_Store` 漂移均未编辑、restore 或纳入阶段
-  提交。
-- 没有 amend、rebase、merge、push、tag、submodule update 或依赖浮动升级。
+  根目录与 prompt kit 的 `.DS_Store` 漂移均未编辑、restore 或纳入
+  阶段 08 提交。
+- 未 amend、rebase、merge、push、tag、submodule update 或浮动升级
+  依赖。
 
-## 工具、来源与锁
+## 证据、闭包与 fixture
 
-- 环境：macOS 26.6、Xcode 26.6（17F113）、Swift 6.3.3、
-  XcodeGen 2.45.4、SwiftLint 0.65.0、xcbeautify 3.2.1。
-- Protobuf：`protoc 35.1`、`protoc-gen-swift 1.38.1`。
-- SwiftProtobuf package/runtime：exact `1.38.1`，revision
-  `55d7a1cc5666b85c13464aea1c4b4a90feccb4c8`。
-- canonical lock：`Config/SwiftPM/Package.resolved`；生成工程的 lock
-  只从 canonical lock materialize。
-- schema root：Android reference 的
-  `app/src/main/protos/Personalized.proto`。
-- manifest：root 1 + direct 4 + transitive 46 = 51 个输入；逐文件
-  SHA-256/import/relationship 锁定；`n0099` 不是输入。
-- 权利边界：ADR-0011 只允许本地、个人、非商业使用；public/App Store/
-  commercial 仍为 `BLOCKED`。
+- `PbContent.type#1` 是 raw `int32`；Android dispatcher 证明
+  `0/9/27/35/40,1,2,3,4,5,10,20` 分支，未知 raw 保持
+  unsupported 降级。
+- 首楼路径是 `ThreadInfo.firstPostContent#142`，poll 为
+  `ThreadInfo.poll_info#74`；`isDeleted#181` 只做保守 nonzero policy。
+- 阶段 07 的 51-file closure 完整包含 `ThreadInfo` 47-file 传递闭包；
+  `Post.proto` 额外 25 个输入未纳入，本阶段无 generated/schema 差异。
+- fixture：
+  `TestSupport/Fixtures/API/ThreadContent/thread_content_cross_language.pb`，
+  1535 bytes，SHA-256
+  `d37a7486974718d660a4b43466d914156c66d36f3f83982507915575e68cdf12`。
+- Java `DynamicMessage` 生产器、独立 textproto、两次 JVM generation、
+  tracked bytes 与独立 protoc encoding 已逐字节相等。
+- fixture 仅含 synthetic 值与 `fixture.invalid`，证据等级为
+  `CROSS_LANGUAGE_GENERATED`，不是 live/PB Page response。
 
 ## 已实现
 
-### 生成、工程与依赖
+### Domain 与 Proto adapter
 
-- `scripts/generate_protos.sh` 验证 submodule exact/clean、工具版本、
-  manifest hash、imports 和 protoc dependency closure，再生成 51 个
-  `.pb.swift`。
-- 默认 output 在写/删前验证 lexical + realpath containment，在规范化前
-  拒绝原始 `..` 组件，并拒绝路径链和 output tree 的任意
-  symlink；自定义 output 只允许 `TMPDIR` 下经过验证的空目录。
-- `scripts/verify_protos.sh` 比较两次 clean generation 与 tracked output。
-- `scripts/materialize_swiftpm_lock.sh` /
-  `scripts/verify_swiftpm_lock.sh` 固定 package identity/version/revision。
-- XcodeGen 建立内部静态 `GeneratedProtobuf` target；App/Test 显式依赖，
-  generated target 关闭 ObjC compatibility header 安装。
-- resolve/build/test 使用
-  `-onlyUsePackageVersionsFromResolvedFile -skipPackageUpdates`，结束后
-  重新核对 lock。
+- `ThreadContentDocument` 按 thread/post/scope/source ordinal 产生稳定 ID。
+- 领域值只依赖 Foundation，全部需跨 actor 的值均为 `Sendable`，不泄漏
+  generated message。
+- mapper 同步、纯值、严格保序，单个坏节点不丢失后续节点。
+- 图片候选只保留 HTTPS；外链只接受绝对 HTTP(S)，不允许
+  credential、危险 scheme 或畸形目标。
+- 图片尺寸明确区分 missing/malformed/non-positive/out-of-range/
+  extreme；voice/video 不拼 endpoint、不播放。
+- poll 永远只读，零总票数不除零；unknown/meme 只保留安全 presence。
+- ADR-0012 将 generated import allowlist 精确扩为两个 Core adapter，
+  Feature/View 仍禁止 Proto。
 
-### Fixture 与 provenance
+### Renderer 与 Debug Lab
 
-- `scripts/fixtures/PersonalizedFixtureGenerator.java` 使用 Java
-  `DynamicMessage`，不链接 Swift generated code。
-- Java/Javac 21.0.10、`protobuf-java 4.35.1`；jar 的 published SHA-1
-  与 locked SHA-256 都校验。
-- `make bootstrap-fixture-tools` 从 Config 锁定的 exact Maven Central URL
-  原子安装 ignored cache；quality 离线且对缺失/symlink/错误 hash fail
-  closed。
-- tracked fixture：
-  `personalized_cross_language.pb`，250 bytes，SHA-256
-  `54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a`。
-- verifier 比较两次 JVM generation、tracked bytes 和独立
-  `protoc --encode` 输出。
-- fixture 为 `CROSS_LANGUAGE_GENERATED`，只含 synthetic 值；不是 live
-  抓包或匿名服务器证据。
+- Renderer 只消费 domain 与注入的 `ImageLoading`，无 URLSession/
+  HTTPClient/Repository 直连。
+- 图片 loading/success/failure 共用稳定框，ratio 限制为
+  `0.5...3.0`；无安全候选时不调用 loader，取消不显示为失败。
+- image 只输出稳定 `ThreadMediaIntent`，link/video 只输出
+  `ExternalLinkIntent`；不直接 push/open/play。
+- link/image/video 可交互区至少 44pt；文本支持换行、选择、
+  Dynamic Type 与超长内容。
+- emoji/mention/video/voice/unknown/poll/empty/deleted/blocked 均有可访问
+  只读降级。
+- Debug Lab 含 mixed 23 节点、empty、deleted、blocked 四份 domain
+  fixture，以及 dark/Accessibility 大字/Reduce Motion 环境摘要。
+- Release 包含 production Renderer，但排除 Debug Lab、harness、launch scenario
+  和 canary。
 
-### Personalized contract 与 mapper
+## 行为先行与回归覆盖
 
-- request：`POST /c/f/excellent/personalized?cmd=309264`、
-  `X-BD-Data-Type: protobuf`、Android exact multipart envelope。
-- refresh/page 1 protobuf golden：
-  `0a0b2001280b30015801b80101`。
-- descriptor host 由 fixture/test 注入；production Swift 无真实 Tieba host。
-- 不猜 CommonRequest、AppPos、设备、credential 或 session 字段。
-- decoder 拒绝 empty body，区分 protobuf decode、server error 和
-  missing-data mapping。
-- mapper 保留服务器顺序、raw feed/thread ID、raw type 999、message
-  presence 和 public author whitelist；不泄漏 generated type，不映射
-  credential 字段，不猜 canonical ID/terminal。
-- `RecommendationPage` 等 domain 值为 `Sendable`；页码递增
-  overflow-safe。
+- `20260801-073821-10588-unit.xcresult`：先写测试，domain 未存在时
+  编译按预期失败。
+- `20260801-074504-16621-ui-smoke.xcresult`：先写 UI 验收，Lab 未存在
+  时按预期失败。
+- 中间 Renderer UI 失败包
+  `075207-20493`、`075627-22528`、`075820-24151`、
+  `075940-25763`、`080106-27307`、`080331-28906`、
+  `080504-30510`、`080709-32157`、`080817-33663`、
+  `081036-35301`；分别暴露并修复菜单可达、loading 查询、图片
+  frame、accessibility value、滚动方向与超长文本上界。
+- 阶段 08 新增 20 项 mapper/cross-language test 与 6 项 Renderer
+  contract test；全仓 Unit 为 111 项。
+- iPhone 定向 Renderer：
+  `20260801-083757-54280-ui-renderer.xcresult`，1/1，96.831s。
+- iPad 定向 Renderer：
+  `20260801-084038-56604-ui-renderer-ipad.xcresult`，1/1，39.745s。
 
-### Swift 6 与静态隔离
+## 本轮真实执行的命令与结果
 
-- generated output 中 10 个 generator-produced
-  `@unchecked Sendable` 是 ADR-0011 的 exact generated-only 例外；
-  文件名单/数量/hash 被门禁锁定。
-- 手写源码继续禁止 `@unchecked Sendable` 和
-  `@preconcurrency import`。
-- 只有 `PersonalizedProtocol.swift` 可导入 GeneratedProtobuf 和
-  SwiftProtobuf；UI/Feature/domain 看不到 generated type。
-- production composition 继续注入 `DisabledHTTPClient`。
-- project/package/live URL/shared storage/generated location/private capture
-  以及 output ancestor/tree symlink、symlink + `..`、JVM cache 缺失等拒绝
-  canary 已纳入
-  `make networking-isolation` 和 `make quality-fast`。
-
-## 行为先行与回归
-
-- `20260731-230440-18801-unit.xcresult`：先写 Personalized tests，
-  `RecommendationPage` 尚不存在，编译按预期失败。
-- `20260731-230658-20506-unit.xcresult`：warning-as-error 拦截 deprecated
-  protobuf initializer；改用 `serializedBytes`。
-- `20260731-230721-21864-unit.xcresult`：实现后定向 Unit 通过。
-- Personalized 新增 7 项覆盖：
-  request golden/envelope、cross-language decode/map、empty-vs-missing-vs
-  service error、optional presence、unknown field/raw 999、
-  malformed/empty body、Sendable domain/overflow。
-- 通用 network tests 覆盖 HTTPS/request validation、query/form/multipart、
-  auth binding、ephemeral storage、HTTP/MIME/size/decode/map taxonomy、
-  redirect reject、timeout、取消、no retry 和日志脱敏。
-
-## 本轮真实执行命令与结果
-
-- `git status --short`：阶段 07 差异与已知用户漂移并存；用户漂移保持隔离。
-- `git log -2 --oneline --decorate`：HEAD 为 `11768dd`，其父为
-  `dd1214e`。
-- `git submodule status -- References/TiebaLite-Android`：exact SHA，
-  无 dirty marker。
-- `bash -n ...`（11 个变更 shell 脚本）：PASS。
+- `git status --short`、`git log -4 --oneline --decorate`、
+  `git rev-parse HEAD`、`git branch --show-current`：确认 baseline、`main`、
+  阶段差异与用户漂移并存。
+- `git submodule status -- References/TiebaLite-Android` 与 submodule
+  `status --porcelain`：exact/clean。
+- `make instructions`：全部指令链小于 32768 bytes，8 个 repo skill
+  validation 通过。
+- `make generate`：51 个 Proto 两次生成一致，XcodeGen 与 canonical
+  SwiftPM lock materialization 通过。
 - `make verify-protos`：两次 clean generation 与 tracked output 一致；
-  51 files。上游 `ThreadInfo.proto` 有 5 个 unused-import warning。
-- `make verify-personalized-fixture`：两次 JVM generation、tracked
-  fixture、独立 protoc encoding 一致。
-- `bash scripts/verify_swiftpm_lock.sh`：exact 1.38.1/revision PASS。
-- `make generate`：Proto verify、XcodeGen 和 canonical lock
-  materialization PASS。
-- `make doctor`：沙箱内因 CoreSimulatorService 权限退出 2；同一原命令
-  以批准权限复跑后 0 failure、0 warning。
-- `make resolve-packages`：只解析
-  `https://github.com/apple/swift-protobuf.git @ 1.38.1`，结束后 lock
-  verify PASS。
-- `make networking-isolation`：0 failure。
-- `make secret-scan`：无 high-confidence match。
-- `git diff --check HEAD`：PASS。
-- 安全终审期间曾真实触发并修复以下失败：
-  - 静态 post-lock canary 首版有 shell runtime parse error，
-    `make networking-isolation` 退出 2；
-  - fixture bootstrap 首版参数带入字面 `+`，
-    `make bootstrap-fixture-tools` 退出 2；
-  - path safety 首两版误拒绝 macOS `/var` → `/private/var` 受信别名，
-    `make verify-personalized-fixture` 两次退出 2；
-  - missing exact JVM cache 的直接负向测试退出 66，符合 fail-closed
-    设计；
-  - 两次完整 `make quality` 在只读审计新发现 P1 后由协调代理
-    主动中断，分别停在 UI smoke 和 iPhone interaction，`make` 报
-    `Quit: 3`；修复后从头重跑下述最终门禁。
-- `make quality-fast`：PASS：
-  - Debug build：
-    `Artifacts/TestResults/20260731-232129-34884-build.log`；
-  - Unit：
-    `Artifacts/TestResults/20260731-232134-35029-unit.xcresult`，
-    xcresulttool 确认 85/85、0 failed、0 skipped；
-  - lint：70 files、0 violation；
-  - project generation、Proto、fixture、lock、secret scan、network isolation
-    均在同一门禁中复验通过。
-- 安全修复后最终 `make quality`：从头完整退出 0，并输出
-  `Quality gate completed.`：
-  - Debug build：
-    `Artifacts/TestResults/20260801-000625-66395-build.log`；
-  - Unit：
-    `Artifacts/TestResults/20260801-000627-66436-unit.xcresult`，
-    xcresulttool 确认 85/85、0 failed、0 skipped；
-  - iPhone UI smoke：
-    `Artifacts/TestResults/20260801-000657-66748-ui-smoke.xcresult`，
-    12/12、0 failed、0 skipped；
-  - iPhone interaction：
-    `Artifacts/TestResults/20260801-001010-67628-ui-interaction.xcresult`，
-    5/5、0 failed、0 skipped；
-  - iPad build：
-    `Artifacts/TestResults/20260801-001510-68110-ipad-build.log`；
-  - iPad UI smoke：
-    `Artifacts/TestResults/20260801-001513-68162-ui-smoke-ipad.xcresult`，
-    2/2、0 failed、0 skipped；
+  上游 `ThreadInfo.proto` 持续产生 5 个 unused-import warning。
+- `make generate-thread-content-fixture`：生成 1535-byte tracked fixture。
+- `make verify-thread-content-fixture`：两次 JVM、tracked 与独立 protoc
+  bytes 一致。
+- `make secret-scan`：无 high-confidence match；已覆盖
+  `scripts/fixtures`。
+- `make networking-isolation`：0 failure；production 仍是
+  `DisabledHTTPClient`，Proto/Renderer/网络/Pager/MediaViewer/手势/动画/
+  overlay 边界通过。
+- `make lint`：78 files，0 violation。
+- `make test-unit`：
+  `20260801-083720-52559-unit.xcresult`，Test Succeeded。
+- `make test-ui-renderer`：
+  `20260801-083757-54280-ui-renderer.xcresult`，1/1。
+- `make test-ui-renderer-ipad`：
+  `20260801-084038-56604-ui-renderer-ipad.xcresult`，1/1。
+- `make quality-fast`：退出 0；Debug build
+  `20260801-084235-63908-build.log`，Unit
+  `20260801-084238-64028-unit.xcresult`，所有静态/生成/隔离门禁通过。
+- `make quality`：从头退出 0 并输出 `Quality gate completed.`：
+  - Debug build：`20260801-084337-67125-build.log`；
+  - Unit：`20260801-084339-67179-unit.xcresult`，111/111；
+  - iPhone UI smoke：`20260801-084408-67708-ui-smoke.xcresult`，13/13；
+  - iPhone interaction：`20260801-084900-69328-ui-interaction.xcresult`，5/5；
+  - iPad build：`20260801-085402-69867-ipad-build.log`；
+  - iPad UI smoke：`20260801-085404-69920-ui-smoke-ipad.xcresult`，3/3；
   - iPad interaction：
-    `Artifacts/TestResults/20260801-001632-68383-ui-interaction-ipad.xcresult`，
-    1/1、0 failed、0 skipped；
-  - Release build/isolation：
-    `Artifacts/TestResults/20260801-001714-68562-release-build.log`，
-    Build Succeeded，Release 不含 TestSupport、Debug gallery 或
-    interaction lab；
-  - canonical SwiftPM lock 在每个 Xcode 命令后复验通过。
-- 当前 Release-iphonesimulator `TiebaLite.app` 为 11,444 KiB；
-  universal simulator executable 为 11,687,320 bytes。没有阶段 06 的同配置
-  Release 基准，因此不声称体积增量。
-- 对两个已主动中断的 `.xcresult` 运行 `xcresulttool` 均退出 64，
-  原因是中断包未生成 `Info.plist`；不将它们计为通过或产品回归。
-- 状态文档更新后，误输入的 `make instructions-check` 因仓库无该 target
-  退出 2；改用正确的 `make instructions` 后全部指令链/仓库 skills 验证
-  PASS。
-- 提交前再跑 `make release-isolation`：
-  `Artifacts/TestResults/20260801-002146-72294-release-build.log`，Build Succeeded，
-  Release 隔离 PASS；`make networking-isolation`、`make secret-scan`、
-  `git diff --check HEAD` 和 submodule exact/clean 复核亦 PASS。
+    `20260801-085604-70212-ui-interaction-ipad.xcresult`，1/1；
+  - Release build：`20260801-085646-70369-release-build.log`；
+  - fresh Release isolation 与 UITesting isolation 通过。
+- 7 次
+  `xcrun xcresulttool get test-results summary --path ... --format json`：
+  final Unit/UI 与两个定向 Renderer result 均为 `Passed`，0 failed、
+  0 skipped。
+- `bash -n` 核对 5 个阶段相关 shell script：PASS。
+- `git diff HEAD --check`：文档更新前 PASS；提交前需重跑并仅根据
+  最终结果交付。
+
+不计为产品失败、但确实执行过的诊断失败：
+
+- fresh Release 之前直接跑 `scripts/verify_release_isolation.sh` 退出 1，
+  原因是旧 Release SwiftFileList 未包含 Renderer；`make quality` 重建后同一
+  verifier 已通过。
+- 只读审计中 3 次未批准权限的 `xcresulttool` 因无法写
+  `TestReport` 退出 64；最终从 `/private/tmp` 以批准权限重跑 7 份
+  结果并全部通过。
+- 辅助进程检查 `pgrep` 因环境缺少 sysmond 退出 3；不影响 Xcode
+  命令或验收结果。
+
+## 新增或变更的动画、手势、overlay、依赖
+
+- 新增动画：无。
+- 新增业务手势：无。
+- 新增 overlay：无。
+- 新增业务页面：无；仅新增 Debug-only 隔离 Renderer Lab。
+- 新增生产依赖：无；SwiftProtobuf 继续 exact 1.38.1 /
+  `55d7a1cc5666b85c13464aea1c4b4a90feccb4c8`。
+- Android submodule 修改：无。
 
 ## 未验证与剩余风险
 
-1. 未运行 live probe；匿名服务器接受、真实 MIME、最小
-   CommonRequest/AppPos/header、错误码和值域均为 `UNKNOWN`。
-2. synthetic fixture 不能裁决 canonical identity、重复页、稳定顺序、
-   terminal、真实 unknown-field 分布或真实内容退化。
-3. public/App Store/commercial distribution 仍被 ADR-0011 阻塞。
-4. URLSession redirect 只验证 delegate reject，未做真实 302
-   `session.bytes` integration。
-5. production timeout/cancel 的底层资源释放、AsyncBytes 性能与 typed
-   redacted request diagnostics 未测。
-6. active/candidate credential、session expiry、lease revalidation 和跨
-   session stale response 不在阶段 07。
-7. SwiftProtobuf 相对阶段 06 的可比 Release 体积增量没有同配置基准；
-   完整门禁后只记录当前 Release 大小。
-8. iOS 18.x runtime 不可用；当前 UI/Unit 使用 iOS 26.5 Simulator。
-9. 阶段 06 Pager/Media 的既有 SPIKE_PARTIAL 风险未改变。
+1. 未发 live request；服务端 raw 分布、真实 malformed 形态、媒体可达性
+   和分发权利仍为 `UNKNOWN`。
+2. raw `9/27/35/40/20`、meme、emoji registry、`isDeleted#181`、
+   quote 的完整 live 语义未知。
+3. PBPage、普通楼层 Post/fold/delete、楼中楼、分页、ThreadScreen 和
+   滚动位置未实现/验证。
+4. `ImageLoading` 当前只接收 resource ID；生产 URL/version cache key、
+   candidate 选择、下采样、大图解码和 lease 需后续设计。
+5. loader 成功但 `UIImage` 数据不可解码时，当前视觉会降级为失败，
+   action 的 accessibility value 仍可为“已加载”。
+6. document/poll 顶层 accessibility ID 未包含 source；同屏多个
+   Renderer 时可重复。极端超长 poll 标题/选项在 Accessibility 大字下仍需
+   专项裁切测试。
+7. UI/Unit 使用 iOS 26.5 Simulator；iOS 18.x、真机、VoiceOver
+   实操和真实 iPad 分屏未验证。
+8. 公开/App Store/商业分发仍被 ADR-0011 权利边界阻塞。
+9. 阶段 06 Pager/Media 仍为 `SPIKE_PARTIAL`。
 
-## 动画、手势、overlay、依赖
+## 下一阶段前置条件
 
-- 新增动画：无。
-- 新增手势：无。
-- 新增 overlay：无。
-- 新增业务页面：无。
-- 新增生产依赖：SwiftProtobuf 1.38.1 exact。
-- Android submodule 修改：无。
+阶段 08 完成后停止，不自动开始阶段 09。除非另有明确用户指令
+且阶段 06 `SPIKE_PARTIAL` 验收被正式关闭，阶段 09 保持
+`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。待关闭的阶段 06 风险包括：
 
-## 停止条件
-
-阶段 07 的本地 fixture-first Networking/Protobuf 基础已完成，安全终审
-后的最终 `make quality` 已通过。只允许提交阶段 07 差异；提交后停止，
-阶段 08 保持 `NOT_STARTED`。
+1. stale selection commit generation / expected-source 归属；
+2. 旋转期间 coordinator continuity；
+3. 运行时 fixed-owner 手势交接；
+4. cached scroll/zoom 离场重置；
+5. 真实 iPad 分屏、iOS 18.x 与 VoiceOver 验收；
+6. resource lease 与 100 张 full-resolution 资源压力证据。

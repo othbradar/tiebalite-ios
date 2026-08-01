@@ -11,9 +11,15 @@ struct AppShellView: View {
     var body: some View {
         Group {
             if horizontalSizeClass == .regular {
-                IPadAppShellView(navigation: navigation)
+                IPadAppShellView(
+                    navigation: navigation,
+                    imageLoader: environment.imageLoader
+                )
             } else {
-                IPhoneAppShellView(navigation: navigation)
+                IPhoneAppShellView(
+                    navigation: navigation,
+                    imageLoader: environment.imageLoader
+                )
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -50,6 +56,7 @@ struct AppShellView: View {
 @MainActor
 private struct IPhoneAppShellView: View {
     @Bindable var navigation: AppNavigationStore
+    let imageLoader: any ImageLoading
 
     var body: some View {
         TabView(selection: selectedTabBinding) {
@@ -66,9 +73,16 @@ private struct IPhoneAppShellView: View {
 #if DEBUG
                     navigation.openSettingsRoute(.interactionLab)
 #endif
+                } openThreadContentRenderer: {
+#if DEBUG
+                    navigation.openSettingsRoute(.threadContentRendererLab)
+#endif
                 }
                 .navigationDestination(for: SettingsRoute.self) { route in
-                    SettingsRouteDestinationView(route: route)
+                    SettingsRouteDestinationView(
+                        route: route,
+                        imageLoader: imageLoader
+                    )
                 }
             }
             .tag(AppTab.settings)
@@ -169,6 +183,7 @@ private struct PhoneTabSelector: View {
 @MainActor
 private struct IPadAppShellView: View {
     @Bindable var navigation: AppNavigationStore
+    let imageLoader: any ImageLoading
 
     var body: some View {
         NavigationSplitView {
@@ -220,6 +235,10 @@ private struct IPadAppShellView: View {
 #if DEBUG
                     navigation.openSettingsRoute(.interactionLab)
 #endif
+                } openThreadContentRenderer: {
+#if DEBUG
+                    navigation.openSettingsRoute(.threadContentRendererLab)
+#endif
                 }
             }
         }
@@ -231,7 +250,10 @@ private struct IPadAppShellView: View {
             RegularDetailColumn(navigation: navigation, root: root)
         } else if let route = navigation.state.settingsPath.last {
             NavigationStack {
-                SettingsRouteDestinationView(route: route)
+                SettingsRouteDestinationView(
+                    route: route,
+                    imageLoader: imageLoader
+                )
             }
         } else {
             EmptyStateView(
@@ -300,6 +322,7 @@ private struct RegularDetailColumn: View {
 @MainActor
 private struct SettingsRouteDestinationView: View {
     let route: SettingsRoute
+    let imageLoader: any ImageLoading
 
     @ViewBuilder
     var body: some View {
@@ -317,6 +340,8 @@ private struct SettingsRouteDestinationView: View {
 #if DEBUG
         case .interactionLab:
             DebugInteractionLabView()
+        case .threadContentRendererLab:
+            DebugThreadContentRendererLabView(imageLoader: imageLoader)
 #endif
         }
     }

@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`PERSONALIZED_GENERATED_AND_CROSS_LANGUAGE_VERIFIED`
+状态：`PERSONALIZED_AND_THREAD_CONTENT_CROSS_LANGUAGE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -28,6 +28,8 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - `GeneratedProtobuf` 是独立静态 target；UI/Feature import 被静态门禁拒绝。
 - 首个 binary fixture 是 250-byte `CROSS_LANGUAGE_GENERATED` JVM fixture，
   不是 live endpoint evidence；原 `opaque.pb` 仍只是 loader fixture。
+- 阶段 08 复用同一闭包中的 `ThreadInfo/PbContent/PollInfo/PollOption`，
+  生成 1535-byte 首楼正文 fixture；没有新增 Proto 输入或修改生成文件。
 
 当前 local/personal/noncommercial schema 路径由 ADR-0011 批准；公开分发、
 App Store 和商业使用继续 `BLOCKED`。
@@ -230,9 +232,14 @@ type 9/27/35/40 的原始业务含义没有运行证据；只能证明当前 And
 8. generated source 不含 UI import，UI target 不直接 import generated module 的结构检查。
 
 Personalized 的 1、2（success/present-empty/missing-data/server error/
-malformed）、3、4、raw `999` 和结构隔离已 `TESTED`。PbContent、FRS、PB、
-PBFloor、真实 live pagination 与其余内容边界仍
-`NOT_CREATED/NOT_TESTED`。
+malformed）、3、4、raw `999` 和结构隔离已 `TESTED`。阶段 08 以
+`ThreadInfo.firstPostContent#142` 为合成 carrier，已覆盖所有 Android
+dispatcher P0 raw、unknown `999`、meme/poll message presence、URL/尺寸/空内容
+降级与严格保序，状态为 `CROSS_LANGUAGE_GENERATED_AND_TESTED`。
+
+FRS、PB Page wrapper、`Post.content#5`、PB Floor、真实 live pagination 与
+普通楼层折叠/删除 wire 仍为 `NOT_CREATED/NOT_TESTED`；不得用首楼
+fixture 替代这些证据。
 
 ## 来源与复制边界
 

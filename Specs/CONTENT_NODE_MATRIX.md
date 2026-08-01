@@ -1,113 +1,122 @@
 # 帖子内容节点矩阵
 
-状态：`APPROVED_FOR_FIXTURE_DESIGN`
+状态：`PHASE_08_IMPLEMENTED_AND_VERIFIED`
 
-证据源：
+本矩阵只使用只读 Android submodule
+`5545326b2a8e0d784b2f3dfbcb219c7b121e61c2` 的代码证据。raw type
+是 `PbContent.type` 的裸 `int32`，不是 enum；服务端原义和出现频率没有响应
+样本佐证时仍为 `UNKNOWN`。
 
-- `References/TiebaLite-Android/app/src/main/protos/PbContent.proto::PbContent`
-- `.../api/models/protos/Extensions.kt::List<PbContent>.renders`
-- `.../ui/common/PbContentRender.kt`
-- `.../ui/page/thread/ThreadPage.kt::PostCard/PollWidget`
+## 证据路径与边界
 
-本阶段没有真实响应样本。raw type 分支是 `CODE_EVIDENCE`；字段的服务端完整语义与出现频率仍为 `UNKNOWN`。
+- 正文 wire 类型：
+  `References/TiebaLite-Android/app/src/main/protos/PbContent.proto::tieba.PbContent`
+  （`type` field 1）。
+- Android raw dispatcher：
+  `References/TiebaLite-Android/app/src/main/java/com/huanchengfly/tieba/post/api/models/protos/Extensions.kt::List<PbContent>.renders`
+  （行 222–357）。
+- Android render 类型与文本合并：
+  `References/TiebaLite-Android/app/src/main/java/com/huanchengfly/tieba/post/ui/common/PbContentRender.kt::PbContentRender/TextContentRender/PicContentRender/VoiceContentRender/VideoContentRender`
+  （行 60–253）。
+- 首楼正文实际消费路径：
+  `References/TiebaLite-Android/app/src/main/java/com/huanchengfly/tieba/post/ui/page/thread/ThreadViewModel.kt`
+  行 154 的 `threadInfo?.firstPostContent?.renders`，对应
+  `ThreadInfo.proto::ThreadInfo.firstPostContent` field 142。
+- 普通楼层 wire 路径（只读审计，当前 Swift 闭包不含 `Post.proto`）：
+  `PbPageResponse.data#2 → PbPageResponseData.post_list#6[]` 或
+  `first_floor_post#38 → Post.content#5[] → PbContent.type#1`。
+- Poll：`PollInfo.proto::PollInfo`、`PollOption.proto::PollOption`，由
+  `ThreadInfo.poll_info#74` 携带；Android 展示为
+  `ThreadPage.kt::PollWidget`（行 913 起）。
 
-“支持状态”表示未来 P0 的目标处理等级，不是当前实现进度；阶段 01
-仍没有 Swift 生产实现或 fixture。
+阶段 07 的 51-file 生成闭包完整包含 `ThreadInfo` 的 47-file 依赖闭包，包含
+`PbContent/MemeInfo/PollInfo/PollOption`，因此阶段 08 不扩大、也不修改生成
+Proto。`Post.proto` 需要额外 25 个输入且未获 ADR-0011 批准；普通楼层折叠/
+不可见状态只能保持领域级合成降级，不能伪称 wire-verified。
 
-## 节点矩阵
+## P0 节点矩阵
 
-| Android/Proto 类型 | 字段与语义证据 | iOS 领域节点 | P0/P1 | 渲染 | 交互 | Fixture | 支持状态 | 证据 |
-|---|---|---|---|---|---|---|---|---|
-| `type=0` | `text`；Android 追加普通文本 | `TextNode(rawType: 0)` | P0 | Dynamic Type 文本，保留换行 | 选择/复制按系统 | 正常、空、超长、Unicode、混排 | `Supported` | `CODE_EVIDENCE` |
-| `type=9` | Android 与普通文本同分支；原始业务语义未知 | `TextNode(rawType: 9)` | P0 | 与 text 一致，保留 raw type | 同文本 | 正常、空、与相邻节点 | `Degraded` | `CODE_EVIDENCE` / 语义 `UNKNOWN` |
-| `type=27` | Android 与普通文本同分支；原始业务语义未知 | `TextNode(rawType: 27)` | P0 | 与 text 一致 | 同文本 | 正常、空 | `Degraded` | `CODE_EVIDENCE` / 语义 `UNKNOWN` |
-| `type=35` | Android 当前与普通文本同分支；历史说明不足以证明“广告” | `TextNode(rawType: 35)` | P0 | 文本，不按猜测加样式 | 同文本 | 正常、空、URL-like text | `Degraded` | `CODE_EVIDENCE`; 原义 `UNKNOWN` |
-| `type=40` | Android 当前与普通文本同分支；历史曾有不同处理 | `TextNode(rawType: 40)` | P0 | 文本 | 同文本 | 正常、空 | `Degraded` | 当前 `CODE_EVIDENCE`; 原义 `UNKNOWN` |
-| `type=1` | `text` 为标签，`link` 为 URL annotation | `LinkNode(label,url)` | P0 | 链接样式；坏 URL 显示 label | 只允许白名单 scheme；系统确认/打开 | http/https、空 label、坏 URL、超长 URL、未知 scheme | `Supported` | `CODE_EVIDENCE` |
-| `type=2` | `text/c` 注册表情，Android 渲染 `#(c)` | `EmojiNode(code,fallbackText)` | P0 | 有资源显示表情，无资源显示可读 fallback | 无 | 已知、未知、空 code、超长 | `Degraded` | `CODE_EVIDENCE`; 资源映射 `UNKNOWN` |
-| `type=3` | 图片；URL 候选来自 origin/big/cdn/dynamic/src；尺寸取 `bsize` | `ImageNode` | P0 | 固定稳定占位；适配尺寸；失败占位 | 打开唯一 MediaViewer | 正常、GIF/长图、坏 URL、所有 URL 空、bsize 空/坏/零/极大 | `Supported` | `CODE_EVIDENCE` |
-| `type=4` | `text` + int64 `uid`，Android 创建 user annotation；未提供时 proto3 默认为 0 | `MentionNode(userID?,label)` | P0 | 可读提及；uid=0 时仍显示 label | 合法 userID 进入 P1 profile；否则不导航 | 正常、uid 0/Int64 极值、空 label | `Supported` | `CODE_EVIDENCE` |
-| `type=5`, `src` 非空 | `link` video URL、`src` thumbnail、`text` web URL、`bsize` | `VideoNode` | P1；P0 安全降级 | P0 显示 thumbnail + “视频”占位；P1 可播放 | P0 可打开经校验外链；不自动播放 | 正常、仅 thumbnail、坏 video/web URL、坏尺寸 | `Degraded` | `CODE_EVIDENCE` |
-| `type=5`, `src` 为空 | Android 显示视频图标和 `text` URL | `LinkNode(kind: video)` | P0 降级 | “视频”+ 可读 URL/label | 白名单外链 | 正常、空 text、未知 scheme | `Degraded` | `CODE_EVIDENCE` |
-| `type=10` | `voiceMD5/duringTime`；Android 拼接语音 URL | `VoiceNode(resourceID,duration)` | P1；P0 安全降级 | P0 显示语音占位与时长 | P1 播放；P0 不静默请求未知 URL | 正常、空 MD5、duration 0/极大、失败 | `Degraded` | `CODE_EVIDENCE`; URL 稳定性 `UNKNOWN` |
-| `type=20` | 图片替代分支，显示/原图都取 `src`，尺寸仍取 `bsize` | `ImageNode(rawType: 20)` | P0 | 同图片；保留 raw type | MediaViewer | 正常、坏 src/bsize | `Degraded` | `CODE_EVIDENCE`; 类型原义 `UNKNOWN` |
-| 其他 int（如 999） | Android 没有 else，会静默丢弃 | `UnsupportedNode(rawType,safeText)` | P0 | 明确、紧凑、不遮挡的“不支持内容”占位；相邻内容不丢 | 无；Debug 可显示 raw type，不显示敏感 raw payload | 未知 type、空字段、带 text/link/src、连续未知节点 | `Unsupported` | iOS 降级 `REQUIRED` |
-| `memeInfo` | PbContent 字段存在，主源码无消费点 | `UnsupportedNode(kind: meme)` | P0 降级 | 占位；若 `text` 可安全保留则附 fallback | 无 | memeInfo only、meme + text | `Unknown` | `UNKNOWN` |
-| `ThreadInfo.poll_info` | 非 PbContent；`PollWidget` 显示 title/tips/options/count/status | `ReadOnlyPollNode` | P0 只读 | 单/多选标签、选项、票数/比例、截止/关闭状态；未知状态降级 | 不允许投票提交 | 单选/多选、匿名、已投、过期、关闭、图片选项、total=0 | `Degraded` | `CODE_EVIDENCE`; 状态值域 `UNKNOWN` |
-| 删除/折叠 Post | `Post.is_fold/fold_tip/is_post_visible` 等字段存在；完整服务端形态未知 | `UnavailablePostNode` | P0 | 保留楼层身份和说明，不崩溃 | 无 | 删除、折叠、私密、缺 author/content | `Degraded` | 字段 `CODE_EVIDENCE`; 行为 `UNKNOWN` |
-| 空 content | repeated 为空或全为未知节点 | `EmptyContentNode` | P0 | 可访问的“内容不可用”占位 | 无 | 空数组、仅未知、仅空文本 | `Degraded` | iOS 降级 `REQUIRED` |
+每一行的场景都在合成的
+`thread-content.first-post.cross-language` binary fixture、明确标注的 Renderer
+领域 fixture，或固定 generated-message mapper 构造测试中出现。iOS
+状态只表示阶段 08 的处理等级。
 
-## Mapper 规则
+| Raw/结构 | Android 文件与 symbol | Proto message / field 路径 | Android 展示/降级证据 | Fixture 场景 | iOS 状态 |
+|---|---|---|---|---|---|
+| `type=0` | `Extensions.kt::List<PbContent>.renders` 分支 `0,9,27,35,40` | `PbContent.type#1=0`, `text#2`；缺省 type 也解码为 0 | `appendText(text)`；空 text 不产生 Android 占位 | 含换行文本、空 text、尾部 text、超长领域 fixture | `SUPPORTED` |
+| `type=9` | 同上 | `type#1=9`, `text#2` | 与普通文本完全同分支；业务原义 `UNKNOWN` | raw 9 与相邻 text | `DEGRADED` |
+| `type=27` | 同上 | `type#1=27`, `text#2` | 与普通文本同分支；业务原义 `UNKNOWN` | raw 27 | `DEGRADED` |
+| `type=35` | 同上；不得与 field 35 混淆 | `type#1=35`, `text#2` | 与普通文本同分支；业务原义 `UNKNOWN` | raw 35 | `DEGRADED` |
+| `type=40` | 同上 | `type#1=40`, `text#2` | 与普通文本同分支；业务原义 `UNKNOWN` | raw 40 | `DEGRADED` |
+| `type=1` link | `Extensions.kt::renders` raw 1；`PbContentRender.kt::PbContentText` URL annotation | `type#1=1`, label `text#2`, target `link#3` | 加 link icon/主色 label；现有 Android 路径内没有 scheme 校验 | HTTP/HTTPS、`javascript:`、空 label/target 构造 | `SUPPORTED`（非 HTTP(S) 只显示 label） |
+| `type=2` emoji | `Extensions.kt::renders` raw 2 | `type#1=2`, registry key `text#2`, code `c#11` | 注册 `(text,c)` 后显示 `#(c)`；资源表/未知资源最终行为 `UNKNOWN` | 合成 code、空/未知 code 领域 fixture | `DEGRADED`（可读 fallback） |
+| `type=3` image | `Extensions.kt::PbContent.picUrl` 与 `renders` raw 3；`PbContentRender.kt::PicContentRender` | `type#1=3`; candidates `originSrc#25,bigCdnSrc#9,bigSrc#6,dynamic#16,cdnSrc#8,cdnSrcActive#36,src#4`; size `bsize#5`; `originSize#27`, `showOriginalBtn#35` | 强制拆 `bsize`；坏值可崩；候选策略受 Android 设置影响；连续图片进入 waterfall | 正常、多候选、坏 URL、空字段、非正/越界/极端比例、多图及 image success/loading/failure | `SUPPORTED`（只保留经验证 HTTPS candidate） |
+| `type=4` mention | `Extensions.kt::renders` raw 4；`PbContentRender.kt::PbContentText` user annotation | `type#1=4`, label `text#2`, `uid#15` int64 | 点击时直接 `toLong()` 导航；缺省 uid 为 0 且 Android 没有合法性 guard | uid 7301、uid 缺省 0、空 label 构造 | `DEGRADED`（保留 uid/label，阶段 08 不建 profile route） |
+| `type=5`, `src`、`link` 非空 | `Extensions.kt::renders` raw 5；`PbContentRender.kt::VideoContentRender` | `type#1=5`, web `text#2`, video `link#3`, thumbnail `src#4`, `bsize#5` | 构造 VideoPlayer；坏尺寸可崩 | player-shaped synthetic node | `DEGRADED`（thumbnail + 外链 intent，不播放） |
+| `type=5`, `src` 非空、`link` 空 | 同上 | 同字段，`link#3` 缺省空 | 显示 thumbnail，点击 WebView(`text`) | thumbnail-only node | `DEGRADED` |
+| `type=5`, `src` 空 | `Extensions.kt::renders` raw 5 的 else | `type#1=5`, `text#2`；`link#3` 被 Android 忽略 | 视频 icon + “视频” + `text`，并把 `text` 当 URL annotation | fallback URL、非法 scheme 领域 fixture | `DEGRADED` |
+| `type=10` voice | `Extensions.kt::renders` raw 10；`PbContentRender.kt::VoiceContentRender` | `type#1=10`, `voiceMD5#12`, `duringTime#13` uint32 | Android 客户端拼写 endpoint 并播放；该 URL 不是跨平台协议证据 | resource/duration、空 resource、duration 0/极大 | `DEGRADED`（只读占位，不请求） |
+| `type=20` alternate image | `Extensions.kt::renders` raw 20 | `type#1=20`, `src#4`, `bsize#5`, `originSize#27`, `showOriginalBtn#35` | 显示 URL、原图 URL、picId 都取 `src`；原义 `UNKNOWN` | 正常/坏 src 与 bsize | `DEGRADED`（安全 image node，保留 raw） |
+| 其他（fixture `999`） | `Extensions.kt::renders` 的 `when` 无 `else` | `PbContent.type#1=999`；其余字段不可按未知语义消费 | Android 静默丢弃；夹在文本中会让两侧文本跨节点合并 | unknown 位于前后 text 之间、带 text/link、连续 unknown | `UNSUPPORTED`（低干扰占位，后续节点保留） |
+| `memeInfo` presence | 全 Android Kotlin 源检索无消费 symbol | `PbContent.memeInfo#33 → MemeInfo(pckId#1,picId#2,picUrl#3,thumbnail#4,width#5,height#6,detailLink#7)` | recognized raw type 仍按 raw 分支；缺省 raw 0 + meme-only 等价空文本；完整语义 `UNKNOWN` | unknown raw + explicit `memeInfo`；absence 对照 | `UNSUPPORTED`（仅记录 safe kind/presence） |
+| read-only poll | `ThreadPage.kt::PollWidget` | `ThreadInfo.poll_info#74 → PollInfo`; `title#12,tips#7,is_multi#2,is_polled#5,polled_value#6,end_time#8,status#10,total_num#3,total_poll#11,options#9`; option `id#1,num#2,text#3,image#4` | `showResult` 由已投/过期/status/账号决定；ratio 除 `total_poll` 未防 0；Android 有 submit，option image 未展示 | total=0、raw type/status 999、已投、多选、两 options、图片 option；message absent 与正数 total mapper 对照 | `DEGRADED`（永远只读、零除保护、image 不猜） |
+| empty content | `ThreadInfo.firstPostContent` repeated 可为空；Android raw 0 empty 也无可见输出 | `ThreadInfo.firstPostContent#142=[]` 或所有 text empty | 无统一 Android 空占位 | empty document / only-empty-text | `DEGRADED`（可访问占位） |
+| deleted first post | `ThreadInfo.proto`; Android删除状态完整行为仍无闭环 | `ThreadInfo.isDeleted#181`（只适用于 ThreadInfo，不等价 `Post.is_fold`） | 字段存在；具体值域与 UI 组合 `UNKNOWN` | raw 7 mapper 构造 + Renderer unavailable fixture | `DEGRADED`（iOS 保守策略：非零显示不可用并保留 raw） |
+| folded/blocked ordinary post | `Post.proto::Post`、`ThreadPage.kt::PostCard/BlockableContent` | `Post.is_post_visible#39,is_fold#43,fold_tip#44`；不在当前生成闭包 | Android blocked 还包含本地偏好计算；服务端形态未闭环 | Renderer-only unavailable/blocked synthetic fixture | `DEGRADED / NOT_WIRE_VERIFIED` |
 
-以下是 iOS 规范，不复制 Android 强制解析：
+## 明确未伪造为节点的项目
 
-1. 输入顺序必须等于输出顺序；相邻 text-like 节点可以在渲染层合并，但需保留语义范围。
-2. 未知 raw type 必须生成 `UnsupportedNode`，不能丢弃。
-3. 缺字段或坏字段只使当前节点降级，不使整层楼、整页或相邻节点失败。
-4. 图片/视频尺寸使用安全解析：
-   - 正宽高：采用 aspect ratio；
-   - 缺失、非数字、零、负数、溢出：使用稳定默认比例；
-   - 不以强制索引/split/int conversion 解析。
-5. URL 在 mapper 中解析为安全值或 invalid 状态；View 不直接拼接未知 scheme。
-6. mention 的 uid 不合法时保留 label 并关闭导航。
-7. voice resource id 为空时不构造网络 URL。
-8. poll `total_poll <= 0` 时比例为未知/0，不除零；任何 submit action 都不存在。
-9. 生成 Proto 不进入 View；领域节点必须是 `Sendable` 值类型。
-10. Debug raw payload 也不得包含 Cookie/token/私密响应。
+- **line break/layout marker**：没有独立 raw node 证据；换行只作为
+  `PbContent.text#2` 中的 `\n` 保序映射。状态为 `SUPPORTED_WITHIN_TEXT`。
+- **quote**：`Post.quote_id#50` 只能证明楼层 metadata 字段，不能证明正文
+  quote node 或展示形态；当前闭包也不含 `Post.proto`。状态为 `UNKNOWN / NOT_MODELED`。
+- `PbContent.bigSize#7,imgType#10,width#18,height#19,mediaSubtitle#31,urlType#32,isLongPic#34`
+  存在于 schema，但 `List<PbContent>.renders` 没有消费这些语义；阶段 08
+  不将它们映射成用户可见语义。
 
-## 图片 URL 证据
+## Mapper 不变量
 
-`CODE_EVIDENCE`：Android `PbContent.picUrl` 调用 `ImageUtil.getUrl`，传入 origin、big CDN、big、dynamic、CDN active/src 等多个候选；`ImageUtil.getUrl/needReverse` 又会按图片设置与网络状态反转候选顺序。因此源码只能证明候选集合与条件分支，不能证明一个固定全局优先级。该选择逻辑是 Android 客户端策略，不是服务端契约。
+1. 输出节点与 `firstPostContent` 输入一一对应且严格保序；阶段 08 不复制
+   Android `appendText` 合并，因此相邻 text-like/raw 边界和 unknown 都可审计。
+2. 单个 malformed 节点降级但不抛弃整篇；unknown 必须成为
+   `UnsupportedNode`，不能静默丢弃。
+3. scalar proto3 字段没有 presence；`type=0`、`uid=0` 与缺省无法区分，Mapper
+   只能按值降级。只有 `hasMemeInfo`、`hasPollInfo` 可做 message presence 断言。
+4. 图片尺寸只接受两个有限正整数；缺失、非数字、零、负数、溢出或极端比例
+   使用固定安全 ratio，不强制索引/转换。
+5. 图片候选只保留解析成功的 HTTPS URL；不升级 HTTP，不构造危险请求。
+6. 外链只接受 HTTP/HTTPS 并映射为 intent；非法 scheme 保留 label，不发 intent。
+7. mention uid≤0 时保留 label，不发 profile intent；voice 不拼 endpoint。
+8. Poll 永远只读；`total_poll<=0` 时 ratio 为 0/unknown，不除零。
+9. unknown 诊断只保存 raw type、source ordinal、已知字段 presence/kind，不保存或
+   记录完整 Proto、正文、URL、Cookie/token。
+10. Mapper 同步、纯值转换，不访问网络、磁盘、Keychain 或 MainActor；Proto 不
+    穿过 Core mapper 边界进入 Feature/View。
 
-`INFERENCE`：iOS `ImageCandidateSet` 应保留来源列表，由 image repository 选择；选择策略、HTTPS 升级、缓存 key 和隐私过滤需独立规格。任何 `http://` 图片 URL 必须拒绝或经已验证 HTTPS 规范化，不能放宽 ATS。
+## Cross-language fixture
 
-## 排版与连续图片
+- ID：`thread-content.first-post.cross-language`
+- Binary：
+  `TestSupport/Fixtures/API/ThreadContent/thread_content_cross_language.pb`
+- Root/path：`tieba.ThreadInfo.firstPostContent#142[] → tieba.PbContent`
+- 大小：1535 bytes
+- SHA-256：
+  `d37a7486974718d660a4b43466d914156c66d36f3f83982507915575e68cdf12`
+- JVM producer：`scripts/fixtures/ThreadContentFixtureGenerator.java`
+- 独立 textproto：`scripts/fixtures/thread_content_response.textproto`
+- Provenance：`TestSupport/Fixtures/API/ThreadContent/PROVENANCE.md`
+- 重建/验证：`make generate-thread-content-fixture` 与
+  `make verify-thread-content-fixture`；后者比较两次 JVM generation、tracked
+  bytes 和独立 `protoc --encode=tieba.ThreadInfo` bytes。
 
-`CODE_EVIDENCE`：Android `PostCard` 把连续 `PicContentRender` 聚合为 waterfall，多列数随 window width 改变。
-
-`INFERENCE`：
-
-- P0 只要求稳定、可访问的连续图片布局与正确 MediaViewer 次序，不要求复制 waterfall。
-- 图片列表身份使用 media id/稳定 URL hash，不使用数组 index 作为唯一身份。
-- Dynamic Type 不能使文本和相邻媒体重叠。
-- 加载失败保持占位尺寸，避免列表跳动和透明露底。
-
-## 交互边界
-
-- Link：只允许已批准 scheme；外部打开由系统处理。
-- Mention：P1 profile route；P0 可显示不可点击。
-- Image：打开唯一 MediaViewer；来源列表和 initial media id 必须稳定。
-- Video/Voice：P0 可降级，不自动播放、不后台预取未知媒体。
-- Poll：永远只读。
-- Unsupported/Empty/Unavailable：无手势，不吞相邻点击，不覆盖页面。
-
-## Fixture 套件
-
-建议目录 `TestSupport/Fixtures/ContentNodes/`，当前全部 `NOT_CREATED`：
-
-- 每个已知 raw type 的正常样本。
-- `type=5` 的 thumbnail/player 与 link fallback 两支。
-- 未知 `999`，以及未知字段 tag round-trip。
-- text 空/超长/多语言/RTL/组合 emoji。
-- URL 空、非法、超长、非 http(s)、相对 URL。
-- 图片 `bsize=""`、单段、非数字、0x0、极大值；全部 URL 候选为空。
-- mention uid 为 proto3 默认 0、负值语义或 Int64 极值；楼中楼 nullable author 产生 `"null"` annotation 的独立样本。
-- voice id 空、时长 0/负语义/极大值。
-- post author 缺失且 user list 有/无匹配。
-- content 空、仅未知节点、未知节点夹在两个文本节点之间。
-- poll total=0、未知 status/type、无选项、重复 option id。
-- 删除/折叠/不可见楼层。
-
-每个 fixture 至少断言：domain 节点类型、稳定 id、可访问 fallback、相邻顺序、无 crash、无敏感字段。
+fixture 是人工合成、脱敏内容，只证明锁定 schema 的首楼正文 wire 与 mapper
+契约；不证明 PBPage、普通楼层删除/折叠、live endpoint、媒体可达性或分发权利。
 
 ## 已知 Android 风险（不得照搬）
 
-- `bsize.split(",")[0/1].toInt()` 可因缺失/畸形崩溃。
-- 普通图片/视频高度为零时没有统一比例保护。
-- 未知 type 静默丢弃。
-- 楼中楼 content renderer 空时使用 `reduce` 可崩溃。
-- author 空时可能生成 `"null"` mention，点击再强制转 Long。
-- Poll 比例未防 `total_poll=0`。
-- Video/voice URL 构造和播放依赖 Android 库与当前 endpoint，不是跨平台证据。
-
-在上述 fixture 通过前，内容节点状态保持 `APPROVED_FOR_FIXTURE_DESIGN`，不得声明生产级支持。
+- `bsize.split(",")[0/1].toInt()` 可因缺失/畸形崩溃；图片/视频高度 0 时比例风险。
+- 未知 raw type 静默丢弃，并可能让文本跨 unknown 合并。
+- uid 缺省 0 仍可被 Android user annotation 导航。
+- 楼中楼 content renderer 空时 `reduce` 可崩溃。
+- Poll ratio 未防 `total_poll=0`，且包含本产品禁止的 submit 写操作。
+- Video/voice URL 和播放行为依赖 Android 实现，不是跨平台协议证据。

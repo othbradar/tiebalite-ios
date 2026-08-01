@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STATIC_AND_CROSS_LANGUAGE_FIXTURE_EVIDENCE`
+状态：`STATIC_AND_THREAD_CONTENT_CROSS_LANGUAGE_FIXTURE_EVIDENCE`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -9,6 +9,11 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 脱敏 binary fixture，并由 SwiftProtobuf decode/map。没有注册任何 Tieba live
 host、没有发送真实请求，production composition 继续使用
 `DisabledHTTPClient`。
+
+阶段 08 在同一 51-file closure 中新增一份独立的合成首楼正文
+`ThreadInfo.firstPostContent#142` cross-language fixture，并映射
+`PbContent/PollInfo/PollOption` 为与 Proto/SwiftUI 解耦的领域值。该 fixture
+不是 PB Page response，不证明普通楼层、分页或 live endpoint。
 
 本阶段没有真实请求、账号验证或服务端响应，因此没有
 `RUNTIME_EVIDENCE`。`CROSS_LANGUAGE_GENERATED` 只证明 pinned schema 与
@@ -54,6 +59,30 @@ JVM/Swift wire 行为，不能证明匿名、最小 live 参数、MIME、错误�
 - 成功、空、畸形、超时、取消、未登录、会话失效是所有 P0 endpoint 的最小集合。
 - Personalized 已有构造的跨语言 fixture；其余路径仍是后续目标，不能把
   synthetic/cross-language fixture 标成 live capture。
+
+## 阶段 08 首楼正文 wire 证据（非 endpoint 响应）
+
+- 用户任务：确定性解码和只读渲染首楼正文节点。
+- Android 消费路径：
+  `ThreadViewModel.kt::threadInfo.firstPostContent.renders`。
+- Root/message path：
+  `tieba.ThreadInfo.firstPostContent#142[] → tieba.PbContent.type#1`；只读投票为
+  `ThreadInfo.poll_info#74 → PollInfo.options#9[] → PollOption`。
+- raw dispatcher：
+  `Extensions.kt::List<PbContent>.renders`；`type#1` 是 `int32`，不是 enum。
+- iOS adapter：
+  `Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift`；输出
+  `ThreadContentDocument`，严格保序且 unknown/malformed 按节点降级。
+- Fixture：
+  `TestSupport/Fixtures/API/ThreadContent/thread_content_cross_language.pb`，
+  1535 bytes，SHA-256
+  `d37a7486974718d660a4b43466d914156c66d36f3f83982507915575e68cdf12`。
+- 生成和交叉验证：Java 21.0.10 + protobuf-java 4.35.1
+  `DynamicMessage` 两次生成，tracked bytes 与独立
+  `protoc --encode=tieba.ThreadInfo` 逐字节一致。
+- 证据等级：`CROSS_LANGUAGE_GENERATED`；内容全部人工合成、脱敏。
+- 不证明：PB Page wrapper、`Post.content#5`、普通楼层折叠/
+  屏蔽、服务端 raw 分布、媒体可达性、账号或分页行为。
 
 ## P0 endpoint
 

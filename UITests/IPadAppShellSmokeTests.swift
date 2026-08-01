@@ -55,4 +55,48 @@ final class IPadAppShellSmokeTests: XCTestCase {
         UITestHarness.tapTab(.recommendations, in: app)
         UITestHarness.requirePresent(.routeThread, in: app)
     }
+
+    @MainActor
+    func testThreadContentRendererLabSurvivesIPadProjectionAndRotation() {
+        let app = UITestHarness.launch(scenario: .threadContentRenderer)
+        let device = XCUIDevice.shared
+        device.orientation = .landscapeLeft
+
+        UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.scrollToHittable(
+            .debugOpenThreadContentRenderer,
+            in: app
+        )
+        UITestHarness.tap(.debugOpenThreadContentRenderer, in: app)
+        UITestHarness.requirePresent(.threadContentLabRoot, in: app)
+        UITestHarness.scrollToHittable(.threadContentImageSuccessAction, in: app)
+        UITestHarness.requireValue(
+            .threadContentImageSuccessAction,
+            equals: "已加载",
+            in: app
+        )
+
+        UITestHarness.tap(.layoutControlCompact, in: app)
+        UITestHarness.requirePresent(.layoutCompact, in: app)
+        UITestHarness.requirePresent(.threadContentLabRoot, in: app)
+        UITestHarness.scrollToHittable(.threadContentImageLoadingAction, in: app)
+        UITestHarness.requireValue(
+            .threadContentImageLoadingAction,
+            equals: "正在加载",
+            in: app
+        )
+
+        UITestHarness.tap(.layoutControlRegular, in: app)
+        device.orientation = .portrait
+        UITestHarness.requirePresent(.layoutRegular, in: app)
+        UITestHarness.requirePresent(.threadContentLabRoot, in: app)
+        UITestHarness.requireValue(
+            .threadContentImageLoadingAction,
+            equals: "正在加载",
+            in: app
+        )
+        UITestHarness.requirePresent(.threadContentUnknown, in: app)
+
+        device.orientation = .portrait
+    }
 }

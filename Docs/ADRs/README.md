@@ -15,5 +15,6 @@
 | `ADR-0009-testing-and-launch-scenarios.md` | Accepted |
 | `ADR-0010-observability-and-privacy.md` | Accepted |
 | `ADR-0011-local-protobuf-source-and-swiftprotobuf-lock.md` | Accepted，本地/个人/非商业范围；公开分发仍阻塞 |
+| `ADR-0012-thread-content-protobuf-adapter.md` | Accepted，精确增加阶段 08 Core mapper；不扩 Proto 闭包/分发范围 |
 
 Accepted ADR 是实现约束；变更必须新建 superseding ADR，不能静默改历史。

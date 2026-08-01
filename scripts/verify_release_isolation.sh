@@ -13,7 +13,7 @@ release_intermediates="$derived_data_path/Build/Intermediates.noindex/TiebaLite.
 release_app="$derived_data_path/Build/Products/Release-iphonesimulator/TiebaLite.app"
 release_binary="$release_app/TiebaLite"
 forbidden_pattern='/(TestSupport|Tests|UITests)/|/App/Debug|/Sources/InteractionKit/InteractionLab/|LaunchScenario|Harness|FixtureLoader'
-symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY|INTERACTION_LAB)_CANARY|app\.empty-shell|network\.offline|LaunchScenario|Debug(ComponentGallery|InteractionLab|SwiftUITabPager|ZoomImage)|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation)'
+symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY|INTERACTION_LAB|THREAD_CONTENT_RENDERER_LAB)_CANARY|app\.empty-shell|network\.offline|renderer\.thread-content|LaunchScenario|Debug(ComponentGallery|InteractionLab|SwiftUITabPager|ZoomImage|ThreadContentRenderer)|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation|Renderer)'
 failures=0
 file_list_count=0
 
@@ -35,6 +35,10 @@ else
     fi
     if ! rg -F '/Sources/DesignSystem/Motion.swift' "$file_list" >/dev/null; then
       fail "Release source proof is missing Motion.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/Features/ThreadReader/Presentation/ThreadContentRenderer.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing ThreadContentRenderer.swift: $file_list"
     fi
     if rg -n "$forbidden_pattern" "$file_list" >/dev/null; then
       fail "Release source list contains test-only input: $file_list"
@@ -91,4 +95,4 @@ if [[ "$failures" -ne 0 ]]; then
   echo "Release test-support isolation failed: $failures check(s)." >&2
   exit 1
 fi
-echo "OK: Release excludes test support, the Debug gallery and the interaction lab."
+echo "OK: Release includes the renderer and excludes test support plus all Debug labs."

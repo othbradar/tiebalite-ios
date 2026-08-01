@@ -37,13 +37,16 @@ struct FixtureRootPlaceholderView: View {
 struct SettingsPlaceholderView: View {
     let openDebugGallery: () -> Void
     let openInteractionLab: () -> Void
+    let openThreadContentRenderer: () -> Void
 
     init(
         openDebugGallery: @escaping () -> Void = {},
-        openInteractionLab: @escaping () -> Void = {}
+        openInteractionLab: @escaping () -> Void = {},
+        openThreadContentRenderer: @escaping () -> Void = {}
     ) {
         self.openDebugGallery = openDebugGallery
         self.openInteractionLab = openInteractionLab
+        self.openThreadContentRenderer = openThreadContentRenderer
     }
 
     var body: some View {
@@ -63,7 +66,8 @@ struct SettingsPlaceholderView: View {
 #if DEBUG
                 DebugScenarioMenuView(
                     openGallery: openDebugGallery,
-                    openInteractionLab: openInteractionLab
+                    openInteractionLab: openInteractionLab,
+                    openThreadContentRenderer: openThreadContentRenderer
                 )
 #endif
             }

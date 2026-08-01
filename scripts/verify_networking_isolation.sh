@@ -67,19 +67,64 @@ proto_usage="$(
   rg -n --glob '*.swift' \
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
-    rg -v '^Sources/Core/TiebaAPI/PersonalizedProtocol\.swift:' ||
+    rg -v \
+      '^Sources/Core/TiebaAPI/(PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
   fail protobuf-core-allowlist "$proto_usage"
 fi
-proto_import_count="$(
-  rg -n '^import (GeneratedProtobuf|SwiftProtobuf)$' \
-    Sources/Core/TiebaAPI/PersonalizedProtocol.swift | wc -l | tr -d ' '
-)"
-if [[ "$proto_import_count" -ne 2 ]]; then
-  fail protobuf-core-import-count "$proto_import_count"
-fi
+for proto_adapter in \
+  Sources/Core/TiebaAPI/PersonalizedProtocol.swift \
+  Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift
+do
+  proto_imports="$(
+    rg '^import (GeneratedProtobuf|SwiftProtobuf)$' "$proto_adapter" | sort
+  )"
+  expected_proto_imports="$(
+    printf '%s\n' 'import GeneratedProtobuf' 'import SwiftProtobuf'
+  )"
+  if [[ "$proto_imports" != "$expected_proto_imports" ]]; then
+    fail protobuf-core-exact-imports "$proto_adapter: $proto_imports"
+  fi
+done
+
+reject_swift_matches \
+  thread-content-domain-leak \
+  '^import (SwiftUI|UIKit|GeneratedProtobuf|SwiftProtobuf)$|\bTieba_[A-Za-z0-9_]+\b' \
+  Sources/Core/Models/ThreadContent.swift
+reject_swift_matches \
+  thread-content-mapper-side-effect \
+  '@MainActor|\b(URLSession|HTTPClient|HTTPRequest|Endpoint|FileManager|UserDefaults|HTTPCookieStorage|Keychain)\b|SecItem(Add|CopyMatching|Update|Delete)' \
+  Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift
+reject_swift_matches \
+  thread-reader-protobuf-leak \
+  '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
+  Sources/Features/ThreadReader
+reject_swift_matches \
+  thread-reader-network-access \
+  '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
+  Sources/Features/ThreadReader
+reject_swift_matches \
+  thread-reader-pager-media-viewer \
+  '\b(PagerContainer|MediaViewer|UIPageViewController)\b|\.tabViewStyle[[:space:]]*\([[:space:]]*\.page' \
+  Sources/Features/ThreadReader
+reject_swift_matches \
+  thread-reader-gesture \
+  '\bDragGesture\b|\.gesture[[:space:]]*\(|\.simultaneousGesture[[:space:]]*\(|\.highPriorityGesture[[:space:]]*\(' \
+  Sources/Features/ThreadReader
+reject_swift_matches \
+  thread-reader-presentation-overlay \
+  '\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(' \
+  Sources/Features/ThreadReader
+reject_swift_matches \
+  thread-reader-custom-animation \
+  '\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
+  Sources/Features/ThreadReader
+reject_swift_matches \
+  stage08-full-thread-screen \
+  '\b(ThreadScreen|ThreadReaderScreen|ThreadRepository|ThreadEndpoint)\b' \
+  App Sources/Features/ThreadReader
 
 if ! rg -q 'httpClient: DisabledHTTPClient\(\)' App/AppCompositionRoot.swift; then
   fail production-transport-must-remain-disabled
@@ -239,6 +284,47 @@ if [[ "$fixture_hash" != \
   '54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a' ]]; then
   fail cross-language-fixture-hash "$fixture_hash"
 fi
+thread_fixture_hash="$(
+  shasum -a 256 \
+    TestSupport/Fixtures/API/ThreadContent/thread_content_cross_language.pb |
+    awk '{ print $1 }'
+)"
+if [[ "$thread_fixture_hash" != \
+  'd37a7486974718d660a4b43466d914156c66d36f3f83982507915575e68cdf12' ]]; then
+  fail thread-content-cross-language-fixture-hash "$thread_fixture_hash"
+fi
+thread_manifest_result=""
+if ! thread_manifest_result="$(
+  python3 - TestSupport/Fixtures/manifest.json <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as manifest_file:
+    manifest = json.load(manifest_file)
+
+fixture_id = "thread-content.first-post.cross-language"
+matches = [
+    entry for entry in manifest.get("entries", [])
+    if entry.get("id") == fixture_id
+]
+expected = {
+    "format": "protobuf",
+    "path": "API/ThreadContent/thread_content_cross_language.pb",
+    "sanitized": True,
+    "sha256": "d37a7486974718d660a4b43466d914156c66d36f3f83982507915575e68cdf12",
+    "source": "crossLanguageGenerated",
+}
+if len(matches) != 1:
+    print(f"{fixture_id}: expected one entry, found {len(matches)}")
+    raise SystemExit(1)
+actual = {key: matches[0].get(key) for key in expected}
+if actual != expected:
+    print(f"{fixture_id}: {actual!r}")
+    raise SystemExit(1)
+PY
+)"; then
+  fail thread-content-cross-language-fixture-manifest "$thread_manifest_result"
+fi
 if ! rg -q '"source": "crossLanguageGenerated"' \
   TestSupport/Fixtures/manifest.json; then
   fail cross-language-fixture-classification
@@ -252,10 +338,15 @@ assert_pattern_detects \
   handwritten-concurrency-bypass \
   '@unchecked[[:space:]]+Sendable|@preconcurrency[[:space:]]+import' \
   'struct Unsafe: @unchecked Sendable {}'
+assert_pattern_detects \
+  thread-reader-pager-media-viewer \
+  '\b(PagerContainer|MediaViewer|UIPageViewController)\b|\.tabViewStyle[[:space:]]*\([[:space:]]*\.page' \
+  'let viewer = MediaViewer()'
 
 for output_script in \
   scripts/generate_protos.sh \
-  scripts/generate_personalized_fixture.sh
+  scripts/generate_personalized_fixture.sh \
+  scripts/generate_thread_content_fixture.sh
 do
   if ! rg -q 'source "\$repo/scripts/path_safety\.sh"' "$output_script" ||
      ! rg -q 'tiebalite_require_safe_output_path' "$output_script"; then
@@ -297,6 +388,10 @@ fi
 if TIEBALITE_PROTOBUF_JAVA_JAR="$safety_root/missing.jar" \
   scripts/verify_personalized_fixture.sh >/dev/null 2>&1; then
   fail missing-jvm-fixture-tool-must-fail
+fi
+if TIEBALITE_PROTOBUF_JAVA_JAR="$safety_root/missing.jar" \
+  scripts/verify_thread_content_fixture.sh >/dev/null 2>&1; then
+  fail missing-thread-jvm-fixture-tool-must-fail
 fi
 
 printf 'Networking isolation summary: %d failure(s).\n' "$failures"

@@ -4,6 +4,7 @@ enum UITestLaunchScenario: String, CaseIterable {
     case emptyShell = "app.empty-shell"
     case networkOffline = "network.offline"
     case networkSlow = "network.slow"
+    case threadContentRenderer = "renderer.thread-content"
     case sessionSignedOut = "session.signed-out"
     case sessionSignedInFixture = "session.signed-in-fixture"
     case sessionExpired = "session.expired"
@@ -16,6 +17,8 @@ enum UITestLaunchScenario: String, CaseIterable {
             "Harness: Network offline"
         case .networkSlow:
             "Harness: Network slow"
+        case .threadContentRenderer:
+            "Harness: Thread content renderer"
         case .sessionSignedOut:
             "Harness: Session signed out"
         case .sessionSignedInFixture:
@@ -58,6 +61,8 @@ enum UITestElementID: String, CaseIterable {
     case componentInlineLoading = "design-system.inline-loading"
     case componentPagination = "design-system.pagination-footer"
     case debugOpenGallery = "app.debug.open-component-gallery"
+    case debugOpenThreadContentRenderer =
+        "app.debug.open-thread-content-renderer-lab"
     case followedForumsRoot = "app.root.followed-forums"
     case galleryAppearance = "design-system.gallery.appearance"
     case galleryDynamicType = "design-system.gallery.dynamic-type"
@@ -131,6 +136,35 @@ enum UITestElementID: String, CaseIterable {
     case tabFollowedForums = "app.tab.followed-forums"
     case tabRecommendations = "app.tab.recommendations"
     case tabSettings = "app.tab.settings"
+    case threadContentAfterUnknown =
+        "thread-reader.content.node.t91001.p92001.sfirstPost.n22"
+    case threadContentExternalIntent =
+        "thread-reader.renderer-lab.external-link"
+    case threadContentImageFailureAction =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n11.action"
+    case threadContentImageFailureState =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n11.state"
+    case threadContentImageLoadingAction =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n10.action"
+    case threadContentImageLoadingState =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n10.state"
+    case threadContentImageSuccessAction =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n9.action"
+    case threadContentImageSuccessState =
+        "thread-reader.content.image.t91001.p92001.sfirstPost.n9.state"
+    case threadContentLabAppearance =
+        "thread-reader.renderer-lab.appearance"
+    case threadContentLabDynamicType =
+        "thread-reader.renderer-lab.dynamic-type"
+    case threadContentLabReduceMotion =
+        "thread-reader.renderer-lab.reduce-motion"
+    case threadContentLabRoot = "thread-reader.renderer-lab"
+    case threadContentLink =
+        "thread-reader.content.node.t91001.p92001.sfirstPost.n6"
+    case threadContentMediaIntent =
+        "thread-reader.renderer-lab.media-route"
+    case threadContentUnknown =
+        "thread-reader.content.node.t91001.p92001.sfirstPost.n17"
     case debugOpenInteractionLab = "app.debug.open-interaction-lab"
 }
 
@@ -462,7 +496,7 @@ extension UITestHarness {
             return
         }
 
-        for _ in 0..<8 where !element.isHittable {
+        for _ in 0..<24 where !element.isHittable {
             app.swipeUp()
         }
         guard element.isHittable else {
@@ -517,7 +551,7 @@ extension UITestHarness {
     }
 
     @MainActor
-    private static func attachSafeFailureEvidence(
+    static func attachSafeFailureEvidence(
         app: XCUIApplication,
         expected: UITestElementID
     ) {
@@ -546,6 +580,7 @@ extension UITestHarness {
         )
         let observations = UITestElementID.allCases.map { identifier in
             let element = app.descendants(matching: .any)[identifier.rawValue]
+                .firstMatch
             guard element.exists else {
                 return "\(identifier.rawValue)=absent"
             }

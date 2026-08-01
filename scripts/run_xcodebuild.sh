@@ -23,6 +23,8 @@ source scripts/project.env
 : "${UI_SMOKE_TEST_IDENTIFIER:?}"
 : "${UI_SHELL_SMOKE_TEST_IDENTIFIER:?}"
 : "${IPAD_UI_SMOKE_TEST_IDENTIFIER:?}"
+: "${RENDERER_UI_TEST_IDENTIFIER:=TiebaLiteUITests/AppShellSmokeTests/testThreadContentRendererLabUsesDomainFixturesAndStableIntents}"
+: "${IPAD_RENDERER_UI_TEST_IDENTIFIER:=TiebaLiteUITests/IPadAppShellSmokeTests/testThreadContentRendererLabSurvivesIPadProjectionAndRotation}"
 : "${INTERACTION_UI_TEST_IDENTIFIER:?}"
 : "${IPAD_INTERACTION_UI_TEST_IDENTIFIER:?}"
 : "${DERIVED_DATA_PATH:=.build/DerivedData}"
@@ -59,7 +61,7 @@ scripts/verify_swiftpm_lock.sh
 
 mode="${1:-}"
 if [[ -z "$mode" ]]; then
-  echo "usage: $0 build|release-build|unit|ui-smoke|ui-smoke-ipad|ui-interaction|ui-interaction-ipad|tests|ipad-build" >&2
+  echo "usage: $0 build|release-build|unit|ui-smoke|ui-smoke-ipad|ui-renderer|ui-renderer-ipad|ui-interaction|ui-interaction-ipad|tests|ipad-build" >&2
   exit 64
 fi
 
@@ -203,6 +205,26 @@ case "$mode" in
       -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
       -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
       test -only-testing:"$IPAD_UI_SMOKE_TEST_IDENTIFIER"
+    ;;
+  ui-renderer)
+    renderer_iphone_udid="$(iphone_udid)"
+    reset_project_ui_test_install "$renderer_iphone_udid"
+    result="$RESULTS_DIR/${stamp}-ui-renderer.xcresult"
+    run_build ui-renderer "${common[@]}" \
+      -destination "platform=iOS Simulator,id=$renderer_iphone_udid" \
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
+      test -only-testing:"$RENDERER_UI_TEST_IDENTIFIER"
+    ;;
+  ui-renderer-ipad)
+    renderer_ipad_udid="$(ipad_udid)"
+    reset_project_ui_test_install "$renderer_ipad_udid"
+    result="$RESULTS_DIR/${stamp}-ui-renderer-ipad.xcresult"
+    run_build ui-renderer-ipad "${common[@]}" \
+      -destination "platform=iOS Simulator,id=$renderer_ipad_udid" \
+      -resultBundlePath "$result" -testPlan "$TEST_PLAN" \
+      -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
+      test -only-testing:"$IPAD_RENDERER_UI_TEST_IDENTIFIER"
     ;;
   ui-interaction)
     interaction_iphone_udid="$(iphone_udid)"

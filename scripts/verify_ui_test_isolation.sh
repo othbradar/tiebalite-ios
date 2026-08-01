@@ -28,6 +28,9 @@ while IFS= read -r file_list; do
   if ! rg -F '/TestSupport/LaunchScenarios/HarnessContinuationGate.swift' "$file_list" >/dev/null; then
     fail "UITesting App source list lacks the harness positive control."
   fi
+  if ! rg -F '/TestSupport/LaunchScenarios/HarnessRendererImageLoader.swift' "$file_list" >/dev/null; then
+    fail "UITesting App source list lacks the renderer image harness."
+  fi
   if rg -F '/TestSupport/FixtureLoader.swift' "$file_list" >/dev/null; then
     fail "UITesting App source list contains the unit-only fixture loader."
   fi
@@ -36,6 +39,9 @@ while IFS= read -r file_list; do
   fi
   if ! rg -F '/App/DebugInteractionLabView.swift' "$file_list" >/dev/null; then
     fail "UITesting App source list lacks the Debug interaction lab."
+  fi
+  if ! rg -F '/App/DebugThreadContentRendererLabView.swift' "$file_list" >/dev/null; then
+    fail "UITesting App source list lacks the Debug renderer lab."
   fi
   if ! rg -F '/Sources/InteractionKit/InteractionLab/DebugPagerContainer.swift' "$file_list" >/dev/null; then
     fail "UITesting App source list lacks the isolated Pager spike."
@@ -79,6 +85,9 @@ while IFS= read -r file_list; do
   if ! rg -F '/UITests/IPadAppShellSmokeTests.swift' "$file_list" >/dev/null; then
     fail "UI test source list lacks IPadAppShellSmokeTests.swift."
   fi
+  if ! rg -F '/UITests/ThreadContentUITestSupport.swift' "$file_list" >/dev/null; then
+    fail "UI test source list lacks ThreadContentUITestSupport.swift."
+  fi
   if ! rg -F '/UITests/InteractionLabTests.swift' "$file_list" >/dev/null; then
     fail "UI test source list lacks InteractionLabTests.swift."
   fi
@@ -107,9 +116,13 @@ if [[ -f "$app_debug_binary" ]] && ! strings -a "$app_debug_binary" \
   | rg -F 'TIEBALITE_INTERACTION_LAB_CANARY' >/dev/null; then
     fail "UITesting binary lacks the interaction lab positive control."
 fi
+if [[ -f "$app_debug_binary" ]] && ! strings -a "$app_debug_binary" \
+  | rg -F 'TIEBALITE_THREAD_CONTENT_RENDERER_LAB_CANARY' >/dev/null; then
+    fail "UITesting binary lacks the renderer lab positive control."
+fi
 
 if [[ "$failures" -ne 0 ]]; then
   echo "UI test-support isolation failed: $failures check(s)." >&2
   exit 1
 fi
-echo "OK: UITesting App, unit target, UI target, Debug gallery and interaction-lab boundaries are explicit."
+echo "OK: UITesting App, test targets and all Debug lab boundaries are explicit."

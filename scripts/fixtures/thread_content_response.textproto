@@ -1,0 +1,142 @@
+id: 81001
+threadId: 81001
+title: "Synthetic thread content fixture"
+firstPostId: 82001
+poll_info {
+  type: 999
+  is_multi: 1
+  total_num: 8
+  options_count: 2
+  is_polled: 1
+  polled_value: "2"
+  tips: "Synthetic read-only poll"
+  end_time: 1700000000
+  options {
+    id: 1
+    num: 3
+    text: "Synthetic option A"
+  }
+  options {
+    id: 2
+    num: 5
+    text: "Synthetic option B"
+    image: "https://fixture.invalid/poll/option-b.png"
+  }
+  status: 999
+  title: "Synthetic poll"
+  last_time: 120
+}
+firstPostContent {
+  text: "Synthetic alpha\nSynthetic beta"
+}
+firstPostContent {
+  type: 9
+  text: "Synthetic type 9"
+}
+firstPostContent {
+  type: 27
+  text: "Synthetic type 27"
+}
+firstPostContent {
+  type: 35
+  text: "Synthetic type 35"
+}
+firstPostContent {
+  type: 40
+  text: "Synthetic type 40"
+}
+firstPostContent {
+  type: 1
+  text: "Synthetic HTTPS link"
+  link: "https://fixture.invalid/thread/link"
+}
+firstPostContent {
+  type: 1
+  text: "Synthetic blocked link"
+  link: "javascript:fixture()"
+}
+firstPostContent {
+  type: 2
+  text: "synthetic-emoticon-key"
+  c: "synthetic_smile"
+}
+firstPostContent {
+  type: 3
+  src: "https://fixture.invalid/media/source.jpg"
+  bsize: "640,480"
+  bigSrc: "https://fixture.invalid/media/big.jpg"
+  cdnSrc: "https://fixture.invalid/media/cdn.jpg"
+  bigCdnSrc: "https://fixture.invalid/media/big-cdn.jpg"
+  dynamic: "https://fixture.invalid/media/dynamic.jpg"
+  originSrc: "https://fixture.invalid/media/original.jpg"
+  originSize: 4096
+  isLongPic: 1
+  showOriginalBtn: 1
+  cdnSrcActive: "https://fixture.invalid/media/active.jpg"
+}
+firstPostContent {
+  type: 3
+  src: "not a url"
+  bsize: "999999999999999999999999,0"
+}
+firstPostContent {
+  type: 3
+}
+firstPostContent {
+  type: 4
+  text: "@SyntheticMember"
+  uid: 7301
+}
+firstPostContent {
+  type: 4
+  text: "@UnknownMember"
+}
+firstPostContent {
+  type: 5
+  text: "https://fixture.invalid/video/web"
+  link: "https://fixture.invalid/video/file.mp4"
+  src: "https://fixture.invalid/video/thumbnail.jpg"
+  bsize: "1280,720"
+}
+firstPostContent {
+  type: 5
+  text: "https://fixture.invalid/video/fallback"
+}
+firstPostContent {
+  type: 5
+  text: "https://fixture.invalid/video/thumbnail-link"
+  src: "https://fixture.invalid/video/thumbnail-only.jpg"
+  bsize: "640,360"
+}
+firstPostContent {
+  type: 10
+  voiceMD5: "synthetic-voice-resource"
+  duringTime: 17
+}
+firstPostContent {
+  type: 20
+  src: "https://fixture.invalid/media/alternate.jpg"
+  bsize: "320,240"
+}
+firstPostContent {
+  type: 999
+  text: "Synthetic unsupported fallback"
+  link: "private:must-not-be-opened"
+}
+firstPostContent {
+  type: 999
+  memeInfo {
+    pckId: 88
+    picId: 9901
+    picUrl: "https://fixture.invalid/meme/full.png"
+    thumbnail: "https://fixture.invalid/meme/thumb.png"
+    width: 96
+    height: 96
+    detailLink: "https://fixture.invalid/meme/detail"
+  }
+}
+firstPostContent {
+}
+firstPostContent {
+  text: "Synthetic trailing text"
+}

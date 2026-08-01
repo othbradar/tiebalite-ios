@@ -1,6 +1,8 @@
 enum AppAccessibilityID {
     static let debugOpenGallery = "app.debug.open-component-gallery"
     static let debugOpenInteractionLab = "app.debug.open-interaction-lab"
+    static let debugOpenThreadContentRenderer =
+        "app.debug.open-thread-content-renderer-lab"
     static let followedForumsRoot = "app.root.followed-forums"
     static let galleryAppearance = "design-system.gallery.appearance"
     static let galleryDynamicType = "design-system.gallery.dynamic-type"
@@ -22,4 +24,15 @@ enum AppAccessibilityID {
     static let tabFollowedForums = "app.tab.followed-forums"
     static let tabRecommendations = "app.tab.recommendations"
     static let tabSettings = "app.tab.settings"
+    static let threadContentRendererAppearance =
+        "thread-reader.renderer-lab.appearance"
+    static let threadContentRendererDynamicType =
+        "thread-reader.renderer-lab.dynamic-type"
+    static let threadContentRendererExternalIntent =
+        "thread-reader.renderer-lab.external-link"
+    static let threadContentRendererLab = "thread-reader.renderer-lab"
+    static let threadContentRendererMediaIntent =
+        "thread-reader.renderer-lab.media-route"
+    static let threadContentRendererReduceMotion =
+        "thread-reader.renderer-lab.reduce-motion"
 }

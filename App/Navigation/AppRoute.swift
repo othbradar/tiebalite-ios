@@ -136,6 +136,7 @@ enum SettingsRoute: Codable, Hashable, Sendable {
     case componentGallery
 #if DEBUG
     case interactionLab
+    case threadContentRendererLab
 #endif
 }
 

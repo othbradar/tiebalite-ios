@@ -5,6 +5,7 @@ import SwiftUI
 struct DebugScenarioMenuView: View {
     let openGallery: () -> Void
     let openInteractionLab: () -> Void
+    let openThreadContentRenderer: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.small) {
@@ -24,6 +25,14 @@ struct DebugScenarioMenuView: View {
             .buttonStyle(.bordered)
             .accessibilityIdentifier(
                 AppAccessibilityID.debugOpenInteractionLab
+            )
+
+            Button(action: openThreadContentRenderer) {
+                Label("正文 Renderer Lab", systemImage: "text.page")
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier(
+                AppAccessibilityID.debugOpenThreadContentRenderer
             )
         }
     }
