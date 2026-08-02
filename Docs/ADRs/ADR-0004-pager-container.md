@@ -1,9 +1,10 @@
 # ADR-0004：唯一 PagerContainer
 
-- 状态：Proposed（阶段 06 Spike Partial，仅 Debug）
+- 状态：Accepted（Open-Source Beta interaction foundation；Debug candidate）
 - 日期：2026-07-31
-- 决策者：阶段 02 候选决策，待阶段 06 spike
-- 关联阶段：02、06
+- 最终裁决：2026-08-02
+- 决策者：阶段 02 候选决策；阶段 06 Open-Source Beta 收口
+- 关联阶段：02、06、09
 
 ## 背景
 
@@ -61,11 +62,44 @@ output: selectionCommitted(PageID, transitionToken)
   ID，否则 empty；绝不让相同 index 指向另一 ID。
 - View 可释放不等于 Feature Store 释放；父层按 PageID 持有页面业务状态。
 - 远页可释放，controller/View 数量必须有界。
+- 阶段 06C-B Debug 候选保留 UIKit 的系统 distance/velocity 组合裁决，
+  因公开 API 未承诺固定阈值而不自行覆盖。候选以被动 pan trace 在固定
+  runtime 分别记录/验证 49%/51% 低速距离分支和同距离 slow/fast velocity
+  分支；callback 还必须与当前 token、previous source、visible target 及
+  ended terminal 匹配。cancelled/failed/stale/duplicate 一律不能提交。
+- 阶段 06C-R 将 `didFinishAnimating` delegate evidence、Pager pan terminal
+  和 Media ownership terminal 收入同一个 `@MainActor` 三方 rendezvous。
+  context 固定 source/target/direction、外部 selection generation、controller
+  installation generation、previous/visible host identity 和 ownership
+  session/generation；三种 evidence 任意顺序到达都只解析一次。
+  ownership `active` 只能 pending，只有 `ended(owner: pager)` 可参与 commit；
+  cancelled/failed/invalidated、`mediaPan` owner 或 Pager 非 ended terminal
+  均解析为 cancelled/invalidated，不发布 selection。
+- delegate callback 采用 validate-before-consume：先 peek context 并验证
+  PageID、host identity、direction 和全部 generation，再记录 evidence。
+  错误 previous/visible snapshot、stale installation 或外部 selection 变化只写
+  ignored reason，不清 context、不增加 resolved count，也不阻断后续正确
+  callback。最终 join 再核对 live visible host，已 resolution 的迟到 callback
+  幂等忽略。UIKit callback 不携带 token 的平台限制仍要求最低部署 runtime
+  矩阵复验；Debug adapter 不因此推定为生产可用。
+- 外部 selection generation 是 live `Binding`，交互中变化只记录 supersession，
+  不立即 resolve、换 child 或 trim cache。D/P/O terminal 齐全后旧 transition
+  才以 `invalidated` 单次收口并应用最新 selection；away→back 到原 source 也由
+  generation 前进识别。Pager recognizer/controller lifecycle 替换会显式失效
+  context，committed host 同时核对 PageID 与对象 identity。
+- settled controller admission 只允许当前页及相邻页（≤3），transition
+  admission 只允许冻结参与页（≤4）。data source 只接受当前 installed
+  controller 及 cache 中同一 host instance；stale/evicted host 不能递归复活。
+- 纳入 P4 retained-state 矩阵的页面通过稳定 content generation 更新同一
+  host。generation 不变或倒退时不重建昂贵 root；刷新/旋转/尺寸投影不等于
+  eviction。dismantle 取消 deferred commit，断开 delegate/dataSource/pan
+  observer，移除 Pager hosting children 并换入不透明 teardown sentinel 后
+  才算完成 UIKit owner 拆卸；hosting child/coordinator 必须可释放。
 - 程序化选择遵守 Reduce Motion；交互转场不叠加自定义 Motion。
 - 公开 API 无法保证左边缘系统返回时，push-hosted Pager 必须降级为显式
   tab/button 切换，不能使用私有 recognizer 关系。
 
-## 为什么暂不接受某一实现
+## 阶段 06 初期为何暂不接受某一实现
 
 SwiftUI 候选不能因代码少直接胜出；UIKit 候选也不能凭经验假定生命周期
 正确。相邻存活、取消/反向、ID reconcile、边缘返回、VoiceOver 和内存上界
@@ -83,7 +117,7 @@ SwiftUI 候选不能因代码少直接胜出；UIKit 候选也不能凭经验假
 - VoiceOver 可报告当前页/总页数并执行可访问分页动作。
 - 测试不用 `sleep()`；使用 transition token、delegate probe 和 expectation。
 
-## 阶段 06 运行结论
+## 阶段 06 运行结论（历史出口）
 
 阶段 06 比较了 A/B，但没有批准生产实现：
 
@@ -118,7 +152,7 @@ SwiftUI 候选不能因代码少直接胜出；UIKit 候选也不能凭经验假
 resize 后 B 仍失败，回滚到显式前后按钮/Tab 的非交互降级；不得恢复 A
 的提交后钩子或引入私有手势关系。
 
-## 阶段 06B 收口结论
+## 阶段 06B 收口结论（历史出口）
 
 阶段 06B 关闭了两个可复现的 coordinator 根因，但仍不足以批准生产实现：
 
@@ -141,8 +175,54 @@ resize 后 B 仍失败，回滚到显式前后按钮/Tab 的非交互降级；�
   regular/compact 重建与真实 split divider 仍缺运行证据。
 - 本机唯一可用 runtime 是 iOS 26.5；iOS 18.x 与 VoiceOver 未验证。
 
-因此 ADR 状态继续是 `Proposed（阶段 06 Spike Partial，仅 Debug）`；阶段
-06B 不批准迁移、改名或复制 Debug Pager。
+因此在 06B 任务出口时 ADR 状态继续是
+`Proposed（阶段 06 Spike Partial，仅 Debug）`；06B 不批准迁移、改名或复制
+Debug Pager。该历史状态已由下方 Open-Source Beta 最终裁决取代。
+
+## 阶段 06C-R rendezvous 修复结论（历史出口）
+
+阶段 06C-R 只修复由三个确定性红测证明的共享终态协调根因：旧 ownership
+授权把 `active` 当作可 resolve，且 Pager delegate 在完整身份验证前已消费
+callback context。Debug 候选现在使用上述三方状态机，允许的结果仅为
+`pending`、`committed`、`cancelled`、`invalidated`；一次 transition 最多发布
+一次 side effect。外部 selection generation 前进会使旧 transition 失效，
+不会出现旧选择短暂提交后再回退。
+
+扩展 review 回归先以 14 个逻辑测试、21 次执行稳定暴露 7 个失败，再全部
+转绿；最终复审又以 O→generation advance→D→P 的新回归稳定复现
+1 个失败，join-time 当前身份复核后转绿。包含原三红的扩大定向套件
+连续三次均为 31 个逻辑测试、39 次执行、0 失败。
+完整 Unit 为 186 个逻辑测试、204 次执行、0 失败。该修复没有重新设计阶段
+06C-A 已关闭的 zoom、rotation 或 chrome，也没有创建生产 Pager/MediaViewer。
+06C-R 任务出口时 ADR 仍是 `Proposed（阶段 06 Spike Partial，仅 Debug）`；
+该历史状态随后由下方 Open-Source Beta 最终裁决取代。
+
+## Open-Source Beta 最终裁决
+
+选择 B（唯一 `UIPageViewController` wrapper）作为阶段 09 可继续生产化的
+interaction foundation，并将阶段 06 标记为
+`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`。这项接受只覆盖架构边界、
+PageID/selection 合同、D/P/O terminal rendezvous、P3/P4/P5 的当前自动化和
+iOS 26.5 Simulator 证据；Debug `InteractionLab` 继续被 Release 排除，不能
+直接改名或复制为生产组件。
+
+- P3：49%/51% 各 5 次、独立 velocity 分支、20 次交替 rapid-serial swipe、
+  左右边界各 20 次、反向 state-machine sequence 与纵向 jitter 通过。
+- P4：retained refresh/loading/failure、initial loading/failure/empty、partial
+  drag 中 5 次 refresh、opaque full-bounds 和 stale generation 通过。
+- P5：缓存内 identity、eviction 后 weak release、100 PageID 的 cache/创建次数
+  上界、无 orphan child 和 dismantle 释放通过。
+- 06C-R：三个原始 rendezvous/callback 回归及 generation/host identity 扩展
+  回归通过。
+
+`PHASE_06C_C = DEFERRED_POST_BETA`；
+`PHASE_09_PREREQUISITES_SATISFIED`，但阶段 09 保持 `NOT_STARTED`，生产实现
+仍需新的明确任务。
+
+Known Limitations 不再阻塞阶段 09：iOS 18.x/真机、真机 VoiceOver、真实同
+触摸反向录屏、极端图片资源压力，以及 UIKit 完全同签名且不携带 token 的
+理论迟到 callback。现有 generation/host/direction/visible/ownership 守卫覆盖
+所有可观测身份；完全不可区分的排列保留到发布前平台矩阵。
 
 ## 迁移/退出成本
 

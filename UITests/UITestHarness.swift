@@ -1,54 +1,4 @@
 import XCTest
-enum UITestLaunchScenario: String, CaseIterable {
-    case emptyShell = "app.empty-shell"
-    case networkOffline = "network.offline"
-    case networkSlow = "network.slow"
-    case threadContentRenderer = "renderer.thread-content"
-    case sessionSignedOut = "session.signed-out"
-    case sessionSignedInFixture = "session.signed-in-fixture"
-    case sessionExpired = "session.expired"
-
-    var safeLabel: String {
-        switch self {
-        case .emptyShell:
-            "Harness: Empty shell"
-        case .networkOffline:
-            "Harness: Network offline"
-        case .networkSlow:
-            "Harness: Network slow"
-        case .threadContentRenderer:
-            "Harness: Thread content renderer"
-        case .sessionSignedOut:
-            "Harness: Session signed out"
-        case .sessionSignedInFixture:
-            "Harness: Session signed in fixture"
-        case .sessionExpired:
-            "Harness: Session expired"
-        }
-    }
-}
-
-enum UITestDisplayProfile: String {
-    case darkAccessibilityMaximumReduced = "dark-accessibility-maximum-reduced"
-    case darkAccessibilityReduced = "dark-accessibility-reduced"
-    case system
-}
-enum UITestAppTab {
-    case followedForums
-    case recommendations
-    case settings
-
-    var elementID: UITestElementID {
-        switch self {
-        case .recommendations:
-            .tabRecommendations
-        case .followedForums:
-            .tabFollowedForums
-        case .settings:
-            .tabSettings
-        }
-    }
-}
 
 enum UITestElementID: String, CaseIterable {
     case componentEmpty = "design-system.empty-state"
@@ -107,14 +57,56 @@ enum UITestElementID: String, CaseIterable {
         "interaction.pager.controller-count"
     case interactionPagerCoordinatorSequence =
         "interaction.pager.coordinator-sequence"
+    case interactionPagerGeometry = "interaction.pager.geometry"
+    case interactionPagerSettledProjection =
+        "interaction.pager.settled-projection"
+    case interactionPagerInFlightRefresh =
+        "interaction.pager.in-flight-refresh"
+    case interactionPagerInputMismatches =
+        "interaction.pager.input-mismatches"
+    case interactionPagerInputCount = "interaction.pager.input-count"
+    case interactionPagerInputResolution =
+        "interaction.pager.input-resolution"
+    case interactionPagerInputTrace = "interaction.pager.input-trace"
+    case interactionPagerLifecycle = "interaction.pager.lifecycle"
+    case interactionPagerNextContentState =
+        "interaction.pager.action.next-content-state"
+    case interactionPagerPageP0 = "interaction.pager.page.p0"
     case interactionPagerPageP1 = "interaction.pager.page.p1"
     case interactionPagerPageP2 = "interaction.pager.page.p2"
+    case interactionPagerPageP2ContentAction =
+        "interaction.pager.page.p2.content-action"
+    case interactionPagerPageP2ControllerSequence =
+        "interaction.pager.page.p2.controller-sequence"
+    case interactionPagerPageP2Generation =
+        "interaction.pager.page.p2.generation"
+    case interactionPagerPageP2StateBadge =
+        "interaction.pager.page.p2.state-badge"
+    case interactionPagerPageP2VerticalScroll =
+        "interaction.pager.page.p2.vertical-scroll"
     case interactionPagerPageP3 = "interaction.pager.page.p3"
+    case interactionPagerPageP3ControllerSequence =
+        "interaction.pager.page.p3.controller-sequence"
+    case interactionPagerPageP4 = "interaction.pager.page.p4"
     case interactionPagerPosition = "interaction.pager.position"
+    case interactionPagerProjection = "interaction.pager.projection"
+    case interactionPagerVerticalScrollOffset =
+        "interaction.pager.vertical-scroll-offset"
     case interactionPagerRefresh = "interaction.pager.refresh-state"
     case interactionPagerReset = "interaction.pager.action.reset"
+    case interactionPagerStaleRejections =
+        "interaction.pager.stale-rejections"
+    case interactionPagerStaleResponse =
+        "interaction.pager.action.stale-response"
+    case interactionPagerSettledSnapshotCount =
+        "interaction.pager.settled-snapshot-count"
+    case interactionPagerStateGeneration =
+        "interaction.pager.state-generation"
     case interactionPagerTransition =
         "interaction.pager.transition-state"
+    case interactionPagerAdjustable = "interaction.pager.adjustable"
+    case interactionPagerViewportWidth =
+        "interaction.pager.viewport-width"
     case interactionPagerViewportHeight =
         "interaction.pager.viewport-height"
     case interactionSectionMedia = "interaction.lab.section.media"

@@ -217,6 +217,12 @@ struct MediaInteractionControllerTests {
         pager = makeMediaPager(selection: binding, ownership: ownership)
         coordinator.parent = pager
         coordinator.synchronize(controller)
+        controller.setViewControllers(
+            [pending],
+            direction: .forward,
+            animated: false
+        )
+        coordinator.lastGestureTrace = endedPagerTrace()
         coordinator.pageViewController(
             controller,
             didFinishAnimating: true,
@@ -266,6 +272,12 @@ struct MediaInteractionControllerTests {
             willTransitionTo: [pending]
         )
         ownership.finishActiveSession(as: .cancelled)
+        controller.setViewControllers(
+            [pending],
+            direction: .forward,
+            animated: false
+        )
+        coordinator.lastGestureTrace = endedPagerTrace()
         coordinator.pageViewController(
             controller,
             didFinishAnimating: true,
@@ -457,6 +469,16 @@ private extension MediaInteractionControllerTests {
             UIColor.systemIndigo.setFill()
             context.fill(CGRect(origin: .zero, size: size))
         }
+    }
+
+    private func endedPagerTrace() -> PagerGestureTrace {
+        var trace = PagerGestureTrace()
+        trace.finish(
+            phase: .ended,
+            progress: 0.75,
+            velocityPagesPerSecond: 1
+        )
+        return trace
     }
 
     private func normalizedVisibleCenter(

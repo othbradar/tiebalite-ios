@@ -1,6 +1,6 @@
 #if DEBUG
 struct PagerTransitionToken: Equatable, Hashable, Sendable {
-    fileprivate let sequence: UInt64
+    let sequence: UInt64
 }
 
 struct PagerTransition<PageID>: Equatable, Sendable
@@ -194,6 +194,127 @@ enum PagerCachePolicy {
             max(sourceIndex, targetIndex) + 2
         )
         return Array(pageIDs[lowerBound..<upperBound])
+    }
+}
+
+enum PagerContentPhase: String, Equatable, Sendable {
+    case loaded
+    case refreshing
+    case loadingNextPage = "loading-next-page"
+    case refreshFailure = "refresh-failure"
+    case initialLoading = "initial-loading"
+    case initialFailure = "initial-failure"
+    case empty
+}
+
+struct PagerRetainedContentState<Content>: Equatable, Sendable
+where Content: Equatable & Sendable {
+    private(set) var phase: PagerContentPhase
+    private(set) var content: Content?
+    private(set) var generation: UInt64
+    private(set) var activeRequestGeneration: UInt64?
+
+    private var nextRequestGeneration: UInt64
+
+    init(loaded content: Content) {
+        phase = .loaded
+        self.content = content
+        generation = 1
+        activeRequestGeneration = nil
+        nextRequestGeneration = 1
+    }
+
+    @discardableResult
+    mutating func beginRefreshing() -> UInt64 {
+        beginRequest(phase: .refreshing, retainingContent: true)
+    }
+
+    @discardableResult
+    mutating func beginLoadingNextPage() -> UInt64 {
+        beginRequest(phase: .loadingNextPage, retainingContent: true)
+    }
+
+    @discardableResult
+    mutating func beginInitialLoading() -> UInt64 {
+        beginRequest(phase: .initialLoading, retainingContent: false)
+    }
+
+    @discardableResult
+    mutating func resolveLoaded(
+        _ content: Content,
+        requestGeneration: UInt64
+    ) -> Bool {
+        guard requestGeneration == activeRequestGeneration else {
+            return false
+        }
+        phase = .loaded
+        self.content = content
+        activeRequestGeneration = nil
+        generation &+= 1
+        return true
+    }
+
+    @discardableResult
+    mutating func failRefresh(requestGeneration: UInt64) -> Bool {
+        guard requestGeneration == activeRequestGeneration,
+              phase == .refreshing else {
+            return false
+        }
+        phase = .refreshFailure
+        activeRequestGeneration = nil
+        generation &+= 1
+        return true
+    }
+
+    @discardableResult
+    mutating func failInitialLoad(
+        requestGeneration: UInt64
+    ) -> Bool {
+        guard requestGeneration == activeRequestGeneration,
+              phase == .initialLoading else {
+            return false
+        }
+        phase = .initialFailure
+        activeRequestGeneration = nil
+        generation &+= 1
+        return true
+    }
+
+    @discardableResult
+    mutating func resolveEmpty(
+        requestGeneration: UInt64
+    ) -> Bool {
+        guard requestGeneration == activeRequestGeneration,
+              phase == .initialLoading else {
+            return false
+        }
+        phase = .empty
+        content = nil
+        activeRequestGeneration = nil
+        generation &+= 1
+        return true
+    }
+
+    mutating func setLoaded(_ content: Content) {
+        phase = .loaded
+        self.content = content
+        activeRequestGeneration = nil
+        generation &+= 1
+    }
+
+    private mutating func beginRequest(
+        phase: PagerContentPhase,
+        retainingContent: Bool
+    ) -> UInt64 {
+        let requestGeneration = nextRequestGeneration
+        nextRequestGeneration &+= 1
+        self.phase = phase
+        if !retainingContent {
+            content = nil
+        }
+        activeRequestGeneration = requestGeneration
+        generation &+= 1
+        return requestGeneration
     }
 }
 #endif

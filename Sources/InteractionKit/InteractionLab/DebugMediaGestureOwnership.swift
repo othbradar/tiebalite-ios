@@ -280,13 +280,30 @@ where MediaID: Hashable & Sendable {
     private var originalPagerMaximumTouches: Int?
     private var currentMediaID: () -> MediaID? = { nil }
     private var nextSessionID: UInt64 = 1
-    private var generation: UInt64 = 1
+    private(set) var generation: UInt64 = 1
 
     private(set) var ownershipGateRecognizer: MediaOwnershipPanGestureRecognizer?
     private(set) var activeSession: Session?
     private(set) var lastSession: Session?
     private(set) var pagerCoordinatorSequence: UInt64 = 0
     var onSessionChanged: (Session?) -> Void = { _ in }
+    private weak var pagerRendezvousObserver:
+        MediaGestureOwnershipRendezvousObserver<MediaID>?
+
+    func observePagerRendezvous(
+        with observer: MediaGestureOwnershipRendezvousObserver<MediaID>
+    ) {
+        pagerRendezvousObserver = observer
+    }
+
+    func stopObservingPagerRendezvous(
+        with observer: MediaGestureOwnershipRendezvousObserver<MediaID>
+    ) {
+        guard pagerRendezvousObserver === observer else {
+            return
+        }
+        pagerRendezvousObserver = nil
+    }
 
     func install(
         on view: UIView,
@@ -369,8 +386,7 @@ where MediaID: Hashable & Sendable {
     }
 
     func mediaDidChange(to mediaID: MediaID?) {
-        if let activeSession,
-           activeSession.mediaID != mediaID {
+        if activeSession != nil {
             invalidateActiveSession()
         }
         generation &+= 1
@@ -388,18 +404,6 @@ where MediaID: Hashable & Sendable {
         finish(activeSession, as: phase)
     }
 
-    func sessionAllowsPagerTransition(
-        sourceID: MediaID
-    ) -> UInt64? {
-        guard let activeSession,
-              activeSession.mediaID == sourceID,
-              activeSession.owner == .pager,
-              activeSession.phase == .active else {
-            return nil
-        }
-        return activeSession.gestureSessionID
-    }
-
     func allowsPagerResolution(
         sessionID: UInt64,
         sourceID: MediaID,
@@ -411,7 +415,7 @@ where MediaID: Hashable & Sendable {
               lastSession.generation == generation,
               lastSession.mediaID == sourceID,
               lastSession.owner == .pager,
-              lastSession.phase == .active || lastSession.phase == .ended else {
+              lastSession.phase == .ended else {
             return false
         }
         return true
@@ -426,7 +430,7 @@ where MediaID: Hashable & Sendable {
         let updated = activeSession.updatingCapability(capability)
         self.activeSession = updated
         lastSession = updated
-        onSessionChanged(updated)
+        notifySessionChanged(updated)
     }
 
     func gestureRecognizerShouldBegin(
@@ -466,7 +470,7 @@ where MediaID: Hashable & Sendable {
         nextSessionID &+= 1
         activeSession = session
         lastSession = session
-        onSessionChanged(session)
+        notifySessionChanged(session)
         return true
     }
 
@@ -553,7 +557,12 @@ where MediaID: Hashable & Sendable {
         let finished = session.finishing(as: phase)
         lastSession = finished
         activeSession = nil
-        onSessionChanged(finished)
+        notifySessionChanged(finished)
+    }
+
+    private func notifySessionChanged(_ session: Session?) {
+        onSessionChanged(session)
+        pagerRendezvousObserver?.receive(session)
     }
 }
 #endif

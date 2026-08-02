@@ -178,6 +178,8 @@ struct LaunchDisplayProfileModifier: ViewModifier {
 
 @MainActor
 struct LaunchShellLayoutHarness<Content: View>: View {
+    @Environment(\.horizontalSizeClass)
+    private var inheritedHorizontalSizeClass
     @State private var sizeClassOverride: UserInterfaceSizeClass?
 
     private let content: Content
@@ -209,13 +211,11 @@ struct LaunchShellLayoutHarness<Content: View>: View {
         }
     }
 
-    @ViewBuilder
     private var layoutContent: some View {
-        if let sizeClassOverride {
-            content.environment(\.horizontalSizeClass, sizeClassOverride)
-        } else {
-            content
-        }
+        content.environment(
+            \.horizontalSizeClass,
+            sizeClassOverride ?? inheritedHorizontalSizeClass
+        )
     }
 }
 #endif

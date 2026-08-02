@@ -13,6 +13,7 @@ struct DebugMediaViewer: View {
     let close: () -> Void
 
     @State private var currentID: String?
+    @State private var externalSelectionGeneration: UInt64 = 0
     @State private var chromeVisible = true
     @State private var delayedReleased = false
     @State private var failureRecovered = false
@@ -62,6 +63,7 @@ struct DebugMediaViewer: View {
                 reduceMotion: reduceMotion || reductionOverride,
                 pagingEnabled: pagingEnabled,
                 mediaGestureOwnership: ownershipController,
+                externalSelectionGeneration: $externalSelectionGeneration,
                 onEvent: handlePagerEvent
             ) { mediaID in
                 mediaPage(for: mediaID)
@@ -357,6 +359,7 @@ private extension DebugMediaViewer {
         }
         ownershipController.invalidateActiveSession()
         resetTransform(for: currentID)
+        externalSelectionGeneration &+= 1
         self.currentID = presentation.items[targetIndex].id
     }
 

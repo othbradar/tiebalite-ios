@@ -1,8 +1,9 @@
 # ADR-0005：唯一 MediaViewer
 
-- 状态：Proposed（阶段 06 Spike Partial，仅 Debug）
+- 状态：Accepted（Open-Source Beta interaction foundation；Debug candidate）
 - 日期：2026-07-31
-- 决策者：阶段 02 候选决策，待阶段 06 spike
+- 最终裁决：2026-08-02
+- 决策者：阶段 02 候选决策；阶段 06 Open-Source Beta 收口
 - 关联阶段：02、06、09
 
 ## 背景
@@ -119,7 +120,7 @@ Pager/cache/转场并违反依赖门禁。B 仍需 spike，不能直接成为生
 - VoiceOver 页数、关闭、Accessibility Escape 正确；Reduce Motion 不改变
   功能。
 
-## 阶段 06 运行结论
+## 阶段 06 运行结论（历史出口）
 
 阶段 06 只验证 B 的 Debug 实验，没有批准生产 MediaViewer：
 
@@ -149,7 +150,7 @@ Pager/cache/转场并违反依赖门禁。B 仍需 spike，不能直接成为生
 回滚方案保持为单图加显式前后按钮；补齐矩阵前不得创建生产
 `Features/MediaViewer`、第二套 Pager 或新图片/手势依赖。
 
-## 阶段 06B 收口结论
+## 阶段 06B 收口结论（历史出口）
 
 阶段 06B 关闭了 cached transform 与部分尺寸/释放风险，但发现新的真实
 横屏阻塞：
@@ -176,8 +177,28 @@ Pager/cache/转场并违反依赖门禁。B 仍需 spike，不能直接成为生
   bytes、异步取消/stale callback、快速 burst、VoiceOver Escape 和真实
   split divider 也未在 Media Spike 内完成。
 
-因此 ADR 状态继续是 `Proposed（阶段 06 Spike Partial，仅 Debug）`；不得
-建立生产 MediaViewer 或解除后续阶段门禁。
+因此在 06B 任务出口时 ADR 继续是
+`Proposed（阶段 06 Spike Partial，仅 Debug）`；该历史状态随后由 06C-A、
+06C-R 与下方 Open-Source Beta 最终裁决取代。
+
+## Open-Source Beta 最终裁决
+
+选择 B（每页唯一 `UIScrollView` zoom wrapper + 唯一 Pager）作为阶段 09
+可继续生产化的 interaction foundation，并将阶段 06 标记为
+`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`。06C-A 已把 runtime
+fixed-owner 接到 recognizer begin，并关闭 resize focal clamp、aspect-fit frame、
+pan/chrome 冲突和旋转 safe-area 裁切；06C-R 的 D/P/O rendezvous 保证 Media
+ownership 未终止前 Pager 不会提前提交。
+
+该接受不建立生产 MediaViewer：Debug `InteractionLab` 继续 Release 隔离，
+生产 async image pipeline、cache/downsample/candidate、full-resolution lease、
+ThreadScreen 和 live network 均不存在。`PHASE_06C_C = DEFERRED_POST_BETA`；
+`PHASE_09_PREREQUISITES_SATISFIED`，但阶段 09 仍为 `NOT_STARTED`。
+
+Known Limitations 不再阻塞阶段 09：iOS 18.x 与真机矩阵、真机 VoiceOver/
+Accessibility Escape、真实 iPad split divider、所有图片尺寸与 100 张
+full-resolution lease/极端内存和快速翻页压力。它们保留为 post-Beta 或发布前
+验证，不能被当前 controller/cache 上界测试误写为生产资源验证。
 
 ## 迁移/退出成本
 

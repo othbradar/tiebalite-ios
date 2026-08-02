@@ -9,19 +9,7 @@ struct AppShellView: View {
     let environment: AppEnvironment
 
     var body: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                IPadAppShellView(
-                    navigation: navigation,
-                    imageLoader: environment.imageLoader
-                )
-            } else {
-                IPhoneAppShellView(
-                    navigation: navigation,
-                    imageLoader: environment.imageLoader
-                )
-            }
-        }
+        shellContent
         .safeAreaInset(edge: .top, spacing: 0) {
             if let harnessLabel {
                 HStack(spacing: Spacing.small) {
@@ -51,7 +39,79 @@ struct AppShellView: View {
         }
         .background(SemanticColor.background)
     }
+
+    @ViewBuilder
+    private var shellContent: some View {
+#if DEBUG
+        if navigation.state.selectedTab == .settings,
+           navigation.state.settingsPath.last == .interactionLab {
+            StableInteractionLabShell(
+                navigation: navigation,
+                imageLoader: environment.imageLoader
+            )
+        } else {
+            adaptiveShellContent
+        }
+#else
+        adaptiveShellContent
+#endif
+    }
+
+    @ViewBuilder
+    private var adaptiveShellContent: some View {
+            if horizontalSizeClass == .regular {
+                IPadAppShellView(
+                    navigation: navigation,
+                    imageLoader: environment.imageLoader
+                )
+            } else {
+                IPhoneAppShellView(
+                    navigation: navigation,
+                    imageLoader: environment.imageLoader
+                )
+            }
+    }
 }
+
+#if DEBUG
+@MainActor
+private struct StableInteractionLabShell: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @Bindable var navigation: AppNavigationStore
+    let imageLoader: any ImageLoading
+
+    var body: some View {
+        NavigationStack(path: settingsPathBinding) {
+            SettingsPlaceholderView {
+                navigation.openSettingsRoute(.componentGallery)
+            } openInteractionLab: {
+                navigation.openSettingsRoute(.interactionLab)
+            } openThreadContentRenderer: {
+                navigation.openSettingsRoute(.threadContentRendererLab)
+            }
+            .navigationDestination(for: SettingsRoute.self) { route in
+                SettingsRouteDestinationView(
+                    route: route,
+                    imageLoader: imageLoader
+                )
+            }
+        }
+        .padding(
+            .horizontal,
+            horizontalSizeClass == .regular ? Spacing.large : 0
+        )
+        .background(SemanticColor.background)
+    }
+
+    private var settingsPathBinding: Binding<[SettingsRoute]> {
+        Binding(
+            get: { navigation.state.settingsPath },
+            set: { navigation.replaceSettingsPathFromSystem($0) }
+        )
+    }
+}
+#endif
 
 @MainActor
 private struct IPhoneAppShellView: View {

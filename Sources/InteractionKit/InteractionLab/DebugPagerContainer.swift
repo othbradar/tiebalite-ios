@@ -2,15 +2,6 @@
 import SwiftUI
 import UIKit
 
-struct PagerContainerSnapshot<PageID>: Equatable, Sendable
-where PageID: Hashable & Sendable {
-    let committedID: PageID?
-    let liveIDs: [PageID]
-    let resolvedTransitionCount: Int
-    let controllerCount: Int
-    let coordinatorSequence: UInt64
-}
-
 enum PagerContainerEvent<PageID>: Equatable, Sendable
 where PageID: Hashable & Sendable {
     case began(PagerTransition<PageID>)
@@ -29,7 +20,13 @@ where PageID: Hashable & Sendable, PageContent: View {
     let reduceMotion: Bool
     let pagingEnabled: Bool
     let mediaGestureOwnership: MediaGestureOwnershipController<PageID>?
+    @Binding var externalSelectionGeneration: UInt64
+    let contentGeneration: ((PageID) -> UInt64)?
+    let inputDiagnosticsEnabled: Bool
     let onEvent: (PagerContainerEvent<PageID>) -> Void
+    let onSettledSnapshot: ((PagerContainerSnapshot<PageID>) -> Void)?
+    let onTransitionSnapshot: ((PagerContainerSnapshot<PageID>) -> Void)?
+    let onInputDiagnostic: (PagerInputDiagnostic<PageID>) -> Void
     @ViewBuilder let content: (PageID) -> PageContent
 
     init(
@@ -39,7 +36,19 @@ where PageID: Hashable & Sendable, PageContent: View {
         reduceMotion: Bool,
         pagingEnabled: Bool = true,
         mediaGestureOwnership: MediaGestureOwnershipController<PageID>? = nil,
+        externalSelectionGeneration: Binding<UInt64> = .constant(0),
+        contentGeneration: ((PageID) -> UInt64)? = nil,
+        inputDiagnosticsEnabled: Bool = false,
         onEvent: @escaping (PagerContainerEvent<PageID>) -> Void = { _ in },
+        onSettledSnapshot: ((
+            PagerContainerSnapshot<PageID>
+        ) -> Void)? = nil,
+        onTransitionSnapshot: ((
+            PagerContainerSnapshot<PageID>
+        ) -> Void)? = nil,
+        onInputDiagnostic: @escaping (
+            PagerInputDiagnostic<PageID>
+        ) -> Void = { _ in },
         @ViewBuilder content: @escaping (PageID) -> PageContent
     ) {
         self.pageIDs = pageIDs
@@ -48,7 +57,13 @@ where PageID: Hashable & Sendable, PageContent: View {
         self.reduceMotion = reduceMotion
         self.pagingEnabled = pagingEnabled
         self.mediaGestureOwnership = mediaGestureOwnership
+        _externalSelectionGeneration = externalSelectionGeneration
+        self.contentGeneration = contentGeneration
+        self.inputDiagnosticsEnabled = inputDiagnosticsEnabled
         self.onEvent = onEvent
+        self.onSettledSnapshot = onSettledSnapshot
+        self.onTransitionSnapshot = onTransitionSnapshot
+        self.onInputDiagnostic = onInputDiagnostic
         self.content = content
     }
 
@@ -59,25 +74,48 @@ where PageID: Hashable & Sendable, PageContent: View {
         UIPageViewControllerDelegate {
         var parent: PagerContainer
 
-        private var state: PagerStateMachine<PageID>
-        private var controllers: [
+        var state: PagerStateMachine<PageID>
+        var controllers: [
             PageID: PagerHostingController<PageID, PageContent>
         ] = [:]
-        private weak var installedController: UIPageViewController?
-        private weak var installedMediaGestureOwnership:
+        weak var installedController: UIPageViewController?
+        weak var installedMediaGestureOwnership:
             MediaGestureOwnershipController<PageID>?
-        private var selectionCommitTask: Task<Void, Never>?
-        private var selectionCommitGeneration: UInt64 = 0
-        private var mediaGestureSessionID: UInt64?
-        private let coordinatorSequence: UInt64
-
-        var cachedControllerCount: Int {
-            controllers.count
+        weak var observedPagerPanRecognizer: UIPanGestureRecognizer?
+        weak var observedPagerScrollView: UIScrollView?
+        var pagerContentOffsetObservation: NSKeyValueObservation?
+        var selectionCommitTask: Task<Void, Never>?
+        var selectionCommitGeneration: UInt64 = 0
+        var settledSnapshotTask: Task<Void, Never>?
+        var settledSnapshotGeneration: UInt64 = 0
+        var lastEmittedSettledSnapshot: PagerContainerSnapshot<PageID>?
+        var lastEmittedTransitionSnapshot: PagerContainerSnapshot<PageID>?
+        var mediaOwnershipObserver:
+            MediaGestureOwnershipRendezvousObserver<PageID>?
+        var activeRendezvous: PagerTransitionRendezvous<PageID>?
+        var lastResolvedRendezvous: PagerTransitionRendezvous<PageID>?
+        var lastIgnoredCallbackReason: PagerCallbackIgnoredReason?
+        var controllerInstallationGeneration: UInt64 = 0
+        var nextInputSequence: UInt64 = 1
+        var activeInputSequence: UInt64?
+        var transitionInputSequence: UInt64?
+        var activeGestureTrace: PagerGestureTrace?
+        var lastTerminalGestureRecord: PagerTerminalGestureRecord?
+        var pendingCallbackContext:
+            PagerTransitionCallbackContext<PageID>? {
+            activeRendezvous?.context
         }
-
-        var isInstalled: Bool {
-            installedController != nil
+        var pendingDelegateRecord:
+            PagerTransitionDelegateRecord<PageID>? {
+            activeRendezvous?.delegateEvidence
         }
+        var inputDirectionSign = 0.0
+        var rejectedOverlappingTransitionCount = 0
+        var maximumActiveCallbackDepth = 0
+        var createdControllerCount = 0
+        var contentBuildCount = 0
+        var evictedControllerCount = 0
+        let coordinatorSequence: UInt64
 
         init(parent: PagerContainer) {
             self.parent = parent
@@ -88,57 +126,35 @@ where PageID: Hashable & Sendable, PageContent: View {
             )
         }
 
-        func install(on controller: UIPageViewController) {
-            installedController = controller
-            controller.dataSource = self
-            controller.delegate = self
-            controller.view.backgroundColor = parent.backgroundColor
-            configureInternalScrollViews(in: controller)
-        }
-
-        func synchronize(_ controller: UIPageViewController) {
-            invalidateDeferredSelectionCommit()
-            controller.view.backgroundColor = parent.backgroundColor
-            configureInternalScrollViews(in: controller)
-            refreshCachedContent()
-            _ = state.updatePages(parent.pageIDs)
-
-            guard state.transition == nil else {
-                return
+        @objc
+        func pagerPanChanged(_ recognizer: UIPanGestureRecognizer) {
+            switch recognizer.state {
+            case .began:
+                beginInputTraceIfNeeded()
+            case .changed:
+                beginInputTraceIfNeeded()
+                recordGestureSample(recognizer)
+            case .ended:
+                finishGestureTrace(recognizer, phase: .ended)
+            case .cancelled:
+                finishGestureTrace(recognizer, phase: .cancelled)
+            case .failed:
+                finishGestureTrace(recognizer, phase: .failed)
+            case .possible:
+                break
+            @unknown default:
+                finishGestureTrace(recognizer, phase: .failed)
             }
-
-            if parent.selection != state.committedID,
-               parent.selection.map(parent.pageIDs.contains) == true {
-                _ = state.selectImmediately(parent.selection)
-            }
-
-            if state.committedID != parent.selection {
-                scheduleSelectionCommit(state.committedID)
-            }
-
-            showCommittedPageIfNeeded(
-                in: controller,
-                animated: !parent.reduceMotion
-            )
-            trimControllerCache()
-        }
-
-        func dismantle(_ controller: UIPageViewController) {
-            invalidateDeferredSelectionCommit()
-            installedMediaGestureOwnership?.uninstall(from: controller.view)
-            installedMediaGestureOwnership = nil
-            controller.delegate = nil
-            controller.dataSource = nil
-            controllers.removeAll(keepingCapacity: false)
-            mediaGestureSessionID = nil
-            installedController = nil
         }
 
         func pageViewController(
             _ pageViewController: UIPageViewController,
             viewControllerBefore viewController: UIViewController
         ) -> UIViewController? {
-            adjacentController(
+            guard pageViewController === installedController else {
+                return nil
+            }
+            return adjacentController(
                 to: viewController,
                 offset: -1
             )
@@ -148,7 +164,10 @@ where PageID: Hashable & Sendable, PageContent: View {
             _ pageViewController: UIPageViewController,
             viewControllerAfter viewController: UIViewController
         ) -> UIViewController? {
-            adjacentController(
+            guard pageViewController === installedController else {
+                return nil
+            }
+            return adjacentController(
                 to: viewController,
                 offset: 1
             )
@@ -158,16 +177,57 @@ where PageID: Hashable & Sendable, PageContent: View {
             _ pageViewController: UIPageViewController,
             willTransitionTo pendingViewControllers: [UIViewController]
         ) {
-            guard let target = pendingViewControllers.first
+            guard pageViewController === installedController else {
+                return
+            }
+            guard pendingCallbackContext == nil,
+                  state.transition == nil else {
+                rejectedOverlappingTransitionCount += 1
+                return
+            }
+            guard let source = pageViewController.viewControllers?.first
+                    as? PagerHostingController<PageID, PageContent>,
+                  controllers[source.pageID] === source,
+                  let target = pendingViewControllers.first
                 as? PagerHostingController<PageID, PageContent>,
+                  controllers[target.pageID] === target,
                   let token = state.beginTransition(to: target.pageID),
                   let transition = state.transition,
                   transition.token == token else {
                 return
             }
-            mediaGestureSessionID = parent.mediaGestureOwnership?
-                .sessionAllowsPagerTransition(sourceID: transition.sourceID)
+            invalidateSettledSnapshot()
+            beginInputTraceIfNeeded()
+            guard let inputSequence = activeInputSequence else {
+                _ = state.resolveTransition(
+                    token: transition.token,
+                    completed: false
+                )
+                return
+            }
+            transitionInputSequence = inputSequence
+            inputDirectionSign = transitionDirectionSign(transition)
+            guard beginTransitionRendezvous(
+                transition: transition,
+                inputSequence: inputSequence,
+                source: source,
+                target: target
+            ) else {
+                _ = state.resolveTransition(
+                    token: transition.token,
+                    completed: false
+                )
+                clearResolvedInputTrace()
+                return
+            }
+            maximumActiveCallbackDepth = max(
+                maximumActiveCallbackDepth,
+                pendingCallbackContext == nil ? 0 : 1
+            )
+            lastEmittedTransitionSnapshot = snapshot()
             parent.onEvent(.began(transition))
+            refreshCachedContent()
+            emitTransitionSnapshotIfChanged()
         }
 
         func pageViewController(
@@ -176,214 +236,16 @@ where PageID: Hashable & Sendable, PageContent: View {
             previousViewControllers: [UIViewController],
             transitionCompleted completed: Bool
         ) {
-            guard let transition = state.transition else {
-                return
-            }
-            let latestExternalSelection = parent.selection
-            let resolvedCompletion: Bool
-            if let ownership = parent.mediaGestureOwnership {
-                resolvedCompletion = completed
-                    && mediaGestureSessionID.map {
-                        ownership.allowsPagerResolution(
-                            sessionID: $0,
-                            sourceID: transition.sourceID,
-                            completed: completed
-                        )
-                    } == true
-            } else {
-                resolvedCompletion = completed
-            }
-            mediaGestureSessionID = nil
-            guard state.resolveTransition(
-                token: transition.token,
-                completed: resolvedCompletion
-            ) else {
-                return
-            }
-
-            if parent.mediaGestureOwnership != nil,
-               latestExternalSelection != transition.sourceID,
-               latestExternalSelection.map(parent.pageIDs.contains) == true {
-                _ = state.selectImmediately(latestExternalSelection)
-            }
-
-            invalidateDeferredSelectionCommit()
-            if parent.selection != state.committedID {
-                parent.selection = state.committedID
-            }
-            showCommittedPageIfNeeded(
+            recordDelegateCompletion(
                 in: pageViewController,
-                animated: false
-            )
-            trimControllerCache()
-            parent.onEvent(
-                .resolved(
-                    snapshot: snapshot(),
-                    completed: resolvedCompletion
-                )
+                finished: finished,
+                previousViewControllers: previousViewControllers,
+                transitionCompleted: completed,
+                terminalPhaseObservedAtCallback:
+                    observedTerminalPanPhase()
             )
         }
 
-        private func adjacentController(
-            to viewController: UIViewController,
-            offset: Int
-        ) -> UIViewController? {
-            guard let host = viewController
-                as? PagerHostingController<PageID, PageContent> else {
-                return nil
-            }
-            let activeOrder = state.transition?.frozenOrder
-                ?? state.displayedOrder
-            guard let index = activeOrder.firstIndex(of: host.pageID) else {
-                return nil
-            }
-            let adjacentIndex = index + offset
-            guard activeOrder.indices.contains(adjacentIndex) else {
-                return nil
-            }
-            return controller(for: activeOrder[adjacentIndex])
-        }
-
-        private func controller(
-            for pageID: PageID
-        ) -> PagerHostingController<PageID, PageContent> {
-            if let cached = controllers[pageID] {
-                return cached
-            }
-            let controller = PagerHostingController(
-                pageID: pageID,
-                rootView: parent.content(pageID)
-            )
-            controller.view.backgroundColor = parent.backgroundColor
-            controllers[pageID] = controller
-            return controller
-        }
-
-        private func refreshCachedContent() {
-            for (pageID, controller) in controllers {
-                controller.rootView = parent.content(pageID)
-            }
-        }
-
-        private func showCommittedPageIfNeeded(
-            in controller: UIPageViewController,
-            animated: Bool
-        ) {
-            guard let committedID = state.committedID else {
-                if !(controller.viewControllers ?? []).isEmpty {
-                    controller.setViewControllers(
-                        [],
-                        direction: .forward,
-                        animated: false
-                    )
-                }
-                return
-            }
-
-            if let visible = controller.viewControllers?.first
-                as? PagerHostingController<PageID, PageContent>,
-               visible.pageID == committedID {
-                return
-            }
-
-            let direction = navigationDirection(to: committedID)
-            controller.setViewControllers(
-                [self.controller(for: committedID)],
-                direction: direction,
-                animated: animated
-            )
-        }
-
-        private func navigationDirection(
-            to pageID: PageID
-        ) -> UIPageViewController.NavigationDirection {
-            guard let current = installedController?.viewControllers?.first
-                    as? PagerHostingController<PageID, PageContent>,
-                  let currentIndex = state.displayedOrder.firstIndex(
-                    of: current.pageID
-                  ),
-                  let nextIndex = state.displayedOrder.firstIndex(
-                    of: pageID
-                  ) else {
-                return .forward
-            }
-            return nextIndex >= currentIndex ? .forward : .reverse
-        }
-
-        private func trimControllerCache() {
-            let liveIDs = Set(
-                PagerCachePolicy.liveIDs(
-                    pageIDs: state.displayedOrder,
-                    committedID: state.committedID,
-                    transition: state.transition
-                )
-            )
-            controllers = controllers.filter { liveIDs.contains($0.key) }
-        }
-
-        private func snapshot() -> PagerContainerSnapshot<PageID> {
-            PagerContainerSnapshot(
-                committedID: state.committedID,
-                liveIDs: PagerCachePolicy.liveIDs(
-                    pageIDs: state.displayedOrder,
-                    committedID: state.committedID,
-                    transition: state.transition
-                ),
-                resolvedTransitionCount: state.resolvedTransitionCount,
-                controllerCount: controllers.count,
-                coordinatorSequence: coordinatorSequence
-            )
-        }
-
-        private func scheduleSelectionCommit(_ selection: PageID?) {
-            selectionCommitTask?.cancel()
-            let binding = parent.$selection
-            let expectedSource = binding.wrappedValue
-            selectionCommitGeneration &+= 1
-            let generation = selectionCommitGeneration
-            selectionCommitTask = Task { @MainActor [weak self] in
-                await Task.yield()
-                guard let self,
-                      !Task.isCancelled,
-                      self.selectionCommitGeneration == generation,
-                      binding.wrappedValue == expectedSource,
-                      binding.wrappedValue != selection else {
-                    return
-                }
-                binding.wrappedValue = selection
-                if self.selectionCommitGeneration == generation {
-                    self.selectionCommitTask = nil
-                }
-            }
-        }
-
-        private func invalidateDeferredSelectionCommit() {
-            selectionCommitGeneration &+= 1
-            selectionCommitTask?.cancel()
-            selectionCommitTask = nil
-        }
-
-        private func configureInternalScrollViews(
-            in controller: UIPageViewController
-        ) {
-            if installedMediaGestureOwnership !== parent.mediaGestureOwnership {
-                installedMediaGestureOwnership?.uninstall(from: controller.view)
-                installedMediaGestureOwnership = parent.mediaGestureOwnership
-            }
-            for case let scrollView as UIScrollView
-                in controller.view.subviews {
-                scrollView.backgroundColor = parent.backgroundColor
-                scrollView.isScrollEnabled = parent.pagingEnabled
-                parent.mediaGestureOwnership?.install(
-                    on: controller.view,
-                    pagerPanRecognizer: scrollView.panGestureRecognizer,
-                    pagerCoordinatorSequence: coordinatorSequence,
-                    currentMediaID: { [weak self] in
-                        self?.parent.selection
-                    }
-                )
-            }
-        }
     }
 }
 
@@ -420,30 +282,4 @@ extension PagerContainer {
     }
 }
 
-@MainActor
-private enum PagerCoordinatorSequenceSource {
-    private static var nextSequence: UInt64 = 1
-
-    static func next() -> UInt64 {
-        defer { nextSequence &+= 1 }
-        return nextSequence
-    }
-}
-
-@MainActor
-private final class PagerHostingController<PageID, Content>:
-    UIHostingController<Content>
-where PageID: Hashable & Sendable, Content: View {
-    let pageID: PageID
-
-    init(pageID: PageID, rootView: Content) {
-        self.pageID = pageID
-        super.init(rootView: rootView)
-    }
-
-    @available(*, unavailable)
-    @MainActor dynamic required init?(coder: NSCoder) {
-        nil
-    }
-}
 #endif

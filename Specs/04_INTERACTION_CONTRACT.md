@@ -24,7 +24,68 @@
 - 交互转场未完成前不得移除参与转场的页面。
 - 数据刷新不得把当前页面 ID 临时替换为空。
 - 快速左右反复滑、半途取消、方向反转、旋转、iPad resize 后索引必须正确。
+- 阶段 06 Debug UIKit 候选不复制 UIKit 未公开的 distance/velocity 组合
+  算法；系统 `UIPageViewController` 的 `transitionCompleted` 是一次正常结束
+  手势是否完成视觉转场的裁决。候选必须分别记录页面宽度归一化的终点/峰值
+  距离、release velocity、pan terminal、source/target/token、previous/visible
+  PageID，并在目标 Simulator 独立表征 49%/51% 低速输入与同距离慢/快输入。
+- 业务 selection 仅在 callback 属于当前 token、previous source 与 visible
+  target 一致且 pan 正常 ended 时采用系统完成结果；`cancelled`、`failed`、
+  stale/duplicate/source mismatch 一律取消。同一触摸反向只累计在同一个
+  input trace 中，不得创建第二个 transition；确定性 trace 测试和真实
+  recognizer 诊断必须共用同一状态机，不能用独立纯函数冒充 runtime 手势。
+- `didFinishAnimating` delegate evidence、Pager pan terminal 与 Media
+  ownership terminal 必须按 transition token/input sequence、外部 selection
+  generation 和 ownership session/generation 做三方 rendezvous；三者以任意
+  顺序到达都只能解析一次。ownership `active` 只能保持 `pending`；只有固定
+  owner 为 Pager 且已 `ended`，Pager terminal 也为正常 `ended`，delegate
+  evidence 完全匹配时才可提交。ownership/Pager terminal 的 cancelled、failed、
+  invalidated，或固定 owner 为 `mediaPan`，均不得提交。
+- 最终 join 不得盲信已缓存的 ownership terminal；必须将其 session ID、
+  generation、source、owner 和 Pager coordinator identity 与当前 ownership
+  controller 重新核对。即使 `ended(G)` 先到，后续 generation 前进也必须
+  使旧证据 `invalidated`，不得提交。
+- Pager delegate callback 必须先 peek context，再验证 transition generation、
+  source/target PageID、previous/visible host identity、direction、外部 selection
+  generation 与 controller installation generation，最后才记录 evidence。
+  无效、stale 或重复 callback 只写 Debug 诊断，不消费 context、不增加 resolved
+  count、不改变 selection/destination，后续正确 callback 仍可完成同一 transition。
+  最终 join 前还必须重新核对实际 visible host；resolution 后的迟到 callback
+  幂等忽略，不得产生先提交再撤销的选择抖动。
+- 外部 selection/generation 在交互中变化时只把旧 transition 标记为
+  superseded；不得在 Pager/ownership 仍 active 时换 child、驱逐 source/target
+  或发布旧 selection。D/P/O terminal evidence 齐全后才取消旧 transition 并
+  一次性应用最新外部 selection；generation 必须从 live MainActor binding
+  读取，不能依赖尚未执行的 representable update snapshot。
+- Pager 页内纵向滚动夹带水平抖动时，不得启动或提交横向
+  翻页，纵向内容仍必须可滚动。
+- `loaded` 进入 `refreshing`、`loadingNextPage` 或
+  `refreshFailure` 时保留原 PageID、原内容和 child controller；
+  `initialLoading`、`initialFailure`、`empty` 仍须以不透明 root 完整覆盖
+  Pager bounds。旧 generation 不得覆盖较新状态，状态层不得吞掉无关点击。
+- settled cache 仅保留当前页及约定相邻页（最多 3 个 controller）；交互期间
+  仅保留冻结参与页（最多 4 个）。状态刷新、旋转和 regular/compact 投影
+  不是驱逐，不得重建当前 child；正式离开缓存窗口后允许释放并以新
+  instance sequence 重建。stale controller 不得重新进入 data source 路由。
+- 由父层异步状态驱动且纳入 P4 retained-state 矩阵的 Pager 页面必须提供
+  稳定 content generation；generation 未变化或倒退时不得重建昂贵
+  SwiftUI root，前进时只更新同一 hosting controller 的 root。
+  dismantle 必须取消 deferred commit、断开 delegate/dataSource/observer，
+  移除全部 Pager hosting children，并以不透明 teardown sentinel 满足 UIKit
+  的非空约束，随后允许 coordinator/hosting child 释放。
+- Pager pan recognizer 或 controller installation 被替换时必须显式 lifecycle
+  invalidate，不能留下等待旧 input 的 context；显示 committed PageID 时还必须
+  匹配当前缓存 host 对象，不能仅因 PageID 相同接受 stale controller。
 - 左边缘系统返回与内部横滑冲突时，系统返回优先，具体判定写入组件 ADR。
+
+### 阶段 06 证据范围
+
+`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED` 采用个人开源 Beta 范围：当前
+确定性状态机与 iOS 26.5 Simulator 的 iPhone/iPad 证据足以解除阶段 09
+前置门禁，但不降低本节任何行为契约。iOS 18.x/真机、真机 VoiceOver、
+真实同触摸反向录屏、极端图片资源压力与公开 UIKit callback 完全不可区分的
+理论排列标记为 `DEFERRED_POST_BETA`；Debug InteractionLab 仍不得作为生产
+Pager/MediaViewer 发布。
 
 ## MediaViewer
 

@@ -2,19 +2,25 @@
 
 ## 结论
 
-- 阶段结论：`SPIKE_PARTIAL`
+- 阶段结论：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
+  （个人开源 `OPEN_SOURCE_BETA` 范围）
 - Pager：`UIPageViewController` 候选仅作为 Debug/UITesting 实验保留；
   SwiftUI `TabView(.page)` 候选已淘汰并删除。
 - Media：每页 `UIScrollView` zoom + 同一 Debug Pager 的实验仅作为
   Debug/UITesting 证据保留。
 - 生产状态：未创建生产 Pager、MediaViewer 或业务 Feature；Release
   SwiftFileList 和 binary 隔离检查必须排除全部 InteractionLab 实现。
-- 阶段 07：未进入。
+- 原阶段 06 出口未进入阶段 07；后续阶段 07、08 已由独立提交
+  完成。06C-B 与 06C-R 是阶段 08 后的定向 Debug Spike 补证/修复。
+- `PHASE_09_PREREQUISITES_SATISFIED`，但阶段 09 仍为 `NOT_STARTED`；
+  生产 Pager/MediaViewer 仍未创建。
 
-自动化矩阵已通过当前可运行部分，但 Computer Use 不能可靠向 Simulator
-注入触摸 drag/pinch，也未操作真实 iPad split-view divider；本机无 iOS
-18.x runtime。因此不满足提示词要求的完整手工矩阵，不能标记
-`SPIKE_ACCEPTED`，后续 Feature 不得复制实验实现。
+最终裁决采用个人开源 Beta 风险范围：确定性状态机、当前 iOS 26.5
+Simulator 的 iPhone/iPad 自动化、完整质量门禁和已修复的可复现 P0/P1
+回归足以接受 interaction foundation。未执行的 iOS 18/真机、真实 VoiceOver、
+同触摸反向录屏、极端图片资源压力和公开 API 无法区分的理论迟到 callback
+列为 `DEFERRED_POST_BETA`，不再阻塞阶段 09；这不表示完整发布矩阵已经通过，
+也不允许 Feature 复制 Debug 实现。
 
 ## 环境与基线
 
@@ -116,7 +122,10 @@ PageID 与可见 viewport，不证明 coordinator/相邻页跨旋转连续。加
 冻结源码后最终 Unit 证据（61/61）：
 `Artifacts/TestResults/20260731-184221-65805-unit.xcresult`。
 
-## 自动化与人工矩阵
+## 阶段 06 初始出口的历史自动化与人工矩阵
+
+本节冻结的是 2026-07-31 初始出口证据，后续 06B/06C-A/06C-B/06C-R 与
+Open-Source Beta 最终裁决以本报告后文为准。
 
 状态含义：`PASS` 仅表示精确场景已在目标 runtime 执行且断言覆盖完整
 契约；`PARTIAL` 表示只覆盖子动作、状态模型或 settled frame；
@@ -260,23 +269,25 @@ SHA-256 均为
 并与本报告引用的 inventory 文件逐字一致。
 `xcresulttool` 对五个结果包独立确认 61/12/5/2/1 passed，全部
 0 failed/0 skipped，iPhone/iPad 均为 iOS 26.5 Simulator。
-绿色门禁不关闭前述未执行手工矩阵与已知 Debug 候选风险，阶段结论仍为
-`SPIKE_PARTIAL`。
+绿色门禁在该次初始出口未关闭前述手工矩阵与 Debug 候选风险；当时阶段结论
+为 `SPIKE_PARTIAL`，已被本报告末尾的 Beta acceptance 取代。
 
-## Phase 06B 定向收口（2026-08-01）
+## Phase 06B 定向收口（2026-08-01，历史出口）
 
 ### 状态裁决
 
 - baseline：`b205af6d0bd91d51cb7bc83b6e70f6da7fe93fbe`。
-- 最终裁决：`PHASE_06_INTERACTION_SPIKES = SPIKE_PARTIAL`。
-- 后续门禁保持：`PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。
-- 阶段 09 仍是 `NOT_STARTED`；本轮未读取或执行阶段 09。
+- 该任务出口裁决：`PHASE_06_INTERACTION_SPIKES = SPIKE_PARTIAL`。
+- 该任务当时的后续门禁：
+  `PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。
+- 阶段 09 当时仍是 `NOT_STARTED`；本轮未读取或执行阶段 09。
 - 阶段 08 Renderer/MediaIntent 图片六态未修改；无生产接线、live 网络、
   cache/downsample/candidate/lease、ThreadScreen 或生产 MediaViewer。
 
-任何一项 mandatory 未验证都禁止 `SPIKE_ACCEPTED`。本轮即使自动化绿色，
-仍因 runtime fixed-owner、横屏 chrome 裁切、iOS 18/VoiceOver/真实 split 等
-明确阻塞而保持 Partial。
+按 06B 当时的质量标准，任何 mandatory 未验证都禁止 `SPIKE_ACCEPTED`。
+本轮即使自动化绿色，仍因 runtime fixed-owner、横屏 chrome 裁切、
+iOS 18/VoiceOver/真实 split 等明确阻塞而保持 Partial；该标准后来由用户明确
+调整为 Open-Source Beta 风险范围。
 
 ### 原未决项与 06B 结果
 
@@ -382,10 +393,10 @@ iPhone 17 Pro `70D93841-1FEB-445A-8FAD-B1C29B981D5D` 与 iPad Pro
   expected failure 均为 0。设备均是 iOS 26.5（23F77）Simulator。
 - iPad 两个结果包每个用例均记录非失败 runtime warning：Info.plist 后续将要求
   支持全部 orientation。该 warning 不改变通过计数，但保留为未清理证据。
-- 绿色门禁不覆盖前述真实 chrome 裁切与未验证 mandatory 项，因此不改变
-  `SPIKE_PARTIAL` 裁决，也不解除阶段 09 门禁。
+- 绿色门禁在 06B 任务出口不覆盖前述真实 chrome 裁切与未验证 mandatory 项，
+  因而当时不改变 `SPIKE_PARTIAL` 裁决，也不解除阶段 09 门禁。
 
-## Phase 06C-A Media 手势与旋转硬阻塞收口（2026-08-01）
+## Phase 06C-A Media 手势与旋转硬阻塞收口（2026-08-01，历史出口）
 
 ### 目标、范围与状态裁决
 
@@ -393,9 +404,9 @@ iPhone 17 Pro `70D93841-1FEB-445A-8FAD-B1C29B981D5D` 与 iPad Pro
 - 本轮只关闭 M1 runtime fixed-owner、M3 resize 后完整
   clamp/frame 与 V1 iPhone zoom/pan 后旋转 chrome 裁切；三项均
   `CLOSED`。
-- 阶段 06 总状态仍为 `SPIKE_PARTIAL`；P3/P4/P5/M4/M5/I1 等
-  mandatory 项未被本轮代替。
-- 阶段 09 仍为 `NOT_STARTED` 且门禁仍为
+- 该任务出口的阶段 06 总状态仍为 `SPIKE_PARTIAL`；P3/P4/P5/M4/M5/I1 等
+  mandatory 项未被 06C-A 代替。
+- 阶段 09 当时仍为 `NOT_STARTED` 且门禁仍为
   `PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。协调主代理未读取或
   实现阶段 09；未开始 06C-B。
 - 只修改 Debug Media Spike、InteractionKit Debug 候选、固定 fixture
@@ -513,7 +524,8 @@ iPhone 17 Pro `70D93841-1FEB-445A-8FAD-B1C29B981D5D` 与 iPad Pro
   50% 后，`20260801-phase06ca-targeted-full-suite-threshold-ui.xcresult`
   1/1 通过，随后最终 full-suite 9/9 通过。该回归仍要求
   session ID 精确 +1、source/owner/phase 匹配且 media-pan counter 不变；
-  临界距离、严格半程取消和反向仍属未处理 P3。
+  临界距离、严格半程取消和反向在 06C-A 出口当时仍属未处理 P3，随后由
+  06C-B 的 threshold/velocity/burst/state-machine 证据关闭到 Beta 范围。
 - 三个最终独立只读 review 均通过：fixed-owner 真实连接
   runtime begin，owner 在同一 session 不变，chrome 不在 zoom
   坐标中，same-ID image revision 会重算几何，没有越出本轮范围。
@@ -562,8 +574,198 @@ safe-area 且 owner 为 runtime `media-pan`。
   诊断 status layer。新增依赖 0，live request 0。
 - 未使用 `asyncAfter`、`Task.sleep`、UUID 强制刷新、magic zIndex、
   透明全屏 blocker、全局禁动画、重建整个 Renderer 或删除/降低断言。
-- 本轮未验证且仍阻塞阶段 06 整体验收的项包括：Pager P3
+- 本轮结束时未验证且按当时标准仍阻塞阶段 06 整体验收的项包括：Pager P3
   burst/严格半程/反向、P4 retained loading/failure/refresh、P5 child/
   重内容生命周期，Media M4 async load/cancel/stale 和 M5 100 张
   full-resolution lease/resource 上界，以及 I1 真实 iPad split divider、
-  iOS 18.x runtime 与 VoiceOver 实操。
+  iOS 18.x runtime 与 VoiceOver 实操。P3/P4/P5 后由 06C-B 关闭；其余项的
+  最终 Beta 风险分级见本报告末尾。
+
+## Phase 06C-R Pager/Media terminal rendezvous 修复（2026-08-02，历史出口）
+
+### 范围与状态裁决
+
+- baseline HEAD：`367e420c979a927cb746c1e441ee1c3dc7a3a12c`；保留工作树中尚未
+  提交的 06C-B P3/P4/P5 fixture、状态机、诊断和测试，不 reset/restore/stash。
+- 本轮只修复共享 Pager/Media terminal rendezvous 和 Pager callback 的
+  validate-before-consume；没有进入 06C-C，没有读取或实现阶段 09。
+- 该任务出口的阶段 06 继续为 `SPIKE_PARTIAL`；阶段 09 当时继续为
+  `NOT_STARTED`，门禁仍为
+  `PHASE_09_BLOCKED_UNTIL_PHASE_06_SPIKE_ACCEPTED`。这些状态已被本报告末尾
+  Open-Source Beta acceptance 取代。
+- 未创建生产 Pager/MediaViewer、ThreadScreen、live transport、cache、candidate、
+  downsample 或 lease；阶段 06C-A 的 zoom、rotation、chrome 算法未重做。
+
+### 先红证据与根因
+
+- 修复前完整 Unit 结果包
+  `Artifacts/TestResults/20260802-054633-45258-unit.xcresult`：171 个逻辑测试、
+  182 次执行、179 次通过、3 次失败，失败恰为
+  `pagerTerminalCannotCommitBeforeMediaOwnershipCancellationArrives`、
+  `earlyDelegateSnapshotChangeDoesNotConsumeCurrentContext` 与
+  `wrongPreviousAfterTerminalDoesNotConsumeCurrentContext`。
+- 根因一：ownership 授权语义接受 `active || ended`，Pager terminal 和 delegate
+  evidence 到齐时会在 Media cancellation 到达前提前发布 selection。
+- 根因二：delegate callback 在 previous/visible host identity 完整验证前已清理
+  callback context；错误或早到 snapshot 因而消费合法 transition，后续正确
+  callback 无法收口。
+
+### 三方状态机与 non-consuming validation
+
+- 一个 `@MainActor` context 固定 transition token/generation、source/target、
+  direction、外部 selection generation、controller installation generation、
+  source/target host instance sequence 和 Media ownership session/generation。
+- 三条 evidence leg 为 delegate、Pager terminal、Media ownership terminal；
+  到达顺序无关。ownership `active` 仅记录 pending；只有相同 generation 的
+  `ended(owner: pager)`、Pager `ended` 和完全匹配的 delegate evidence 才能
+  `committed`。cancelled/failed/invalidated 或 `mediaPan` owner 不提交。
+- resolution 结果仅为 `pending`、`committed`、`cancelled`、`invalidated`，并以
+  `didPublish` 保证最多一个 outward side effect。external selection generation
+  前进先只标记 supersession 并保留交互参与 host，D/P/O 齐全后才失效旧
+  context 并应用 live binding 的最新 selection；recognizer/controller lifecycle
+  replacement 则显式失效旧 input。迟到 callback 幂等忽略。
+- 最终 join 会使用当前 ownership controller 重新验证 coordinator、
+  generation、last session ID/source/owner。因此已缓存的 `ended(G)` 即使先于
+  delegate/Pager terminal 到达，也不能在 generation 已前进到 `G+1` 后提交。
+- delegate 路径先 peek 并验证 installed controller、transition/source/target、
+  previous/visible host identity、direction、external generation 与 installation
+  generation，随后才记录 evidence。无效 candidate 仅产生 Debug ignored reason，
+  不清 context、不增加 resolved count、不改 selection/destination；最终 join
+  还会重新验证 live visible host。
+- Media 原有 App `onSessionChanged` 未被替换；Pager coordinator 只安装独立弱
+  observer adapter。共享接口只传 terminal evidence，没有改写 zoom/rotation/
+  chrome 行为。
+
+### 回归与当前证据
+
+- 原三个失败测试保留原名和原断言；因 lint file/type-length 约束，仅将 Media
+  测试原样移动到独立 extension 文件，没有 skip、弱化或重写预期。
+- 新增六种成功到达顺序并逐腿断言前两腿 pending、active pending、
+  ownership cancelled/failed/invalidated、
+  `mediaPan` owner、Pager terminal 拒绝、同 PageID 错 host、错 direction、
+  external/installation generation、away→back、same-ID ownership generation、
+  recognizer replacement、stale committed host、stored delegate 替代、迟到
+  callback 和单次发布测试。
+- review 补强红包 `/private/tmp/phase06cr-review-red-1.xcresult`：14 个逻辑测试、
+  21 次执行、7 个失败，分别证明 external 提前拆页、away→back generation
+  漏检、same-ID ownership generation、recognizer replacement、stale host 和
+  stored delegate 阻塞。修复后 `/private/tmp/phase06cr-review-green-1.xcresult`
+  为 14/21、0 失败。
+- 最终行为复审新增 O→same-ID generation advance→D→P 回归：
+  `/private/tmp/phase06cr-ownership-generation-red-2.xcresult` 为 7 个逻辑测试、
+  14 次执行、13 次通过、1 次失败；join-time 复核后
+  `/private/tmp/phase06cr-ownership-generation-green-1.xcresult` 为 7/14、14 次全部通过。
+- 包含原三红的扩大定向包
+  `/private/tmp/phase06cr-final-targeted-generation-{1,2,3}.xcresult` 连续三次均为
+  31 个逻辑测试、39 次执行、0 失败/跳过。
+- 完整 Unit：`Artifacts/TestResults/20260802-095357-90183-unit.xcresult`，186 个
+  逻辑测试、204 次执行、204 次通过、0 失败/跳过。
+- 新增生产动画 0、产品手势 0、生产/阻断 overlay 0、依赖 0、live network 0；
+  06C-B 已有的 Debug non-hit badge 未改变。未使用
+  delay/sleep、随机 UUID、magic zIndex、透明 blocker 或全局禁动画。
+
+06C-R 关闭上述三个确定性 rendezvous/callback 根因；该任务自己的出口状态
+仍为 `SPIKE_PARTIAL`，随后由下方 06C-B 证据与 Open-Source Beta acceptance
+统一取代。
+
+## Phase 06C-B Pager P3/P4/P5 关闭证据（2026-08-02）
+
+### P3：系统裁决、反向 trace 与 burst
+
+- 不复制 `UIPageViewController` 未公开阈值；distance 与 velocity 分别记录，
+  最终视觉转场仍以 UIKit `transitionCompleted` 裁决。
+- iPhone runtime 对 49%/51% 低速输入各执行 5 次：49% 均
+  `system-bailout` 且保持 p2，51% 均提交 p3；短距离高 velocity 分支独立覆盖。
+- 20 次交替 rapid-serial swipe 后 visual ID、selected PageID、current index 与
+  p2 controller identity 一致；向左右边界各 20 次后保持首/末页完整不透明，
+  无空页。另有 5 次纵向滚动夹带水平 jitter，vertical offset 变化而 Pager
+  resolved count 保持 0。
+- 同触摸 0→0.48→0.20→0 与 0→0.52→0.25→0 使用同一
+  `PagerGestureTrace`/transition token 的确定性序列，均以结束位置取消且
+  `reversalCount == 1`。真实同触摸录屏延期到 post-Beta，不改变该状态机结果。
+
+### P4：retained state 几何与身份
+
+- fixture 覆盖 loaded、retained refreshing、loading next page、retained
+  refresh failure、initial loading、initial failure、empty；所有状态使用同一
+  PageID/host，root frame 完整覆盖 Pager bounds，背景不透明，状态控件只命中
+  自身区域。
+- partial drag 中触发 retained refresh 连续 5 次，均保留 p2 controller、视觉页、
+  frame 和 opaque coverage；旧 generation 的完成被拒绝，selected index 不变。
+- iPhone dark/Accessibility 大字/Reduce Motion 与 iPad rotation/
+  regular-compact projection 纳入最终 interaction suite，未复现白块、错页、
+  遮挡或错误提交。
+
+### P5：controller 与昂贵内容生命周期
+
+- p2→p3→p2、refresh、resize 与 projection 均保持缓存内 controller sequence；
+  状态 refresh 不等同 eviction。
+- 明确驱逐后 weak p2 host 释放，返回时得到新 sequence；stale host 不能递归
+  进入 cache，也不能继承旧 deferred commit。
+- 100 PageID 遍历中 settled cache 始终 ≤3、transition cache ≤4，最终创建
+  controller/昂贵 root 各 100；无 orphan child、active callback 或持续增长的
+  coordinator/task。dismantle 清 delegate/dataSource/observer/children，并取消
+  pending selection/diagnostic task。
+
+P3、P4、P5 在 Open-Source Beta acceptance 范围内均为 `CLOSED`。
+
+## Open-Source Beta Acceptance（2026-08-02）
+
+### 状态与边界
+
+- `PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
+- `PHASE_06_ACCEPTANCE_SCOPE = OPEN_SOURCE_BETA`
+- `PHASE_06C_C = DEFERRED_POST_BETA`
+- `PHASE_09_PREREQUISITES_SATISFIED`
+- `PHASE_09 = NOT_STARTED`
+- `PRODUCTION_PAGER_MEDIA = NOT_CREATED`
+
+该 acceptance 接受候选 B 的交互边界、identity/lifecycle 合同和可复现回归
+防线，供后续阶段建立唯一生产实现；它不迁移、改名或复制 Debug
+InteractionLab，也不修改 Release isolation、live networking 或图片管线。
+
+### 最终证据
+
+- 本次 `make lint`：110 个 Swift 文件，0 violation。
+- 原三个 rendezvous 红测逐名通过；定向包
+  `/private/tmp/stage06-beta-rendezvous.jgiy2h/ThreeOriginalRendezvous.xcresult`
+  连同相邻类测试共 16 个逻辑测试、17 次执行，
+  0 failed/skipped/expected failure。
+- 本次 `make test-unit` 结果
+  `Artifacts/TestResults/20260802-112421-10375-unit.xcresult` 与
+  `make quality-fast` 结果
+  `Artifacts/TestResults/20260802-112512-13014-unit.xcresult` 各为 186 个
+  逻辑测试、204 次执行，0 failed/skipped/expected failure。
+- 同一组合工作树此前完整 `make quality` 通过：Unit 186/204、iPhone smoke
+  13/13、iPhone interaction 15/15、iPad smoke 3/3、iPad interaction 2/2；
+  对应最终结果为 `20260802-095845-95756-unit.xcresult`、
+  `20260802-095915-96061-ui-smoke.xcresult`、
+  `20260802-100427-96793-ui-interaction.xcresult`、
+  `20260802-103601-1323-ui-smoke-ipad.xcresult`、
+  `20260802-103815-1598-ui-interaction-ipad.xcresult`；Debug/iPad/Release build
+  与 UI/Release isolation 全部通过，Release log 为
+  `20260802-104712-2356-release-build.log`。
+- forbidden/static canaries、secret scan、networking isolation、XcodeGen/
+  fixture/protobuf determinism、SwiftPM exact lock 与 diff check 通过；Android
+  reference clean/exact
+  `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
+
+### Known Limitations（`DEFERRED_POST_BETA`）
+
+1. iOS 18.x runtime 与真机矩阵未运行；当前实际 runtime 为 iOS 26.5
+   Simulator。
+2. 真机 VoiceOver/Accessibility Escape 未实操；真实 iPad split divider 留在
+   发布前矩阵。
+3. 真实同一触摸越过半程后回撤的录屏未完成；当前只有确定性反向序列与
+   runtime recognizer 共享策略证据。
+4. 100 张 full-resolution lease、所有图片尺寸、极端内存/快速翻页压力未运行；
+   现有 100 页测试证明的是 controller/cache/昂贵内容创建上界。
+5. UIKit 完全同签名且不携带 token 的迟到 callback 无法用公开 API 区分；
+   可观测的 generation、host identity、direction、visible target 与 ownership
+   generation 已有回归，完全不可区分排列留作发布前平台复验。
+6. 生产 async image load/cancel/stale、cache/downsample/candidate/lease、
+   MediaViewer/ThreadScreen 与 live network 尚不存在；InteractionLab 继续
+   Debug/UITesting-only。
+
+上述限制不再阻塞阶段 09，但仍是发布/GA 前的显式验证清单。06C-C 不在本次
+范围内，状态为 `DEFERRED_POST_BETA`。
