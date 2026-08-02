@@ -4,3 +4,6 @@
 
 阶段 07 的 Proto 输入、工具、生成与跨语言 fixture 证据见
 `PHASE07_PROTOBUF_PROVENANCE.md`。
+
+阶段 09 唯一生产 Pager/MediaViewer 迁移、状态、交互、运行证据与 Open-Source
+Beta 限制见 `PHASE09_MEDIA_VIEWER.md`。

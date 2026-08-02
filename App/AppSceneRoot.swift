@@ -6,6 +6,7 @@ struct AppSceneRoot: View {
     private let harnessLabel: String?
 
     @State private var navigationStore: AppNavigationStore
+    @State private var mediaPresentation: MediaViewerPresentation?
 
     init(
         compositionRoot: AppCompositionRoot,
@@ -19,16 +20,34 @@ struct AppSceneRoot: View {
                 initialState: initialNavigationState
             )
         )
+        _mediaPresentation = State(initialValue: nil)
     }
 
     var body: some View {
         AppShellView(
             navigation: navigationStore,
             harnessLabel: harnessLabel,
-            environment: compositionRoot.environment
+            environment: compositionRoot.environment,
+            onOpenMedia: presentMedia
         )
+        .fullScreenCover(item: $mediaPresentation) { presentation in
+            MediaViewer(
+                presentation: presentation,
+                imageLoader: compositionRoot.environment.imageLoader,
+                close: {
+                    mediaPresentation = nil
+                }
+            )
+        }
         .onOpenURL { url in
             navigationStore.handleExternalURL(url)
         }
+    }
+
+    private func presentMedia(_ intent: ThreadMediaIntent) {
+        guard let presentation = MediaViewerPresentation(intent: intent) else {
+            return
+        }
+        mediaPresentation = presentation
     }
 }

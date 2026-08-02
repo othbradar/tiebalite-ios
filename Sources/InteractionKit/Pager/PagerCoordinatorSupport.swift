@@ -1,4 +1,3 @@
-#if DEBUG
 import UIKit
 
 extension PagerContainer.Coordinator {
@@ -369,4 +368,3 @@ extension PagerContainer.Coordinator {
         mediaOwnershipObserver = nil
     }
 }
-#endif

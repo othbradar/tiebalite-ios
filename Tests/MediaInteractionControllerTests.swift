@@ -130,7 +130,7 @@ struct MediaInteractionControllerTests {
     func unknownImageReplacementClearsThePreviousZoomedImageGeometry() {
         let oldImage = makeImage(size: CGSize(width: 2_048, height: 2_048))
         let unknownImage = UIImage()
-        let scrollView = DebugZoomScrollView(
+        let scrollView = MediaZoomScrollView(
             frame: CGRect(x: 0, y: 0, width: 320, height: 480)
         )
         scrollView.configure(image: oldImage, mediaID: "old")
@@ -153,11 +153,38 @@ struct MediaInteractionControllerTests {
     }
 
     @Test
+    func repeatedRepresentableUpdatePreservesDefaultZoomSurfaceIdentifier() {
+        let image = makeImage(size: CGSize(width: 64, height: 64))
+        let view = MediaZoomImageView(
+            mediaID: "stable",
+            image: image,
+            onSingleTap: {},
+            onCapabilityChanged: { _, _ in }
+        )
+        let coordinator = view.makeCoordinator()
+        let scrollView = MediaZoomScrollView()
+        coordinator.install(on: scrollView)
+
+        coordinator.synchronizeContent(on: scrollView)
+        #expect(
+            scrollView.accessibilityIdentifier
+                == "interaction.media.zoom-surface.stable"
+        )
+
+        coordinator.synchronizeContent(on: scrollView)
+        #expect(
+            scrollView.accessibilityIdentifier
+                == "interaction.media.zoom-surface.stable"
+        )
+        coordinator.dismantle(scrollView)
+    }
+
+    @Test
     func attachingZoomViewportPublishesUsableWindowGeometry() {
         let image = makeImage(size: CGSize(width: 512, height: 512))
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
-        let scrollView = DebugZoomScrollView(frame: window.bounds)
-        var metrics: [DebugMediaViewportMetrics] = []
+        let scrollView = MediaZoomScrollView(frame: window.bounds)
+        var metrics: [MediaViewportMetrics] = []
         scrollView.onLayoutMetricsChanged = { metrics.append($0) }
         scrollView.configure(image: image, mediaID: "attached")
         scrollView.layoutIfNeeded()
@@ -330,10 +357,10 @@ extension MediaInteractionControllerTests {
         ]
         for (mediaID, imageSize) in fixtures {
             let image = makeImage(size: imageSize)
-            let scrollView = DebugZoomScrollView(
+            let scrollView = MediaZoomScrollView(
                 frame: CGRect(x: 0, y: 0, width: 320, height: 480)
             )
-            let view = DebugZoomImageView(
+            let view = MediaZoomImageView(
                 mediaID: mediaID,
                 image: image,
                 onSingleTap: {},
@@ -359,7 +386,7 @@ extension MediaInteractionControllerTests {
         let image = makeImage(size: CGSize(width: 2_048, height: 2_048))
         let firstOwnership = MediaGestureOwnershipController<String>()
         let secondOwnership = MediaGestureOwnershipController<String>()
-        let scrollView = DebugZoomScrollView(
+        let scrollView = MediaZoomScrollView(
             frame: CGRect(x: 0, y: 0, width: 320, height: 480)
         )
         var view = makeZoomView(
@@ -390,7 +417,7 @@ extension MediaInteractionControllerTests {
     @Test
     func resizeClampsAnEdgeFocalPointToTheNewLegalBoundary() {
         let image = makeImage(size: CGSize(width: 2_048, height: 2_048))
-        let scrollView = DebugZoomScrollView(
+        let scrollView = MediaZoomScrollView(
             frame: CGRect(x: 0, y: 0, width: 320, height: 480)
         )
         scrollView.configure(image: image, mediaID: "square-edge")
@@ -417,8 +444,8 @@ private extension MediaInteractionControllerTests {
     private func makeZoomView(
         image: UIImage,
         ownership: MediaGestureOwnershipController<String>
-    ) -> DebugZoomImageView {
-        DebugZoomImageView(
+    ) -> MediaZoomImageView {
+        MediaZoomImageView(
             mediaID: "stable",
             image: image,
             ownershipController: ownership,
@@ -482,7 +509,7 @@ private extension MediaInteractionControllerTests {
     }
 
     private func normalizedVisibleCenter(
-        _ scrollView: DebugZoomScrollView
+        _ scrollView: MediaZoomScrollView
     ) -> CGPoint {
         CGPoint(
             x: (scrollView.contentOffset.x + scrollView.bounds.width / 2)
@@ -494,7 +521,7 @@ private extension MediaInteractionControllerTests {
 
     private func contentOffset(
         centering focalPoint: CGPoint,
-        in scrollView: DebugZoomScrollView
+        in scrollView: MediaZoomScrollView
     ) -> CGPoint {
         let range = scrollView.legalContentOffsetRange
         let desired = CGPoint(
@@ -511,7 +538,7 @@ private extension MediaInteractionControllerTests {
 
     private func normalizedVisibleCenter(
         afterClamping focalPoint: CGPoint,
-        in scrollView: DebugZoomScrollView
+        in scrollView: MediaZoomScrollView
     ) -> CGPoint {
         let offset = contentOffset(centering: focalPoint, in: scrollView)
         return CGPoint(
@@ -522,7 +549,7 @@ private extension MediaInteractionControllerTests {
         )
     }
 
-    private func expectLegalContentOffset(_ scrollView: DebugZoomScrollView) {
+    private func expectLegalContentOffset(_ scrollView: MediaZoomScrollView) {
         let range = scrollView.legalContentOffsetRange
         #expect(scrollView.contentOffset.x >= range.minimumX - 0.5)
         #expect(scrollView.contentOffset.x <= range.maximumX + 0.5)
@@ -531,7 +558,7 @@ private extension MediaInteractionControllerTests {
     }
 
     private func expectImageFrameIntersectsViewport(
-        _ scrollView: DebugZoomScrollView
+        _ scrollView: MediaZoomScrollView
     ) {
         let visibleRect = CGRect(
             origin: scrollView.contentOffset,
@@ -543,7 +570,7 @@ private extension MediaInteractionControllerTests {
     }
 
     private func expectAspectFitGeometry(
-        _ scrollView: DebugZoomScrollView,
+        _ scrollView: MediaZoomScrollView,
         imageSize: CGSize,
         mediaID: String
     ) {

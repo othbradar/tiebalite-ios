@@ -113,14 +113,14 @@ struct InteractionControllerLifecycleTests {
                 CGRect(x: 0, y: 0, width: 64, height: 64)
             )
         }
-        let view = DebugZoomImageView(
+        let view = MediaZoomImageView(
             mediaID: "fixture",
             image: image,
             onSingleTap: {},
             onCapabilityChanged: { _, _ in }
         )
         let coordinator = view.makeCoordinator()
-        let scrollView = DebugZoomScrollView()
+        let scrollView = MediaZoomScrollView()
         let baselineRecognizerCount = scrollView.gestureRecognizers?.count ?? 0
 
         coordinator.install(on: scrollView)
@@ -143,14 +143,14 @@ struct InteractionControllerLifecycleTests {
     @Test
     func minimumZoomPanRemainsEnabledForRuntimeBeginArbitration() {
         let image = makeImage(size: CGSize(width: 64, height: 64))
-        let view = DebugZoomImageView(
+        let view = MediaZoomImageView(
             mediaID: "minimum",
             image: image,
             onSingleTap: {},
             onCapabilityChanged: { _, _ in }
         )
         let coordinator = view.makeCoordinator()
-        let scrollView = DebugZoomScrollView(
+        let scrollView = MediaZoomScrollView(
             frame: CGRect(x: 0, y: 0, width: 320, height: 480)
         )
         coordinator.install(on: scrollView)
@@ -174,10 +174,10 @@ struct InteractionControllerLifecycleTests {
                 CGRect(x: 0, y: 0, width: 128, height: 128)
             )
         }
-        let scrollView = DebugZoomScrollView(
+        let scrollView = MediaZoomScrollView(
             frame: CGRect(x: 0, y: 0, width: 320, height: 480)
         )
-        let view = DebugZoomImageView(
+        let view = MediaZoomImageView(
             mediaID: "fixture",
             image: image,
             onSingleTap: {},
@@ -206,14 +206,14 @@ struct InteractionControllerLifecycleTests {
     @Test
     func zoomTransitionAnimationFollowsReduceMotion() {
         let image = makeImage(size: CGSize(width: 32, height: 32))
-        let standard = DebugZoomImageView(
+        let standard = MediaZoomImageView(
             mediaID: "standard",
             image: image,
             reduceMotion: false,
             onSingleTap: {},
             onCapabilityChanged: { _, _ in }
         )
-        let reduced = DebugZoomImageView(
+        let reduced = MediaZoomImageView(
             mediaID: "reduced",
             image: image,
             reduceMotion: true,
@@ -241,8 +241,8 @@ struct InteractionControllerLifecycleTests {
         ]
 
         for (mediaID, image) in fixtures {
-            let scrollView = DebugZoomScrollView()
-            let view = DebugZoomImageView(
+            let scrollView = MediaZoomScrollView()
+            let view = MediaZoomImageView(
                 mediaID: mediaID,
                 image: image,
                 onSingleTap: {},
@@ -269,19 +269,19 @@ struct InteractionControllerLifecycleTests {
 
     @Test
     func zoomCoordinatorAndScrollViewReleaseAfterDismantle() {
-        weak var weakCoordinator: DebugZoomImageView.Coordinator?
-        weak var weakScrollView: DebugZoomScrollView?
+        weak var weakCoordinator: MediaZoomImageView.Coordinator?
+        weak var weakScrollView: MediaZoomScrollView?
 
         autoreleasepool {
             let image = makeImage(size: CGSize(width: 64, height: 64))
-            let view = DebugZoomImageView(
+            let view = MediaZoomImageView(
                 mediaID: "release",
                 image: image,
                 onSingleTap: {},
                 onCapabilityChanged: { _, _ in }
             )
             let coordinator = view.makeCoordinator()
-            let scrollView = DebugZoomScrollView()
+            let scrollView = MediaZoomScrollView()
             weakCoordinator = coordinator
             weakScrollView = scrollView
 
@@ -301,7 +301,7 @@ struct InteractionControllerLifecycleTests {
         }
     }
 
-    private func expectFiniteGeometry(_ scrollView: DebugZoomScrollView) {
+    private func expectFiniteGeometry(_ scrollView: MediaZoomScrollView) {
         let values = [
             scrollView.bounds.width,
             scrollView.bounds.height,
@@ -338,9 +338,9 @@ extension InteractionControllerLifecycleTests {
     func firstAttachedMetricsWaitForUsableBaseGeometry() {
         let image = makeImage(size: CGSize(width: 512, height: 512))
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
-        let scrollView = DebugZoomScrollView(frame: window.bounds)
-        var attachedMetrics: [DebugMediaViewportMetrics] = []
-        let view = DebugZoomImageView(
+        let scrollView = MediaZoomScrollView(frame: window.bounds)
+        var attachedMetrics: [MediaViewportMetrics] = []
+        let view = MediaZoomImageView(
             mediaID: "first-attach",
             image: image,
             onSingleTap: {},

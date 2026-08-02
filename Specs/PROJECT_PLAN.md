@@ -1,6 +1,6 @@
 # P0 执行计划与回滚点
 
-状态：`APPROVED_PLAN_NOT_EXECUTED`
+状态：`IMPLEMENTED_THROUGH_PHASE_09_OPEN_SOURCE_BETA`
 
 本文件只规划从空工程到稳定 P0 的小步阶段；阶段 02 不执行任何后续阶段。
 每一阶段开始前必须有干净、可识别的绿色基线，结束时运行真实门禁并更新
@@ -17,7 +17,7 @@
 - 每次阶段出口执行最小相关测试、`make quality-fast`，阶段完成执行
   `make quality`；不能运行项逐项标 `NOT_TESTED`。
 
-## 阶段 02：架构决策（当前）
+## 阶段 02：架构决策（历史）
 
 - 输入：阶段 01 审计、route/state/API/Proto/content/UNKNOWN。
 - 原子输出：ADR-0001…0010、Module/Route/Project/Dependency Map、风险审计、
@@ -85,10 +85,17 @@
 
 ## 阶段 09：生产 MediaViewer
 
+- 状态：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`（Open-Source Beta）。
 - 输入：阶段 06 已 Accepted Pager/Media ADR、阶段 08 media domain。
-- 原子输出：唯一 Viewer、zoom page、边界状态、资源清理、fixture UI。
-- 门禁：完整 gesture/lifecycle/iPhone/iPad matrix、100 项资源上界、父滚动恢复。
+- 原子输出：唯一 Viewer、生产 Pager/zoom 迁移、固定 intent 图片状态、
+  结构化取消/清理与 fixture UI；本阶段不实现边界 Repository 或 live 图片。
+- 已执行门禁：单图/三图、pinch/双击/pan、zoom 后不误翻页、切页 reset、
+  旋转、失败黑底、5 次开关、iPhone/iPad smoke、Unit、quality-fast/quality。
+- Beta 延期：100 张 full-resolution 资源压力、真机/iOS 18.x、真机
+  VoiceOver、真实 split divider 和 live/cache/downsample/candidate/lease。
 - 回滚：回到单图/显式前后按钮降级，不复制第二 Viewer/Pager。
+
+阶段 10 保持 `NOT_STARTED`；只有新的明确用户指令才可进入。
 
 ## 阶段 10：推荐流 Fixture 垂直切片
 

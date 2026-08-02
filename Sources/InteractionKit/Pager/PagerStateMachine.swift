@@ -1,4 +1,3 @@
-#if DEBUG
 struct PagerTransitionToken: Equatable, Hashable, Sendable {
     let sequence: UInt64
 }
@@ -317,4 +316,3 @@ where Content: Equatable & Sendable {
         return requestGeneration
     }
 }
-#endif

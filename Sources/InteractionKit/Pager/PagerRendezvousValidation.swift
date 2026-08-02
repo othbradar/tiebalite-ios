@@ -1,4 +1,3 @@
-#if DEBUG
 import UIKit
 
 extension PagerContainer.Coordinator {
@@ -298,4 +297,3 @@ extension Collection {
         count == 1 ? first : nil
     }
 }
-#endif

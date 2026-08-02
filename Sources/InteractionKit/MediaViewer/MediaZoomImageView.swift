@@ -1,8 +1,7 @@
-#if DEBUG
 import SwiftUI
 import UIKit
 
-struct DebugMediaInputMetrics: Equatable, Sendable {
+struct MediaInputMetrics: Equatable, Sendable {
     var eventSequence: UInt64 = 0
     var singleTapCount: UInt64 = 0
     var doubleTapCount: UInt64 = 0
@@ -10,7 +9,7 @@ struct DebugMediaInputMetrics: Equatable, Sendable {
     var panEndCount: UInt64 = 0
 }
 
-struct DebugMediaViewportMetrics: Equatable, Sendable {
+struct MediaViewportMetrics: Equatable, Sendable {
     let layoutGeneration: UInt64
     let zoomScale: Double
     let viewportWidth: Double
@@ -86,6 +85,7 @@ struct DebugMediaViewportMetrics: Equatable, Sendable {
     }
 }
 
+#if DEBUG
 enum DebugMediaFixtureKind: String, CaseIterable, Sendable {
     case delayed
     case failure
@@ -118,18 +118,23 @@ struct DebugMediaFixture: Identifiable, Equatable, Sendable {
         }
     }
 }
+#endif
 
 @MainActor
-struct DebugZoomImageView: UIViewRepresentable {
+struct MediaZoomImageView: UIViewRepresentable {
     let mediaID: String
     let image: UIImage
     let resetGeneration: UInt64
     let reduceMotion: Bool
     let ownershipController: MediaGestureOwnershipController<String>?
+    let surfaceAccessibilityIdentifier: String?
+    let surfaceAccessibilityLabel: String?
+    let surfaceAccessibilityValue: String?
+    let surfaceAccessibilityHint: String?
     let onSingleTap: () -> Void
     let onCapabilityChanged: (MediaPageCapability, Double) -> Void
-    let onInputMetricsChanged: (DebugMediaInputMetrics) -> Void
-    let onViewportMetricsChanged: (DebugMediaViewportMetrics) -> Void
+    let onInputMetricsChanged: (MediaInputMetrics) -> Void
+    let onViewportMetricsChanged: (MediaViewportMetrics) -> Void
 
     init(
         mediaID: String,
@@ -137,16 +142,20 @@ struct DebugZoomImageView: UIViewRepresentable {
         resetGeneration: UInt64 = 0,
         reduceMotion: Bool = false,
         ownershipController: MediaGestureOwnershipController<String>? = nil,
+        surfaceAccessibilityIdentifier: String? = nil,
+        surfaceAccessibilityLabel: String? = nil,
+        surfaceAccessibilityValue: String? = nil,
+        surfaceAccessibilityHint: String? = nil,
         onSingleTap: @escaping () -> Void,
         onCapabilityChanged: @escaping (
             MediaPageCapability,
             Double
         ) -> Void,
         onInputMetricsChanged: @escaping (
-            DebugMediaInputMetrics
+            MediaInputMetrics
         ) -> Void = { _ in },
         onViewportMetricsChanged: @escaping (
-            DebugMediaViewportMetrics
+            MediaViewportMetrics
         ) -> Void = { _ in }
     ) {
         self.mediaID = mediaID
@@ -154,6 +163,11 @@ struct DebugZoomImageView: UIViewRepresentable {
         self.resetGeneration = resetGeneration
         self.reduceMotion = reduceMotion
         self.ownershipController = ownershipController
+        self.surfaceAccessibilityIdentifier =
+            surfaceAccessibilityIdentifier
+        self.surfaceAccessibilityLabel = surfaceAccessibilityLabel
+        self.surfaceAccessibilityValue = surfaceAccessibilityValue
+        self.surfaceAccessibilityHint = surfaceAccessibilityHint
         self.onSingleTap = onSingleTap
         self.onCapabilityChanged = onCapabilityChanged
         self.onInputMetricsChanged = onInputMetricsChanged
@@ -164,29 +178,32 @@ struct DebugZoomImageView: UIViewRepresentable {
         Coordinator(parent: self)
     }
 
-    func makeUIView(context: Context) -> DebugZoomScrollView {
-        let scrollView = DebugZoomScrollView()
+    func makeUIView(context: Context) -> MediaZoomScrollView {
+        let scrollView = MediaZoomScrollView()
         context.coordinator.install(on: scrollView)
         scrollView.configure(
             image: image,
             mediaID: mediaID,
-            resetGeneration: resetGeneration
+            resetGeneration: resetGeneration,
+            surfaceAccessibilityIdentifier: surfaceAccessibilityIdentifier,
+            surfaceAccessibilityLabel: surfaceAccessibilityLabel,
+            surfaceAccessibilityValue: surfaceAccessibilityValue,
+            surfaceAccessibilityHint: surfaceAccessibilityHint
         )
         return scrollView
     }
 
     func updateUIView(
-        _ scrollView: DebugZoomScrollView,
+        _ scrollView: MediaZoomScrollView,
         context: Context
     ) {
         context.coordinator.parent = self
         context.coordinator.synchronizeContent(on: scrollView)
         context.coordinator.synchronizeRegistration(on: scrollView)
-        context.coordinator.reportCapability(scrollView)
     }
 
     static func dismantleUIView(
-        _ scrollView: DebugZoomScrollView,
+        _ scrollView: MediaZoomScrollView,
         coordinator: Coordinator
     ) {
         coordinator.dismantle(scrollView)
@@ -194,21 +211,21 @@ struct DebugZoomImageView: UIViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, UIScrollViewDelegate {
-        var parent: DebugZoomImageView
+        var parent: MediaZoomImageView
 
-        private weak var scrollView: DebugZoomScrollView?
+        private weak var scrollView: MediaZoomScrollView?
         private var singleTapRecognizer: UITapGestureRecognizer?
         private var doubleTapRecognizer: UITapGestureRecognizer?
         private var registeredMediaID: String?
         private weak var registeredOwnershipController:
             MediaGestureOwnershipController<String>?
-        private var inputMetrics = DebugMediaInputMetrics()
+        private var inputMetrics = MediaInputMetrics()
 
-        init(parent: DebugZoomImageView) {
+        init(parent: MediaZoomImageView) {
             self.parent = parent
         }
 
-        func install(on scrollView: DebugZoomScrollView) {
+        func install(on scrollView: MediaZoomScrollView) {
             self.scrollView = scrollView
             scrollView.delegate = self
 
@@ -249,7 +266,7 @@ struct DebugZoomImageView: UIViewRepresentable {
             synchronizeRegistration(on: scrollView)
         }
 
-        func synchronizeRegistration(on scrollView: DebugZoomScrollView) {
+        func synchronizeRegistration(on scrollView: MediaZoomScrollView) {
             let ownershipController = parent.ownershipController
             let registrationChanged = registeredMediaID != parent.mediaID
                 || registeredOwnershipController !== ownershipController
@@ -276,21 +293,36 @@ struct DebugZoomImageView: UIViewRepresentable {
             registeredOwnershipController = ownershipController
         }
 
-        func synchronizeContent(on scrollView: DebugZoomScrollView) {
+        func synchronizeContent(on scrollView: MediaZoomScrollView) {
             let imageChanged = scrollView.mediaImageView.image
                 !== parent.image
             if scrollView.mediaID != parent.mediaID || imageChanged {
                 scrollView.configure(
                     image: parent.image,
                     mediaID: parent.mediaID,
-                    resetGeneration: parent.resetGeneration
+                    resetGeneration: parent.resetGeneration,
+                    surfaceAccessibilityIdentifier:
+                        parent.surfaceAccessibilityIdentifier,
+                    surfaceAccessibilityLabel:
+                        parent.surfaceAccessibilityLabel,
+                    surfaceAccessibilityValue:
+                        parent.surfaceAccessibilityValue,
+                    surfaceAccessibilityHint:
+                        parent.surfaceAccessibilityHint
                 )
             } else {
                 scrollView.applyResetGeneration(parent.resetGeneration)
+                scrollView.configureAccessibility(
+                    identifier: parent.surfaceAccessibilityIdentifier
+                        ?? "interaction.media.zoom-surface.\(parent.mediaID)",
+                    label: parent.surfaceAccessibilityLabel,
+                    value: parent.surfaceAccessibilityValue,
+                    hint: parent.surfaceAccessibilityHint
+                )
             }
         }
 
-        func dismantle(_ scrollView: DebugZoomScrollView) {
+        func dismantle(_ scrollView: MediaZoomScrollView) {
             if let registeredMediaID,
                let registeredOwnershipController {
                 registeredOwnershipController.unregister(
@@ -320,11 +352,11 @@ struct DebugZoomImageView: UIViewRepresentable {
         func viewForZooming(
             in scrollView: UIScrollView
         ) -> UIView? {
-            (scrollView as? DebugZoomScrollView)?.mediaImageView
+            (scrollView as? MediaZoomScrollView)?.mediaImageView
         }
 
         func scrollViewDidZoom(_ scrollView: UIScrollView) {
-            guard let scrollView = scrollView as? DebugZoomScrollView else {
+            guard let scrollView = scrollView as? MediaZoomScrollView else {
                 return
             }
             scrollView.centerZoomedImage()
@@ -332,7 +364,7 @@ struct DebugZoomImageView: UIViewRepresentable {
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            guard let scrollView = scrollView as? DebugZoomScrollView else {
+            guard let scrollView = scrollView as? MediaZoomScrollView else {
                 return
             }
             reportCapability(scrollView)
@@ -344,20 +376,20 @@ struct DebugZoomImageView: UIViewRepresentable {
         ) {
             guard !decelerate,
                   let scrollView = scrollView
-                    as? DebugZoomScrollView else {
+                    as? MediaZoomScrollView else {
                 return
             }
             reportCapability(scrollView)
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-            guard let scrollView = scrollView as? DebugZoomScrollView else {
+            guard let scrollView = scrollView as? MediaZoomScrollView else {
                 return
             }
             reportCapability(scrollView)
         }
 
-        func reportCapability(_ scrollView: DebugZoomScrollView) {
+        func reportCapability(_ scrollView: MediaZoomScrollView) {
             guard !scrollView.isPerformingGeometryUpdate,
                   scrollView.hasUsableBaseGeometry else {
                 return
@@ -439,6 +471,7 @@ struct DebugZoomImageView: UIViewRepresentable {
     }
 }
 
+#if DEBUG
 @MainActor
 private enum DebugGeneratedMedia {
     static let small = render(

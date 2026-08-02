@@ -133,4 +133,38 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
         device.orientation = .portrait
     }
+
+    @MainActor
+    func testProductionMediaViewerPagesZoomRotationAndCloseOnIPad() {
+        let app = UITestHarness.launch(
+            scenario: .threadContentRenderer,
+            displayProfile: .darkAccessibilityReduced
+        )
+        let device = XCUIDevice.shared
+        device.orientation = .portrait
+        MediaViewerProductionAssertions.openRendererLab(in: app)
+        MediaViewerProductionAssertions.openMultiple(in: app)
+
+        UITestHarness.tap(.mediaViewerNext, in: app)
+        MediaViewerProductionAssertions.requirePosition("2 / 6", in: app)
+        UITestHarness.tap(.mediaViewerNext, in: app)
+        MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+        let image = MediaViewerProductionAssertions.requireImage(at: 2, in: app)
+        image.doubleTap()
+        MediaViewerProductionAssertions.requireZoomed(image)
+        image.swipeRight()
+        MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+
+        device.orientation = .landscapeLeft
+        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerChrome, in: app)
+        MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+        _ = MediaViewerProductionAssertions.requireImage(at: 2, in: app)
+
+        device.orientation = .portrait
+        UITestHarness.requirePresent(.mediaViewerClose, in: app)
+        MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+        MediaViewerProductionAssertions.close(in: app)
+        device.orientation = .portrait
+    }
 }

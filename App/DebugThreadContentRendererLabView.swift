@@ -12,6 +12,7 @@ struct DebugThreadContentRendererLabView: View {
     @Environment(\.motionReductionOverride) private var reductionOverride
 
     let imageLoader: any ImageLoading
+    let onOpenMedia: (ThreadMediaIntent) -> Void
 
     @State private var mediaIntentLabel = "Media intent: none"
     @State private var externalIntentLabel = "External intent: none"
@@ -26,6 +27,7 @@ struct DebugThreadContentRendererLabView: View {
 
                 environmentSummary
                 intentSummary
+                mediaViewerControls
                 fixtureSection(
                     title: "混合内容与顺序",
                     document: DebugThreadContentRendererFixtures.mixed
@@ -94,6 +96,28 @@ struct DebugThreadContentRendererLabView: View {
         .foregroundStyle(SemanticColor.secondaryText)
     }
 
+    private var mediaViewerControls: some View {
+        HStack(spacing: Spacing.small) {
+            Button("打开单图查看器") {
+                onOpenMedia(
+                    DebugThreadContentRendererFixtures.mediaViewerSingleIntent
+                )
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier(AppAccessibilityID.mediaViewerOpenSingle)
+
+            Button("打开多图查看器") {
+                onOpenMedia(
+                    DebugThreadContentRendererFixtures.mediaViewerMultipleIntent
+                )
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier(
+                AppAccessibilityID.mediaViewerOpenMultiple
+            )
+        }
+    }
+
     private func fixtureSection(
         title: String,
         document: ThreadContentDocument
@@ -108,6 +132,7 @@ struct DebugThreadContentRendererLabView: View {
                 onOpenMedia: { intent in
                     mediaIntentLabel =
                         "Media intent: \(intent.initialMediaID.stableKey)"
+                    onOpenMedia(intent)
                 },
                 onOpenExternalLink: { intent in
                     externalIntentLabel =
@@ -124,6 +149,40 @@ enum DebugThreadContentRendererFixtures {
     static let loadedImageResourceID = "renderer-fixture.image.success"
     static let loadingImageResourceID = "renderer-fixture.image.loading"
     static let failedImageResourceID = "renderer-fixture.image.failure"
+    static let mediaViewerDecodeFailureResourceID =
+        "media-viewer-fixture.decode-failure"
+    static let mediaViewerFetchFailureResourceID =
+        "media-viewer-fixture.fetch-failure"
+    static let mediaViewerLoadingResourceID =
+        "media-viewer-fixture.loading"
+    static let mediaViewerSuccessResourceIDs = [
+        "media-viewer-fixture.success.1",
+        "media-viewer-fixture.success.2",
+        "media-viewer-fixture.success.3"
+    ]
+
+    static var mediaViewerSingleIntent: ThreadMediaIntent {
+        let item = mediaViewerItem(
+            ordinal: 0,
+            resourceID: mediaViewerSuccessResourceIDs[0]
+        )
+        return ThreadMediaIntent(initialMediaID: item.mediaID, items: [item])
+    }
+
+    static var mediaViewerMultipleIntent: ThreadMediaIntent {
+        let resources = mediaViewerSuccessResourceIDs + [
+            mediaViewerLoadingResourceID,
+            mediaViewerFetchFailureResourceID,
+            mediaViewerDecodeFailureResourceID
+        ]
+        let items = resources.enumerated().map { ordinal, resourceID in
+            mediaViewerItem(ordinal: ordinal, resourceID: resourceID)
+        }
+        return ThreadMediaIntent(
+            initialMediaID: items[0].mediaID,
+            items: items
+        )
+    }
 
     static var mixed: ThreadContentDocument {
         let source = ThreadContentSource(
@@ -377,6 +436,35 @@ enum DebugThreadContentRendererFixtures {
             originalByteCount: nil,
             showsOriginalControlHint: false
         ))
+    }
+
+    private static func mediaViewerItem(
+        ordinal: Int,
+        resourceID: String
+    ) -> ThreadMediaItem {
+        let source = ThreadContentSource(
+            threadID: 93_001,
+            postID: 94_001,
+            scope: .firstPost
+        )
+        let nodeID = ThreadContentNodeID(source: source, ordinal: ordinal)
+        return ThreadMediaItem(
+            mediaID: ThreadMediaID(sourceNodeID: nodeID),
+            sourceNodeID: nodeID,
+            request: ThreadImageRequestDescriptor(
+                resourceID: resourceID,
+                candidates: [ThreadImageCandidate(
+                    role: .source,
+                    destination: ValidatedWebDestination(
+                        absoluteString:
+                            "https://fixture.invalid/media/\(ordinal).png",
+                        scheme: .https
+                    )
+                )]
+            ),
+            dimensions: .known(width: 640, height: 480),
+            alternativeText: "测试图片 \(ordinal + 1)"
+        )
     }
 
     private static func document(

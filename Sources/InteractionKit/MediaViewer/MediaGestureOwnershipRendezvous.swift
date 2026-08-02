@@ -1,4 +1,3 @@
-#if DEBUG
 @MainActor
 final class MediaGestureOwnershipRendezvousObserver<MediaID>
 where MediaID: Hashable & Sendable {
@@ -82,4 +81,3 @@ extension MediaGestureOwnershipController {
         )
     }
 }
-#endif

@@ -251,19 +251,24 @@ Android 静态证据（`CODE_EVIDENCE`）：
 
 ```text
 MediaViewerState =
-  preparing(source, initialMediaID)
-  | ready(items, currentMediaID, chromeVisible, boundaryState)
-  | itemFailure(items, currentMediaID, error)
-  | boundaryFailure(items, direction, cursor, error)
+  preparing(fixedItems, initialMediaID)
+  | ready(fixedItems, currentMediaID, chromeVisible)
+  | itemFailure(fixedItems, currentMediaID, fetch | decode | cancelled)
   | closing(returnContext)
 
+MediaViewerImagePhase =
+  idle | loading | rendered | failedToFetch | failedToDecode | cancelled
+
 MediaPageCapability =
-  (atMinimumZoom, horizontalBoundary: none | leading | trailing | both)
+  (atMinimumZoom, horizontalBoundary: interior | leading | trailing | both)
 ```
 
 事件：
 
-- `present(source, initialMediaID)`：按 media id 定位；找不到时显示 unavailable，不把旧 index 指向其他图。
+- `present(source, initialMediaID)`：结构校验通过后按 media id 定位；阶段 09 的
+  固定 intent 若 initial 不存在则拒绝 presentation、父状态不变。长期合同仍要求
+  已接受 presentation 的 initial/current 后续消失时显示 unavailable，不按旧
+  index 指向其他图。
 - `page(direction)`：手势开始时依据当前 `MediaPageCapability` 固定 owner；
   同一手势到达边界不半途交给 pager，下一次朝外拖才可翻页。
 - `pinch/doubleTap/pan`：精确 zoomScale/contentOffset 只由当前 MediaID 的
@@ -271,17 +276,24 @@ MediaPageCapability =
   transform。
 - `singleTap`：切换 chrome；不关闭。
 - `loadItem/retryItem`：占位尺寸与黑底保持。
-- `reachBoundary`：一次只发一个 prev/next request；失败提供重试。
-- `close`：恢复来源 route/anchor，不刷新父列表。
+- `reachBoundary`：阶段 09 固定 intent 边界不发请求；边界 Repository 留到有
+  live/cursor 证据的后续独立阶段。
+- `close`：长期合同是恢复来源 route/anchor 且不刷新父列表；阶段 09 实测范围
+  仅证明关闭后原 Renderer Lab source view 保留。
 - 翻页完成后才重置离场页；取消/反向不重置当前页；页面按 MediaID 复用前
   强制 reset。
 - size/rotation change：coordinator clamp 当前 transform，不泄漏到相邻
   media。
 - 进程恢复：不恢复 MediaViewer overlay；只恢复父 route。当前进程内的完整 `MediaDescriptor` 才是可呈现输入，单独 pic id 不足以重建 URL 和边界加载上下文。
 
-`UNKNOWN`：Android 第三方手势范围不作为 iOS 输入。UIScrollView
-coordinator/Pager 的所有权已由 ADR-0005 选择，但阈值、公开 API 仲裁和资源
-上界仍需阶段 06 spike，ADR 当前为 Proposed。
+阶段 09 生产实现使用稳定的固定 `ThreadMediaIntent`，以 MediaID 派生的
+stableKey 作为页身份，并拒绝空集合、重复 stableKey 或不存在的 initial ID；
+每页通过可注入 loader 区分 fetch 与 decode 成功，
+只有 rendered 才进入 zoom surface。UIScrollView coordinator/Pager ownership
+已按 ADR-0004/0005 接受并迁移到唯一生产路径。`UNKNOWN`：Android 第三方
+手势范围仍不作为 iOS 输入；live boundary cursor、cache/downsample/candidate/
+lease 仍无本阶段证据。固定构造拒绝 missing initial 是当前 Open-Source Beta
+对长期 unavailable 合同的已知偏离；必须在动态媒体 Repository 接入前关闭。
 
 ## Session
 

@@ -131,6 +131,10 @@ NavigationSplitView
   保留关闭动作，不自动关闭、不按旧 index 指向另一张图。
 - MediaViewer 只作为进程内 overlay；进程恢复时恢复父 route 并关闭 overlay。fixture 可以用完整 `MediaDescriptor` 直接测试，但不能声称仅凭 pic id 可从冷启动重建 URL/边界上下文。
 
+阶段 09 Open-Source Beta 只接受固定 intent：构造时 initial ID 不存在会被视为
+结构错误并保持父 view，不呈现 overlay。上述“已呈现后 ID 消失 → 稳定
+unavailable”仍是必须保留的长期合同，待动态媒体 Repository 接入前关闭该偏离。
+
 ## Android 不可作为 iOS 规范的行为
 
 - `NavSerializer.ThreadNavBridge` 只有四项 LRU，cache miss 返回空 `ThreadInfo()`。

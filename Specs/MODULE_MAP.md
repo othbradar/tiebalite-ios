@@ -1,17 +1,17 @@
 # 模块与依赖地图
 
-状态：`IMPLEMENTED_THROUGH_PHASE_08_RENDERER_LAB`
+状态：`IMPLEMENTED_THROUGH_PHASE_09_PRODUCTION_MEDIA_VIEWER`
 
 本文件把根目录结构解释为逻辑模块和 owner；它不表示阶段 02 已创建 Swift
 target。工程生成决策见 `Docs/ADRs/ADR-0001-project-generation.md`。
 
 ## 编译 target 与逻辑模块
 
-阶段 08 当前编译 target：
+阶段 09 当前编译 target：
 
 | 编译 target | 内容 | 可依赖 |
 |---|---|---|
-| `TiebaLite` | App、Core、DesignSystem、ThreadReader Renderer、InteractionKit；仅 UITesting 配置加入 `TestSupport/LaunchScenarios/**` | Apple SDK；已批准且实际引入的 production package |
+| `TiebaLite` | App、Core、DesignSystem、ThreadReader Renderer、MediaViewer、InteractionKit；仅 UITesting 配置加入 `TestSupport/LaunchScenarios/**` | Apple SDK；已批准且实际引入的 production package |
 | `GeneratedProtobuf` | pinned Personalized 51-file closure 的 tracked 生成 Swift；静态库 | SwiftProtobuf 1.38.1 only |
 | `TiebaLiteTests` | State/mapper/repository/integration tests；单独编译所需 TestSupport 源 | `TiebaLite`、test-only helper |
 | `TiebaLiteUITests` | XCUITest flows，只向 App 传 scenario ID | App 的 UITesting build；不可链接 production secret/live fixture |
@@ -41,7 +41,7 @@ endpoint 再拆重复 generated target。
 | `Sources/Features/FollowedForums/` | 关注吧 Store/View | session capability、领域 state/action | credential、HTTP |
 | `Sources/Features/Forum/` | 吧信息/tab/主题 timeline | forumName route、领域 state/action | PB internals |
 | `Sources/Features/ThreadReader/` | Thread/Subposts/Content renderer | thread/post route、ContentNode | MediaViewer 内部状态 |
-| `Sources/Features/MediaViewer/` | 唯一 Viewer presentation/store/zoom page | MediaPresentation | 自制 Pager、父列表复制 |
+| `Sources/Features/MediaViewer/` | 唯一 Viewer presentation/load state/page composition | MediaPresentation | 精确 zoom owner、自制 Pager、父列表复制 |
 | `Generated/Protobuf/` | 机器生成 wire Message | 仅供 Core/TiebaAPI mapper | UI/Feature/domain 行为 |
 | `Resources/` | asset/localization/config resources | typed resource access | secret/live response |
 | `TestSupport/` | fixture loader、fake、clock；LaunchScenarios 子树 | Unit target；LaunchScenarios 另编入 App 的 UITesting 配置 | 普通 App Debug/Release 可达路径 |
@@ -90,8 +90,18 @@ protocol。
 allowlisted generated adapter；它只向内输出 `ThreadContentDocument`。
 `ThreadContentRenderer` 只依赖该 domain 与可注入 `ImageLoading`，图片/链接
 点击只输出 `ThreadMediaIntent` / `ExternalLinkIntent`，不实现
-ThreadScreen、Repository、Pager 或 MediaViewer。Debug Renderer Lab 只在
-Debug/UITesting 编译，Release 排除。
+ThreadScreen 或 Repository。阶段 09 由 App composition closure 将
+`ThreadMediaIntent` 交给唯一根 presentation；Renderer 本身仍不 import
+MediaViewer internals。Debug Renderer Lab 只在 Debug/UITesting 编译，Release
+排除。
+
+阶段 09 的具体边界：`Sources/InteractionKit/Pager` 是唯一生产
+`PagerContainer`，`Sources/InteractionKit/MediaViewer` 是唯一 zoom/gesture
+ownership bridge；`Sources/Features/MediaViewer` 只持稳定 presentation、固定
+item load phase 与 chrome。`AppSceneRoot` 每 scene 最多持有一个进程内
+`fullScreenCover`。UITesting 注入固定 loader；Release 注入
+`DisabledImageLoader`，因此本阶段没有建立 live 图片、cache/downsample/
+candidate/lease 或第二网络栈。
 
 登录验证/续期同样不允许 Session 直接构造 transport。Core/Session 拥有无
 HTTP/DTO 的 `SessionValidationClient`/`CredentialRefreshClient` 协议，

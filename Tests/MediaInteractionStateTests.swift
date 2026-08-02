@@ -127,9 +127,9 @@ struct MediaInteractionStateTests {
         let root = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
         let pagerPan = UIPanGestureRecognizer()
         root.addGestureRecognizer(pagerPan)
-        let zoom = DebugZoomScrollView(frame: root.bounds)
+        let zoom = MediaZoomScrollView(frame: root.bounds)
         root.addSubview(zoom)
-        let zoomView = DebugZoomImageView(
+        let zoomView = MediaZoomImageView(
             mediaID: "large",
             image: UIGraphicsImageRenderer(
                 size: CGSize(width: 64, height: 64)
@@ -198,7 +198,7 @@ struct MediaInteractionStateTests {
         let root = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
         let pagerPan = UIPanGestureRecognizer()
         root.addGestureRecognizer(pagerPan)
-        let zoom = DebugZoomScrollView(frame: root.bounds)
+        let zoom = MediaZoomScrollView(frame: root.bounds)
         root.addSubview(zoom)
         ownership.register(mediaID: "small", scrollView: zoom)
         ownership.install(
@@ -315,7 +315,7 @@ struct MediaInteractionStateTests {
             _ = ownership.gestureRecognizerShouldBegin(gate)
         }
         let owner = ownership.activeSession?.owner
-        let view = DebugZoomImageView(
+        let view = MediaZoomImageView(
             mediaID: reduceMotion ? "reduced" : "standard",
             image: UIGraphicsImageRenderer(
                 size: CGSize(width: 8, height: 8)

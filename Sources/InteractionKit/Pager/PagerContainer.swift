@@ -1,4 +1,3 @@
-#if DEBUG
 import SwiftUI
 import UIKit
 
@@ -281,5 +280,3 @@ extension PagerContainer {
         coordinator.dismantle(pageViewController)
     }
 }
-
-#endif

@@ -69,6 +69,7 @@ targets:
         excludes:
           - AGENTS.md
       - path: Sources/Features/ThreadReader
+      - path: Sources/Features/MediaViewer
       - path: Sources/InteractionKit
         excludes:
           - AGENTS.md

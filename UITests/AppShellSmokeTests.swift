@@ -166,7 +166,15 @@ final class AppShellSmokeTests: XCTestCase {
             to: "Media intent: none",
             in: app
         )
-        UITestHarness.requireAbsent(.interactionMediaViewer, in: app)
+        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requireLabel(
+            .mediaViewerPosition,
+            equals: "1 / 5",
+            in: app
+        )
+        UITestHarness.tap(.mediaViewerClose, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.threadContentLabRoot, in: app)
 
         UITestHarness.scrollToHittable(.threadContentUnknown, in: app)
         UITestHarness.requirePresent(.threadContentUnknown, in: app)
@@ -176,6 +184,110 @@ final class AppShellSmokeTests: XCTestCase {
             app: app,
             name: "Thread content dark large type reduced motion fixture"
         )
+    }
+
+    @MainActor
+    func testProductionMediaViewerSingleZoomPanAndFiveCloseCycles() {
+        let app = UITestHarness.launch(
+            scenario: .threadContentRenderer,
+            displayProfile: .darkAccessibilityReduced
+        )
+        MediaViewerProductionAssertions.openRendererLab(in: app)
+
+        for cycle in 0..<5 {
+            MediaViewerProductionAssertions.openSingle(in: app)
+            if cycle == 0 {
+                let image = MediaViewerProductionAssertions.requireImage(
+                    at: 0,
+                    in: app
+                )
+                image.doubleTap()
+                MediaViewerProductionAssertions.requireZoomed(image)
+                image.doubleTap()
+                MediaViewerProductionAssertions.requireOriginalSize(image)
+                image.pinch(withScale: 2, velocity: 2)
+                MediaViewerProductionAssertions.requireZoomed(image)
+                let start = image.coordinate(
+                    withNormalizedOffset: CGVector(dx: 0.7, dy: 0.5)
+                )
+                let end = image.coordinate(
+                    withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)
+                )
+                start.press(forDuration: 0.1, thenDragTo: end)
+                MediaViewerProductionAssertions.requirePosition(
+                    "1 / 1",
+                    in: app
+                )
+            }
+            MediaViewerProductionAssertions.close(in: app)
+        }
+    }
+
+    @MainActor
+    func testProductionMediaViewerPagesResetsZoomAndCoversFailures() {
+        let app = UITestHarness.launch(
+            scenario: .threadContentRenderer,
+            displayProfile: .darkAccessibilityReduced
+        )
+        MediaViewerProductionAssertions.openRendererLab(in: app)
+        MediaViewerProductionAssertions.openMultiple(in: app)
+
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
+        MediaViewerProductionAssertions.requirePosition("2 / 6", in: app)
+        _ = MediaViewerProductionAssertions.requireImage(at: 1, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
+        MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+
+        let third = MediaViewerProductionAssertions.requireImage(at: 2, in: app)
+        third.pinch(withScale: 2, velocity: 2)
+        MediaViewerProductionAssertions.requireZoomed(third)
+        third.swipeLeft()
+        MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+
+        UITestHarness.tap(.mediaViewerPrevious, in: app)
+        MediaViewerProductionAssertions.requirePosition("2 / 6", in: app)
+        UITestHarness.tap(.mediaViewerNext, in: app)
+        MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+        let revisited = MediaViewerProductionAssertions.requireImage(
+            at: 2,
+            in: app
+        )
+        MediaViewerProductionAssertions.requireOriginalSize(revisited)
+
+        revisited.tap()
+        UITestHarness.waitUntilAbsent(.mediaViewerClose, in: app)
+        revisited.swipeLeft()
+        MediaViewerProductionAssertions.requireChromeVisible(in: app)
+        MediaViewerProductionAssertions.requirePosition("4 / 6", in: app)
+        let loading = MediaViewerProductionAssertions.requireState(
+            at: 3,
+            component: "loading",
+            in: app
+        )
+        assertFullMediaCoverage(loading, in: app)
+
+        UITestHarness.tap(.mediaViewerNext, in: app)
+        MediaViewerProductionAssertions.requirePosition("5 / 6", in: app)
+        let fetchFailure = MediaViewerProductionAssertions.requireState(
+            at: 4,
+            component: "fetch-failure",
+            in: app
+        )
+        assertFullMediaCoverage(fetchFailure, in: app)
+
+        UITestHarness.tap(.mediaViewerNext, in: app)
+        MediaViewerProductionAssertions.requirePosition("6 / 6", in: app)
+        let decodeFailure = MediaViewerProductionAssertions.requireState(
+            at: 5,
+            component: "decode-failure",
+            in: app
+        )
+        assertFullMediaCoverage(decodeFailure, in: app)
+        UITestHarness.attachSafeVisualEvidence(
+            app: app,
+            name: "Production MediaViewer opaque decode failure"
+        )
+        MediaViewerProductionAssertions.close(in: app)
     }
 
     @MainActor
@@ -197,6 +309,20 @@ final class AppShellSmokeTests: XCTestCase {
             in: app,
             expectedLabel: "Reduce Motion: On"
         )
+    }
+
+    @MainActor
+    private func assertFullMediaCoverage(
+        _ state: XCUIElement,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let pager = UITestHarness.element(.mediaViewerPager, in: app)
+        XCTAssertEqual(state.frame.minX, pager.frame.minX, accuracy: 1, file: file, line: line)
+        XCTAssertEqual(state.frame.minY, pager.frame.minY, accuracy: 1, file: file, line: line)
+        XCTAssertEqual(state.frame.width, pager.frame.width, accuracy: 1, file: file, line: line)
+        XCTAssertEqual(state.frame.height, pager.frame.height, accuracy: 1, file: file, line: line)
     }
 
     @MainActor

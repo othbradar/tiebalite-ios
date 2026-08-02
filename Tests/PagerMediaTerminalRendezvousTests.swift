@@ -126,13 +126,13 @@ struct PagerMediaTerminalRendezvousTests {
     @Test
     func mediaPanOwnerCannotCommitSyntheticPagerCallback() throws {
         let harness = makeHarness()
-        let zoom = DebugZoomScrollView(
+        let zoom = MediaZoomScrollView(
             frame: CGRect(x: 0, y: 0, width: 390, height: 600)
         )
         let image = UIGraphicsImageRenderer(
             size: CGSize(width: 1_200, height: 900)
         ).image { _ in }
-        let zoomView = DebugZoomImageView(
+        let zoomView = MediaZoomImageView(
             mediaID: "large",
             image: image,
             ownershipController: harness.ownership,

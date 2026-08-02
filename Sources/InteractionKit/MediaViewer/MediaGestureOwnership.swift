@@ -1,4 +1,3 @@
-#if DEBUG
 import UIKit
 
 enum MediaHorizontalBoundary: Equatable, Sendable {
@@ -267,9 +266,9 @@ where MediaID: Hashable & Sendable {
     typealias Session = MediaGestureSession<MediaID>
 
     private final class WeakZoomReference {
-        weak var scrollView: DebugZoomScrollView?
+        weak var scrollView: MediaZoomScrollView?
 
-        init(_ scrollView: DebugZoomScrollView) {
+        init(_ scrollView: MediaZoomScrollView) {
             self.scrollView = scrollView
         }
     }
@@ -367,14 +366,14 @@ where MediaID: Hashable & Sendable {
 
     func register(
         mediaID: MediaID,
-        scrollView: DebugZoomScrollView
+        scrollView: MediaZoomScrollView
     ) {
         zoomScrollViews[mediaID] = WeakZoomReference(scrollView)
     }
 
     func unregister(
         mediaID: MediaID,
-        scrollView: DebugZoomScrollView
+        scrollView: MediaZoomScrollView
     ) {
         guard zoomScrollViews[mediaID]?.scrollView === scrollView else {
             return
@@ -565,4 +564,3 @@ where MediaID: Hashable & Sendable {
         pagerRendezvousObserver?.receive(session)
     }
 }
-#endif

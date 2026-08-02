@@ -1,7 +1,6 @@
-#if DEBUG
 import UIKit
 
-struct DebugMediaContentOffsetRange: Equatable, Sendable {
+struct MediaContentOffsetRange: Equatable, Sendable {
     let minimumX: CGFloat
     let maximumX: CGFloat
     let minimumY: CGFloat
@@ -9,11 +8,11 @@ struct DebugMediaContentOffsetRange: Equatable, Sendable {
 }
 
 @MainActor
-final class DebugZoomScrollView: UIScrollView {
+final class MediaZoomScrollView: UIScrollView {
     let mediaImageView = UIImageView()
     private(set) var mediaID: String?
     private(set) var appliedResetGeneration: UInt64 = 0
-    var onLayoutMetricsChanged: ((DebugMediaViewportMetrics) -> Void)?
+    var onLayoutMetricsChanged: ((MediaViewportMetrics) -> Void)?
 
     private var previousBoundsSize: CGSize = .zero
     private var retainedFocalPoint = CGPoint(x: 0.5, y: 0.5)
@@ -129,19 +128,42 @@ final class DebugZoomScrollView: UIScrollView {
     func configure(
         image: UIImage,
         mediaID: String,
-        resetGeneration: UInt64 = 0
+        resetGeneration: UInt64 = 0,
+        surfaceAccessibilityIdentifier: String? = nil,
+        surfaceAccessibilityLabel: String? = nil,
+        surfaceAccessibilityValue: String? = nil,
+        surfaceAccessibilityHint: String? = nil
     ) {
         isUpdatingResizeLayout = true
         self.mediaID = mediaID
         appliedResetGeneration = resetGeneration
         mediaImageView.image = image
         requiresBaseGeometryUpdate = true
-        accessibilityIdentifier = "interaction.media.zoom-surface.\(mediaID)"
+        configureAccessibility(
+            identifier: surfaceAccessibilityIdentifier
+                ?? "interaction.media.zoom-surface.\(mediaID)",
+            label: surfaceAccessibilityLabel,
+            value: surfaceAccessibilityValue,
+            hint: surfaceAccessibilityHint
+        )
         setZoomScale(minimumZoomScale, animated: false)
         contentOffset = .zero
         retainedFocalPoint = CGPoint(x: 0.5, y: 0.5)
         isUpdatingResizeLayout = false
         setNeedsLayout()
+    }
+
+    func configureAccessibility(
+        identifier: String?,
+        label: String?,
+        value: String?,
+        hint: String?
+    ) {
+        accessibilityIdentifier = identifier
+        accessibilityLabel = label
+        accessibilityValue = value
+        accessibilityHint = hint
+        isAccessibilityElement = label != nil
     }
 
     func applyResetGeneration(_ resetGeneration: UInt64) {
@@ -156,7 +178,7 @@ final class DebugZoomScrollView: UIScrollView {
         centerZoomedImage()
         clampContentOffset()
         isUpdatingResizeLayout = false
-        onLayoutMetricsChanged?(viewportMetrics)
+        setNeedsLayout()
     }
 
     func centerZoomedImage() {
@@ -176,12 +198,12 @@ final class DebugZoomScrollView: UIScrollView {
         )
     }
 
-    var viewportMetrics: DebugMediaViewportMetrics {
+    var viewportMetrics: MediaViewportMetrics {
         let range = legalContentOffsetRange
         let visibleFocalPoint = normalizedVisibleCenter(
             viewportSize: bounds.size
         )
-        return DebugMediaViewportMetrics(
+        return MediaViewportMetrics(
             layoutGeneration: layoutGeneration,
             zoomScale: Double(zoomScale),
             viewportWidth: Double(bounds.width),
@@ -210,7 +232,7 @@ final class DebugZoomScrollView: UIScrollView {
         )
     }
 
-    var legalContentOffsetRange: DebugMediaContentOffsetRange {
+    var legalContentOffsetRange: MediaContentOffsetRange {
         let minimumX = -adjustedContentInset.left
         let maximumX = max(
             minimumX,
@@ -221,7 +243,7 @@ final class DebugZoomScrollView: UIScrollView {
             minimumY,
             contentSize.height - bounds.height + adjustedContentInset.bottom
         )
-        return DebugMediaContentOffsetRange(
+        return MediaContentOffsetRange(
             minimumX: minimumX,
             maximumX: maximumX,
             minimumY: minimumY,
@@ -321,4 +343,3 @@ final class DebugZoomScrollView: UIScrollView {
         )
     }
 }
-#endif

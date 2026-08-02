@@ -111,6 +111,10 @@ P0 合法 chain grammar：
 
 任何 command 的参数校验失败时 canonical state 不变，仅产生安全领域错误。
 
+阶段 09 Open-Source Beta 的固定 `ThreadMediaIntent` 暂将 missing initial 归入
+结构校验失败，因此不写 `presentedMedia`；表中的稳定 unavailable 仍是动态
+presentation 的长期合同，必须在接入可变媒体 Repository 前实现。
+
 ## Deep Link
 
 支持的第一版输入：

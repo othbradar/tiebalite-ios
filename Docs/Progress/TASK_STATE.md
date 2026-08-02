@@ -1,7 +1,7 @@
 # TASK_STATE
 
-- 当前阶段：08
-- 状态：`PHASE_08_THREAD_CONTENT_DOMAIN_RENDERER_COMPLETE`
+- 当前阶段：09
+- 状态：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`
 - 当前分支：`main`
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
@@ -11,14 +11,85 @@
   （`feat: complete stage 08 thread content domain and renderer`）
 - 阶段 08 图片状态定向修复：包含本文件的
   `fix: align thread image accessibility with render state`
+- 阶段 09 提交：包含本文件的
+  `feat: implement production media viewer`
 - production live：`DISABLED`
 - 阶段 06：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
-  （`OPEN_SOURCE_BETA` 范围；Debug interaction foundation，不代表生产实现）
+  （`OPEN_SOURCE_BETA` 范围；已由阶段 09 迁移为唯一生产交互基础）
 - 阶段 06C-C：`DEFERRED_POST_BETA`
 - 阶段 09 前置条件：`PHASE_09_PREREQUISITES_SATISFIED`
-- 阶段 09：`NOT_STARTED`
+- 阶段 09：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`
+- 阶段 10 前置条件：`NOT_EVALUATED`
+- 阶段 10：`NOT_STARTED`
 
-## 目标与范围
+## 阶段 09 目标与范围
+
+阶段 09 按个人开源 Beta 标准完成唯一生产 MediaViewer：
+
+- 从阶段 08 的 `ThreadMediaIntent` 构建有序、由稳定 MediaID 派生
+  `stableKey` 的进程内 presentation；
+- 将阶段 06 通过的 Pager、zoom bridge、gesture ownership、
+  rotation/resize 与 terminal rendezvous 整体迁移到生产
+  `Sources/InteractionKit/Pager` 与 `Sources/InteractionKit/MediaViewer`；
+- 在 `Sources/Features/MediaViewer` 只实现一个生产 Viewer，由
+  `AppSceneRoot` 唯一 `fullScreenCover` 持有；
+- 支持单图/多图、左右切换、双击/捏合缩放、放大后平移、
+  chrome 切换、关闭返回、旋转/resize、深色与 Reduce Motion；
+- 页面明确区分 idle/loading/rendered/failed-to-fetch/
+  failed-to-decode/cancelled，失败可重试且全程使用不透明语义黑底；
+- 图片数据仍只通过可注入 `ImageLoading` 获取；UITesting 使用
+  固定 fixture/fake loader，Release 仍注入 `DisabledImageLoader`。
+
+本阶段没有实现 ThreadScreen、登录、评论、live 贴吧网络、图片
+cache/downsample/candidate/lease 系统或边界加载 Repository；没有下滑
+关闭、第二套 Pager、第二个生产 MediaViewer 或新第三方依赖。
+
+## 阶段 09 生产边界与验证
+
+- `MediaViewerPresentation` 拒绝空集合、重复 stableKey 和不存在的
+  initial ID；正常身份不使用 `UUID()`。动态数据移除 initial/current ID 后的
+  稳定 unavailable 仍是长期合同，本阶段固定 intent 尚未实现该路径。
+- `MediaZoomScrollView` 是精确 zoom/contentOffset 的唯一 owner；
+  `MediaGestureOwnershipController` 按触摸 begin 固定 Pager/mediaPan/none。
+- 只在翻页完成或显式前后切换时增加离场页 reset generation；
+  取消/失败不偷换 current ID。
+- 关闭失效活动 ownership session 并清理 Viewer 持有的离散状态；
+  SwiftUI page task 在移除或 reload 时使用结构化取消。
+- 新增 6 个逻辑 Unit test（7 次含参数执行）；当前完整 Unit
+  为 192 个逻辑测试/211 次执行，0 failed/skipped。
+- iPhone 定向证据覆盖捏合、双击、平移、5 次打开/关闭、三张
+  连续切换、zoom reset 和 loading/fetch/decode 全尺寸失败态。
+- iPad 定向证据覆盖三图、双击放大、放大后平移不翻页、
+  竖→横→竖旋转、chrome/图片存活和关闭返回。
+- Release isolation 以 source-list 证明生产 Pager/MediaViewer 均进入 Release，
+  并以 binary 字符串证明 MediaViewer；同时排除 Debug lab、LaunchScenario
+  和 TestSupport。Pager 没有单独 binary symbol 正向证明。
+
+## 阶段 09 Known Limitations
+
+1. 没有 live 图片网络、共享 cache、candidate 选择、下采样或
+   full-resolution lease；Release 中当前无成功图片业务入口。
+2. iOS 18.x、真机、真机 VoiceOver/Accessibility Escape 和真实
+   iPad split divider 未验证。
+3. iPad Simulator 对 1032×1319 全屏元素的 XCUITest pinch 合成
+   在首轮不改变 zoomScale；iPhone 捏合已实测，iPad 以同一生产
+   zoom wrapper 的双击、平移和旋转完成 smoke。
+4. 50 次打开/关闭、100 张 full-resolution 压力、极端内存与全理论
+   callback 排列按当前 Beta 标准延期；当前实测为 5 次开关。
+5. Debug InteractionLab 仍保留诊断 Viewer shell，但只在 Debug/
+   UITesting 编译并复用同一生产 Pager/zoom/ownership 原语；
+   它不是可被 Feature 调用的第二个生产 Viewer。
+6. 生产 iPhone Viewer 本阶段未单独执行横竖屏 UI smoke；生产 iPad
+   竖横竖和阶段 06 底层 iPhone rotation/resize 回归已运行。
+7. missing initial 当前作为结构错误拒绝 presentation；动态数据移除
+   initial/current 后稳定 unavailable 的长期合同尚未实现。
+
+## 阶段 09 出口与停止点
+
+阶段 09 已在个人开源 Beta 范围完成。阶段 10 前置条件未在本任务评估，
+阶段 10 仍是 `NOT_STARTED`，只能由新的明确用户指令开始。
+
+## 阶段 08 历史目标与范围
 
 阶段 08 只完成首楼正文内容领域模型、Proto adapter 和隔离
 Renderer：
@@ -321,10 +392,10 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 
 ## 下一阶段前置条件
 
-阶段 08 已完成，阶段 06 interaction foundation 已按个人开源 Beta 标准收口。
-阶段 09 前置条件为 `PHASE_09_PREREQUISITES_SATISFIED`，但阶段 09 仍为
-`NOT_STARTED`；只有新的明确用户指令才可开始。06C-C 为
-`DEFERRED_POST_BETA`，不得在本次收口中继续实现。
+阶段 08 出口时，阶段 06 interaction foundation 已按个人开源
+Beta 标准收口，阶段 09 当时为 `NOT_STARTED`。该历史状态已由本文
+顶部的阶段 09 生产完成状态取代；06C-C 仍为
+`DEFERRED_POST_BETA`。
 
 阶段 06 的生产迁移、Release 隔离和唯一 Pager/MediaViewer 约束继续有效；
 `SPIKE_ACCEPTED` 只接受当前 Debug interaction foundation 的架构与回归证据，
@@ -428,7 +499,7 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 
 ## 阶段 06 Open-Source Beta 收口（2026-08-02）
 
-### 最终状态
+### 阶段 06 任务出口状态（已由阶段 09 生产迁移取代）
 
 - `PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
 - `PHASE_06_ACCEPTANCE_SCOPE = OPEN_SOURCE_BETA`
@@ -436,6 +507,9 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
 - `PHASE_09_PREREQUISITES_SATISFIED`
 - `PHASE_09 = NOT_STARTED`
 - `PRODUCTION_PAGER_MEDIA = NOT_CREATED`
+
+以上是阶段 06 当时的任务出口；生产 Pager/MediaViewer 后续由本文顶部记录的
+阶段 09 任务创建，不反写历史状态。
 
 P3/P4/P5 在当前 Beta 范围内均为 `CLOSED`：P3 有 49%/51% 各 5 次、独立
 velocity 分支、20 次交替 rapid-serial swipe、左右边界各 20 次和 5 次纵向
@@ -475,5 +549,6 @@ P5 覆盖缓存内 identity、refresh/resize/projection、明确 eviction 后 we
 5. UIKit 完全同签名且不携带 token 的迟到 delegate callback 无法由公开 API
    自证来源；当前 generation/host/visible/direction 防线已覆盖可观测身份，
    完全不可区分的理论排列留作发布前平台矩阵。
-6. InteractionLab 继续 Debug/UITesting-only；生产 Pager、MediaViewer、
-   ThreadScreen、live image pipeline、cache/downsample/candidate/lease 均未创建。
+6. InteractionLab 继续 Debug/UITesting-only；生产 Pager/MediaViewer 已在
+   阶段 09 迁移，ThreadScreen、live image pipeline、cache/downsample/
+   candidate/lease 仍未创建。

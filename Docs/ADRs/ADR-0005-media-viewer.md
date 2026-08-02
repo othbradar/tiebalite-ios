@@ -1,9 +1,9 @@
 # ADR-0005：唯一 MediaViewer
 
-- 状态：Accepted（Open-Source Beta interaction foundation；Debug candidate）
+- 状态：Accepted（唯一生产 `MediaViewer`；Open-Source Beta）
 - 日期：2026-07-31
 - 最终裁决：2026-08-02
-- 决策者：阶段 02 候选决策；阶段 06 Open-Source Beta 收口
+- 决策者：阶段 02 候选决策；阶段 06 Open-Source Beta 收口；阶段 09 生产实现
 - 关联阶段：02、06、09
 
 ## 背景
@@ -181,7 +181,7 @@ Pager/cache/转场并违反依赖门禁。B 仍需 spike，不能直接成为生
 `Proposed（阶段 06 Spike Partial，仅 Debug）`；该历史状态随后由 06C-A、
 06C-R 与下方 Open-Source Beta 最终裁决取代。
 
-## Open-Source Beta 最终裁决
+## 阶段 06 Open-Source Beta 最终裁决（历史出口）
 
 选择 B（每页唯一 `UIScrollView` zoom wrapper + 唯一 Pager）作为阶段 09
 可继续生产化的 interaction foundation，并将阶段 06 标记为
@@ -199,6 +199,36 @@ Known Limitations 不再阻塞阶段 09：iOS 18.x 与真机矩阵、真机 Voic
 Accessibility Escape、真实 iPad split divider、所有图片尺寸与 100 张
 full-resolution lease/极端内存和快速翻页压力。它们保留为 post-Beta 或发布前
 验证，不能被当前 controller/cache 上界测试误写为生产资源验证。
+
+## 阶段 09 生产裁决
+
+阶段 09 将 B 方案实现为唯一生产 Viewer：`AppSceneRoot` 持有唯一进程内
+`fullScreenCover` presentation，`Sources/Features/MediaViewer` 只有一个生产
+`MediaViewer`；输入直接来自阶段 08 的有序 `ThreadMediaIntent`，使用稳定
+`ThreadMediaID.stableKey` 派生身份，不使用随机 UUID 作为正常身份。Viewer
+复用唯一生产
+`PagerContainer` 和 `InteractionKit/MediaViewer` 中的 zoom/gesture ownership
+原语，没有复制 Pager 或精确 transform 状态。
+
+图片页面通过可注入 `ImageLoading` 明确区分 idle、loading、rendered、
+failed-to-fetch、failed-to-decode 与 cancelled。只有 decode 后的可显示图片进入
+zoom page；loading/error 继续使用不透明黑底并提供一致的重试/关闭语义。首版
+没有下滑关闭、透明全屏触摸层、固定 delay、任意动画参数或新依赖。
+
+阶段 09 只使用 fixture/fake loader；Release 仍注入 `DisabledImageLoader`，
+没有提前实现 ADR-0008 的 live network、cache/downsample/candidate 或
+full-resolution lease。Debug Media Lab 仍是 Debug/UITesting-only 诊断壳，
+但复用同一生产 Pager、zoom 和 ownership 原语，不构成第二个生产 Viewer。
+
+iPhone smoke 覆盖 pinch、双击、pan、三图、zoom reset 与 5 次打开/关闭；
+iPad smoke 覆盖三图、双击、zoom 后平移不翻页和竖横竖旋转。iPad Simulator
+的 XCUITest 全屏 pinch 合成未改变 zoomScale，因此 iPad pinch、真机矩阵、
+VoiceOver、真实 split divider 与极端 full-resolution 压力保留为已声明的
+post-Beta 限制，不阻塞当前生产 Beta 裁决。
+
+固定 intent 构造当前会拒绝不存在的 initial ID，不打开 overlay；已接受
+presentation 在动态数据更新后进入稳定 unavailable 的长期导航合同尚未实现。
+这是固定 fixture Beta 的已知偏离，必须在接入可变媒体 Repository 前关闭。
 
 ## 迁移/退出成本
 

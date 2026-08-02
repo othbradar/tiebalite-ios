@@ -1,4 +1,3 @@
-#if DEBUG
 import UIKit
 
 enum PagerOwnershipDecision {
@@ -489,5 +488,3 @@ extension PagerContainer.Coordinator {
         scheduleSettledSnapshot()
     }
 }
-
-#endif

@@ -1,9 +1,9 @@
 # ADR-0004：唯一 PagerContainer
 
-- 状态：Accepted（Open-Source Beta interaction foundation；Debug candidate）
+- 状态：Accepted（唯一生产 `PagerContainer`；Open-Source Beta）
 - 日期：2026-07-31
 - 最终裁决：2026-08-02
-- 决策者：阶段 02 候选决策；阶段 06 Open-Source Beta 收口
+- 决策者：阶段 02 候选决策；阶段 06 Open-Source Beta 收口；阶段 09 生产迁移
 - 关联阶段：02、06、09
 
 ## 背景
@@ -197,7 +197,7 @@ callback context。Debug 候选现在使用上述三方状态机，允许的结�
 06C-R 任务出口时 ADR 仍是 `Proposed（阶段 06 Spike Partial，仅 Debug）`；
 该历史状态随后由下方 Open-Source Beta 最终裁决取代。
 
-## Open-Source Beta 最终裁决
+## 阶段 06 Open-Source Beta 最终裁决（历史出口）
 
 选择 B（唯一 `UIPageViewController` wrapper）作为阶段 09 可继续生产化的
 interaction foundation，并将阶段 06 标记为
@@ -223,6 +223,23 @@ Known Limitations 不再阻塞阶段 09：iOS 18.x/真机、真机 VoiceOver、�
 触摸反向录屏、极端图片资源压力，以及 UIKit 完全同签名且不携带 token 的
 理论迟到 callback。现有 generation/host/direction/visible/ownership 守卫覆盖
 所有可观测身份；完全不可区分的排列保留到发布前平台矩阵。
+
+## 阶段 09 生产裁决
+
+阶段 09 将已接受的 B 候选整体迁移到唯一生产路径
+`Sources/InteractionKit/Pager`；旧 `InteractionLab/DebugPager*.swift` 实现已
+删除，Debug Lab 与生产 `MediaViewer` 现在引用同一个 `PagerContainer`，没有
+第二套 Pager。生产实现继续保持稳定 PageID、有界 controller cache、D/P/O
+terminal rendezvous、外部 selection generation、冻结参与页、不透明背景和
+resize/rotation 投影等阶段 06 已接受的合同。
+
+Release isolation 使用正向 source-list 证明生产 Pager 与 MediaViewer 进入
+Release；binary 字符串正向控制覆盖 MediaViewer，Pager 没有独立 symbol 证明。
+门禁同时继续排除 Debug Lab、LaunchScenario 与 TestSupport。阶段 09 的 iPhone/
+iPad smoke 已通过三图切换、zoom 后平移不翻页、离场页 zoom reset、旋转和关闭
+返回。iOS 18.x、真机、真实 split divider、真机 VoiceOver、真实同触摸反向
+录屏与 UIKit 完全同签名迟到 callback 仍按 Open-Source Beta 裁决延期，不冒充
+本阶段已验证。
 
 ## 迁移/退出成本
 

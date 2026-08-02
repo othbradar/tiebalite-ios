@@ -10,6 +10,10 @@ enum AppAccessibilityID {
     static let galleryRoot = "design-system.gallery"
     static let layoutCompact = "app.shell.layout.compact"
     static let layoutRegular = "app.shell.layout.regular"
+    static let mediaViewerOpenMultiple =
+        "thread-reader.renderer-lab.open-media-multiple"
+    static let mediaViewerOpenSingle =
+        "thread-reader.renderer-lab.open-media-single"
     static let openForum = "app.fixture.root.open-forum"
     static let openSubposts = "app.fixture.thread.open-subposts"
     static let openThread = "app.fixture.forum.open-thread"

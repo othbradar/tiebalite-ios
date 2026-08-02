@@ -81,11 +81,11 @@
 
 ## MediaViewer/Pager
 
-以下条目是完整发布矩阵。阶段 06 的 Open-Source Beta acceptance 采用分级
-证据，不把未运行项目改写为通过：
+以下条目是完整发布矩阵。阶段 06/09 的 Open-Source Beta acceptance 采用
+分级证据，不把未运行项目改写为通过：
 
 - `PASS/CLOSED`：当前确定性测试和已声明 Simulator runtime 已验证。
-- `DEFERRED_POST_BETA`：未验证且保留到 post-Beta/发布前，不阻塞阶段 09。
+- `DEFERRED_POST_BETA`：未验证且保留到 post-Beta/发布前，不阻塞当前 Beta。
 - `NOT_IMPLEMENTED`：生产能力尚不存在，不能用 Debug fixture 冒充验证。
 
 - 单图、多图、首图、末图。
@@ -140,11 +140,28 @@
 | 真实同触摸反向录屏 | `DEFERRED_POST_BETA` | deterministic reverse trace 已有；真实单 input sequence 录屏未完成 |
 | 极端图片资源压力 | `DEFERRED_POST_BETA` | 100 张 full-resolution lease、全尺寸图片与极端内存/翻页压力未运行 |
 | 完全同签名迟到 callback | `DEFERRED_POST_BETA` | 公开 UIKit callback 不携带 token；可观测 identity/generation 防线已验证，理论不可区分排列未穷举 |
-| 生产 MediaViewer/图片管线 | `NOT_IMPLEMENTED` | Debug InteractionLab 不得进入 Release 或替代阶段 09 生产实现 |
-
 阶段状态为 `PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`，acceptance scope 为
 `OPEN_SOURCE_BETA`；`PHASE_06C_C = DEFERRED_POST_BETA`，
-`PHASE_09_PREREQUISITES_SATISFIED`，阶段 09 保持 `NOT_STARTED`。
+阶段 06 任务出口时 `PHASE_09 = NOT_STARTED`。
+
+### 阶段 09 Open-Source Beta 出口
+
+| 验收 | 结果 | 实际证据边界 |
+|---|---|---|
+| 唯一生产 Pager/MediaViewer | `PASS/BETA` | 阶段 09 整体迁移 Stage 06 foundation；Release source-list 正向包含生产源并排除 Debug/TestSupport |
+| 单图打开/缩放/关闭 | `PASS` | iPhone pinch、双击、pan 与连续 5 次打开/关闭 |
+| 三图连续切换与 zoom reset | `PASS` | iPhone/iPad production Viewer smoke；稳定 MediaID 与视觉位置一致 |
+| 放大后平移不误翻页 | `PASS` | iPhone pinch/pan；iPad 双击/pan，页码保持 |
+| loading/fetch/decode failure | `PASS` | 固定 fake loader；全尺寸不透明黑底、可重试、无可执行媒体打开 action |
+| 旋转/chrome | `PASS/BETA` | iPad 竖→横→竖，图片与 chrome 存活且未裁切 |
+| 深色/Reduce Motion | `PASS` | 语义 media 黑底；production smoke 在既有 appearance/motion harness 运行 |
+| iPad pinch | `DEFERRED_POST_BETA` | 当前 Simulator 全屏 XCUITest pinch 未改变 zoomScale；同一生产 wrapper 的双击/pan/旋转已通过 |
+| live 图片/cache/downsample/candidate/lease | `NOT_IMPLEMENTED` | 只使用可注入 fixture/fake loader，Release 保持 DisabledImageLoader |
+| missing initial/current 后稳定 unavailable | `DEFERRED_POST_BETA` | 固定 intent 构造当前拒绝不存在的 initial；动态数据移除后的 unavailable 待有 Repository 后实现 |
+| 真机/iOS 18/VoiceOver/极端压力 | `DEFERRED_POST_BETA` | 未运行，不阻塞个人开源 Beta |
+
+阶段 09 为 `PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`；阶段 10 前置条件未在
+本任务评估，阶段 10 为 `NOT_STARTED`。
 
 ## 可访问性与视觉稳定
 

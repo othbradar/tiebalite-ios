@@ -43,8 +43,12 @@ while IFS= read -r file_list; do
   if ! rg -F '/App/DebugThreadContentRendererLabView.swift' "$file_list" >/dev/null; then
     fail "UITesting App source list lacks the Debug renderer lab."
   fi
-  if ! rg -F '/Sources/InteractionKit/InteractionLab/DebugPagerContainer.swift' "$file_list" >/dev/null; then
-    fail "UITesting App source list lacks the isolated Pager spike."
+  if ! rg -F '/Sources/InteractionKit/Pager/PagerContainer.swift' "$file_list" >/dev/null; then
+    fail "UITesting App source list lacks the production Pager."
+  fi
+  if ! rg -F '/Sources/Features/MediaViewer/Presentation/MediaViewer.swift' \
+    "$file_list" >/dev/null; then
+    fail "UITesting App source list lacks the production MediaViewer."
   fi
 done < <(
   find "$intermediates/TiebaLite.build" -type f -name 'TiebaLite.SwiftFileList' -print 2>/dev/null

@@ -1,4 +1,3 @@
-#if DEBUG
 import SwiftUI
 import UIKit
 
@@ -232,4 +231,3 @@ where PageID: Hashable & Sendable, Content: View {
         nil
     }
 }
-#endif

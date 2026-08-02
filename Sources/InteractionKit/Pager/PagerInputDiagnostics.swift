@@ -1,4 +1,3 @@
-#if DEBUG
 import Foundation
 
 enum PagerPanTerminalPhase: Equatable, Sendable {
@@ -352,4 +351,3 @@ where PageID: Hashable & Sendable {
     let visibleID: PageID?
     let committedID: PageID?
 }
-#endif

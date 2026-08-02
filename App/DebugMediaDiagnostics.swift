@@ -74,7 +74,7 @@ enum DebugMediaDiagnostics {
     }
 
     static func inputText(
-        _ metrics: DebugMediaInputMetrics,
+        _ metrics: MediaInputMetrics,
         totalPanBeginCount: UInt64,
         totalPanEndCount: UInt64
     ) -> String {
@@ -88,7 +88,7 @@ enum DebugMediaDiagnostics {
     }
 
     static func layoutText(
-        _ metrics: DebugMediaViewportMetrics?,
+        _ metrics: MediaViewportMetrics?,
         pagerCoordinatorSequence: UInt64,
         invalidViewportCount: UInt64,
         lastInvalidViewport: String
@@ -129,7 +129,7 @@ enum DebugMediaDiagnostics {
         ) + " lastInvalid=\(lastInvalidViewport)"
     }
 
-    static func viewportText(_ metrics: DebugMediaViewportMetrics) -> String {
+    static func viewportText(_ metrics: MediaViewportMetrics) -> String {
         String(
             format: "zoom:%.2f,viewport:%.1fx%.1f,offset:%.1f:%.1f,"
                 + "legalX:%.1f:%.1f,legalY:%.1f:%.1f,frame:%.1fx%.1f",
@@ -195,7 +195,7 @@ enum DebugMediaDiagnostics {
     }
 
     static func shouldCountInvalidViewport(
-        _ metrics: DebugMediaViewportMetrics,
+        _ metrics: MediaViewportMetrics,
         monitoringArmed: Bool,
         isCurrentMedia: Bool
     ) -> Bool {

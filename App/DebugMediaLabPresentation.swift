@@ -13,8 +13,8 @@ struct DebugMediaPage: View {
     let retryFailure: () -> Void
     let toggleChrome: () -> Void
     let capabilityChanged: (MediaPageCapability, Double) -> Void
-    let inputMetricsChanged: (DebugMediaInputMetrics) -> Void
-    let viewportMetricsChanged: (DebugMediaViewportMetrics) -> Void
+    let inputMetricsChanged: (MediaInputMetrics) -> Void
+    let viewportMetricsChanged: (MediaViewportMetrics) -> Void
 
     var body: some View {
         ZStack {
@@ -57,7 +57,7 @@ struct DebugMediaPage: View {
                 }
             default:
                 if let image = resolvedImage {
-                    DebugZoomImageView(
+                    MediaZoomImageView(
                         mediaID: fixture.id,
                         image: image,
                         resetGeneration: resetGeneration,

@@ -27,10 +27,10 @@ struct DebugMediaViewer: View {
         MediaGestureOwnershipController<String>()
     @State private var gestureSession: MediaGestureSession<String>?
     @State private var inputMetricsByID: [
-        String: DebugMediaInputMetrics
+        String: MediaInputMetrics
     ] = [:]
     @State private var viewportMetricsByID: [
-        String: DebugMediaViewportMetrics
+        String: MediaViewportMetrics
     ] = [:]
     @State private var viewportMonitoringArmedIDs: Set<String> = []
     @State private var rootGeometry = DebugMediaRootGeometry.zero
@@ -437,7 +437,7 @@ private extension DebugMediaViewer {
 
     var inputMetricsText: String {
         let metrics = currentID.flatMap { inputMetricsByID[$0] }
-            ?? DebugMediaInputMetrics()
+            ?? MediaInputMetrics()
         let totalPanBeginCount = inputMetricsByID.values.reduce(0) {
             $0 &+ $1.panBeginCount
         }

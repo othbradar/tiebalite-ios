@@ -7,6 +7,7 @@ struct AppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let harnessLabel: String?
     let environment: AppEnvironment
+    let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
         shellContent
@@ -47,7 +48,8 @@ struct AppShellView: View {
            navigation.state.settingsPath.last == .interactionLab {
             StableInteractionLabShell(
                 navigation: navigation,
-                imageLoader: environment.imageLoader
+                imageLoader: environment.imageLoader,
+                onOpenMedia: onOpenMedia
             )
         } else {
             adaptiveShellContent
@@ -62,12 +64,14 @@ struct AppShellView: View {
             if horizontalSizeClass == .regular {
                 IPadAppShellView(
                     navigation: navigation,
-                    imageLoader: environment.imageLoader
+                    imageLoader: environment.imageLoader,
+                    onOpenMedia: onOpenMedia
                 )
             } else {
                 IPhoneAppShellView(
                     navigation: navigation,
-                    imageLoader: environment.imageLoader
+                    imageLoader: environment.imageLoader,
+                    onOpenMedia: onOpenMedia
                 )
             }
     }
@@ -80,6 +84,7 @@ private struct StableInteractionLabShell: View {
 
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
+    let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
         NavigationStack(path: settingsPathBinding) {
@@ -93,7 +98,8 @@ private struct StableInteractionLabShell: View {
             .navigationDestination(for: SettingsRoute.self) { route in
                 SettingsRouteDestinationView(
                     route: route,
-                    imageLoader: imageLoader
+                    imageLoader: imageLoader,
+                    onOpenMedia: onOpenMedia
                 )
             }
         }
@@ -117,6 +123,7 @@ private struct StableInteractionLabShell: View {
 private struct IPhoneAppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
+    let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
         TabView(selection: selectedTabBinding) {
@@ -141,7 +148,8 @@ private struct IPhoneAppShellView: View {
                 .navigationDestination(for: SettingsRoute.self) { route in
                     SettingsRouteDestinationView(
                         route: route,
-                        imageLoader: imageLoader
+                        imageLoader: imageLoader,
+                        onOpenMedia: onOpenMedia
                     )
                 }
             }
@@ -244,6 +252,7 @@ private struct PhoneTabSelector: View {
 private struct IPadAppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
+    let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
         NavigationSplitView {
@@ -312,7 +321,8 @@ private struct IPadAppShellView: View {
             NavigationStack {
                 SettingsRouteDestinationView(
                     route: route,
-                    imageLoader: imageLoader
+                    imageLoader: imageLoader,
+                    onOpenMedia: onOpenMedia
                 )
             }
         } else {
@@ -383,6 +393,7 @@ private struct RegularDetailColumn: View {
 private struct SettingsRouteDestinationView: View {
     let route: SettingsRoute
     let imageLoader: any ImageLoading
+    let onOpenMedia: (ThreadMediaIntent) -> Void
 
     @ViewBuilder
     var body: some View {
@@ -401,7 +412,10 @@ private struct SettingsRouteDestinationView: View {
         case .interactionLab:
             DebugInteractionLabView()
         case .threadContentRendererLab:
-            DebugThreadContentRendererLabView(imageLoader: imageLoader)
+            DebugThreadContentRendererLabView(
+                imageLoader: imageLoader,
+                onOpenMedia: onOpenMedia
+            )
 #endif
         }
     }

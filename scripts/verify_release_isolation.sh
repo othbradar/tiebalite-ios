@@ -40,6 +40,14 @@ else
       "$file_list" >/dev/null; then
       fail "Release source proof is missing ThreadContentRenderer.swift: $file_list"
     fi
+    if ! rg -F '/Sources/InteractionKit/Pager/PagerContainer.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing PagerContainer.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/Features/MediaViewer/Presentation/MediaViewer.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing MediaViewer.swift: $file_list"
+    fi
     if rg -n "$forbidden_pattern" "$file_list" >/dev/null; then
       fail "Release source list contains test-only input: $file_list"
     fi
@@ -68,6 +76,9 @@ else
   if ! rg -F 'AppNavigationStore' "$strings_output" >/dev/null; then
     fail "Release binary lacks the Stage 05 navigation positive control."
   fi
+  if ! rg -F 'MediaViewer' "$strings_output" >/dev/null; then
+    fail "Release binary lacks the Stage 09 MediaViewer positive control."
+  fi
 
   if nm "$release_binary" > "$symbols_output" 2>/dev/null; then
     xcrun swift-demangle < "$symbols_output" > "${symbols_output}.demangled"
@@ -95,4 +106,4 @@ if [[ "$failures" -ne 0 ]]; then
   echo "Release test-support isolation failed: $failures check(s)." >&2
   exit 1
 fi
-echo "OK: Release includes the renderer and excludes test support plus all Debug labs."
+echo "OK: Release includes renderer, Pager and MediaViewer while excluding test support and Debug labs."

@@ -18,10 +18,10 @@ struct MediaGeometryRegressionTests {
 
         for (mediaID, imageSize) in fixtures {
             let image = makeImage(size: imageSize)
-            let scrollView = DebugZoomScrollView(
+            let scrollView = MediaZoomScrollView(
                 frame: CGRect(x: 0, y: 0, width: 320, height: 480)
             )
-            let view = DebugZoomImageView(
+            let view = MediaZoomImageView(
                 mediaID: mediaID,
                 image: image,
                 onSingleTap: {},
@@ -62,7 +62,7 @@ struct MediaGeometryRegressionTests {
         let ownership = MediaGestureOwnershipController<String>()
         let square = makeImage(size: CGSize(width: 2_048, height: 2_048))
         let tall = makeImage(size: CGSize(width: 64, height: 4_096))
-        let scrollView = DebugZoomScrollView(
+        let scrollView = MediaZoomScrollView(
             frame: CGRect(x: 0, y: 0, width: 320, height: 480)
         )
         var view = makeZoomView(image: square, ownership: ownership)
@@ -162,7 +162,7 @@ private extension MediaGeometryRegressionTests {
     }
 
     func expectResizeResult(
-        _ scrollView: DebugZoomScrollView,
+        _ scrollView: MediaZoomScrollView,
         focalPoint: CGPoint,
         imageSize: CGSize,
         mediaID: String
@@ -193,7 +193,7 @@ private extension MediaGeometryRegressionTests {
     }
 
     func normalizedVisibleCenter(
-        _ scrollView: DebugZoomScrollView
+        _ scrollView: MediaZoomScrollView
     ) -> CGPoint {
         CGPoint(
             x: (scrollView.contentOffset.x + scrollView.bounds.width / 2)
@@ -205,7 +205,7 @@ private extension MediaGeometryRegressionTests {
 
     func contentOffset(
         centering focalPoint: CGPoint,
-        in scrollView: DebugZoomScrollView
+        in scrollView: MediaZoomScrollView
     ) -> CGPoint {
         let range = scrollView.legalContentOffsetRange
         let desired = CGPoint(
@@ -222,7 +222,7 @@ private extension MediaGeometryRegressionTests {
 
     func normalizedVisibleCenter(
         afterClamping focalPoint: CGPoint,
-        in scrollView: DebugZoomScrollView
+        in scrollView: MediaZoomScrollView
     ) -> CGPoint {
         let offset = contentOffset(centering: focalPoint, in: scrollView)
         return CGPoint(
@@ -233,7 +233,7 @@ private extension MediaGeometryRegressionTests {
         )
     }
 
-    func expectLegalContentOffset(_ scrollView: DebugZoomScrollView) {
+    func expectLegalContentOffset(_ scrollView: MediaZoomScrollView) {
         let range = scrollView.legalContentOffsetRange
         #expect(scrollView.contentOffset.x >= range.minimumX - 0.5)
         #expect(scrollView.contentOffset.x <= range.maximumX + 0.5)
@@ -244,8 +244,8 @@ private extension MediaGeometryRegressionTests {
     func makeZoomView(
         image: UIImage,
         ownership: MediaGestureOwnershipController<String>
-    ) -> DebugZoomImageView {
-        DebugZoomImageView(
+    ) -> MediaZoomImageView {
+        MediaZoomImageView(
             mediaID: "stable",
             image: image,
             ownershipController: ownership,
@@ -263,8 +263,8 @@ private extension MediaGeometryRegressionTests {
 
     func makeViewportMetrics(
         viewportWidth: Double
-    ) -> DebugMediaViewportMetrics {
-        DebugMediaViewportMetrics(
+    ) -> MediaViewportMetrics {
+        MediaViewportMetrics(
             layoutGeneration: 1,
             zoomScale: 2.5,
             viewportWidth: viewportWidth,
