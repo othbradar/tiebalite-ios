@@ -7,41 +7,35 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
     @MainActor
     func testRegularSplitRouteSurvivesOrientationAndRootSwitch() {
-        let app = UITestHarness.launch(scenario: .emptyShell)
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
         let device = XCUIDevice.shared
         device.orientation = .landscapeLeft
 
         UITestHarness.requirePresent(.layoutRegular, in: app)
-        UITestHarness.tap(.openForum, in: app)
-        UITestHarness.requirePresent(.routeForum, in: app)
-        UITestHarness.tap(.openThread, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        pushForumAndThread(in: app)
 
         device.orientation = .portrait
         UITestHarness.requirePresent(.layoutRegular, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
-        UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requirePresent(.followedForumsRoot, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
         UITestHarness.tapTab(.recommendations, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        UITestHarness.requirePresent(.recommendationsRoot, in: app)
+        UITestHarness.tapTab(.followedForums, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
 
         device.orientation = .portrait
     }
 
     @MainActor
     func testCanonicalStateSurvivesRegularCompactRegularProjection() {
-        let app = UITestHarness.launch(scenario: .emptyShell)
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
         UITestHarness.requirePresent(.layoutRegular, in: app)
-        UITestHarness.requireTabSelected(.recommendations, in: app)
-        UITestHarness.tap(.openForum, in: app)
-        UITestHarness.tap(.openThread, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        pushForumAndThread(in: app)
 
         UITestHarness.tap(.layoutControlCompact, in: app)
         UITestHarness.requirePresent(.layoutCompact, in: app)
-        UITestHarness.requireTabSelected(.recommendations, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        UITestHarness.requireTabSelected(.followedForums, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
 
         UITestHarness.tapTab(.settings, in: app)
         UITestHarness.tap(.debugOpenGallery, in: app)
@@ -52,8 +46,68 @@ final class IPadAppShellSmokeTests: XCTestCase {
         UITestHarness.requireTabSelected(.settings, in: app)
         UITestHarness.requirePresent(.galleryRoot, in: app)
 
-        UITestHarness.tapTab(.recommendations, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        UITestHarness.tapTab(.followedForums, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+    }
+
+    @MainActor
+    func testFixtureReadingFlowOpensAndClosesMediaOnIPad() {
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+        let device = XCUIDevice.shared
+        device.orientation = .landscapeLeft
+
+        UITestHarness.requirePresent(.layoutRegular, in: app)
+        openFixtureThread(in: app)
+        let recommendationFrame = UITestHarness.element(
+            .recommendationsSelectedRow,
+            in: app
+        ).frame
+
+        UITestHarness.scrollToHittable(
+            .threadReaderImageSecondAction,
+            inside: .threadReaderScreen,
+            in: app
+        )
+        UITestHarness.requireValue(
+            .threadReaderImageSecondAction,
+            equals: "已加载",
+            in: app
+        )
+        let threadFrame = UITestHarness.element(
+            .threadReaderImageSecondAction,
+            in: app
+        ).frame
+
+        UITestHarness.tap(.threadReaderImageSecondAction, in: app)
+        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
+        UITestHarness.tap(.mediaViewerClose, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+
+        let returnedImage = UITestHarness.element(
+            .threadReaderImageSecondAction,
+            in: app
+        )
+        XCTAssertTrue(returnedImage.waitForExistence(timeout: 5))
+        XCTAssertTrue(returnedImage.isHittable)
+        XCTAssertEqual(
+            returnedImage.frame.midY,
+            threadFrame.midY,
+            accuracy: 8
+        )
+        let returnedRecommendation = UITestHarness.element(
+            .recommendationsSelectedRow,
+            in: app
+        )
+        XCTAssertTrue(returnedRecommendation.exists)
+        XCTAssertTrue(returnedRecommendation.isHittable)
+        XCTAssertEqual(
+            returnedRecommendation.frame.midY,
+            recommendationFrame.midY,
+            accuracy: 12
+        )
+
+        device.orientation = .portrait
     }
 
     @MainActor
@@ -166,5 +220,27 @@ final class IPadAppShellSmokeTests: XCTestCase {
         MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
         MediaViewerProductionAssertions.close(in: app)
         device.orientation = .portrait
+    }
+
+    @MainActor
+    private func openFixtureThread(in app: XCUIApplication) {
+        UITestHarness.requirePresent(.recommendationsRoot, in: app)
+        UITestHarness.scrollToHittable(
+            .recommendationsSelectedRow,
+            inside: .recommendationsList,
+            in: app
+        )
+        UITestHarness.tap(.recommendationsSelectedRow, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+    }
+
+    @MainActor
+    private func pushForumAndThread(in app: XCUIApplication) {
+        UITestHarness.tapTab(.followedForums, in: app)
+        UITestHarness.requirePresent(.followedForumsRoot, in: app)
+        UITestHarness.tap(.openForum, in: app)
+        UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.tap(.openThread, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
     }
 }

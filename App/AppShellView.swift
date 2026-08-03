@@ -7,6 +7,7 @@ struct AppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let harnessLabel: String?
     let environment: AppEnvironment
+    let featureStores: AppFeatureStoreRegistry
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -65,12 +66,14 @@ struct AppShellView: View {
                 IPadAppShellView(
                     navigation: navigation,
                     imageLoader: environment.imageLoader,
+                    featureStores: featureStores,
                     onOpenMedia: onOpenMedia
                 )
             } else {
                 IPhoneAppShellView(
                     navigation: navigation,
                     imageLoader: environment.imageLoader,
+                    featureStores: featureStores,
                     onOpenMedia: onOpenMedia
                 )
             }
@@ -123,6 +126,7 @@ private struct StableInteractionLabShell: View {
 private struct IPhoneAppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
+    let featureStores: AppFeatureStoreRegistry
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -185,18 +189,52 @@ private struct IPhoneAppShellView: View {
 
     private func rootStack(for root: RootID) -> some View {
         NavigationStack(path: pathBinding(for: root)) {
+            rootContent(for: root)
+            .navigationDestination(for: RouteIdentity.self) { route in
+                AppRouter.destination(
+                    for: route,
+                    root: root,
+                    navigation: navigation,
+                    dependencies: routeDependencies
+                )
+            }
+        }
+    }
+
+    private var routeDependencies: AppRouteDependencies {
+        AppRouteDependencies(
+            featureStores: featureStores,
+            imageLoader: imageLoader,
+            onOpenMedia: onOpenMedia
+        )
+    }
+
+    @ViewBuilder
+    private func rootContent(for root: RootID) -> some View {
+        switch root {
+        case .recommendations:
+            RecommendationsView(
+                store: featureStores.recommendationsStore,
+                imageLoader: imageLoader,
+                onOpenThread: { recommendation in
+                    guard let route = AppRouter.threadRoute(
+                        for: recommendation
+                    ), case let .thread(threadID) = route else {
+                        return
+                    }
+                    _ = featureStores.threadReaderStore(
+                        for: root,
+                        threadID: threadID
+                    )
+                    navigation.push(route, in: root)
+                }
+            )
+        case .followedForums:
             FixtureRootPlaceholderView(root: root) {
                 guard let forum = ForumName("swiftui") else {
                     return
                 }
                 navigation.push(.forum(forum), in: root)
-            }
-            .navigationDestination(for: RouteIdentity.self) { route in
-                AppRouter.destination(
-                    for: route,
-                    root: root,
-                    navigation: navigation
-                )
             }
         }
     }
@@ -252,6 +290,7 @@ private struct PhoneTabSelector: View {
 private struct IPadAppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
+    let featureStores: AppFeatureStoreRegistry
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -316,7 +355,13 @@ private struct IPadAppShellView: View {
     @ViewBuilder
     private var detailColumn: some View {
         if let root = navigation.state.selectedTab.rootID {
-            RegularDetailColumn(navigation: navigation, root: root)
+            RegularDetailColumn(
+                navigation: navigation,
+                root: root,
+                imageLoader: imageLoader,
+                featureStores: featureStores,
+                onOpenMedia: onOpenMedia
+            )
         } else if let route = navigation.state.settingsPath.last {
             NavigationStack {
                 SettingsRouteDestinationView(
@@ -336,11 +381,31 @@ private struct IPadAppShellView: View {
 
     private func rootContent(for root: RootID) -> some View {
         NavigationStack {
-            FixtureRootPlaceholderView(root: root) {
-                guard let forum = ForumName("swiftui") else {
-                    return
+            switch root {
+            case .recommendations:
+                RecommendationsView(
+                    store: featureStores.recommendationsStore,
+                    imageLoader: imageLoader,
+                    onOpenThread: { recommendation in
+                        guard let route = AppRouter.threadRoute(
+                            for: recommendation
+                        ), case let .thread(threadID) = route else {
+                            return
+                        }
+                        _ = featureStores.threadReaderStore(
+                            for: root,
+                            threadID: threadID
+                        )
+                        navigation.replaceRootDetail(route, in: root)
+                    }
+                )
+            case .followedForums:
+                FixtureRootPlaceholderView(root: root) {
+                    guard let forum = ForumName("swiftui") else {
+                        return
+                    }
+                    navigation.replaceRootDetail(.forum(forum), in: root)
                 }
-                navigation.replaceRootDetail(.forum(forum), in: root)
             }
         }
     }
@@ -350,6 +415,9 @@ private struct IPadAppShellView: View {
 private struct RegularDetailColumn: View {
     @Bindable var navigation: AppNavigationStore
     let root: RootID
+    let imageLoader: any ImageLoading
+    let featureStores: AppFeatureStoreRegistry
+    let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
         let projection = navigation.state.projection(for: .regular)
@@ -358,13 +426,15 @@ private struct RegularDetailColumn: View {
                 AppRouter.destination(
                     for: detailRoot,
                     root: root,
-                    navigation: navigation
+                    navigation: navigation,
+                    dependencies: routeDependencies
                 )
                 .navigationDestination(for: RouteIdentity.self) { route in
                     AppRouter.destination(
                         for: route,
                         root: root,
-                        navigation: navigation
+                        navigation: navigation,
+                        dependencies: routeDependencies
                     )
                 }
             }
@@ -385,6 +455,14 @@ private struct RegularDetailColumn: View {
             set: {
                 navigation.replaceDetailTailFromSystem($0, in: root)
             }
+        )
+    }
+
+    private var routeDependencies: AppRouteDependencies {
+        AppRouteDependencies(
+            featureStores: featureStores,
+            imageLoader: imageLoader,
+            onOpenMedia: onOpenMedia
         )
     }
 }

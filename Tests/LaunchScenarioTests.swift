@@ -5,7 +5,7 @@ struct LaunchScenarioTests {
     @Test
     func parsesEveryAllowlistedScenarioExactly() throws {
         #expect(LaunchScenarioRegistry.schemaVersion == 1)
-        #expect(LaunchScenarioID.allCases.count == 7)
+        #expect(LaunchScenarioID.allCases.count == 8)
 
         for scenario in LaunchScenarioID.allCases {
             let parsed = try LaunchScenarioParser.parse(arguments: [

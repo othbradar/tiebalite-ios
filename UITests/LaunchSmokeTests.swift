@@ -53,6 +53,7 @@ final class LaunchSmokeTests: XCTestCase {
 
         UITestHarness.requirePresent(.shellRoot, in: app)
         UITestHarness.requirePresent(.shellTitle, in: app)
+        UITestHarness.requirePresent(.recommendationsRoot, in: app)
         UITestHarness.requireTabPresent(.recommendations, in: app)
         UITestHarness.requireTabPresent(.followedForums, in: app)
         UITestHarness.requireTabPresent(.settings, in: app)

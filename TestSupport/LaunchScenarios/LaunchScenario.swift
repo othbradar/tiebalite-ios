@@ -11,6 +11,7 @@ import SwiftUI
 #if UITESTING || TEST_SUPPORT
 enum LaunchScenarioID: String, CaseIterable, Equatable, Sendable {
     case emptyShell = "app.empty-shell"
+    case fixtureReadingFlow = "fixture.reading-flow"
     case networkOffline = "network.offline"
     case networkSlow = "network.slow"
     case threadContentRenderer = "renderer.thread-content"

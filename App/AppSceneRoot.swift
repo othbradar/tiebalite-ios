@@ -6,6 +6,7 @@ struct AppSceneRoot: View {
     private let harnessLabel: String?
 
     @State private var navigationStore: AppNavigationStore
+    @State private var featureStores: AppFeatureStoreRegistry
     @State private var mediaPresentation: MediaViewerPresentation?
 
     init(
@@ -20,6 +21,11 @@ struct AppSceneRoot: View {
                 initialState: initialNavigationState
             )
         )
+        _featureStores = State(
+            initialValue: AppFeatureStoreRegistry(
+                compositionRoot: compositionRoot
+            )
+        )
         _mediaPresentation = State(initialValue: nil)
     }
 
@@ -28,6 +34,7 @@ struct AppSceneRoot: View {
             navigation: navigationStore,
             harnessLabel: harnessLabel,
             environment: compositionRoot.environment,
+            featureStores: featureStores,
             onOpenMedia: presentMedia
         )
         .fullScreenCover(item: $mediaPresentation) { presentation in
@@ -41,6 +48,9 @@ struct AppSceneRoot: View {
         }
         .onOpenURL { url in
             navigationStore.handleExternalURL(url)
+        }
+        .onChange(of: navigationStore.state) { _, newState in
+            featureStores.retainThreadStores(in: newState)
         }
     }
 

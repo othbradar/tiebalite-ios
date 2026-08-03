@@ -128,6 +128,8 @@ enum UITestElementID: String, CaseIterable {
     case openForum = "app.fixture.root.open-forum"
     case openSubposts = "app.fixture.thread.open-subposts"
     case openThread = "app.fixture.forum.open-thread"
+    case recommendationsList = "recommendations.list"
+    case recommendationsSelectedRow = "recommendations.row.t100003"
     case recommendationsRoot = "app.root.recommendations"
     case routeForum = "app.route.forum"
     case routeSubposts = "app.route.subposts"
@@ -172,6 +174,12 @@ enum UITestElementID: String, CaseIterable {
         "thread-reader.renderer-lab.media-route"
     case threadContentUnknown =
         "thread-reader.content.node.t91001.p92001.sfirstPost.n17"
+    case threadReaderImageSecondAction =
+        "thread-reader.content.image.t100003.p110003.sfirstPost.n2.action"
+    case threadReaderImageSecondState =
+        "thread-reader.content.image.t100003.p110003.sfirstPost.n2.state"
+    case threadReaderScreen = "thread-reader.screen.t100003"
+    case threadReaderScroll = "thread-reader.scroll.t100003"
     case debugOpenInteractionLab = "app.debug.open-interaction-lab"
 }
 
@@ -516,27 +524,6 @@ extension UITestHarness {
             )
             return
         }
-    }
-
-    @MainActor
-    static func attachSafeVisualEvidence(
-        app: XCUIApplication,
-        name: String
-    ) {
-        let screenshot = XCTAttachment(screenshot: app.screenshot())
-        screenshot.name = name
-        screenshot.lifetime = .keepAlways
-        XCTContext.runActivity(named: "Attach safe visual evidence") {
-            $0.add(screenshot)
-        }
-    }
-
-    @MainActor
-    static func element(
-        _ identifier: UITestElementID,
-        in app: XCUIApplication
-    ) -> XCUIElement {
-        app.descendants(matching: .any)[identifier.rawValue]
     }
 
     @MainActor

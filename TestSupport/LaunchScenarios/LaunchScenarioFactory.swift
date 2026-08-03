@@ -24,6 +24,12 @@ enum LaunchScenarioFactory {
             sessionStatus = .signedOut
             safeLabel = "Harness: Empty shell"
             imageLoader = HarnessFixtureImageLoader(fixtures: [:])
+        case .fixtureReadingFlow:
+            networkMode = .controlled
+            httpBehavior = .controlled
+            sessionStatus = .signedOut
+            safeLabel = "Harness: Fixture reading flow"
+            imageLoader = FixtureReadingImageLoader()
         case .networkOffline:
             networkMode = .offline
             httpBehavior = .failure(.offline)

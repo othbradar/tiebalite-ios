@@ -7,29 +7,31 @@ final class AppShellSmokeTests: XCTestCase {
 
     @MainActor
     func testIndependentRootPathsAndCurrentTabReselection() {
-        let app = UITestHarness.launch(scenario: .emptyShell)
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
         UITestHarness.requireTabSelected(.recommendations, in: app)
-        pushForumAndThread(in: app)
+        openFixtureThread(in: app)
         UITestHarness.tapTab(.followedForums, in: app)
         UITestHarness.requireTabSelected(.followedForums, in: app)
         UITestHarness.requirePresent(.followedForumsRoot, in: app)
         UITestHarness.tap(.openForum, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.tap(.openThread, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
 
         UITestHarness.tapTab(.recommendations, in: app)
         UITestHarness.requireTabSelected(.recommendations, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
         UITestHarness.tapTab(.recommendations, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
 
         UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
     }
 
     @MainActor
     func testSystemBackReturnsToThePreviousFixtureRoute() {
-        let app = UITestHarness.launch(scenario: .emptyShell)
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
         pushForumAndThread(in: app)
         UITestHarness.tapSystemBack(in: app, returningTo: .routeForum)
@@ -37,7 +39,7 @@ final class AppShellSmokeTests: XCTestCase {
 
     @MainActor
     func testSystemEdgeSwipeReturnsToThePreviousFixtureRoute() {
-        let app = UITestHarness.launch(scenario: .emptyShell)
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
         pushForumAndThread(in: app)
         UITestHarness.swipeSystemBack(in: app, returningTo: .routeForum)
@@ -378,12 +380,98 @@ final class AppShellSmokeTests: XCTestCase {
         return UITestHarness.element(state, in: app).frame
     }
 
+}
+
+extension AppShellSmokeTests {
     @MainActor
     private func pushForumAndThread(in app: XCUIApplication) {
-        UITestHarness.requirePresent(.recommendationsRoot, in: app)
+        UITestHarness.tapTab(.followedForums, in: app)
+        UITestHarness.requirePresent(.followedForumsRoot, in: app)
         UITestHarness.tap(.openForum, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
         UITestHarness.tap(.openThread, in: app)
-        UITestHarness.requirePresent(.routeThread, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+    }
+
+    @MainActor
+    private func openFixtureThread(in app: XCUIApplication) {
+        UITestHarness.requirePresent(.recommendationsRoot, in: app)
+        UITestHarness.scrollToHittable(
+            .recommendationsSelectedRow,
+            inside: .recommendationsList,
+            in: app
+        )
+        UITestHarness.tap(.recommendationsSelectedRow, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+    }
+
+    @MainActor
+    func testFixtureReadingFlowPreservesThreadAndRecommendationPositions() {
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+
+        UITestHarness.scrollToHittable(
+            .recommendationsSelectedRow,
+            inside: .recommendationsList,
+            in: app
+        )
+        let recommendationFrame = UITestHarness.element(
+            .recommendationsSelectedRow,
+            in: app
+        ).frame
+        UITestHarness.tap(.recommendationsSelectedRow, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+
+        UITestHarness.scrollToHittable(
+            .threadReaderImageSecondAction,
+            inside: .threadReaderScreen,
+            in: app
+        )
+        UITestHarness.requireValue(
+            .threadReaderImageSecondAction,
+            equals: "已加载",
+            in: app
+        )
+        let threadFrame = UITestHarness.element(
+            .threadReaderImageSecondAction,
+            in: app
+        ).frame
+
+        UITestHarness.tap(.threadReaderImageSecondAction, in: app)
+        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
+        UITestHarness.tap(.mediaViewerNext, in: app)
+        MediaViewerProductionAssertions.requirePosition("3 / 3", in: app)
+        UITestHarness.tap(.mediaViewerPrevious, in: app)
+        MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
+        UITestHarness.tap(.mediaViewerClose, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+
+        let returnedThreadImage = UITestHarness.element(
+            .threadReaderImageSecondAction,
+            in: app
+        )
+        XCTAssertTrue(returnedThreadImage.waitForExistence(timeout: 5))
+        XCTAssertTrue(returnedThreadImage.isHittable)
+        XCTAssertEqual(
+            returnedThreadImage.frame.midY,
+            threadFrame.midY,
+            accuracy: 8
+        )
+
+        UITestHarness.tapSystemBack(
+            in: app,
+            returningTo: .recommendationsRoot
+        )
+        let returnedRecommendation = UITestHarness.element(
+            .recommendationsSelectedRow,
+            in: app
+        )
+        XCTAssertTrue(returnedRecommendation.waitForExistence(timeout: 5))
+        XCTAssertTrue(returnedRecommendation.isHittable)
+        XCTAssertEqual(
+            returnedRecommendation.frame.midY,
+            recommendationFrame.midY,
+            accuracy: 12
+        )
     }
 }

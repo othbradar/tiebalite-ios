@@ -7,3 +7,6 @@
 
 阶段 09 唯一生产 Pager/MediaViewer 迁移、状态、交互、运行证据与 Open-Source
 Beta 限制见 `PHASE09_MEDIA_VIEWER.md`。
+
+阶段 10 Fixture 推荐→帖子→唯一 MediaViewer→原位置返回的垂直主链路、
+运行证据与 Beta 限制见 `PHASE10_FIXTURE_VERTICAL_SLICE.md`。

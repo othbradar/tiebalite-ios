@@ -1,7 +1,7 @@
 # TASK_STATE
 
-- 当前阶段：09
-- 状态：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`
+- 当前阶段：10
+- 状态：`PHASE_10_FIXTURE_VERTICAL_SLICE_COMPLETE`
 - 当前分支：`main`
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
@@ -13,14 +13,78 @@
   `fix: align thread image accessibility with render state`
 - 阶段 09 提交：包含本文件的
   `feat: implement production media viewer`
+- 阶段 10 提交：包含本文件的
+  `feat: complete stage 10 fixture reading flow`
 - production live：`DISABLED`
 - 阶段 06：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
   （`OPEN_SOURCE_BETA` 范围；已由阶段 09 迁移为唯一生产交互基础）
 - 阶段 06C-C：`DEFERRED_POST_BETA`
 - 阶段 09 前置条件：`PHASE_09_PREREQUISITES_SATISFIED`
 - 阶段 09：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`
-- 阶段 10 前置条件：`NOT_EVALUATED`
-- 阶段 10：`NOT_STARTED`
+- 阶段 10：`PHASE_10_FIXTURE_VERTICAL_SLICE = COMPLETE`
+- 阶段 11：`NOT_STARTED`
+
+## 阶段 10 目标与范围
+
+阶段 10 按个人开源 Beta 标准完成 Fixture 驱动的主链路：
+
+- 12 条合成推荐数据使用稳定 threadID，覆盖文字、单图、多图、长标题、
+  无图以及不同吧名、作者和回复数；
+- `RecommendationsStore` 明确区分 initial loading、loaded、empty 和 failed，
+  Repository 协议与 Fixture 实现可由未来 live 数据源替换；
+- 唯一 `ThreadReaderView` 按稳定 threadID 加载首楼和 3 个普通楼层，复用
+  阶段 08 的 `ThreadContentRenderer`、节点身份与 `ThreadMediaIntent`；
+- App scene 持有稳定推荐 Store，并按 root/threadID 复用帖子 Store；pop 后释放
+  已离开路由的 Store，状态刷新或 MediaViewer presentation 不重建当前内容；
+- iPhone 使用现有系统 push，iPad 使用现有 split detail projection；图片仍只从
+  `AppSceneRoot` 的唯一 `fullScreenCover` 进入阶段 09 MediaViewer；
+- Release 与 UITesting 均通过可注入 Fixture repository/image loader 演示本地
+  内容，`DisabledHTTPClient` 继续阻止 live transport。
+
+本阶段没有新增业务 `NavigationStack`、Pager、MediaViewer、Feature 自有
+`fullScreenCover`、手势、动画、overlay、第三方依赖或 live 网络；没有实现
+分页、PBPage、完整楼层/楼中楼、登录、评论、缓存大系统或阶段 11。
+
+## 阶段 10 状态与回归
+
+- 推荐和帖子 Store 的首次加载具有稳定 generation、幂等完成和结构化取消；
+  失败可显式准备重试，错误 threadID 的 Repository 结果归一为失败并释放当前
+  generation，不会永久卡在 loading。
+- 推荐列表的 scroll position 双向绑定记录可见锚点；点击条目不主动把选中行
+  居中。帖子 Store 与 scene route registry 在 MediaViewer 打开/关闭时保持身份，
+  因而帖子和推荐返回位置无需 UUID、延迟或重建 Renderer。
+- 同一推荐路由由 `AppNavigationStore` 按稳定 route identity 去重；媒体顺序由
+  同一 `ThreadContentDocument` 的稳定 MediaID 决定。
+- 新增 7 个阶段 10 Unit test；当前完整 Unit 为 199 个逻辑测试、218 次执行，
+  0 failed、0 skipped。
+- iPhone 定向主链路 1/1 通过，覆盖推荐中间项、帖子第二张图、2/3→3/3→2/3、
+  关闭后帖子 frame 与系统返回后推荐 frame 基本保持。
+- iPad 完整 App Shell smoke 5/5 通过，覆盖阶段 10 媒体开关、旋转、
+  regular/compact 投影以及既有 Renderer/MediaViewer 回归。
+- Simulator 手工观察因本机登录锁屏且自动解锁失败未执行；该项没有被自动化
+  结果替代或写成通过。
+
+详细范围、失败先行证据、最终门禁和 Known Limitations 见
+`Docs/Audits/PHASE10_FIXTURE_VERTICAL_SLICE.md`。
+
+## 阶段 10 Known Limitations
+
+1. 当前只使用合成 Fixture；没有 live 推荐、帖子或图片请求。
+2. 没有分页、完整楼层、楼中楼、删除态业务页或 live PBPage 映射。
+3. 没有生产图片共享 cache、candidate 选择、下采样或 full-resolution lease。
+4. 没有发布级系统版本/真机/VoiceOver 矩阵；iPhone/iPad Simulator 手工检查因
+   Mac 锁屏未执行，自动化覆盖不等同于人工视觉确认。
+5. 合成普通楼层仅用于 presentation vertical slice，不构成 Android PBPage
+   wire 字段证据；live 推荐 canonical thread identity 与普通楼层 wire 仍为
+   `UNKNOWN`。
+6. 当前 Fixture Repository 同步完成；未来接入真正 suspension 的 live
+   Repository 前，需要补充“旧 View task 正在取消时替代 task 到达”的
+   cancellation rendezvous。该序列在本阶段实际 Fixture 主链路不可稳定触发。
+
+## 阶段 10 出口与停止点
+
+`PHASE_10_FIXTURE_VERTICAL_SLICE = COMPLETE`。阶段 11 保持 `NOT_STARTED`，
+只能由新的明确用户指令开始。
 
 ## 阶段 09 目标与范围
 

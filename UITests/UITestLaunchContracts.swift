@@ -1,5 +1,6 @@
 enum UITestLaunchScenario: String, CaseIterable {
     case emptyShell = "app.empty-shell"
+    case fixtureReadingFlow = "fixture.reading-flow"
     case networkOffline = "network.offline"
     case networkSlow = "network.slow"
     case threadContentRenderer = "renderer.thread-content"
@@ -11,6 +12,8 @@ enum UITestLaunchScenario: String, CaseIterable {
         switch self {
         case .emptyShell:
             "Harness: Empty shell"
+        case .fixtureReadingFlow:
+            "Harness: Fixture reading flow"
         case .networkOffline:
             "Harness: Network offline"
         case .networkSlow:
