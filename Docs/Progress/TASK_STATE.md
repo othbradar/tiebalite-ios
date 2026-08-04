@@ -1,7 +1,11 @@
 # TASK_STATE
 
-- 当前阶段：10
-- 状态：`PHASE_10_FIXTURE_VERTICAL_SLICE_COMPLETE`
+- 当前阶段：11
+- 状态：`PHASE_11_LIVE_READING_RUNTIME_EVIDENCE_PARTIAL`
+- `PHASE_11 = RUNTIME_EVIDENCE_PARTIAL`
+- `LIVE_RECOMMENDATION = PARTIAL`
+- `LIVE_THREAD = NOT_RUNTIME_VERIFIED`
+- `PHASE_12 = NOT_STARTED`
 - 当前分支：`main`
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
@@ -15,14 +19,85 @@
   `feat: implement production media viewer`
 - 阶段 10 提交：包含本文件的
   `feat: complete stage 10 fixture reading flow`
-- production live：`DISABLED`
+- production live：`RECOMMENDATIONS_BLOCKED_PENDING_REPRODUCIBLE_EVIDENCE`；
+  `THREAD_BLOCKED_PENDING_RUNTIME_EVIDENCE`；`LIVE_IMAGES_DISABLED`
 - 阶段 06：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
   （`OPEN_SOURCE_BETA` 范围；已由阶段 09 迁移为唯一生产交互基础）
 - 阶段 06C-C：`DEFERRED_POST_BETA`
 - 阶段 09 前置条件：`PHASE_09_PREREQUISITES_SATISFIED`
 - 阶段 09：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`
 - 阶段 10：`PHASE_10_FIXTURE_VERTICAL_SLICE = COMPLETE`
-- 阶段 11：`NOT_STARTED`
+- 阶段 11：`RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 12：`NOT_STARTED`
+
+## 阶段 11 当前结果与停止点
+
+阶段 11 从阶段 10 提交
+`302b7b8fb34a8da3e1171e6bc5dc48afe548494e` 开始，只处理匿名推荐与帖子
+首屏的只读 Live 边界：
+
+- `AppEnvironment` 以显式 `fixture/live` mode 选择 Repository；普通
+  Debug/Release production 持有 ephemeral、无 Cookie/credential/cache 的
+  `URLSessionHTTPClient`，但两个未达门槛的能力均 fail closed；
+  UITesting/LaunchScenario 始终强制 Fixture；
+- `LiveRecommendationRepository` 使用阶段 07 EndpointPipeline，把 Proto 只在
+  Core mapper 边界转换为推荐领域值；页面布局、导航、Pager 与 MediaViewer
+  均未重写；
+- 推荐和帖子 Store 各自保存当前 Task 与递增 generation。新请求取消旧请求，
+  迟到完成不能覆盖新状态，取消不显示为网络失败；
+- PBPage request/response 的实际 Android closure 已锁定为 125 个文件；与
+  Personalized closure 合并后的唯一 GeneratedProtobuf target 为 126 个文件。
+  `PBPageProtocol`、`LiveThreadReaderRepository` 和纯 `Post.content` mapper 已由
+  合成 response、MockHTTPClient 与 replacement/cancellation tests 验证；
+- Production 推荐与 ThreadReader 分别由
+  `EvidenceBlockedRecommendationRepository` 和
+  `EvidenceBlockedThreadReaderRepository` fail closed。它们不回退到 Fixture，
+  也不发尚未达到可复现证据门槛的请求；typed Live adapter 仍可由 Mock tests
+  和显式 Debug Probe 调用，Fixture 模式完整保留阶段 10 主链路。
+
+2026-08-04 的 Debug-only 匿名推荐 Probe 只记录脱敏指标：所有受控请求均为
+HTTP 200、`application/octet-stream` 且 Proto 可解码；曾有一轮早期候选
+`client_type` 字段组合返回 5550 bytes/67 mapped items，紧接及最终
+Android 静态字段锁定版本均返回合法空页。最终版本为 245 bytes、0 item、
+171 ms。没有保存 raw response、正文、threadID、URL、Cookie、token 或设备
+标识。由于最终推荐页没有正 threadID，链式 PBPage Probe 按设计未运行；没有
+为取得成功而猜 AppPos、设备 ID、签名或循环重试。
+
+因此本阶段不能标记 COMPLETE：推荐 transport/HTTP/MIME/Proto decode 已有
+`RUNTIME_OBSERVATION`，但稳定匿名非空推荐、当前最小字段集合和 PBPage 匿名
+运行态仍是 `UNKNOWN`。Production 两项能力均按停止条件 fail closed。阶段 12
+保持 `NOT_STARTED`，本轮停止，不进入登录、关注、评论、回复、发帖或签到。
+
+阶段 11 最终 `make quality` 从头 exit 0 并输出
+`Quality gate completed.`：Unit 216 个逻辑测试/235 次执行、iPhone
+smoke 16/16、iPhone interaction 15/15、iPad smoke 5/5、iPad
+interaction 2/2 均 0 failed；iPad build、Release build/isolation 同时通过。
+
+## 阶段 11 Known Limitations
+
+1. 最终 evidence-locked 匿名推荐请求当前返回合法空页；早期单次非空结果未
+   固化 raw response，因此不能证明稳定匿名推荐、服务端 canonical/pagination
+   行为；Android 点击推荐使用 `ThreadInfo.id` 仅作为 route 字段的静态证据。
+2. PBPage 的 Android schema/request/mapper/Mock contract 已完成，但没有从最终
+   推荐页取得真实 threadID，Production ThreadReader 继续诊断性 fail closed。
+3. 没有 live 图片 ImageRepository、candidate 选择、下采样、cache 或 lease；
+   Production 继续使用 `DisabledImageLoader`，Fixture 图片链路不受影响。
+4. 没有保存 live response fixture；成功/空/畸形/未登录/过期/error taxonomy
+   的可复现服务器样本仍不齐全。
+5. 本阶段只实现第一页；没有无限分页、楼中楼、删除/私密/折叠常态验证。
+6. 阶段 10 的替代请求 rendezvous 风险已由推荐和帖子两组确定性 Task/
+   generation 回归覆盖；这不等于 live endpoint 已验证。
+
+## 阶段 11 变更边界
+
+- 新增动画：无。
+- 新增手势/Pager/MediaViewer：无。
+- 新增 overlay/fullScreenCover：无。
+- 新增依赖：无。
+- 实际运行的 live 验证：仅 Debug Probe 的少量匿名 HTTPS 请求；Production
+  composition fail closed，自动化测试不访问 live。
+- 登录、Cookie、BDUSS、STOKEN、Keychain：未读取、未发送、未实现。
+- Android submodule：只读且保持 clean。
 
 ## 阶段 10 目标与范围
 

@@ -21,6 +21,22 @@
 - 公开分发、App Store、商业使用、notice/源码义务和 fork/upstream 权利链仍
   未关闭；任何范围扩大必须新决策。此处记录项目政策，不构成法律意见。
 
+## 阶段 11 本地 PBPage 扩展
+
+- ADR-0013 在相同的本地、个人、非商业边界内，把锁定输入从 Personalized
+  51-file closure 扩展为 Personalized + PBPage 三个 root 的 126-file union；
+  PBPage 自身 closure 为 125，与 Personalized 重叠 50，因此新增 75 个生成文件。
+- 路径、SHA-256、root/import 关系继续记录在历史命名的
+  `Config/Protobuf/Personalized.inputs.tsv`；生成器直接只读同一 pinned、clean
+  Android submodule，没有把 `.proto` 复制进 iOS 树，也没有使用 `n0099`。
+- 阶段 11 的 PBPage mapper 测试只构造 Swift Proto response；没有把真实服务端
+  响应、正文、图片 URL、用户字段或 token 保存为 fixture。
+- Debug-only 无 session Personalized Probe 观察到一次 HTTPS/Proto 可达并映射出
+  67 项，但最终锁定请求返回合法空页，PBPage Probe 未发送。API 可达性既不构成
+  schema 来源授权，也不改变服务 API、内容、品牌或分发边界。
+- 公开分发、App Store、商业使用、notice/源码义务、fork/upstream 权利链和
+  Proto 文件级 provenance 继续 `BLOCKED/UNKNOWN`；本轮不扩大许可结论。
+
 ## Reference 身份
 
 - submodule path：`References/TiebaLite-Android`
@@ -77,7 +93,7 @@
 | 观察用户任务和状态语义 | 允许 | 用独立 iOS 设计与代码表达；保留证据路径 |
 | 记录公开 protocol fact（path、field number、wire shape） | 审慎允许用于规格 | 必须有本地源码/脱敏运行证据；不凭字段名猜语义 |
 | 独立实现 mapper/state machine | 允许 | 不逐行翻译；用 fixture/tests 定义行为 |
-| 从 pinned submodule 生成 Personalized 51 文件闭包 | 仅本地/个人/非商业允许 | exact commit/path/hash/import lock；不复制 `.proto`；公开分发仍阻塞 |
+| 从 pinned submodule 生成 Personalized + PBPage 三-root/126-file union | 仅本地/个人/非商业允许 | ADR-0011/0013；exact commit/path/hash/import lock；不复制 `.proto`；公开分发仍阻塞 |
 | 使用 `n0099` 或其他外部 schema 集 | 禁止 | 不作为直接/间接输入；需要独立来源与权利决策 |
 | 复制 Kotlin/Java/Compose | 禁止默认复制 | 需要独立授权和完整 GPL 影响评估 |
 | 复制 UI 资源/图标/品牌 | 禁止 | 产品章程禁止造成官方授权误导 |

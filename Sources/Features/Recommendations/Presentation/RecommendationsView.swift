@@ -36,7 +36,7 @@ struct RecommendationsView: View {
     private var content: some View {
         switch store.state {
         case .initialLoading:
-            InitialLoadingView(title: "正在加载本地推荐")
+            InitialLoadingView(title: "正在加载推荐")
                 .accessibilityIdentifier(
                     RecommendationsAccessibilityID.initialLoading
                 )
@@ -45,7 +45,7 @@ struct RecommendationsView: View {
         case .empty:
             EmptyStateView(
                 title: "暂无推荐",
-                message: "当前本地 Fixture 没有可显示的帖子。",
+                message: "当前没有可显示的帖子。",
                 systemImage: "rectangle.stack"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -54,7 +54,7 @@ struct RecommendationsView: View {
         case .initialFailure:
             FullPageErrorView(
                 title: "推荐加载失败",
-                message: "本地 Fixture 暂时不可用。",
+                message: "推荐服务暂时不可用。",
                 retry: requestRetry
             )
             .accessibilityIdentifier(RecommendationsAccessibilityID.failure)

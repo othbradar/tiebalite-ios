@@ -95,6 +95,10 @@ struct LaunchScenarioTests {
             let snapshot = await descriptor.compositionRoot.environment.session.snapshot()
 
             #expect(descriptor.safeLabel.hasPrefix("Harness:"))
+            #expect(
+                descriptor.compositionRoot.environment.readingDataSourceMode
+                    == .fixture
+            )
             switch scenario {
             case .sessionSignedInFixture:
                 #expect(snapshot.status == .signedIn)

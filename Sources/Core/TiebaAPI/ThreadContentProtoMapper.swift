@@ -34,22 +34,14 @@ enum ThreadContentProtoMapper {
             postID: postID,
             scope: .firstPost
         )
-        let nodes = thread.firstPostContent.enumerated().map { ordinal, wire in
-            let id = ThreadContentNodeID(source: source, ordinal: ordinal)
-            return ThreadContentNode(
-                id: id,
-                rawType: wire.type,
-                payload: map(wire, id: id)
-            )
-        }
         let availability: ThreadContentAvailability = thread.isDeleted == 0
             ? .available
             : .unavailable(.deletedFirstPost(rawFlag: thread.isDeleted))
-        return ThreadContentDocument(
+        return map(
+            postContent: thread.firstPostContent,
             source: source,
             availability: availability,
-            nodes: nodes,
-            poll: thread.hasPollInfo ? map(thread.pollInfo, source: source) : nil
+            poll: thread.hasPollInfo ? thread.pollInfo : nil
         )
     }
 
@@ -372,5 +364,29 @@ enum ThreadContentProtoMapper {
             return first
         }
         return second > 0 ? second : 0
+    }
+}
+
+extension ThreadContentProtoMapper {
+    static func map(
+        postContent: [Tieba_PbContent],
+        source: ThreadContentSource,
+        availability: ThreadContentAvailability = .available,
+        poll: Tieba_PollInfo? = nil
+    ) -> ThreadContentDocument {
+        let nodes = postContent.enumerated().map { ordinal, wire in
+            let id = ThreadContentNodeID(source: source, ordinal: ordinal)
+            return ThreadContentNode(
+                id: id,
+                rawType: wire.type,
+                payload: map(wire, id: id)
+            )
+        }
+        return ThreadContentDocument(
+            source: source,
+            availability: availability,
+            nodes: nodes,
+            poll: poll.map { map($0, source: source) }
+        )
     }
 }

@@ -1,0 +1,284 @@
+import Foundation
+import GeneratedProtobuf
+import SwiftProtobuf
+import Testing
+@testable import TiebaLite
+
+struct Stage11LiveRecommendationTests {
+    @Test
+    func liveRepositoryUsesEvidenceLockedAnonymousRequestAndMapsDomain() async throws {
+        let client = HarnessMockHTTPClient()
+        let repository = LiveRecommendationRepository(
+            client: client,
+            host: "fixture.invalid"
+        )
+        let load = Task {
+            try await repository.loadRecommendations()
+        }
+
+        try await client.waitForPendingCallCount(1)
+        let call = try #require(await client.pendingCalls().first)
+        #expect(
+            call.request.url.absoluteString ==
+                "https://fixture.invalid/c/f/excellent/personalized?cmd=309264"
+        )
+        #expect(call.request.headers["x_bd_data_type"] == "protobuf")
+        #expect(call.request.headers["Authorization"] == nil)
+        #expect(call.request.headers["Cookie"] == nil)
+
+        try await client.succeed(
+            call.id,
+            with: HTTPResponse(
+                statusCode: 200,
+                headers: [
+                    "content-type": PersonalizedProtocol.liveResponseMIMEType
+                ],
+                body: try personalizedFixtureData()
+            )
+        )
+
+        let summaries = try await load.value
+        #expect(summaries.map(\.threadID) == [1001, 1002])
+        #expect(summaries.allSatisfy { !$0.title.isEmpty })
+        #expect(summaries.allSatisfy { $0.threadID > 0 })
+    }
+
+    @Test
+    func liveRepositoryMapsAnExplicitEmptyEnvelopeToEmptyDomain() async throws {
+        let client = HarnessMockHTTPClient()
+        let repository = LiveRecommendationRepository(
+            client: client,
+            host: "fixture.invalid"
+        )
+        let load = Task {
+            try await repository.loadRecommendations()
+        }
+
+        try await client.waitForPendingCallCount(1)
+        let call = try #require(await client.pendingCalls().first)
+        var response = Tieba_PersonalizedResponse()
+        response.error = Tieba_Error()
+        response.data = Tieba_PersonalizedResponseData()
+        try await client.succeed(
+            call.id,
+            with: HTTPResponse(
+                statusCode: 200,
+                headers: [
+                    "content-type": PersonalizedProtocol.liveResponseMIMEType
+                ],
+                body: try response.serializedData()
+            )
+        )
+
+        #expect(try await load.value == [])
+    }
+
+    @Test
+    func liveRepositoryKeepsHTTPFailureTyped() async throws {
+        let client = HarnessMockHTTPClient()
+        let repository = LiveRecommendationRepository(
+            client: client,
+            host: "fixture.invalid"
+        )
+        let load = Task {
+            try await repository.loadRecommendations()
+        }
+
+        try await client.waitForPendingCallCount(1)
+        let call = try #require(await client.pendingCalls().first)
+        try await client.succeed(
+            call.id,
+            with: HTTPResponse(statusCode: 503)
+        )
+
+        await #expect(
+            throws: EndpointExecutionError.http(statusCode: 503)
+        ) {
+            try await load.value
+        }
+    }
+
+    @Test
+    func liveRepositoryKeepsCancellationObservable() async throws {
+        let client = HarnessMockHTTPClient()
+        let repository = LiveRecommendationRepository(
+            client: client,
+            host: "fixture.invalid"
+        )
+        let load = Task {
+            try await repository.loadRecommendations()
+        }
+
+        try await client.waitForPendingCallCount(1)
+        let call = try #require(await client.pendingCalls().first)
+        load.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            try await load.value
+        }
+        #expect(await client.events() == [
+            .started(call.id),
+            .cancelled(call.id)
+        ])
+    }
+
+    @MainActor
+    @Test
+    func replacementCancelsOldRequestAndLateCompletionCannotOverwrite() async throws {
+        let repository = ControlledRecommendationRepository()
+        let store = RecommendationsStore(repository: repository)
+        let old = Self.recommendation(threadID: 301)
+        let latest = Self.recommendation(threadID: 302)
+
+        let firstLoad = Task {
+            await store.reload()
+        }
+        try await repository.waitForCallCount(1)
+
+        let secondLoad = Task {
+            await store.reload()
+        }
+        try await repository.waitForCallCount(2)
+
+        try await repository.succeed(call: 2, items: [latest])
+        await secondLoad.value
+        #expect(store.state == .loaded([latest]))
+
+        try await repository.succeed(call: 1, items: [old])
+        await firstLoad.value
+
+        #expect(store.state == .loaded([latest]))
+        #expect(await repository.cancelledCalls() == [1])
+    }
+
+    @MainActor
+    @Test
+    func cancellationDoesNotBecomeVisibleFailure() async throws {
+        let repository = ControlledRecommendationRepository()
+        let store = RecommendationsStore(repository: repository)
+        let load = Task {
+            await store.reload()
+        }
+
+        try await repository.waitForCallCount(1)
+        load.cancel()
+        try await repository.fail(
+            call: 1,
+            error: FixtureReadingRepositoryError.unavailable
+        )
+        await load.value
+
+        #expect(store.state == .initialLoading)
+        #expect(await repository.cancelledCalls() == [1])
+    }
+
+    private func personalizedFixtureData() throws -> Data {
+        let bundle = Bundle(for: FixtureBundleMarker.self)
+        let root = try #require(
+            bundle.url(forResource: "Fixtures", withExtension: nil)
+        )
+        return try FixtureLoader(rootDirectory: root).loadData(
+            id: FixtureID("recommendations.personalized.cross-language"),
+            expectedFormat: .protobuf
+        )
+    }
+
+    private static func recommendation(
+        threadID: Int64
+    ) -> RecommendationSummary {
+        RecommendationSummary(
+            threadID: threadID,
+            title: "Thread \(threadID)",
+            forumName: "Forum",
+            authorName: "Author",
+            replyCount: 1,
+            thumbnail: nil
+        )
+    }
+}
+
+private actor ControlledRecommendationRepository: RecommendationRepository {
+    private struct PendingCall {
+        let gate: HarnessContinuationGate<[RecommendationSummary]>
+    }
+
+    private struct CountObserver {
+        let count: Int
+        let gate: HarnessContinuationGate<Void>
+    }
+
+    private var calls = 0
+    private var pending: [Int: PendingCall] = [:]
+    private var observers: [CountObserver] = []
+    private var observedCancellation: [Int] = []
+
+    func loadRecommendations() async throws -> [RecommendationSummary] {
+        calls += 1
+        let call = calls
+        let gate = HarnessContinuationGate<[RecommendationSummary]>()
+        pending[call] = PendingCall(gate: gate)
+        resumeObservers()
+
+        do {
+            let items = try await gate.wait()
+            if Task.isCancelled {
+                observedCancellation.append(call)
+            }
+            return items
+        } catch {
+            if Task.isCancelled {
+                observedCancellation.append(call)
+            }
+            throw error
+        }
+    }
+
+    func waitForCallCount(_ expected: Int) async throws {
+        if calls >= expected {
+            return
+        }
+        let gate = HarnessContinuationGate<Void>()
+        observers.append(CountObserver(count: expected, gate: gate))
+        try await gate.wait()
+    }
+
+    func succeed(
+        call: Int,
+        items: [RecommendationSummary]
+    ) throws {
+        guard let pendingCall = pending.removeValue(forKey: call),
+              pendingCall.gate.succeed(items) else {
+            throw ControlledRecommendationRepositoryError.unknownCall
+        }
+    }
+
+    func fail(
+        call: Int,
+        error: any Error
+    ) throws {
+        guard let pendingCall = pending.removeValue(forKey: call),
+              pendingCall.gate.fail(error) else {
+            throw ControlledRecommendationRepositoryError.unknownCall
+        }
+    }
+
+    func cancelledCalls() -> [Int] {
+        observedCancellation.sorted()
+    }
+
+    private func resumeObservers() {
+        var remaining: [CountObserver] = []
+        for observer in observers {
+            if calls >= observer.count {
+                observer.gate.succeed(())
+            } else {
+                remaining.append(observer)
+            }
+        }
+        observers = remaining
+    }
+}
+
+private enum ControlledRecommendationRepositoryError: Error {
+    case unknownCall
+}

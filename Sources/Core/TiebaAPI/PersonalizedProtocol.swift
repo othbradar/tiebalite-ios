@@ -33,6 +33,18 @@ struct PersonalizedRequestInput: Equatable, Sendable {
 enum PersonalizedProtocol {
     static let boundary = "--------7da3d81520810*"
     static let fixtureResponseMIMEType = "application/x-protobuf"
+    static let liveResponseMIMEType = "application/octet-stream"
+    static let androidClientVersion = "12.52.1.0"
+    static let androidUserAgent =
+        "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Version/4.0 Chrome/135.0.0.0 " +
+        "Mobile Safari/537.36 tieba/\(androidClientVersion)"
+    static let anonymousV12Headers = [
+        "Charset": "UTF-8",
+        "User-Agent": androidUserAgent,
+        "client_type": "2",
+        "x_bd_data_type": "protobuf"
+    ]
 
     static func makeDescriptor(host: String) throws -> EndpointDescriptor {
         guard let identifier = EndpointID("recommendations.personalized") else {
@@ -44,10 +56,13 @@ enum PersonalizedProtocol {
             host: host,
             path: "/c/f/excellent/personalized",
             queryItems: [EndpointField(name: "cmd", value: "309264")],
-            fixedHeaders: ["X-BD-Data-Type": "protobuf"],
+            fixedHeaders: anonymousV12Headers,
             bodyCodec: .multipartBinary,
             responseFamily: .protobuf,
-            allowedResponseMIMETypes: [fixtureResponseMIMEType],
+            allowedResponseMIMETypes: [
+                fixtureResponseMIMEType,
+                liveResponseMIMEType
+            ],
             authentication: .anonymous,
             timeout: 30,
             responseBodyLimit: 8 * 1_024 * 1_024,
@@ -60,6 +75,13 @@ enum PersonalizedProtocol {
         _ input: PersonalizedRequestInput
     ) throws -> Data {
         var data = Tieba_PersonalizedRequestData()
+        var common = Tieba_CommonRequest()
+        common.clientType = 2
+        common.clientVersion = androidClientVersion
+        common.from = "1020031h"
+        common.userAgent = androidUserAgent
+        common.personalizedRecSwitch = 1
+        data.common = common
         data.loadType = input.loadKind.rawValue
         data.pn = input.page
         data.needTags = 0

@@ -48,6 +48,22 @@ else
       "$file_list" >/dev/null; then
       fail "Release source proof is missing MediaViewer.swift: $file_list"
     fi
+    if ! rg -F '/Sources/Core/Networking/URLSessionHTTPClient.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing URLSessionHTTPClient.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/Core/TiebaAPI/LiveRecommendationRepository.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing LiveRecommendationRepository.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/Core/TiebaAPI/LiveThreadReaderRepository.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing LiveThreadReaderRepository.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/Core/TiebaAPI/PBPageProtocol.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing PBPageProtocol.swift: $file_list"
+    fi
     if rg -n "$forbidden_pattern" "$file_list" >/dev/null; then
       fail "Release source list contains test-only input: $file_list"
     fi

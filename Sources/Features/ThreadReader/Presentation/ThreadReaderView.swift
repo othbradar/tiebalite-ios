@@ -29,11 +29,11 @@ struct ThreadReaderView: View {
     private var content: some View {
         switch store.state {
         case .initialLoading:
-            InitialLoadingView(title: "正在加载本地帖子")
+            InitialLoadingView(title: "正在加载帖子")
         case .initialFailure:
             FullPageErrorView(
                 title: "帖子加载失败",
-                message: "这篇本地 Fixture 暂时不可用。",
+                message: "这篇帖子暂时不可用。",
                 retry: requestRetry
             )
             .accessibilityIdentifier(

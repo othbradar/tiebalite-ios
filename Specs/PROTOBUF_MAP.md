@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`PERSONALIZED_AND_THREAD_CONTENT_CROSS_LANGUAGE_VERIFIED`
+状态：`PERSONALIZED_THREAD_CONTENT_AND_PBPAGE_LOCAL_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -21,15 +21,19 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
   `55d7a1cc5666b85c13464aea1c4b4a90feccb4c8`。
 - canonical package lock：`Config/SwiftPM/Package.resolved`；生成工程 lock
   由脚本单向 materialize 并逐字节比较。
-- schema manifest：`Config/Protobuf/Personalized.inputs.tsv`，51 个输入均有
-  relative path、SHA-256、relationship 和 direct imports。
-- generated output：`Generated/Protobuf` 的 51 个 `.pb.swift`、生成 metadata
+- schema manifest：历史文件名
+  `Config/Protobuf/Personalized.inputs.tsv` 现锁定三个 root 的 126 个输入，
+  均有 relative path、SHA-256、relationship 和 direct imports。
+- generated output：`Generated/Protobuf` 的 126 个 `.pb.swift`、生成 metadata
   与逐文件 SHA-256；两次 clean generation 与 tracked output 一致。
 - `GeneratedProtobuf` 是独立静态 target；UI/Feature import 被静态门禁拒绝。
 - 首个 binary fixture 是 250-byte `CROSS_LANGUAGE_GENERATED` JVM fixture，
   不是 live endpoint evidence；原 `opaque.pb` 仍只是 loader fixture。
 - 阶段 08 复用同一闭包中的 `ThreadInfo/PbContent/PollInfo/PollOption`，
   生成 1535-byte 首楼正文 fixture；没有新增 Proto 输入或修改生成文件。
+- 阶段 11 依据 ADR-0013 增加 PBPage request/response 两个 root。PBPage
+  request closure 为 6、response closure 为 119、合并为 125；与
+  Personalized 51-file closure 重叠 50，当前唯一联合 closure 因而为 126。
 
 当前 local/personal/noncommercial schema 路径由 ADR-0011 批准；公开分发、
 App Store 和商业使用继续 `BLOCKED`。
@@ -46,6 +50,18 @@ App Store 和商业使用继续 `BLOCKED`。
 - enum count：0；因此 unknown-enum test 为
   `NOT_APPLICABLE_NO_ENUM_IN_PINNED_SCHEMA`，以 raw `threadTypes=999` 保留测试
   代替，不能虚构 enum。
+
+### PBPage 与当前联合闭包
+
+- roots：`PbPage/PbPageRequest.proto`、
+  `PbPage/PbPageResponse.proto`（2）
+- request closure：6
+- response closure：119
+- PBPage union：125
+- 与 Personalized closure 重叠：50
+- 当前三-root union / generated output：126
+- 新增 generated files：75
+- generated `@unchecked Sendable` 精确 allowlist：17 个文件；手写代码仍为 0
 
 ## 生成层次
 
@@ -98,7 +114,9 @@ Wire/SwiftProtobuf 实际会按 import graph 解析；下列顺序是可审查�
 | PB Page | `PbPageRequest` | `PbPageResponse` | `Error` |
 | PB Floor | `PbFloorRequest` | `PbFloorResponse` | `Error` |
 
-PB Page + PB Floor 四个根 wrapper 的 Android import 传递闭包约 129 个 proto。阶段 03 生成前必须用脚本重新计算锁定列表和哈希，避免人工漏依赖；本阶段不创建该生成脚本。
+PBPage 两个 root 的递归 closure 已由阶段 11 脚本锁定为 125，并与
+Personalized 合并为 126；PB Floor 仍未进入当前生成集合，不能从旧的约数
+推断其闭包。
 
 ## P0 message 映射
 
@@ -237,16 +255,20 @@ malformed）、3、4、raw `999` 和结构隔离已 `TESTED`。阶段 08 以
 dispatcher P0 raw、unknown `999`、meme/poll message presence、URL/尺寸/空内容
 降级与严格保序，状态为 `CROSS_LANGUAGE_GENERATED_AND_TESTED`。
 
-FRS、PB Page wrapper、`Post.content#5`、PB Floor、真实 live pagination 与
-普通楼层折叠/删除 wire 仍为 `NOT_CREATED/NOT_TESTED`；不得用首楼
-fixture 替代这些证据。
+PBPage wrapper、`Post.content#5`、首楼/普通楼层、图片 intent、server error
+和 route identity mismatch 已由阶段 11 完全合成的 Swift Proto response
+`LOCAL_SYNTHETIC_TESTED`；尚无 tracked cross-language 或 live PBPage fixture。
+FRS、PB Floor、真实 live pagination 与普通楼层折叠/删除常态仍为
+`NOT_CREATED/NOT_TESTED`；不得用首楼 fixture 或合成 mapper test 替代运行证据。
 
 ## 来源与复制边界
 
 Android reference 根目录含 GPL version 3 许可证文本，README 另有非商业
 声明；逐文件授权、上游权利链及两者关系仍为 `UNKNOWN`。ADR-0011 仅在项目
-负责人明确的本地/个人/非商业范围允许从 exact pinned submodule 生成上述
-51-file closure，不把 `.proto` 复制进 iOS 树，也不使用 `n0099`。公开分发、
+负责人明确的本地/个人/非商业范围允许从 exact pinned submodule 生成历史
+51-file Personalized closure；ADR-0013 在同一边界内批准当前 126-file
+Personalized + PBPage union。不把 `.proto` 复制进 iOS 树，也不使用
+`n0099`。公开分发、
 App Store、商业使用及 notice/源码义务仍 `BLOCKED`；扩大范围前必须按
 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 新建权利决策，必要时切换到
 clean-room 最小兼容 schema。

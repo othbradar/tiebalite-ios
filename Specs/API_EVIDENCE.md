@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STATIC_AND_THREAD_CONTENT_CROSS_LANGUAGE_FIXTURE_EVIDENCE`
+状态：`STAGE11_RECOMMENDATION_RUNTIME_OBSERVATION_PBPAGE_LOCAL_ADAPTER`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -15,11 +15,20 @@ host、没有发送真实请求，production composition 继续使用
 `PbContent/PollInfo/PollOption` 为与 Proto/SwiftUI 解耦的领域值。该 fixture
 不是 PB Page response，不证明普通楼层、分页或 live endpoint。
 
-本阶段没有真实请求、账号验证或服务端响应，因此没有
-`RUNTIME_EVIDENCE`。`CROSS_LANGUAGE_GENERATED` 只证明 pinned schema 与
-JVM/Swift wire 行为，不能证明匿名、最小 live 参数、MIME、错误码或分页。
-下列 endpoint 仍不代表已获准在 iOS 生产代码中接入。凡仍使用明文 HTTP
-的链路状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
+阶段 11 将唯一生成闭包扩展到 Personalized + PBPage 的 126 个文件，并建立
+两套 typed Live adapter。2026-08-04 的 Debug-only 匿名 Personalized Probe
+真实观察到 HTTP 200、`application/octet-stream` 和可解码 Proto；一轮早期
+候选字段组合返回 5550 bytes/67 mapped items，但最终 evidence-locked request
+重复返回合法空页（最终一轮 245 bytes/0 item/171 ms）。没有保存 raw response
+或内容 fixture，因而这只是 `RUNTIME_OBSERVATION`，不能关闭稳定匿名能力、
+最小参数、分页、错误 taxonomy 或 canonical identity。
+
+最终推荐空页没有提供正 threadID，链式 PBPage Probe 按设计未运行。
+PBPage 当前只有锁定 Android call site/schema、确定性 request、合成 response
+mapper 和 MockHTTPClient contract evidence。由于推荐和 PBPage 都未达到可复现
+运行证据门槛，Production 两项能力继续 fail closed，不把 local adapter 或单次
+观察冒充 live-ready。凡仍使用明文 HTTP 的链路
+状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
 
 ## 公共传输证据
 
@@ -27,7 +36,9 @@ JVM/Swift wire 行为，不能证明匿名、最小 live 参数、MIME、错误�
 
 - `CODE_EVIDENCE`：`RetrofitTiebaApi.OFFICIAL_PROTOBUF_TIEBA_API` 和 V12 variants 的 base URL 是 `https://tiebac.baidu.com/`。
 - `CODE_EVIDENCE`：`OfficialProtobufTiebaApi` 使用 POST；`ProtobufRequest.buildProtobufRequestBody` 以 multipart/form-data 的 binary `data` part 发送 Wire `Message.encode()`。
-- `CODE_EVIDENCE`：关键 header 包含 `X-BD-Data-Type: protobuf`、客户端版本/类型和设备标识。
+- `CODE_EVIDENCE`：V12 Proto interface 的实际 header 名为
+  `x_bd_data_type: protobuf`；请求还使用客户端版本/类型 header。iOS 未复制
+  Android 设备标识。
 - `CODE_EVIDENCE`：`ProtoFailureResponseInterceptor` 以公共 `Error.error_code` 判定业务失败；具体响应仍需独立解码。`Error.user_msg` 没有被现有异常映射完整保留。
 - `CODE_EVIDENCE`：`CommonRequest` 可包含 BDUSS/STOKEN、设备/安装/屏幕/版本字段；外层 multipart 也可能附 `stoken`。
 - `CODE_EVIDENCE`：`buildCommonRequest(TIEBA_V12, bduss, stoken)` 的 V12 分支忽略传入的两个参数，改读全局 `AccountUtil`；`buildProtobufRequestBody(..., needSToken=true)` 的外层 stoken 也读全局账户。
@@ -104,28 +115,40 @@ JVM/Swift wire 行为，不能证明匿名、最小 live 参数、MIME、错误�
 - iOS 阶段 07 request evidence：只编码 call-site 已证静态字段
   `load_type/pn/page_thread_count=11/q_type=1/new_net_type=1`；零值字段显式
   赋值但按 proto3 不出现在 wire。没有猜测 CommonRequest、AppPos、屏幕、
-  设备或 session；该最小请求未对服务端发送。
+  设备或 session；该阶段请求未对服务端发送。阶段 11 根据 Android
+  `buildCommonRequest(TIEBA_V12)` 和受控 Probe 增加非敏感静态字段：
+  `client_type=2`、`client_version=12.52.1.0`、`from=1020031h`、固定 V12
+  User-Agent 与 `personalized_rec_switch=1`。仍不发送 CUID、Android ID、
+  AppPos、安装时间、Cookie、BDUSS 或 STOKEN。
 - multipart evidence：固定 Android boundary
   `--------7da3d81520810*`，binary part 为 `name=data`、`filename=file`、无
-  part Content-Type；外层 endpoint header 是 `X-BD-Data-Type: protobuf`。
+  part Content-Type；外层 endpoint header 是 `x_bd_data_type: protobuf`。
 - 服务端错误字段：`Error.error_code/error_msg/user_msg`。
-- 关键 headers：`X-BD-Data-Type: protobuf`；V12 client headers。
+- 关键 headers：`x_bd_data_type: protobuf`、`client_type=2`、
+  `Charset=UTF-8` 与 V12 User-Agent。
 - 设备/版本参数：CommonRequest、AppPosInfo、screen、client version；最小集合 `UNKNOWN`。
 - 敏感字段：可选 BDUSS/STOKEN、client/device identifiers；fixture 必须移除。
-- iOS domain mapper：`PersonalizedResponse → RecommendationPage(items, nextPageCandidate, terminalUnknown)`；已实现白名单 mapper，保留 raw `id/threadId`、服务器顺序、raw `threadTypes=999` 与 message presence；不决定 canonical ID、不执行直播/视频过滤。
+- iOS domain mapper：`PersonalizedResponse → RecommendationPage(items, nextPageCandidate, terminalUnknown)`；已实现白名单 mapper，保留 raw `id/threadId`、服务器顺序、raw `threadTypes=999` 与 message presence。`CODE_EVIDENCE`：Android
+  `PersonalizedPage` 点击项时以 `ThreadInfo.id` 打开帖子，因此 local Live adapter
+  只把 raw `id` 用作 route ID；这不证明服务端 canonical/stability 语义，也不
+  执行直播/视频过滤。
 - Fixture 路径：
   `TestSupport/Fixtures/API/Recommendations/personalized_cross_language.pb`；
   SHA-256
   `54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a`。
 - Fixture 类型：`CROSS_LANGUAGE_GENERATED`；Java 21.0.10 +
-  protobuf-java 4.35.1 `DynamicMessage` 从同一 51-file descriptor closure
+  protobuf-java 4.35.1 `DynamicMessage` 从同一 126-file union 中的
+  Personalized descriptor closure
   生成，来源见相邻 `PROVENANCE.md`。
 - 已验证行为：Android 静态调用链和 request 字段；request protobuf golden、
   Android multipart boundary/data/file 形态、optional default presence、未知
   field round-trip、empty/missing data、service error、malformed/empty body、
-  raw integer 保留与 JVM→Swift mapper。没有匿名成功响应，不能升级为
-  `RUNTIME_EVIDENCE`。
-- UNKNOWN：匿名、终止条件、page 起点以外的边界、空页、广告/直播节点、稳定顺序、限流与错误码。
+  raw integer 保留与 JVM→Swift mapper；Live Repository 的 evidence-locked
+  candidate request、transport/HTTP/MIME/decode/map 与 Fixture/blocked-production
+  显式选择由 mock tests 验证。Debug Probe 观察到一次匿名非空和多次匿名合法
+  空页，但没有可复现 server fixture，不能升级为稳定 `RUNTIME_EVIDENCE`。
+- UNKNOWN：最终静态字段组合为何只返回空页、稳定匿名能力、终止条件、page
+  起点以外边界、广告/直播节点、稳定顺序、限流与错误码。
 
 ### `followedForums.forumGuide`
 
@@ -227,13 +250,31 @@ JVM/Swift wire 行为，不能证明匿名、最小 live 参数、MIME、错误�
 - 分页/锚定字段：`pn/pid/back/last_pid`；排序 caller 写入 `r=sortType`。`floor_sort_type` 在当前 builder 恒为 1，语义 `UNKNOWN`，不能把它命名为已证排序字段。响应含 `current_page/new_total_page/has_more/has_prev`；下一 pid 还由 `ThreadInfo.pids` 推导。
 - 服务端错误字段：`Error`。
 - 关键 headers：V12 protobuf headers。
-- 设备/版本参数：CommonRequest、AppPos、screen；最小集合 `UNKNOWN`。
+- 设备/版本参数：Android CommonRequest、AppPos、screen；最小集合
+  `UNKNOWN`。iOS local adapter 只编码 `client_type=2`、
+  `client_version=12.52.1.0`、`from=1020031h`、固定 User-Agent、
+  `personalized_rec_switch=1` 和 call-site 静态 PBPage 字段，不编码 AppPos、
+  screen、设备或 session。
 - 敏感字段：可选 BDUSS/STOKEN 与 device fields。
-- iOS domain mapper：`ThreadSnapshot`、`PostPage`、`Post/ContentNode`；缺作者映射为匿名/未知作者；未知节点保留 raw type。
-- Fixture 路径：`TestSupport/Fixtures/API/Thread/PBPage/`（`NOT_CREATED`）。
+- iOS domain mapper：阶段 11 的 `PBPageProtocol` 把公开标题、吧名、作者、
+  首楼、普通楼层与 `Post.content#5` 转为现有 `ThreadReaderSnapshot` /
+  `ThreadContentDocument`；缺作者映射为未知作者，未知节点保留 raw type，
+  图片候选生成稳定 MediaIntent。当前只读首屏，不声明 `PostPage` 分页完成。
+- Fixture 路径：`TestSupport/Fixtures/API/Thread/PBPage/`（仍
+  `NOT_CREATED`）；当前 mapper test 使用完全合成的 Swift Proto response，
+  不是 live capture 或 cross-language fixture。
 - Fixture 获取/生成方式：脱敏采集首屏/中页/末页/锚点/升降热序；构造缺 data/page/author/forum/anti、空 post_list、重叠 pid、畸形 pids。
-- 已验证行为：Android 当前完整 Thread UI 使用 Proto 链；`QuickPreviewUtil` 保留旧 JSON callback symbol，但未发现外部 call site，当前 clipboard preview caller 使用 Proto Flow。
-- UNKNOWN：`page=0 + pid`、合法空页、删除/私密/折叠、sort 值域、匿名差异、stale 请求时序。
+- 已验证行为：Android 当前完整 Thread UI 使用 Proto 链；阶段 11 锁定
+  PBPage 125-file closure（与 Personalized 合并后 126）、确定性 request、
+  empty body/server error/identity mismatch、首楼/普通楼层/图片
+  MediaIntent、Live Repository mock pipeline/cancellation，以及 Store stale
+  replacement。
+- 运行态：`NOT_RUN_NO_RECOMMENDATION_THREAD_ID`。最终 Debug 推荐 Probe 为
+  合法空页，未猜测或另取 threadID，Production 使用 typed evidence-blocked
+  Repository 且不发 PBPage 请求。
+- UNKNOWN：匿名接受、MIME/正常 body 大小、`page=0 + pid`、合法空页、
+  删除/私密/折叠、sort 值域与真实错误 taxonomy。Store stale 请求时序已由
+  local deterministic tests 关闭，但不代表服务器行为已验证。
 
 ### `thread.pbFloor`
 

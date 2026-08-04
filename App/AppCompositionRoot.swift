@@ -5,15 +5,18 @@ final class AppCompositionRoot {
     private let threadReaderRepository: any ThreadReaderRepository
 
     init(
-        environment: AppEnvironment,
-        recommendationRepository: any RecommendationRepository =
-            FixtureRecommendationRepository(),
-        threadReaderRepository: any ThreadReaderRepository =
-            FixtureThreadReaderRepository()
+        environment: AppEnvironment
     ) {
         self.environment = environment
-        self.recommendationRepository = recommendationRepository
-        self.threadReaderRepository = threadReaderRepository
+        switch environment.readingDataSourceMode {
+        case .fixture:
+            recommendationRepository = FixtureRecommendationRepository()
+            threadReaderRepository = FixtureThreadReaderRepository()
+        case .live:
+            recommendationRepository =
+                EvidenceBlockedRecommendationRepository()
+            threadReaderRepository = EvidenceBlockedThreadReaderRepository()
+        }
     }
 
     func makeRecommendationsStore() -> RecommendationsStore {
@@ -28,13 +31,15 @@ final class AppCompositionRoot {
     }
 
     static func production() -> AppCompositionRoot {
-        AppCompositionRoot(
+        let httpClient = URLSessionHTTPClient.production()
+        return AppCompositionRoot(
             environment: AppEnvironment(
+                readingDataSourceMode: .live,
                 clock: SystemAppClock(),
                 idGenerator: MonotonicIDGenerator(),
-                httpClient: DisabledHTTPClient(),
+                httpClient: httpClient,
                 session: SignedOutSessionProvider(),
-                imageLoader: FixtureReadingImageLoader(),
+                imageLoader: DisabledImageLoader(),
                 cache: NoStoreDataCache(),
                 diagnostics: OSDiagnosticsClient()
             )

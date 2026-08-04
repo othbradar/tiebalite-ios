@@ -22,14 +22,14 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 | U-02 | HTTP endpoint 的安全 HTTPS 等价路径和最小参数 | 关注吧、登录、picpage 当前 call site 是 `http://c.tieba.baidu.com` | 不调用 HTTP；从官方可观察 HTTPS 流或 reference 新 Proto call site寻找候选；单 endpoint、无凭据的公开请求先验证 TLS/编码 | 全程 HTTPS、无降级、最小字段有 evidence、成功/错误 fixture |
 | U-03 | FRS dynamic tab 与 `thread_id_list`/page 契约 | client 先消费最多 30 ids，再取下一 FRS page | 同一公开吧抓首屏及两次分页；记录 tab raw fields、请求 ids、返回顺序、空/缺项、下一 page；匿名与登录分开 | 动态 tab 值域与稳定 id、排序、终止、缺项策略均有 fixture |
 | U-04 | PB `page=0+pid`、删除/私密/缺作者及并发 | Android 有多种锚点调用；mapper 强制 author；不同 intent 可并发 | 先构造 malformed/overlap fixture；再对公开帖验证首/中/末页、pid anchor、删除楼、升降序；用延迟 stub 重放竞态 | anchor/cursor/error taxonomy + stale-response tests |
-| U-05 | 推荐匿名能力、顺序、空页与终止条件 | Android 未登录 Explore 会尝试 Personalized，但无匿名响应证据；request 可附 session，响应未见已证终止字段，UI 永远允许 load more | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
+| U-05 | 推荐匿名能力、顺序、空页与终止条件 | 阶段 11 无 session Probe 观察到一次 67 项非空页，随后 evidence-locked 请求稳定返回合法空页；未保存响应 fixture，不能据此证明稳定匿名能力、顺序或终止条件 | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
 
 ## API / 认证
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | 对同一公开内容目标和同一请求参数，分别在无 session 与测试 session 下请求；比较仅公开字段，不记录凭据 |
-| U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 从最小无敏感字段开始逐项添加；禁止复制 Android telemetry 全集 |
+| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | Personalized 已有一次无 session 非空 `RUNTIME_OBSERVATION`，但不可复现且 PBPage 未发出；仍需对同一公开内容目标和同一请求参数，分别在无 session 与测试 session 下请求，只比较公开字段 |
+| U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 阶段 11 已锁定一组无敏感静态字段并证明 HTTP/Proto 可达，但非空结果不稳定，不能称为最小集合；继续一次只改变一个字段，禁止复制 Android telemetry 全集 |
 | U-08 | legacy sign 是否仍必需、是否允许 iOS 使用 | 只通过已批准协议/法律审查和 HTTPS 受控验证；在此之前不实现 |
 | U-09 | Error.error_code、user_msg、HTTP status 的真实 taxonomy | 为成功、未登录、过期、无权限、删除、限流、服务器错误采脱敏 fixture |
 | U-10 | 60 秒 timeout 是否是产品需求 | 使用本地延迟 stub 测 1/5/30/60 秒；最终 timeout 由 iOS UX 决策，不复制 Android |
@@ -53,12 +53,12 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-21 | SwiftProtobuf 对 selected schema 的生成 API | `CLOSED_FOR_PERSONALIZED_LOCAL`：1.38.1 runtime/generator、51-file manifest/hash、两次生成与 strict build 已验证；其他 P0 closure 仍 open |
+| U-21 | SwiftProtobuf 对 selected schema 的生成 API | `CLOSED_FOR_PERSONALIZED_AND_PBPAGE_LOCAL`：1.38.1 runtime/generator、三 root/126-file manifest/hash、两次生成与 strict build 已验证；其他 P0 closure 仍 open |
 | U-22 | proto3 optional absent 与显式 0/空字符串 | `LOCAL_WIRE_VERIFIED`：AppPos optional false 与 absent bytes/presence 已测；服务端差异仍属 U-07 |
 | U-23 | 未知 tag 是否解码后可 round-trip 保留 | `LOCAL_WIRE_VERIFIED`：Personalized 顶层 field 2047 decode/re-encode/decode 保留；live server 行为不在结论内 |
 | U-24 | 裸 int 状态/排序/type 完整值域 | 累积多 fixture，领域类型始终保留 `.unknown(raw)` |
-| U-25 | 321 个 schema 中 P0 真正最小闭包 | `CLOSED_FOR_PERSONALIZED`：root 1 + direct 4 + transitive 46 = 51；其他 P0 仍 open |
-| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011 允许本地/个人/非商业 exact pinned 生成；公开分发/App Store/商业仍 `BLOCKED` |
+| U-25 | 321 个 schema 中 P0 真正最小闭包 | `CLOSED_FOR_PERSONALIZED_AND_PBPAGE_LOCAL`：Personalized 51、PBPage 125、联合三 root 126；FRS/PBFloor 等其他 P0 仍 open |
+| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011/0013 允许本地、个人、非商业 exact pinned 生成当前 126-file union；公开分发/App Store/商业仍 `BLOCKED` |
 
 阶段 07 local closure record：
 
@@ -79,6 +79,30 @@ SHA-256：54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a
 新增测试：PersonalizedProtocolTests 全组；verify-protos；
   verify-personalized-fixture；networking-isolation。
 结论标签：LOCAL_BUILD_EVIDENCE / CROSS_LANGUAGE_GENERATED；非 RUNTIME_EVIDENCE
+```
+
+阶段 11 local closure 与受控运行观察：
+
+```text
+ID：U-05/U-06/U-07（保持 OPEN）；U-21/U-25 扩展本地关闭范围；U-26 仍局部决策
+日期：2026-08-04
+Android build 与 commit：4.0-dev / 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
+iOS baseline：302b7b8fb34a8da3e1171e6bc5dc48afe548494e（阶段 10 完成提交）
+scenario：pinned Personalized + PBPage 三-root/126-file generation；Debug-only、
+  无 session 的 Personalized 单页 Probe；有正 route ID 才允许链式 PBPage Probe
+请求类别：HTTPS multipart protobuf；不含 Cookie、BDUSS、STOKEN、Keychain、
+  AppPos、安装标识或设备标识；没有循环重试
+fixture：没有保存 live response 或正文；PBPage mapper 使用完全合成的 Swift
+  Proto response，因此不满足关闭 runtime UNKNOWN 的 fixture 条件
+观察结果：Personalized HTTP 200、application/octet-stream、Proto 可解码；一次
+  早期组合为 5550 bytes/67 mapped items，最终 evidence-locked 请求为 245 bytes/
+  0 item/171 ms。最终结果没有正 threadID，PBPage Probe 按设计未发出。
+与现有规格的差异：证明 transport/decode 的受控可达性，但没有证明稳定匿名
+  推荐、最小字段、分页/终止、错误 taxonomy、canonical identity 或匿名 PBPage。
+  Production 推荐和 ThreadReader 因此均 fail closed；Fixture 主链路保持离线可用。
+新增测试：Stage11LiveRecommendationTests、Stage11PBPageProtocolTests、
+  Stage11LiveCompositionTests，以及 Store request generation/cancellation tests。
+结论标签：RUNTIME_OBSERVATION / LOCAL_SYNTHETIC_TESTED；非可复现 RUNTIME_EVIDENCE
 ```
 
 ## 内容节点

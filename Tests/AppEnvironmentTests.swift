@@ -20,6 +20,7 @@ struct AppEnvironmentTests {
         let cache = HarnessInMemoryDataCache()
         let diagnostics = HarnessRecordingDiagnosticsClient()
         let environment = AppEnvironment(
+            readingDataSourceMode: .fixture,
             clock: clock,
             idGenerator: ids,
             httpClient: http,
@@ -29,6 +30,7 @@ struct AppEnvironmentTests {
             diagnostics: diagnostics
         )
 
+        #expect(environment.readingDataSourceMode == .fixture)
         #expect(await environment.clock.now == HarnessControlledClock.fixedEpoch)
         #expect(try await environment.idGenerator.next() == OperationID(sequence: 7))
         #expect(await environment.session.snapshot().status == .signedIn)

@@ -1,0 +1,490 @@
+#if DEBUG && !UITESTING
+import Foundation
+import SwiftUI
+
+enum DebugLiveAPIProbeLaunch {
+    static let flag = "--stage11-live-recommendations-probe"
+
+    static func isRequested(arguments: [String]) -> Bool {
+        arguments.filter { $0 == flag }.count == 1
+    }
+}
+
+private enum DebugLiveProbeOutcome: String, Sendable {
+    case authentication
+    case cancelled
+    case decode
+    case http
+    case mapping
+    case notRun = "not-run"
+    case request
+    case responseTooLarge = "response-too-large"
+    case server
+    case success
+    case transport
+    case unsupportedContent = "unsupported-content"
+}
+
+private struct DebugLiveProbeResult: Sendable {
+    let statusCode: Int?
+    let mimeType: String
+    let bodyByteCount: Int
+    let decoded: Bool
+    let mappedItemCount: Int?
+    let personalizationItemCount: Int?
+    let outcome: DebugLiveProbeOutcome
+    let durationMilliseconds: Int
+    let thread: DebugThreadProbeResult
+
+    static let pending = DebugLiveProbeResult(
+        statusCode: nil,
+        mimeType: "pending",
+        bodyByteCount: 0,
+        decoded: false,
+        mappedItemCount: nil,
+        personalizationItemCount: nil,
+        outcome: .transport,
+        durationMilliseconds: 0,
+        thread: .notRun
+    )
+}
+
+private struct DebugThreadProbeResult: Sendable {
+    let statusCode: Int?
+    let mimeType: String
+    let bodyByteCount: Int
+    let decoded: Bool
+    let titlePresent: Bool
+    let forumPresent: Bool
+    let postCount: Int?
+    let imageNodeCount: Int?
+    let outcome: DebugLiveProbeOutcome
+    let durationMilliseconds: Int
+
+    static let notRun = DebugThreadProbeResult(
+        statusCode: nil,
+        mimeType: "not-run",
+        bodyByteCount: 0,
+        decoded: false,
+        titlePresent: false,
+        forumPresent: false,
+        postCount: nil,
+        imageNodeCount: nil,
+        outcome: .notRun,
+        durationMilliseconds: 0
+    )
+}
+
+private actor DebugLiveProbeCapturingHTTPClient: HTTPClient {
+    private let base: any HTTPClient
+    private var latestResponse: HTTPResponse?
+
+    init(base: any HTTPClient) {
+        self.base = base
+    }
+
+    func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
+        let response = try await base.execute(request)
+        latestResponse = response
+        return response
+    }
+
+    func capturedResponse() -> HTTPResponse? {
+        latestResponse
+    }
+}
+
+private struct DebugLiveRecommendationProbe: Sendable {
+    private let client: any HTTPClient
+
+    init(client: any HTTPClient = URLSessionHTTPClient.production()) {
+        self.client = client
+    }
+
+    func run() async -> DebugLiveProbeResult {
+        let clock = ContinuousClock()
+        let started = clock.now
+        let capturingClient = DebugLiveProbeCapturingHTTPClient(base: client)
+        do {
+            let summaries = try await LiveRecommendationRepository(
+                client: capturingClient
+            ).loadRecommendations()
+            guard let response = await capturingClient.capturedResponse() else {
+                return failure(
+                    outcome: .transport,
+                    response: nil,
+                    started: started,
+                    clock: clock
+                )
+            }
+            let thread: DebugThreadProbeResult
+            if let threadID = summaries.first.flatMap({ summary in
+                debugPositiveThreadID(summary.threadID)
+            }) {
+                thread = await DebugLiveThreadProbe(client: client).run(
+                    threadID: threadID
+                )
+            } else {
+                thread = .notRun
+            }
+            return makeResult(
+                response: response,
+                mappedItemCount: summaries.count,
+                outcome: .success,
+                started: started,
+                thread: thread
+            )
+        } catch is CancellationError {
+            return failure(
+                outcome: .cancelled,
+                response: await capturingClient.capturedResponse(),
+                started: started,
+                clock: clock
+            )
+        } catch let error as EndpointExecutionError {
+            return failure(
+                outcome: debugOutcome(for: error),
+                response: await capturingClient.capturedResponse(),
+                started: started,
+                clock: clock
+            )
+        } catch {
+            return failure(
+                outcome: .request,
+                response: await capturingClient.capturedResponse(),
+                started: started,
+                clock: clock
+            )
+        }
+    }
+
+    private func makeResult(
+        response: HTTPResponse,
+        mappedItemCount: Int?,
+        outcome: DebugLiveProbeOutcome,
+        started: ContinuousClock.Instant,
+        thread: DebugThreadProbeResult
+    ) -> DebugLiveProbeResult {
+        let clock = ContinuousClock()
+        let mimeType = debugSafeMIMEType(response.headers)
+        var decoded = false
+        var personalizationItemCount: Int?
+        do {
+            let wire = try PersonalizedProtocol.decode(response.body)
+            decoded = true
+            personalizationItemCount = wire.hasData
+                ? wire.data.threadPersonalized.count
+                : nil
+        } catch {
+            decoded = false
+            personalizationItemCount = nil
+        }
+        return DebugLiveProbeResult(
+            statusCode: response.statusCode,
+            mimeType: mimeType,
+            bodyByteCount: response.body.count,
+            decoded: decoded,
+            mappedItemCount: mappedItemCount,
+            personalizationItemCount: personalizationItemCount,
+            outcome: outcome,
+            durationMilliseconds: debugMilliseconds(
+                from: started.duration(to: clock.now)
+            ),
+            thread: thread
+        )
+    }
+
+    private func failure(
+        outcome: DebugLiveProbeOutcome,
+        response: HTTPResponse?,
+        started: ContinuousClock.Instant,
+        clock: ContinuousClock
+    ) -> DebugLiveProbeResult {
+        if let response {
+            return makeResult(
+                response: response,
+                mappedItemCount: nil,
+                outcome: outcome,
+                started: started,
+                thread: .notRun
+            )
+        }
+        return DebugLiveProbeResult(
+            statusCode: nil,
+            mimeType: "unavailable",
+            bodyByteCount: 0,
+            decoded: false,
+            mappedItemCount: nil,
+            personalizationItemCount: nil,
+            outcome: outcome,
+            durationMilliseconds: debugMilliseconds(
+                from: started.duration(to: clock.now)
+            ),
+            thread: .notRun
+        )
+    }
+}
+
+private struct DebugLiveThreadProbe: Sendable {
+    let client: any HTTPClient
+
+    func run(threadID: Int64) async -> DebugThreadProbeResult {
+        let clock = ContinuousClock()
+        let started = clock.now
+        let capturingClient = DebugLiveProbeCapturingHTTPClient(base: client)
+        do {
+            let snapshot = try await LiveThreadReaderRepository(
+                client: capturingClient
+            ).loadThread(threadID: threadID)
+            guard let response = await capturingClient.capturedResponse() else {
+                return failure(
+                    outcome: .transport,
+                    response: nil,
+                    started: started,
+                    clock: clock
+                )
+            }
+            return makeResult(
+                response: response,
+                snapshot: snapshot,
+                outcome: .success,
+                started: started,
+                clock: clock
+            )
+        } catch is CancellationError {
+            return failure(
+                outcome: .cancelled,
+                response: await capturingClient.capturedResponse(),
+                started: started,
+                clock: clock
+            )
+        } catch let error as EndpointExecutionError {
+            return failure(
+                outcome: debugOutcome(for: error),
+                response: await capturingClient.capturedResponse(),
+                started: started,
+                clock: clock
+            )
+        } catch {
+            return failure(
+                outcome: .request,
+                response: await capturingClient.capturedResponse(),
+                started: started,
+                clock: clock
+            )
+        }
+    }
+
+    private func makeResult(
+        response: HTTPResponse,
+        snapshot: ThreadReaderSnapshot?,
+        outcome: DebugLiveProbeOutcome,
+        started: ContinuousClock.Instant,
+        clock: ContinuousClock
+    ) -> DebugThreadProbeResult {
+        let mimeType = debugSafeMIMEType(response.headers)
+        let decoded: Bool
+        do {
+            _ = try PBPageProtocol.decode(response.body)
+            decoded = true
+        } catch {
+            decoded = false
+        }
+        return DebugThreadProbeResult(
+            statusCode: response.statusCode,
+            mimeType: mimeType,
+            bodyByteCount: response.body.count,
+            decoded: decoded,
+            titlePresent: snapshot?.title.isEmpty == false,
+            forumPresent: snapshot?.forumName.isEmpty == false,
+            postCount: snapshot?.posts.count,
+            imageNodeCount: snapshot.map(Self.imageNodeCount),
+            outcome: outcome,
+            durationMilliseconds: debugMilliseconds(
+                from: started.duration(to: clock.now)
+            )
+        )
+    }
+
+    private static func imageNodeCount(_ snapshot: ThreadReaderSnapshot) -> Int {
+        snapshot.posts.reduce(into: 0) { result, post in
+            result += post.document.nodes.reduce(into: 0) { count, node in
+                if case .image = node.payload {
+                    count += 1
+                }
+            }
+        }
+    }
+
+    private func failure(
+        outcome: DebugLiveProbeOutcome,
+        response: HTTPResponse?,
+        started: ContinuousClock.Instant,
+        clock: ContinuousClock
+    ) -> DebugThreadProbeResult {
+        if let response {
+            return makeResult(
+                response: response,
+                snapshot: nil,
+                outcome: outcome,
+                started: started,
+                clock: clock
+            )
+        }
+        return DebugThreadProbeResult(
+            statusCode: nil,
+            mimeType: "unavailable",
+            bodyByteCount: 0,
+            decoded: false,
+            titlePresent: false,
+            forumPresent: false,
+            postCount: nil,
+            imageNodeCount: nil,
+            outcome: outcome,
+            durationMilliseconds: debugMilliseconds(
+                from: started.duration(to: clock.now)
+            )
+        )
+    }
+}
+
+private func debugOutcome(
+    for error: EndpointExecutionError
+) -> DebugLiveProbeOutcome {
+    switch error {
+    case .authentication:
+        .authentication
+    case .decode:
+        .decode
+    case .http:
+        .http
+    case .mapping:
+        .mapping
+    case .responseTooLarge:
+        .responseTooLarge
+    case .server:
+        .server
+    case .transport:
+        .transport
+    case .unsupportedContent:
+        .unsupportedContent
+    }
+}
+
+private func debugSafeMIMEType(_ headers: [String: String]) -> String {
+    guard let rawValue = headers.first(where: { name, _ in
+        name.caseInsensitiveCompare("content-type") == .orderedSame
+    })?.value else {
+        return "missing"
+    }
+    let value = rawValue
+        .split(separator: ";", maxSplits: 1)
+        .first?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .lowercased() ?? ""
+    guard (1...64).contains(value.utf8.count),
+          value.utf8.allSatisfy({ byte in
+              switch byte {
+              case 43, 45, 46, 47, 48...57, 97...122:
+                  true
+              default:
+                  false
+              }
+          }) else {
+        return "invalid"
+    }
+    return value
+}
+
+private func debugPositiveThreadID(_ value: Int64) -> Int64? {
+    value > 0 ? value : nil
+}
+
+private func debugMilliseconds(from duration: Duration) -> Int {
+    let components = duration.components
+    let seconds = max(0, components.seconds)
+    let milliseconds = seconds.multipliedReportingOverflow(by: 1_000)
+    guard !milliseconds.overflow else {
+        return 1_000_000
+    }
+    let fractional = max(
+        0,
+        components.attoseconds / 1_000_000_000_000_000
+    )
+    return min(1_000_000, Int(milliseconds.partialValue) + Int(fractional))
+}
+
+@MainActor
+struct DebugLiveAPIProbeView: View {
+    @State private var hasStarted = false
+    @State private var result = DebugLiveProbeResult.pending
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.small) {
+                Text("Stage 11 Live Probe")
+                    .font(Typography.font(.title))
+                Text("endpoint=recommendations.personalized")
+                Text("status=\(result.statusCode.map(String.init) ?? "none")")
+                Text("mime=\(result.mimeType)")
+                Text("bytes=\(result.bodyByteCount)")
+                Text("proto-decoded=\(result.decoded ? "yes" : "no")")
+                Text(
+                    "mapped-items="
+                        + "\(result.mappedItemCount.map(String.init) ?? "none")"
+                )
+                Text(
+                    "personalization-items="
+                        + "\(result.personalizationItemCount.map(String.init) ?? "none")"
+                )
+                Text("typed-outcome=\(result.outcome.rawValue)")
+                Text("duration-ms=\(result.durationMilliseconds)")
+                Divider()
+                Text("endpoint=thread.pbPage")
+                Text(
+                    "thread-status="
+                        + "\(result.thread.statusCode.map(String.init) ?? "none")"
+                )
+                Text("thread-mime=\(result.thread.mimeType)")
+                Text("thread-bytes=\(result.thread.bodyByteCount)")
+                Text(
+                    "thread-proto-decoded="
+                        + (result.thread.decoded ? "yes" : "no")
+                )
+                Text(
+                    "thread-title-present="
+                        + (result.thread.titlePresent ? "yes" : "no")
+                )
+                Text(
+                    "thread-forum-present="
+                        + (result.thread.forumPresent ? "yes" : "no")
+                )
+                Text(
+                    "thread-posts="
+                        + "\(result.thread.postCount.map(String.init) ?? "none")"
+                )
+                Text(
+                    "thread-image-nodes="
+                        + "\(result.thread.imageNodeCount.map(String.init) ?? "none")"
+                )
+                Text("thread-outcome=\(result.thread.outcome.rawValue)")
+                Text(
+                    "thread-duration-ms=\(result.thread.durationMilliseconds)"
+                )
+            }
+            .font(Typography.font(.body))
+            .foregroundStyle(SemanticColor.primaryText)
+            .padding(Spacing.large)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .background(SemanticColor.background)
+        .task {
+            guard !hasStarted else {
+                return
+            }
+            hasStarted = true
+            result = await DebugLiveRecommendationProbe().run()
+        }
+    }
+}
+#endif

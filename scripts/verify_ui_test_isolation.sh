@@ -19,6 +19,15 @@ fail() {
   failures=$((failures + 1))
 }
 
+if ! rg -q 'readingDataSourceMode: \.fixture' \
+  TestSupport/LaunchScenarios/LaunchScenarioFactory.swift; then
+  fail "LaunchScenarioFactory does not force fixture repositories."
+fi
+if rg -n '\.live\b|URLSessionHTTPClient|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
+  TestSupport/LaunchScenarios >/dev/null; then
+  fail "LaunchScenario test support can reach live reading dependencies."
+fi
+
 app_list_count=0
 while IFS= read -r file_list; do
   app_list_count=$((app_list_count + 1))

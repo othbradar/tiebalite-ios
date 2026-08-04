@@ -69,6 +69,7 @@ enum LaunchScenarioFactory {
         }
 
         let environment = AppEnvironment(
+            readingDataSourceMode: .fixture,
             clock: HarnessControlledClock(),
             idGenerator: HarnessSequenceIDGenerator(
                 values: (1...32).map { OperationID(sequence: UInt64($0)) }

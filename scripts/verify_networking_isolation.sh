@@ -68,13 +68,14 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
   fail protobuf-core-allowlist "$proto_usage"
 fi
 for proto_adapter in \
+  Sources/Core/TiebaAPI/PBPageProtocol.swift \
   Sources/Core/TiebaAPI/PersonalizedProtocol.swift \
   Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift
 do
@@ -126,8 +127,33 @@ reject_swift_matches \
   '\b(ThreadScreen|ThreadReaderScreen|ThreadRepository|ThreadEndpoint)\b' \
   App Sources/Features/ThreadReader
 
-if ! rg -q 'httpClient: DisabledHTTPClient\(\)' App/AppCompositionRoot.swift; then
-  fail production-transport-must-remain-disabled
+production_block="$(
+  sed -n '/static func production()/,/^    }/p' App/AppCompositionRoot.swift
+)"
+for production_requirement in \
+  'readingDataSourceMode: \.live' \
+  'URLSessionHTTPClient\.production\(\)' \
+  'imageLoader: DisabledImageLoader\(\)'
+do
+  if ! printf '%s\n' "$production_block" |
+    rg -q "$production_requirement"; then
+    fail production-live-composition "$production_requirement"
+  fi
+done
+if printf '%s\n' "$production_block" |
+  rg -q 'DisabledHTTPClient|FixtureRecommendationRepository|FixtureThreadReaderRepository|FixtureReadingImageLoader'; then
+  fail production-live-composition-leak "$production_block"
+fi
+if ! rg -q 'readingDataSourceMode: \.fixture' \
+  TestSupport/LaunchScenarios/LaunchScenarioFactory.swift; then
+  fail ui-scenario-fixture-mode
+fi
+scenario_live_usage="$(
+  rg -n '\.live\b|URLSessionHTTPClient|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
+    TestSupport/LaunchScenarios 2>/dev/null || true
+)"
+if [[ -n "$scenario_live_usage" ]]; then
+  fail ui-scenario-live-reachability "$scenario_live_usage"
 fi
 
 package_block="$(sed -n '/^packages:/,/^fileGroups:/p' project.yml)"
@@ -199,7 +225,7 @@ if [[ -n "$generated_outside_allowlist" ]]; then
   fail generated-protobuf-location "$generated_outside_allowlist"
 fi
 generated_count="$(find Generated/Protobuf -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-if [[ "$generated_count" -ne 51 ]]; then
+if [[ "$generated_count" -ne 126 ]]; then
   fail generated-protobuf-count "$generated_count"
 fi
 
@@ -235,11 +261,18 @@ expected_unchecked_files="$(
   printf '%s\n' \
     'Generated/Protobuf/AlaLiveInfo.pb.swift' \
     'Generated/Protobuf/AlaUserInfo.pb.swift' \
+    'Generated/Protobuf/App.pb.swift' \
     'Generated/Protobuf/CommonRequest.pb.swift' \
+    'Generated/Protobuf/GoodsInfo.pb.swift' \
     'Generated/Protobuf/Item.pb.swift' \
     'Generated/Protobuf/OriginThreadInfo.pb.swift' \
     'Generated/Protobuf/PbContent.pb.swift' \
+    'Generated/Protobuf/PbPage/PbPageRequestData.pb.swift' \
+    'Generated/Protobuf/PbPage/PbPageResponseData.pb.swift' \
     'Generated/Protobuf/Personalized.pb.swift' \
+    'Generated/Protobuf/Post.pb.swift' \
+    'Generated/Protobuf/SubPostList.pb.swift' \
+    'Generated/Protobuf/TPointPost.pb.swift' \
     'Generated/Protobuf/ThreadInfo.pb.swift' \
     'Generated/Protobuf/User.pb.swift' \
     'Generated/Protobuf/ZhiBoInfoTW.pb.swift'
@@ -251,7 +284,7 @@ unchecked_count="$(
   rg -n '@unchecked[[:space:]]+Sendable' Generated/Protobuf | wc -l | tr -d ' '
 )"
 if [[ "$actual_unchecked_files" != "$expected_unchecked_files" ||
-      "$unchecked_count" -ne 10 ]]; then
+      "$unchecked_count" -ne 17 ]]; then
   fail generated-unchecked-sendable-allowlist "$actual_unchecked_files"
 fi
 

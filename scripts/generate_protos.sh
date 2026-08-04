@@ -15,7 +15,11 @@ tracked_output="$output_dir"
 expected_commit="5545326b2a8e0d784b2f3dfbcb219c7b121e61c2"
 expected_protoc="35.1"
 expected_generator="1.38.1"
-root_proto="Personalized.proto"
+root_protos=(
+  "Personalized.proto"
+  "PbPage/PbPageRequest.proto"
+  "PbPage/PbPageResponse.proto"
+)
 
 if [[ "${1:-}" == "--output" ]]; then
   [[ $# -eq 2 ]] || { printf 'Usage: %s [--output directory]\n' "$0" >&2; exit 2; }
@@ -97,12 +101,35 @@ temporary_root="$(mktemp -d "${TMPDIR:-/tmp}/tiebalite-protos.XXXXXX")"
 trap 'rm -rf "$temporary_root"' EXIT
 manifest_paths="$temporary_root/manifest-paths.txt"
 root_imports="$temporary_root/root-imports.txt"
+root_paths="$temporary_root/root-paths.txt"
+resolved_paths="$temporary_root/resolved-paths.txt"
 generated="$temporary_root/generated"
 mkdir -p "$generated"
 
-sed -n \
-  's/^[[:space:]]*import[[:space:]]*"\([^"]*\)".*/\1/p' \
-  "$proto_root/$root_proto" | sort > "$root_imports"
+: > "$root_imports"
+: > "$resolved_paths"
+printf '%s\n' "${root_protos[@]}" | sort > "$root_paths"
+for root_proto in "${root_protos[@]}"; do
+  sed -n \
+    's/^[[:space:]]*import[[:space:]]*"\([^"]*\)".*/\1/p' \
+    "$proto_root/$root_proto" >> "$root_imports"
+
+  dependency_name="${root_proto//\//_}"
+  protoc \
+    --proto_path="$proto_root" \
+    --descriptor_set_out="$temporary_root/$dependency_name.pb" \
+    --include_imports \
+    --dependency_out="$temporary_root/$dependency_name.d" \
+    "$root_proto"
+  sed '1s/^[^:]*:[[:space:]]*//' "$temporary_root/$dependency_name.d" |
+    sed 's/\\$/ /' |
+    tr ' ' '\n' |
+    sed '/^$/d' |
+    sed "s#^$proto_root/##" >> "$resolved_paths"
+  printf '\n' >> "$resolved_paths"
+done
+sort -u -o "$root_imports" "$root_imports"
+sort -u -o "$resolved_paths" "$resolved_paths"
 
 proto_args=()
 proto_sources=()
@@ -138,7 +165,7 @@ while IFS=$'\t' read -r expected_hash relative_path relationship direct_imports;
   }
 
   expected_relationship=transitive
-  if [[ "$relative_path" == "$root_proto" ]]; then
+  if rg -F -x -q "$relative_path" "$root_paths"; then
     expected_relationship=root
   elif rg -F -x -q "$relative_path" "$root_imports"; then
     expected_relationship=direct
@@ -154,8 +181,8 @@ while IFS=$'\t' read -r expected_hash relative_path relationship direct_imports;
   proto_sources+=("$source_path")
 done < "$manifest"
 
-[[ "${#proto_args[@]}" -eq 51 ]] || {
-  printf 'ERROR: expected 51 locked proto inputs; found %d.\n' \
+[[ "${#proto_args[@]}" -eq 126 ]] || {
+  printf 'ERROR: expected 126 locked proto inputs; found %d.\n' \
     "${#proto_args[@]}" >&2
   exit 1
 }
@@ -169,21 +196,8 @@ enum_matches="$(
   exit 1
 }
 
-protoc \
-  --proto_path="$proto_root" \
-  --descriptor_set_out="$temporary_root/personalized.pb" \
-  --include_imports \
-  --dependency_out="$temporary_root/personalized.d" \
-  "$root_proto"
-
-sed '1s/^[^:]*:[[:space:]]*//' "$temporary_root/personalized.d" |
-  tr -d '\\' |
-  tr ' ' '\n' |
-  sed '/^$/d' |
-  sed "s#^$proto_root/##" |
-  sort -u > "$temporary_root/resolved-paths.txt"
 sort -u "$manifest_paths" > "$temporary_root/locked-paths.txt"
-diff -u "$temporary_root/locked-paths.txt" "$temporary_root/resolved-paths.txt"
+diff -u "$temporary_root/locked-paths.txt" "$resolved_paths"
 
 protoc \
   --proto_path="$proto_root" \
@@ -193,8 +207,8 @@ protoc \
   "${proto_args[@]}"
 
 generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-[[ "$generated_count" -eq 51 ]] || {
-  printf 'ERROR: expected 51 generated Swift files; found %s.\n' \
+[[ "$generated_count" -eq 126 ]] || {
+  printf 'ERROR: expected 126 generated Swift files; found %s.\n' \
     "$generated_count" >&2
   exit 1
 }
@@ -209,9 +223,10 @@ generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d 
 ) > "$generated/GENERATED_SHA256SUMS"
 
 cat > "$generated/GENERATION_METADATA.txt" <<EOF
-endpoint=recommendations.personalized
+endpoints=recommendations.personalized,thread.pbPage
+roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto
 reference_commit=$expected_commit
-input_count=51
+input_count=126
 protoc=$expected_protoc
 protoc_gen_swift=$expected_generator
 swiftprotobuf_runtime=$expected_generator
@@ -235,5 +250,5 @@ find "$output_dir" -type f \
      -o -name 'GENERATION_METADATA.txt' \) -delete
 cp -R "$generated/." "$output_dir/"
 
-printf 'Generated %s Swift protobuf files for recommendations.personalized.\n' \
+printf 'Generated %s Swift protobuf files for Stage 11 reading endpoints.\n' \
   "$generated_count"

@@ -1,6 +1,6 @@
 import Observation
 
-enum RecommendationsLoadFailure: Equatable, Sendable {
+enum RecommendationsLoadFailure: Error, Equatable, Sendable {
     case unavailable
 }
 
@@ -19,6 +19,7 @@ final class RecommendationsStore {
 
     private let repository: any RecommendationRepository
     @ObservationIgnored private var hasCompletedInitialLoad = false
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var activeGeneration: UInt64?
     @ObservationIgnored private var nextGeneration: UInt64 = 0
 
@@ -31,7 +32,12 @@ final class RecommendationsStore {
               activeGeneration == nil else {
             return
         }
-        await load()
+        await replaceLoad()
+    }
+
+    func reload() async {
+        hasCompletedInitialLoad = false
+        await replaceLoad()
     }
 
     func prepareRetry() {
@@ -49,36 +55,72 @@ final class RecommendationsStore {
         scrollAnchor = threadID
     }
 
-    private func load() async {
+    private func replaceLoad() async {
+        loadTask?.cancel()
         nextGeneration &+= 1
         let generation = nextGeneration
         activeGeneration = generation
         state = .initialLoading
 
-        do {
-            let items = try await repository.loadRecommendations()
-            try Task.checkCancellation()
-            guard activeGeneration == generation else {
-                return
+        let repository = repository
+        let task = Task { @MainActor [weak self] in
+            do {
+                let items = try await repository.loadRecommendations()
+                try Task.checkCancellation()
+                self?.finish(
+                    generation: generation,
+                    result: .success(items)
+                )
+            } catch is CancellationError {
+                self?.finishCancellation(generation: generation)
+            } catch {
+                guard !Task.isCancelled else {
+                    self?.finishCancellation(generation: generation)
+                    return
+                }
+                self?.finish(
+                    generation: generation,
+                    result: .failure(.unavailable)
+                )
             }
-            state = items.isEmpty ? .empty : .loaded(items)
-            hasCompletedInitialLoad = true
-        } catch is CancellationError {
-            guard activeGeneration == generation else {
-                return
-            }
-            state = .initialLoading
-            hasCompletedInitialLoad = false
-        } catch {
-            guard activeGeneration == generation else {
-                return
-            }
-            state = .initialFailure(.unavailable)
-            hasCompletedInitialLoad = true
         }
+        loadTask = task
 
-        if activeGeneration == generation {
-            activeGeneration = nil
+        await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
         }
+    }
+
+    private func finish(
+        generation: UInt64,
+        result: Result<
+            [RecommendationSummary],
+            RecommendationsLoadFailure
+        >
+    ) {
+        guard activeGeneration == generation else {
+            return
+        }
+        switch result {
+        case let .success(items):
+            state = items.isEmpty ? .empty : .loaded(items)
+        case let .failure(failure):
+            state = .initialFailure(failure)
+        }
+        hasCompletedInitialLoad = true
+        activeGeneration = nil
+        loadTask = nil
+    }
+
+    private func finishCancellation(generation: UInt64) {
+        guard activeGeneration == generation else {
+            return
+        }
+        state = .initialLoading
+        hasCompletedInitialLoad = false
+        activeGeneration = nil
+        loadTask = nil
     }
 }

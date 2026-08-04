@@ -1,6 +1,6 @@
 import Observation
 
-enum ThreadReaderLoadFailure: Equatable, Sendable {
+enum ThreadReaderLoadFailure: Error, Equatable, Sendable {
     case unavailable
 }
 
@@ -26,6 +26,7 @@ final class ThreadReaderStore {
 
     private let repository: any ThreadReaderRepository
     @ObservationIgnored private var hasCompletedInitialLoad = false
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var activeGeneration: UInt64?
     @ObservationIgnored private var nextGeneration: UInt64 = 0
 
@@ -42,7 +43,12 @@ final class ThreadReaderStore {
               activeGeneration == nil else {
             return
         }
-        await load()
+        await replaceLoad()
+    }
+
+    func reload() async {
+        hasCompletedInitialLoad = false
+        await replaceLoad()
     }
 
     func prepareRetry() {
@@ -60,40 +66,81 @@ final class ThreadReaderStore {
         readAnchor = source
     }
 
-    private func load() async {
+    private func replaceLoad() async {
+        loadTask?.cancel()
         nextGeneration &+= 1
         let generation = nextGeneration
         activeGeneration = generation
         state = .initialLoading
 
-        do {
-            let snapshot = try await repository.loadThread(threadID: threadID)
-            try Task.checkCancellation()
-            guard activeGeneration == generation else {
-                return
+        let repository = repository
+        let threadID = threadID
+        let task = Task { @MainActor [weak self] in
+            do {
+                let snapshot = try await repository.loadThread(
+                    threadID: threadID
+                )
+                try Task.checkCancellation()
+                self?.finish(
+                    generation: generation,
+                    snapshot: snapshot
+                )
+            } catch is CancellationError {
+                self?.finishCancellation(generation: generation)
+            } catch {
+                guard !Task.isCancelled else {
+                    self?.finishCancellation(generation: generation)
+                    return
+                }
+                self?.finishFailure(generation: generation)
             }
-            if snapshot.threadID == threadID {
-                state = .loaded(snapshot)
-            } else {
-                state = .initialFailure(.unavailable)
-            }
-            hasCompletedInitialLoad = true
-        } catch is CancellationError {
-            guard activeGeneration == generation else {
-                return
-            }
-            state = .initialLoading
-            hasCompletedInitialLoad = false
-        } catch {
-            guard activeGeneration == generation else {
-                return
-            }
-            state = .initialFailure(.unavailable)
-            hasCompletedInitialLoad = true
         }
+        loadTask = task
 
-        if activeGeneration == generation {
-            activeGeneration = nil
+        await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
         }
+    }
+
+    private func finish(
+        generation: UInt64,
+        snapshot: ThreadReaderSnapshot
+    ) {
+        guard activeGeneration == generation else {
+            return
+        }
+        state = snapshot.threadID == threadID
+            ? .loaded(snapshot)
+            : .initialFailure(.unavailable)
+        hasCompletedInitialLoad = true
+        clearLoad(generation: generation)
+    }
+
+    private func finishFailure(generation: UInt64) {
+        guard activeGeneration == generation else {
+            return
+        }
+        state = .initialFailure(.unavailable)
+        hasCompletedInitialLoad = true
+        clearLoad(generation: generation)
+    }
+
+    private func finishCancellation(generation: UInt64) {
+        guard activeGeneration == generation else {
+            return
+        }
+        state = .initialLoading
+        hasCompletedInitialLoad = false
+        clearLoad(generation: generation)
+    }
+
+    private func clearLoad(generation: UInt64) {
+        guard activeGeneration == generation else {
+            return
+        }
+        activeGeneration = nil
+        loadTask = nil
     }
 }
