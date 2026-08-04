@@ -37,6 +37,18 @@
 - 公开分发、App Store、商业使用、notice/源码义务、fork/upstream 权利链和
   Proto 文件级 provenance 继续 `BLOCKED/UNKNOWN`；本轮不扩大许可结论。
 
+## 阶段 12 active Session 运行观察
+
+- 阶段 12 没有增加或修改 Proto 输入、Generated output、第三方依赖、Android
+  源码/资源复制或许可范围；仍只使用阶段 11 锁定的三-root/126-file union。
+- 用户在可见 WKWebView 手工登录后，一次 Debug-only、携带 active Session
+  candidate 的 Personalized Probe 观察到 HTTP 200、
+  `application/octet-stream`、83924 bytes、Proto decode 成功和 12 mapped
+  items。没有保存 raw response、请求体、Cookie、账号、用户内容或设备标识。
+- API 可达和真实账号流程成功不构成 schema 来源授权、服务使用权或品牌授权；
+  公开分发、App Store、商业使用、服务条款、隐私与 Proto provenance 结论均
+  不变。
+
 ## Reference 身份
 
 - submodule path：`References/TiebaLite-Android`

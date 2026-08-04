@@ -1,9 +1,13 @@
 # ADR-0007：Session 与登录边界
 
-- 状态：Proposed
+- 状态：Proposed（发布级模型；阶段 12 Open-Source Beta 子集由 ADR-0014 取代）
 - 日期：2026-07-31
 - 决策者：阶段 02 候选决策，待登录证据与安全验证
 - 关联阶段：02、04、12
+
+> 阶段 12 的用户指令明确批准可见、隔离的 WKWebView Beta 登录。该有限实现
+> 决策、运行证据门槛与延期项由 ADR-0014 记录；本文的发布级 journal、ledger、
+> crash recovery 和完整安全验收仍保持 Proposed，不能由 Beta 完成状态外推。
 
 ## 背景
 

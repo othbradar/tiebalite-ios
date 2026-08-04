@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE11_RECOMMENDATION_RUNTIME_OBSERVATION_PBPAGE_LOCAL_ADAPTER`
+状态：`STAGE12_ACTIVE_SESSION_PERSONALIZED_RUNTIME_OBSERVATION_PBPAGE_LOCAL_ADAPTER`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -29,6 +29,17 @@ mapper 和 MockHTTPClient contract evidence。由于推荐和 PBPage 都未达�
 运行证据门槛，Production 两项能力继续 fail closed，不把 local adapter 或单次
 观察冒充 live-ready。凡仍使用明文 HTTP 的链路
 状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
+
+阶段 12 在同一 evidence-locked Personalized request 上增加显式 active
+AuthContext：由可见 WKWebView 取得 Android 已证的两个候选 Cookie 字段，经
+Keychain/lease 边界授权后执行一次 Debug-only 请求。脱敏运行观察为 HTTP
+200、`application/octet-stream`、83924 bytes、Proto decode 成功、12 mapped
+items、`outcome=success`。没有保存 raw response、请求体、Cookie、账号或用户
+内容。该单次观察只证明客户端在 matching lease 下完成了一条携带候选字段的
+Personalized 请求；不证明服务端实际消费了 credential、把响应归因于认证或
+接受它们作为最小集合，也不关闭匿名稳定性、token rotation、expired taxonomy、
+PBPage 或 Production evidence gate。请求的 `page_thread_count=11` 只是
+call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
 
 ## 公共传输证据
 
@@ -62,6 +73,31 @@ mapper 和 MockHTTPClient contract evidence。由于推荐和 PBPage 都未达�
 - `unknown`：静态源码不足。
 
 任何 `optional-in-request` endpoint 的匿名能力都是 `UNKNOWN`。
+
+## 阶段 12 登录与 authenticated Probe 证据
+
+- `CODE_EVIDENCE`：锁定 Android
+  `LoginPage.kt::LOGIN_URL/LoginWebViewClient.onPageFinished` 使用可见 WebView，
+  初始页为 `wappass.baidu.com/passport`，回跳到
+  `tieba.baidu.com/index/tbwise/mine`；只有 tieba/tiebac 的
+  `/index/tbwise/` 完成页才读取 Cookie，并要求非空 BDUSS 与 STOKEN。
+- `CODE_EVIDENCE`：Android V12 CommonRequest 和 multipart helper 都会在
+  active account 时发送 BDUSS/STOKEN，其中外层字段是 stoken。Android builder
+  隐式读取全局账户的实现没有移植；iOS 由 matching ProtectedDataLease 显式
+  授权。
+- `RUNTIME_OBSERVATION`：2026-08-04，用户手工完成可见网页登录；本机签名
+  iPhone Simulator 构建进入 `signedIn`，进程重启后从 Keychain 恢复
+  `signedIn`。随后一次 active Personalized 请求得到 HTTP 200、
+  `application/octet-stream`、83924 bytes、Proto decode 成功、12 mapped
+  items、`outcome=success`。
+- 隐私边界：没有记录 Cookie 值、账号、密码、验证码、完整 URL/query、请求体、
+  raw response、帖子/用户内容或设备标识；自动化继续使用 FakeSession 和
+  Mock/Fixture，不读取真实 Keychain 或 live 网络。
+- `UNKNOWN`：两个字段是否是所有账号/风控场景的最小集合、服务端是否实际
+  消费了它们、Cookie host-only 与 Domain 精确语义、rotation、真实失效码、
+  authenticated/anonymous 差异、rate limit、PBPage 与关注吧能力。
+- 结论：`ACTIVE_SESSION_PERSONALIZED_RUNTIME_OBSERVATION`；不是可提交 live
+  fixture，不解除 Production fail closed，也不把阶段 11 标为 COMPLETE。
 
 ### 安全与 fixture 规则
 
@@ -118,8 +154,10 @@ mapper 和 MockHTTPClient contract evidence。由于推荐和 PBPage 都未达�
   设备或 session；该阶段请求未对服务端发送。阶段 11 根据 Android
   `buildCommonRequest(TIEBA_V12)` 和受控 Probe 增加非敏感静态字段：
   `client_type=2`、`client_version=12.52.1.0`、`from=1020031h`、固定 V12
-  User-Agent 与 `personalized_rec_switch=1`。仍不发送 CUID、Android ID、
-  AppPos、安装时间、Cookie、BDUSS 或 STOKEN。
+  User-Agent 与 `personalized_rec_switch=1`。匿名路径不发送任何 session 字段。
+  阶段 12 active Debug Probe 只额外写入 CommonRequest BDUSS/STOKEN 和外层
+  multipart stoken。两条路径都不发送 CUID、Android ID、AppPos、安装时间、
+  完整 Cookie header 或其他 Android telemetry。
 - multipart evidence：固定 Android boundary
   `--------7da3d81520810*`，binary part 为 `name=data`、`filename=file`、无
   part Content-Type；外层 endpoint header 是 `x_bd_data_type: protobuf`。
@@ -146,7 +184,8 @@ mapper 和 MockHTTPClient contract evidence。由于推荐和 PBPage 都未达�
   raw integer 保留与 JVM→Swift mapper；Live Repository 的 evidence-locked
   candidate request、transport/HTTP/MIME/decode/map 与 Fixture/blocked-production
   显式选择由 mock tests 验证。Debug Probe 观察到一次匿名非空和多次匿名合法
-  空页，但没有可复现 server fixture，不能升级为稳定 `RUNTIME_EVIDENCE`。
+  空页；阶段 12 又观察到一次 active Session 的 12-item 成功页，但均没有
+  可复现 server fixture，不能升级为稳定 `RUNTIME_EVIDENCE`。
 - UNKNOWN：最终静态字段组合为何只返回空页、稳定匿名能力、终止条件、page
   起点以外边界、广告/直播节点、稳定顺序、限流与错误码。
 
@@ -333,11 +372,16 @@ mapper 和 MockHTTPClient contract evidence。由于推荐和 PBPage 都未达�
 - 服务端错误字段：JSON common aliases；过期/验证码/风控分类 `UNKNOWN`。
 - 关键 headers / 设备参数：legacy official headers/sign；不得复制到 iOS。
 - 敏感字段：完整 Cookie、BDUSS、STOKEN、TBS、BAIDUID/ZID；绝不进入 fixture/log。
-- iOS domain mapper：`SessionValidationResult(accountID, publicProfile, credentialRotation?)`；凭据只交 Keychain writer。
+- iOS 实现边界：该明文 endpoint 没有 mapper，也没有注册到 EndpointPipeline；
+  阶段 12 只把已证完成页中的两个候选字段交给 Keychain writer。
 - Fixture 路径：只允许构造的脱敏 mapper fixture；真实认证响应默认不落盘。
 - Fixture 获取/生成方式：先形成登录 ADR 与安全 HTTPS 方案；使用专用测试账号，只记录字段存在性/错误类别。
-- 已验证行为：Android WebView 回跳和静态组合链。
-- UNKNOWN：iOS 允许的登录方式、HTTPS validation、Cookie 轮换、二次验证、取消、过期、重复回调、账号切换。
+- 已验证行为：Android WebView 回跳和静态组合链；iOS 阶段 12 Beta 使用可见、
+  first-party HTTPS WKWebView，只在已证完成页提取 BDUSS/STOKEN candidate。
+  真实手工登录、Keychain 进程重启恢复及一次 authenticated Personalized Probe
+  已成功；这不是 `session.loginValidation` endpoint 的运行证据。
+- UNKNOWN：服务端 validation 的安全 HTTPS 等价路径、Cookie 轮换、二次验证、
+  真实过期 taxonomy、重复回调常态、账号切换与 profile validation。
 
 ### `session.getUserInfo`
 

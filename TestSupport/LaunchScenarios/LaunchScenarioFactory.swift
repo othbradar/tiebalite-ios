@@ -68,29 +68,98 @@ enum LaunchScenarioFactory {
             imageLoader = HarnessFixtureImageLoader(fixtures: [:])
         }
 
-        let environment = AppEnvironment(
-            readingDataSourceMode: .fixture,
-            clock: HarnessControlledClock(),
-            idGenerator: HarnessSequenceIDGenerator(
-                values: (1...32).map { OperationID(sequence: UInt64($0)) }
-            ),
-            httpClient: HarnessMockHTTPClient(defaultBehavior: httpBehavior),
-            session: HarnessFixtureSessionProvider(
-                snapshot: SessionSnapshot(status: sessionStatus, revision: 1)
-            ),
-            imageLoader: imageLoader,
-            cache: HarnessInMemoryDataCache(),
-            diagnostics: HarnessRecordingDiagnosticsClient()
+        let sessionDependencies = makeSessionDependencies(
+            status: sessionStatus
+        )
+        let environment = makeEnvironment(
+            httpBehavior: httpBehavior,
+            session: sessionDependencies.authContextProvider,
+            imageLoader: imageLoader
         )
 
         return LaunchScenarioDescriptor(
             scenario: scenario,
             safeLabel: safeLabel,
             networkMode: networkMode,
-            compositionRoot: AppCompositionRoot(environment: environment),
+            compositionRoot: AppCompositionRoot(
+                environment: environment,
+                authContextProvider: sessionDependencies.authContextProvider,
+                sessionStore: sessionDependencies.store,
+                loginWebSession: sessionDependencies.loginWebSession
+            ),
             isolationCanary: LaunchScenarioRegistry.isolationCanary,
             displayProfile: displayProfile
         )
     }
+
+    private static func makeSessionDependencies(
+        status: SessionStatus
+    ) -> HarnessLaunchSessionDependencies {
+        let authContextProvider = SessionAuthContextProvider()
+        let loginWebSession = LoginWebSession(loginURL: nil)
+        let fixtureCredential = status != .signedOut
+            ? SessionCredential(
+                bduss: "ui-fixture-bduss",
+                stoken: "ui-fixture-stoken"
+            )
+            : nil
+        if let fixtureCredential {
+            authContextProvider.install(fixtureCredential)
+            if status == .expired {
+                let context = authContextProvider.context()
+                _ = authContextProvider.expire(context: context)
+            }
+        }
+        let credentialStore = FakeSessionCredentialStore(
+            initialCredential: status == .signedIn ? fixtureCredential : nil
+        )
+        return HarnessLaunchSessionDependencies(
+            authContextProvider: authContextProvider,
+            loginWebSession: loginWebSession,
+            store: SessionStore(
+                credentialStore: credentialStore,
+                authContextProvider: authContextProvider,
+                websiteDataCleaner: loginWebSession,
+                initialState: sessionState(for: status),
+                restoresOnLaunch: false
+            )
+        )
+    }
+
+    private static func sessionState(for status: SessionStatus) -> SessionState {
+        switch status {
+        case .expired:
+            .expired
+        case .signedIn:
+            .signedIn
+        case .signedOut:
+            .signedOut
+        }
+    }
+
+    private static func makeEnvironment(
+        httpBehavior: HarnessHTTPDefaultBehavior,
+        session: any SessionProviding,
+        imageLoader: any ImageLoading
+    ) -> AppEnvironment {
+        AppEnvironment(
+            readingDataSourceMode: .fixture,
+            clock: HarnessControlledClock(),
+            idGenerator: HarnessSequenceIDGenerator(
+                values: (1...32).map { OperationID(sequence: UInt64($0)) }
+            ),
+            httpClient: HarnessMockHTTPClient(defaultBehavior: httpBehavior),
+            session: session,
+            imageLoader: imageLoader,
+            cache: HarnessInMemoryDataCache(),
+            diagnostics: HarnessRecordingDiagnosticsClient()
+        )
+    }
+}
+
+private struct HarnessLaunchSessionDependencies {
+    let authContextProvider: SessionAuthContextProvider
+    let loginWebSession: LoginWebSession
+    let store: SessionStore
 }
 #endif

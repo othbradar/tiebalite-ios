@@ -47,6 +47,19 @@ enum PersonalizedProtocol {
     ]
 
     static func makeDescriptor(host: String) throws -> EndpointDescriptor {
+        try makeDescriptor(host: host, authentication: .anonymous)
+    }
+
+    static func makeActiveDescriptor(
+        host: String
+    ) throws -> EndpointDescriptor {
+        try makeDescriptor(host: host, authentication: .active)
+    }
+
+    private static func makeDescriptor(
+        host: String,
+        authentication: EndpointAuthenticationRequirement
+    ) throws -> EndpointDescriptor {
         guard let identifier = EndpointID("recommendations.personalized") else {
             throw PersonalizedProtocolError.invalidStaticConfiguration
         }
@@ -63,7 +76,7 @@ enum PersonalizedProtocol {
                 fixtureResponseMIMEType,
                 liveResponseMIMEType
             ],
-            authentication: .anonymous,
+            authentication: authentication,
             timeout: 30,
             responseBodyLimit: 8 * 1_024 * 1_024,
             redirectPolicy: .reject,
@@ -74,6 +87,20 @@ enum PersonalizedProtocol {
     static func encodeRequest(
         _ input: PersonalizedRequestInput
     ) throws -> Data {
+        try encodeRequest(input, authorization: nil)
+    }
+
+    static func encodeRequest(
+        _ input: PersonalizedRequestInput,
+        authorization: SessionAuthorization
+    ) throws -> Data {
+        try encodeRequest(input, authorization: authorization as SessionAuthorization?)
+    }
+
+    private static func encodeRequest(
+        _ input: PersonalizedRequestInput,
+        authorization: SessionAuthorization?
+    ) throws -> Data {
         var data = Tieba_PersonalizedRequestData()
         var common = Tieba_CommonRequest()
         common.clientType = 2
@@ -81,6 +108,11 @@ enum PersonalizedProtocol {
         common.from = "1020031h"
         common.userAgent = androidUserAgent
         common.personalizedRecSwitch = 1
+        if let authorization {
+            let sessionToken = authorization.stoken
+            common.bduss = authorization.bduss
+            common.stoken = sessionToken
+        }
         data.common = common
         data.loadType = input.loadKind.rawValue
         data.pn = input.page
@@ -114,6 +146,30 @@ enum PersonalizedProtocol {
                 filename: "file",
                 mimeType: nil,
                 data: try encodeRequest(input)
+            )
+        )
+    }
+
+    static func makeAuthenticatedRequestBody(
+        _ input: PersonalizedRequestInput,
+        authorization: SessionAuthorization
+    ) throws -> EndpointRequestBody {
+        .multipartBinary(
+            boundary: boundary,
+            fields: [
+                EndpointField(
+                    name: "stoken",
+                    value: authorization.stoken
+                )
+            ],
+            part: MultipartBinaryPart(
+                name: "data",
+                filename: "file",
+                mimeType: nil,
+                data: try encodeRequest(
+                    input,
+                    authorization: authorization
+                )
             )
         )
     }

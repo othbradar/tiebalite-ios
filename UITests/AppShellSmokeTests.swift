@@ -69,6 +69,7 @@ final class AppShellSmokeTests: XCTestCase {
         )
 
         UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.scrollToHittable(.debugOpenGallery, in: app)
         UITestHarness.tap(.debugOpenGallery, in: app)
         UITestHarness.requirePresent(.galleryRoot, in: app)
         UITestHarness.requirePresent(

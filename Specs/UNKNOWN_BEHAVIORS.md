@@ -18,18 +18,18 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | 证据缺口 | 当前已知 | 最小安全实验 | 升级条件 |
 |---|---|---|---|---|
-| U-01 | 登录、验证码、Cookie/token 轮换、过期、多账号退出 | Android WebView 读 BDUSS/STOKEN；过期码常量未形成状态机；明文 Room 不安全 | 先写登录 ADR；用专用测试账号覆盖成功/取消/重复回调/过期/退出，不记录 token 值，只记录字段存在性与状态转换 | HTTPS 合法方案 + 脱敏 taxonomy + Session fixture/state tests |
+| U-01 | 登录、验证码、Cookie/token 轮换、过期、多账号退出 | 阶段 12 已用可见 WKWebView 完成一次真实登录与 Keychain 重启恢复，携带两个候选字段的 active Personalized 请求成功返回；真实 logout 按用户保留凭证要求未运行，轮换/过期码/多账号仍未知 | 继续只由用户手工验证；logout 后重新登录、rotation、失效和重复回调只记录状态/字段存在性，不记录 token 值 | HTTPS 合法方案 + 脱敏 taxonomy + Session fixture/state tests + 真实 logout/expired evidence |
 | U-02 | HTTP endpoint 的安全 HTTPS 等价路径和最小参数 | 关注吧、登录、picpage 当前 call site 是 `http://c.tieba.baidu.com` | 不调用 HTTP；从官方可观察 HTTPS 流或 reference 新 Proto call site寻找候选；单 endpoint、无凭据的公开请求先验证 TLS/编码 | 全程 HTTPS、无降级、最小字段有 evidence、成功/错误 fixture |
 | U-03 | FRS dynamic tab 与 `thread_id_list`/page 契约 | client 先消费最多 30 ids，再取下一 FRS page | 同一公开吧抓首屏及两次分页；记录 tab raw fields、请求 ids、返回顺序、空/缺项、下一 page；匿名与登录分开 | 动态 tab 值域与稳定 id、排序、终止、缺项策略均有 fixture |
 | U-04 | PB `page=0+pid`、删除/私密/缺作者及并发 | Android 有多种锚点调用；mapper 强制 author；不同 intent 可并发 | 先构造 malformed/overlap fixture；再对公开帖验证首/中/末页、pid anchor、删除楼、升降序；用延迟 stub 重放竞态 | anchor/cursor/error taxonomy + stale-response tests |
-| U-05 | 推荐匿名能力、顺序、空页与终止条件 | 阶段 11 无 session Probe 观察到一次 67 项非空页，随后 evidence-locked 请求稳定返回合法空页；未保存响应 fixture，不能据此证明稳定匿名能力、顺序或终止条件 | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
+| U-05 | 推荐匿名能力、顺序、空页与终止条件 | 阶段 11 无 session Probe 有一次 67 项非空页后稳定空页；阶段 12 携带 active Session candidate 的请求单次映射 12 项。均未保存响应 fixture，不能据此证明匿名/认证稳定性、顺序或终止条件 | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
 
 ## API / 认证
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | Personalized 已有一次无 session 非空 `RUNTIME_OBSERVATION`，但不可复现且 PBPage 未发出；仍需对同一公开内容目标和同一请求参数，分别在无 session 与测试 session 下请求，只比较公开字段 |
-| U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 阶段 11 已锁定一组无敏感静态字段并证明 HTTP/Proto 可达，但非空结果不稳定，不能称为最小集合；继续一次只改变一个字段，禁止复制 Android telemetry 全集 |
+| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | Personalized 已有无 session 非空但不可复现的观察，也有一次携带 active Session candidate 的 12-item 成功；PBPage 未发出。仍需同一公开内容/参数的无 session 与测试 session 对照，只比较公开字段 |
+| U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 阶段 11 静态字段证明 HTTP/Proto 可达；阶段 12 按 Android evidence 增加 CommonRequest BDUSS/STOKEN 与外层 stoken 后单次成功，但没有逐字段消融，也不证明服务器实际消费 credential，不能称为最小集合；禁止复制 Android telemetry 全集 |
 | U-08 | legacy sign 是否仍必需、是否允许 iOS 使用 | 只通过已批准协议/法律审查和 HTTPS 受控验证；在此之前不实现 |
 | U-09 | Error.error_code、user_msg、HTTP status 的真实 taxonomy | 为成功、未登录、过期、无权限、删除、限流、服务器错误采脱敏 fixture |
 | U-10 | 60 秒 timeout 是否是产品需求 | 使用本地延迟 stub 测 1/5/30/60 秒；最终 timeout 由 iOS UX 决策，不复制 Android |
@@ -105,6 +105,33 @@ fixture：没有保存 live response 或正文；PBPage mapper 使用完全合�
 结论标签：RUNTIME_OBSERVATION / LOCAL_SYNTHETIC_TESTED；非可复现 RUNTIME_EVIDENCE
 ```
 
+阶段 12 可见登录与 active Session Personalized 观察：
+
+```text
+ID：U-01/U-05/U-06/U-07/U-09/U-35/U-37（全部保持 OPEN 或 PARTIAL）
+日期：2026-08-04
+Android build 与 commit：4.0-dev / 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
+iOS baseline：2221793302250edcd0cdde591b0f92dfbc22db46（阶段 11 partial 提交）
+scenario：用户在可见 WKWebView 手工登录；本机签名 iPhone Simulator 构建
+  写入候选 Session、终止进程并从 Keychain 恢复；显式运行一次携带 active
+  Session candidate 的 Personalized Debug Probe
+请求类别：HTTPS multipart protobuf；matching active lease 授权；只发送 Android
+  已证的 CommonRequest BDUSS/STOKEN 与外层 stoken，不发送密码、TBS、完整
+  Cookie header、AppPos、安装标识或设备标识；没有循环重试
+fixture：没有保存 live response、请求体、用户内容或 credential；自动化只用
+  FakeSession、MockHTTPClient 和合成 Proto
+观察结果：登录后与进程重启后均显示 signedIn；Probe 为 HTTP 200、
+  application/octet-stream、83924 bytes、Proto decode 成功、12 mapped items、
+  outcome=success。按用户保留凭证要求，真实 logout 未执行。
+与现有规格的差异：关闭本机 Beta 可见登录与 Keychain save/load 的运行缺口，
+  证明客户端可在 matching lease 下构造并完成携带候选字段的一页请求；不证明
+  服务器实际消费 credential、字段最小性、rotation、expired taxonomy、真实
+  logout、PBPage、关注吧或 Production live-ready。
+新增测试：Stage12SessionTests、Stage12SessionCleanupTests 以及登录 URL/port、
+  active request、lease、redaction、replacement、cleanup 和 Fixture isolation 回归。
+结论标签：ACTIVE_SESSION_RUNTIME_OBSERVATION / LOCAL_BETA；非可复现 server fixture
+```
+
 ## 内容节点
 
 | ID | UNKNOWN | 安全验证方法 |
@@ -122,9 +149,9 @@ fixture：没有保存 live response 或正文；PBPage mapper 使用完全合�
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-35 | iOS 登录方式与 App Store/平台边界 | ADR 比较系统浏览器、认证会话、显式 Web login；不做隐蔽注入 |
+| U-35 | iOS 登录方式与 App Store/平台边界 | `CLOSED_FOR_LOCAL_BETA`：ADR-0014 选择可见、first-party HTTPS WKWebView，不做 DOM/密码注入；App Store、服务条款和发布级隐私审计仍 OPEN |
 | U-36 | 启动 refresh 失败时是否仍可浏览公开内容 | fixture session adapter + offline UI test |
-| U-37 | Session commit/退出需清哪些 Cookie/Web data/cache | 数据分类表 + Keychain/URL cache/WebKit store integration test；覆盖 newLogin/restoredCredential 的 retry 与 continuation 差异、orphan staging 单独/与 committed credential 并存；在 commit-journal 与 cleanup-ledger 持久化前后、每个 commit/delete midpoint 和 journal 删除前注入 crash/失败，验证下次启动按优先级幂等回滚/清理且 journal 不含 secret |
+| U-37 | Session commit/退出需清哪些 Cookie/Web data/cache | `PARTIAL_LOCAL_BETA`：当前撤销 lease、删除单一 Keychain item、清 App-owned nonpersistent WebKit store，并有失败/重试测试；真实 logout 按保留凭证要求未运行。cache aggregate、journal/ledger、midpoint crash recovery 与 Safari/系统浏览器数据继续 OPEN |
 | U-38 | 多账号是否进入首版 | 产品决策；若无则模型仍须拒绝第二 session 并安全替换 |
 | U-39 | Account User message 中哪些字段可持久化 | public profile 白名单评审；默认不保存未知字段 |
 

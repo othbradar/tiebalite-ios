@@ -38,15 +38,27 @@ struct SettingsPlaceholderView: View {
     let openDebugGallery: () -> Void
     let openInteractionLab: () -> Void
     let openThreadContentRenderer: () -> Void
+    @Bindable var sessionStore: SessionStore
+    let authContextProvider: SessionAuthContextProvider
+    let httpClient: any HTTPClient
+    let openLogin: () -> Void
 
     init(
         openDebugGallery: @escaping () -> Void = {},
         openInteractionLab: @escaping () -> Void = {},
-        openThreadContentRenderer: @escaping () -> Void = {}
+        openThreadContentRenderer: @escaping () -> Void = {},
+        sessionStore: SessionStore,
+        authContextProvider: SessionAuthContextProvider,
+        httpClient: any HTTPClient,
+        openLogin: @escaping () -> Void = {}
     ) {
         self.openDebugGallery = openDebugGallery
         self.openInteractionLab = openInteractionLab
         self.openThreadContentRenderer = openThreadContentRenderer
+        self.sessionStore = sessionStore
+        self.authContextProvider = authContextProvider
+        self.httpClient = httpClient
+        self.openLogin = openLogin
     }
 
     var body: some View {
@@ -59,9 +71,22 @@ struct SettingsPlaceholderView: View {
 
                 EmptyStateView(
                     title: "设置与账户",
-                    message: "阶段 05 仅提供静态占位，不读取或修改账户数据。",
+                    message: "网页登录仅由用户手工操作，App 不读取或保存密码。",
                     systemImage: "gearshape"
                 )
+
+                SessionAccountView(
+                    store: sessionStore,
+                    openLogin: openLogin
+                )
+
+#if DEBUG
+                DebugAuthenticatedSessionProbeView(
+                    sessionStore: sessionStore,
+                    client: httpClient,
+                    authContextProvider: authContextProvider
+                )
+#endif
 
 #if DEBUG
                 DebugScenarioMenuView(

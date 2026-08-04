@@ -71,6 +71,7 @@ targets:
       - path: Sources/Features/Recommendations
       - path: Sources/Features/ThreadReader
       - path: Sources/Features/MediaViewer
+      - path: Sources/Features/Session
       - path: Sources/InteractionKit
         excludes:
           - AGENTS.md

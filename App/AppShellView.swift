@@ -3,11 +3,13 @@ import SwiftUI
 @MainActor
 struct AppShellView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
     @Bindable var navigation: AppNavigationStore
     let harnessLabel: String?
     let environment: AppEnvironment
     let featureStores: AppFeatureStoreRegistry
+    @Bindable var sessionStore: SessionStore
+    let authContextProvider: SessionAuthContextProvider
+    let onOpenLogin: () -> Void
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -50,6 +52,10 @@ struct AppShellView: View {
             StableInteractionLabShell(
                 navigation: navigation,
                 imageLoader: environment.imageLoader,
+                sessionStore: sessionStore,
+                authContextProvider: authContextProvider,
+                httpClient: environment.httpClient,
+                onOpenLogin: onOpenLogin,
                 onOpenMedia: onOpenMedia
             )
         } else {
@@ -67,6 +73,10 @@ struct AppShellView: View {
                     navigation: navigation,
                     imageLoader: environment.imageLoader,
                     featureStores: featureStores,
+                    sessionStore: sessionStore,
+                    authContextProvider: authContextProvider,
+                    httpClient: environment.httpClient,
+                    onOpenLogin: onOpenLogin,
                     onOpenMedia: onOpenMedia
                 )
             } else {
@@ -74,6 +84,10 @@ struct AppShellView: View {
                     navigation: navigation,
                     imageLoader: environment.imageLoader,
                     featureStores: featureStores,
+                    sessionStore: sessionStore,
+                    authContextProvider: authContextProvider,
+                    httpClient: environment.httpClient,
+                    onOpenLogin: onOpenLogin,
                     onOpenMedia: onOpenMedia
                 )
             }
@@ -87,17 +101,29 @@ private struct StableInteractionLabShell: View {
 
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
+    @Bindable var sessionStore: SessionStore
+    let authContextProvider: SessionAuthContextProvider
+    let httpClient: any HTTPClient
+    let onOpenLogin: () -> Void
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
         NavigationStack(path: settingsPathBinding) {
-            SettingsPlaceholderView {
-                navigation.openSettingsRoute(.componentGallery)
-            } openInteractionLab: {
-                navigation.openSettingsRoute(.interactionLab)
-            } openThreadContentRenderer: {
-                navigation.openSettingsRoute(.threadContentRendererLab)
-            }
+            SettingsPlaceholderView(
+                openDebugGallery: {
+                    navigation.openSettingsRoute(.componentGallery)
+                },
+                openInteractionLab: {
+                    navigation.openSettingsRoute(.interactionLab)
+                },
+                openThreadContentRenderer: {
+                    navigation.openSettingsRoute(.threadContentRendererLab)
+                },
+                sessionStore: sessionStore,
+                authContextProvider: authContextProvider,
+                httpClient: httpClient,
+                openLogin: onOpenLogin
+            )
             .navigationDestination(for: SettingsRoute.self) { route in
                 SettingsRouteDestinationView(
                     route: route,
@@ -127,6 +153,10 @@ private struct IPhoneAppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
     let featureStores: AppFeatureStoreRegistry
+    @Bindable var sessionStore: SessionStore
+    let authContextProvider: SessionAuthContextProvider
+    let httpClient: any HTTPClient
+    let onOpenLogin: () -> Void
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -138,17 +168,27 @@ private struct IPhoneAppShellView: View {
                 .tag(AppTab.followedForums)
 
             NavigationStack(path: settingsPathBinding) {
-                SettingsPlaceholderView {
-                    navigation.openSettingsRoute(.componentGallery)
-                } openInteractionLab: {
+                SettingsPlaceholderView(
+                    openDebugGallery: {
+                        navigation.openSettingsRoute(.componentGallery)
+                    },
+                    openInteractionLab: {
 #if DEBUG
-                    navigation.openSettingsRoute(.interactionLab)
+                        navigation.openSettingsRoute(.interactionLab)
 #endif
-                } openThreadContentRenderer: {
+                    },
+                    openThreadContentRenderer: {
 #if DEBUG
-                    navigation.openSettingsRoute(.threadContentRendererLab)
+                        navigation.openSettingsRoute(
+                            .threadContentRendererLab
+                        )
 #endif
-                }
+                    },
+                    sessionStore: sessionStore,
+                    authContextProvider: authContextProvider,
+                    httpClient: httpClient,
+                    openLogin: onOpenLogin
+                )
                 .navigationDestination(for: SettingsRoute.self) { route in
                     SettingsRouteDestinationView(
                         route: route,
@@ -291,6 +331,10 @@ private struct IPadAppShellView: View {
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
     let featureStores: AppFeatureStoreRegistry
+    @Bindable var sessionStore: SessionStore
+    let authContextProvider: SessionAuthContextProvider
+    let httpClient: any HTTPClient
+    let onOpenLogin: () -> Void
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -337,17 +381,27 @@ private struct IPadAppShellView: View {
             rootContent(for: .followedForums)
         case .settings:
             NavigationStack {
-                SettingsPlaceholderView {
-                    navigation.openSettingsRoute(.componentGallery)
-                } openInteractionLab: {
+                SettingsPlaceholderView(
+                    openDebugGallery: {
+                        navigation.openSettingsRoute(.componentGallery)
+                    },
+                    openInteractionLab: {
 #if DEBUG
-                    navigation.openSettingsRoute(.interactionLab)
+                        navigation.openSettingsRoute(.interactionLab)
 #endif
-                } openThreadContentRenderer: {
+                    },
+                    openThreadContentRenderer: {
 #if DEBUG
-                    navigation.openSettingsRoute(.threadContentRendererLab)
+                        navigation.openSettingsRoute(
+                            .threadContentRendererLab
+                        )
 #endif
-                }
+                    },
+                    sessionStore: sessionStore,
+                    authContextProvider: authContextProvider,
+                    httpClient: httpClient,
+                    openLogin: onOpenLogin
+                )
             }
         }
     }
@@ -373,7 +427,7 @@ private struct IPadAppShellView: View {
         } else {
             EmptyStateView(
                 title: "设置与账户",
-                message: "阶段 05 仅提供静态占位，不读取或修改账户数据。",
+                message: "可在左侧管理网页登录、会话恢复与退出登录。",
                 systemImage: "gearshape"
             )
         }

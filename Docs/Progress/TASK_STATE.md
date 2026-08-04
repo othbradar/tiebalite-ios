@@ -1,11 +1,20 @@
 # TASK_STATE
 
-- 当前阶段：11
-- 状态：`PHASE_11_LIVE_READING_RUNTIME_EVIDENCE_PARTIAL`
+- 当前阶段：12
+- 状态：`PHASE_12_SESSION_AND_LOGIN_RUNTIME_EVIDENCE_PARTIAL`
+- `PHASE_12_SESSION_AND_LOGIN = RUNTIME_EVIDENCE_PARTIAL`
+- `SESSION_IMPLEMENTATION = BETA_READY`
+- `SESSION_SIGNED_IN_SEMANTICS = WEB_COMPLETION_CANDIDATE`
+- `KEYCHAIN_PROCESS_RESTART_RESTORE = RUNTIME_VERIFIED`
+- `ACTIVE_SESSION_PROBE = RUNTIME_OBSERVATION`
+- `MANUAL_LOGOUT_RUNTIME = DEFERRED_BY_USER_CREDENTIAL_RETENTION`
+- `LOGOUT_IMPLEMENTATION = DETERMINISTIC_TEST_VERIFIED`
+- `RESTORE_VALIDATION = STRUCTURAL_KEYCHAIN_ONLY`
+- `PRODUCTION_EXPIRED_SIGNAL = NOT_RUNTIME_VERIFIED`
 - `PHASE_11 = RUNTIME_EVIDENCE_PARTIAL`
 - `LIVE_RECOMMENDATION = PARTIAL`
 - `LIVE_THREAD = NOT_RUNTIME_VERIFIED`
-- `PHASE_12 = NOT_STARTED`
+- `PHASE_13 = NOT_STARTED`
 - 当前分支：`main`
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
@@ -28,7 +37,83 @@
 - 阶段 09：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`
 - 阶段 10：`PHASE_10_FIXTURE_VERTICAL_SLICE = COMPLETE`
 - 阶段 11：`RUNTIME_EVIDENCE_PARTIAL`
-- 阶段 12：`NOT_STARTED`
+- 阶段 12：`RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 13：`NOT_STARTED`
+
+## 阶段 12 当前结果与停止点
+
+阶段 12 从阶段 11 提交
+`2221793302250edcd0cdde591b0f92dfbc22db46` 开始，只实现登录与 Session
+基础，不进入关注吧、评论、回复、发帖、签到、点赞或阶段 13：
+
+- 用户在始终可见的 `WKWebView` 中自行输入账号、密码和验证码；App 不读取
+  DOM、不自动填表，也不保存密码。完成页和两个候选 Cookie 字段严格来自锁定
+  Android reference；不移植 Android 的明文 HTTP 私有登录接口；
+- Keychain 只保存 `BDUSS` 与 `STOKEN` 两个 opaque String，使用单一
+  Generic Password、versioned envelope、`WhenUnlockedThisDeviceOnly` 且不
+  同步 iCloud。日志、测试、文档和 Git 均不包含字段值；
+- `SessionStore` 提供 `signedOut/signingIn/signedIn/expired/failed`，并以内部
+  `signingOut` 表示清理进行中。restore/login 只保留一个 Task 和递增
+  generation；旧完成不能覆盖新状态；授权 lease 在 logout/expired 时先撤销；
+- logout 实现按“撤销进程授权 → 删除 Keychain → 请求清理 App-owned
+  nonpersistent WebKit store 并等待回调”执行；即使 Keychain 删除失败仍会尝试
+  WebKit 清理，Keychain 删除失败进入可重试错误。WebKit 清理 API 不返回错误，
+  因而不能声称其失败重试已被验证。Fixture/UITesting 使用 Fake store、fixture
+  auth provider 与 nil login URL，不读取真实 Keychain 或账号；
+- Production Recommendations/ThreadReader 继续 fail closed；阶段 12 的 Debug
+  Probe 不把阶段 11 提升为 COMPLETE，也不接关注吧或 PBPage production。
+
+2026-08-04 的真实运行观察：用户在 iPhone 17 Pro / iOS 26.5 Simulator 的
+本机签名 Debug App 中完成可见网页登录，App 进入 `signedIn`；终止 App 进程并
+重新启动后仍由系统 Keychain 恢复为 `signedIn`。用户显式触发的一次受控
+Personalized Debug Probe 得到 HTTP 200、`application/octet-stream`、83924
+bytes、Proto decode 成功、12 个映射条目、`outcome=success`。这些指标不证明
+服务端实际消费了 credential，也不证明字段最小性、过期 taxonomy 或 Production
+Live Repository 已验证。
+
+用户随后明确要求保留登录凭证以便下次使用，因此没有执行真实 logout，也没有
+清理 Keychain、卸载登录 App 或删除登录 Simulator。真实 logout 后再次启动为
+`NOT_RUN/DEFERRED_BY_USER_CREDENTIAL_RETENTION`；确定性 logout 测试不能替代
+该运行证据，所以阶段 12 如实保持 `RUNTIME_EVIDENCE_PARTIAL`。完整质量门禁在
+独立、无凭证的 iPhone Air Simulator 上运行，未触碰上述登录容器。门禁后曾
+再次终止并启动登录 App，但 macOS 锁屏阻止了额外可访问性标签读取；此前已完成
+的进程重启恢复证据保持有效，该额外观察不写成通过。
+
+阶段 12 定向 Unit 为 19/19；登录 URL/端口/Cookie 选择策略回归为 3/3；设置页
+大字体导航回归为 1/1。最终完整 Unit 为 235 个逻辑测试/254 次执行，0 failed/0 skipped；
+iPhone smoke 16/16、iPhone interaction 15/15、iPad smoke 5/5、iPad
+interaction 2/2 均通过，Release isolation 通过，`make quality` exit 0 并输出
+`Quality gate completed.`。首次完整质量运行曾有 1 个大字体 smoke 失败：新增
+账号 section 后原图库按钮在屏外且测试未滚动；测试改为滚动到可点击元素，定向
+1/1 和随后完整 iPhone smoke 16/16 均通过。
+
+## 阶段 12 Known Limitations
+
+1. 真实 logout、Keychain 删除、App-owned WebKit data 清理及 logout 后重启未
+   运行，按用户保留凭证要求延期；实现仅由确定性 Fake/backend 测试验证。
+2. 启动恢复只检查 versioned Keychain envelope 结构完整；没有已证轻量服务器
+   validator，过期 credential 可能暂时投影为 `signedIn`。
+3. `signedIn` 表示可见 Web 完成、候选 credential 原子写入并签发当前进程
+   lease，不等于服务端确认账号有效、字段最小或阶段 11 Live 已解锁。
+4. 真实服务器过期错误码、Cookie 轮换、host-only 与显式 Domain 差异、多账号、
+   TBS、PBPage 和关注吧仍为 `UNKNOWN`。
+5. 未做真机、App Store entitlement、发布级隐私/安全审计；ADR-0007 的 crash
+   journal、cleanup ledger 与受保护缓存 aggregate 延至 post-Beta。
+6. macOS 锁屏阻止了最终质量门禁后的额外 UI 标签复核；没有因此退出、卸载、
+   重装或清除登录凭证。
+
+## 阶段 12 变更边界
+
+- 新增动画：无。
+- 新增手势、Pager、MediaViewer、Renderer：无修改。
+- 新增 overlay/fullScreenCover：无；仅由 App 根持有一个系统登录 sheet。
+- 新增依赖：无。
+- Live 网络：仅用户显式触发的一次 Debug-only、脱敏 Probe；Production live
+  读取仍 fail closed，自动化测试不访问贴吧服务器。
+- 敏感数据：没有密码、Cookie 值、账号、完整请求体或响应正文进入日志、fixture、
+  文档、测试结果或 Git。
+- Android submodule：只读且保持 clean。
+- 阶段 13：`NOT_STARTED`，本轮停止。
 
 ## 阶段 11 当前结果与停止点
 

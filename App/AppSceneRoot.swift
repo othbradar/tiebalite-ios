@@ -8,6 +8,8 @@ struct AppSceneRoot: View {
     @State private var navigationStore: AppNavigationStore
     @State private var featureStores: AppFeatureStoreRegistry
     @State private var mediaPresentation: MediaViewerPresentation?
+    @State private var sessionStore: SessionStore
+    @State private var isLoginPresented = false
 
     init(
         compositionRoot: AppCompositionRoot,
@@ -27,6 +29,7 @@ struct AppSceneRoot: View {
             )
         )
         _mediaPresentation = State(initialValue: nil)
+        _sessionStore = State(initialValue: compositionRoot.sessionStore)
     }
 
     var body: some View {
@@ -35,6 +38,9 @@ struct AppSceneRoot: View {
             harnessLabel: harnessLabel,
             environment: compositionRoot.environment,
             featureStores: featureStores,
+            sessionStore: sessionStore,
+            authContextProvider: compositionRoot.authContextProvider,
+            onOpenLogin: openLogin,
             onOpenMedia: presentMedia
         )
         .fullScreenCover(item: $mediaPresentation) { presentation in
@@ -45,6 +51,24 @@ struct AppSceneRoot: View {
                     mediaPresentation = nil
                 }
             )
+        }
+        .sheet(
+            isPresented: $isLoginPresented,
+            onDismiss: finishLoginDismissal
+        ) {
+            LoginView(
+                store: sessionStore,
+                webSession: compositionRoot.loginWebSession,
+                cancel: {
+                    isLoginPresented = false
+                },
+                completed: {
+                    isLoginPresented = false
+                }
+            )
+        }
+        .task {
+            await sessionStore.restoreIfNeeded()
         }
         .onOpenURL { url in
             navigationStore.handleExternalURL(url)
@@ -59,5 +83,24 @@ struct AppSceneRoot: View {
             return
         }
         mediaPresentation = presentation
+    }
+
+    private func openLogin() {
+        guard sessionStore.state != .signedIn,
+              !sessionStore.isBusy else {
+            return
+        }
+        compositionRoot.loginWebSession.prepareForLogin()
+        sessionStore.beginSignIn()
+        isLoginPresented = true
+    }
+
+    private func finishLoginDismissal() {
+        guard sessionStore.state != .signedIn else {
+            return
+        }
+        Task {
+            await sessionStore.cancelSignIn()
+        }
     }
 }
