@@ -68,13 +68,14 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(ForumGuideProtocol|PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
   fail protobuf-core-allowlist "$proto_usage"
 fi
 for proto_adapter in \
+  Sources/Core/TiebaAPI/ForumGuideProtocol.swift \
   Sources/Core/TiebaAPI/PBPageProtocol.swift \
   Sources/Core/TiebaAPI/PersonalizedProtocol.swift \
   Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift
@@ -102,6 +103,18 @@ reject_swift_matches \
   thread-reader-protobuf-leak \
   '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
   Sources/Features/ThreadReader
+reject_swift_matches \
+  followed-forums-network-access \
+  '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
+  Sources/Features/FollowedForums
+reject_swift_matches \
+  followed-forums-credential-access \
+  '\b(SessionAuthorization|SessionCredential|Keychain)\b|BDUSS|STOKEN' \
+  Sources/Features/FollowedForums
+reject_swift_matches \
+  followed-forums-interaction-leak \
+  '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
+  Sources/Features/FollowedForums
 reject_swift_matches \
   thread-reader-network-access \
   '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
@@ -141,15 +154,25 @@ do
   fi
 done
 if printf '%s\n' "$production_block" |
-  rg -q 'DisabledHTTPClient|FixtureRecommendationRepository|FixtureThreadReaderRepository|FixtureReadingImageLoader'; then
+  rg -q 'DisabledHTTPClient|FixtureFollowedForumsRepository|FixtureRecommendationRepository|FixtureThreadReaderRepository|FixtureReadingImageLoader'; then
   fail production-live-composition-leak "$production_block"
+fi
+if ! rg -q \
+  'followedForumsRepository =.*EvidenceBlockedFollowedForumsRepository|EvidenceBlockedFollowedForumsRepository\(\)' \
+  App/AppCompositionRoot.swift; then
+  fail production-followed-forums-evidence-gate
+fi
+if rg -q \
+  'followedForumsRepository = LiveFollowedForumsRepository' \
+  App/AppCompositionRoot.swift; then
+  fail production-followed-forums-live-before-runtime-evidence
 fi
 if ! rg -q 'readingDataSourceMode: \.fixture' \
   TestSupport/LaunchScenarios/LaunchScenarioFactory.swift; then
   fail ui-scenario-fixture-mode
 fi
 scenario_live_usage="$(
-  rg -n '\.live\b|URLSessionHTTPClient|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
+  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
     TestSupport/LaunchScenarios 2>/dev/null || true
 )"
 if [[ -n "$scenario_live_usage" ]]; then
@@ -225,7 +248,7 @@ if [[ -n "$generated_outside_allowlist" ]]; then
   fail generated-protobuf-location "$generated_outside_allowlist"
 fi
 generated_count="$(find Generated/Protobuf -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-if [[ "$generated_count" -ne 126 ]]; then
+if [[ "$generated_count" -ne 136 ]]; then
   fail generated-protobuf-count "$generated_count"
 fi
 
@@ -262,7 +285,9 @@ expected_unchecked_files="$(
     'Generated/Protobuf/AlaLiveInfo.pb.swift' \
     'Generated/Protobuf/AlaUserInfo.pb.swift' \
     'Generated/Protobuf/App.pb.swift' \
+    'Generated/Protobuf/CommonReq.pb.swift' \
     'Generated/Protobuf/CommonRequest.pb.swift' \
+    'Generated/Protobuf/ForumGuide/LikeForum.pb.swift' \
     'Generated/Protobuf/GoodsInfo.pb.swift' \
     'Generated/Protobuf/Item.pb.swift' \
     'Generated/Protobuf/OriginThreadInfo.pb.swift' \
@@ -284,7 +309,7 @@ unchecked_count="$(
   rg -n '@unchecked[[:space:]]+Sendable' Generated/Protobuf | wc -l | tr -d ' '
 )"
 if [[ "$actual_unchecked_files" != "$expected_unchecked_files" ||
-      "$unchecked_count" -ne 17 ]]; then
+      "$unchecked_count" -ne 19 ]]; then
   fail generated-unchecked-sendable-allowlist "$actual_unchecked_files"
 fi
 

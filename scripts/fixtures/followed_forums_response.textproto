@@ -1,0 +1,37 @@
+error {
+  error_code: 0
+}
+data {
+  like_forum {
+    forum_id: 13001
+    forum_name: "Swift开发"
+    avatar: "fixture://forum/swift"
+    hot_num: 321
+    member_count: 123456
+    thread_num: 7890
+    sort_value: 30
+    level_id: 8
+    level_name: "八级"
+    is_sign: 1
+  }
+  like_forum {
+    forum_id: 13002
+    forum_name: "iOS技术"
+    avatar: "fixture://forum/ios"
+    hot_num: 210
+    member_count: 65432
+    thread_num: 4321
+    sort_value: 20
+    level_id: 5
+    level_name: "五级"
+  }
+  like_forum {
+    forum_id: 13003
+    forum_name: "开源软件"
+    hot_num: 99
+    member_count: 24680
+    thread_num: 1357
+    sort_value: 10
+  }
+  is_login: 1
+}

@@ -1,20 +1,24 @@
 @MainActor
 final class AppFeatureStoreRegistry {
+    let followedForumsStore: FollowedForumsStore
     let recommendationsStore: RecommendationsStore
 
     private let makeThreadReaderStore: @MainActor (Int64) -> ThreadReaderStore
     private var threadReaderStores: [ThreadStoreKey: ThreadReaderStore] = [:]
 
     init(
+        followedForumsStore: FollowedForumsStore,
         recommendationsStore: RecommendationsStore,
         makeThreadReaderStore: @escaping @MainActor (Int64) -> ThreadReaderStore
     ) {
+        self.followedForumsStore = followedForumsStore
         self.recommendationsStore = recommendationsStore
         self.makeThreadReaderStore = makeThreadReaderStore
     }
 
     convenience init(compositionRoot: AppCompositionRoot) {
         self.init(
+            followedForumsStore: compositionRoot.makeFollowedForumsStore(),
             recommendationsStore: compositionRoot.makeRecommendationsStore(),
             makeThreadReaderStore: compositionRoot.makeThreadReaderStore
         )

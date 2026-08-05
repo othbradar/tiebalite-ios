@@ -7,35 +7,35 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
     @MainActor
     func testRegularSplitRouteSurvivesOrientationAndRootSwitch() {
-        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+        let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
         let device = XCUIDevice.shared
         device.orientation = .landscapeLeft
 
         UITestHarness.requirePresent(.layoutRegular, in: app)
-        pushForumAndThread(in: app)
+        pushForumRoute(in: app)
 
         device.orientation = .portrait
         UITestHarness.requirePresent(.layoutRegular, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.routeForum, in: app)
         UITestHarness.tapTab(.recommendations, in: app)
         UITestHarness.requirePresent(.recommendationsRoot, in: app)
         UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.routeForum, in: app)
 
         device.orientation = .portrait
     }
 
     @MainActor
     func testCanonicalStateSurvivesRegularCompactRegularProjection() {
-        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+        let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
 
         UITestHarness.requirePresent(.layoutRegular, in: app)
-        pushForumAndThread(in: app)
+        pushForumRoute(in: app)
 
         UITestHarness.tap(.layoutControlCompact, in: app)
         UITestHarness.requirePresent(.layoutCompact, in: app)
         UITestHarness.requireTabSelected(.followedForums, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.routeForum, in: app)
 
         UITestHarness.tapTab(.settings, in: app)
         UITestHarness.tap(.debugOpenGallery, in: app)
@@ -47,7 +47,7 @@ final class IPadAppShellSmokeTests: XCTestCase {
         UITestHarness.requirePresent(.galleryRoot, in: app)
 
         UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.routeForum, in: app)
     }
 
     @MainActor
@@ -235,12 +235,11 @@ final class IPadAppShellSmokeTests: XCTestCase {
     }
 
     @MainActor
-    private func pushForumAndThread(in app: XCUIApplication) {
+    private func pushForumRoute(in app: XCUIApplication) {
         UITestHarness.tapTab(.followedForums, in: app)
         UITestHarness.requirePresent(.followedForumsRoot, in: app)
-        UITestHarness.tap(.openForum, in: app)
+        UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
+        UITestHarness.tap(.followedForumsFirstRow, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
-        UITestHarness.tap(.openThread, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
     }
 }

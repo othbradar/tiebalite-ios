@@ -1,7 +1,12 @@
 # TASK_STATE
 
-- 当前阶段：12
-- 状态：`PHASE_12_SESSION_AND_LOGIN_RUNTIME_EVIDENCE_PARTIAL`
+- 当前阶段：13
+- 状态：`PHASE_13_FOLLOWED_FORUMS_RUNTIME_EVIDENCE_PARTIAL`
+- `PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`
+- `FOLLOWED_FORUMS_LOCAL_IMPLEMENTATION = BETA_READY`
+- `FORUM_GUIDE_AUTHENTICATED_PROBE = NOT_RUN_AUTH_CONTEXT_RESTORE_FAILED`
+- `LIVE_FOLLOWED_FORUMS = EVIDENCE_BLOCKED`
+- `PHASE_14 = NOT_STARTED`
 - `PHASE_12_SESSION_AND_LOGIN = RUNTIME_EVIDENCE_PARTIAL`
 - `SESSION_IMPLEMENTATION = BETA_READY`
 - `SESSION_SIGNED_IN_SEMANTICS = WEB_COMPLETION_CANDIDATE`
@@ -14,7 +19,7 @@
 - `PHASE_11 = RUNTIME_EVIDENCE_PARTIAL`
 - `LIVE_RECOMMENDATION = PARTIAL`
 - `LIVE_THREAD = NOT_RUNTIME_VERIFIED`
-- `PHASE_13 = NOT_STARTED`
+- `PHASE_13 = RUNTIME_EVIDENCE_PARTIAL`
 - 当前分支：`main`
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
@@ -38,7 +43,80 @@
 - 阶段 10：`PHASE_10_FIXTURE_VERTICAL_SLICE = COMPLETE`
 - 阶段 11：`RUNTIME_EVIDENCE_PARTIAL`
 - 阶段 12：`RUNTIME_EVIDENCE_PARTIAL`
-- 阶段 13：`NOT_STARTED`
+- 阶段 13：`RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 14：`NOT_STARTED`
+
+## 阶段 13 当前结果与停止点
+
+阶段 13 从阶段 12 提交
+`4f2c055a2fd01c78db6f413f30c87e568c3717ed` 开始，只实现“我关注的吧”
+和稳定 `ForumRoute`，没有进入吧首页、吧内帖子列表或阶段 14：
+
+- 锁定 Android Home 权威路径仍是不可接入的明文 HTTP form/
+  ForceLogin 分页链。同 commit 的 HTTPS Proto `forumGuide` 没有 Home
+  caller，因此只作为受控 Probe 候选；ForumGuide 两个 root 的 58-file
+  closure 与旧集合合并为 136 个 generated Swift 文件，两次 clean
+  generation 与 tracked output 一致；
+- `ForumGuideProtocol` 锁定 HTTPS path/query、`sort_type=2`、
+  `call_from=0`、multipart data/file 和 response mapper。Android 最终 wire
+  仍包含 common/sign interceptor；iOS 当前只实验由 matching
+  `ProtectedDataLease` 授权的 BDUSS/STOKEN-only unsigned subset，没有伪称
+  与 Android 精确一致；
+- 领域列表使用 positive Int64 `forumID` 作为稳定的本地候选身份，
+  名称经已批准 `ForumRoute` 校验后进入现有系统导航。阶段 14
+  目的地只显示“暂未开放”，不伪造吧首页或帖子数据；
+- `FollowedForumsStore` 投影 signed-out、signing-in、expired、initial
+  loading、loaded、empty、initial failure、retained refreshing/failure；单一
+  Task + generation 防止替换请求的旧响应覆盖。取消不显示普通错误，
+  且只有明确 typed expiry 才会撤销进程 lease 并进入 expired；
+- Fixture/UITesting 使用 FakeSession、Fixture Repository 和 Mock HTTP，不读
+  系统 Keychain，不访问 live。iPhone 已覆盖未登录引导、fixture 列表、
+  ForumRoute、返回和 Tab 状态；iPad 已覆盖 fixture 列表和 regular/compact
+  投影。
+
+2026-08-05 在保留用户登录环境的 iPhone 17 Pro / iOS 26.5
+Simulator 上，macOS 解锁后仅终止并重启 App 进程，未执行卸载、
+logout、Keychain/WebKit 清理或重新登录。当前构建仍投影“会话保存失败”，
+因而 ForumGuide Probe 按设计保持 disabled，没有发出请求，也没有可报告的
+HTTP/MIME/body/decode/item count。这不证明凭证已被删除，只证明本次
+构建无法恢复可用 AuthContext。Production 因此回退为
+`EvidenceBlockedFollowedForumsRepository`，不会绕过 Probe 自动发送凭证；
+本阶段如实保持 `RUNTIME_EVIDENCE_PARTIAL`。
+
+阶段 13 定向 Unit 为 13 个逻辑测试，包含一条修复前编译失败、修复后
+13/13 的 Production evidence-blocked 回归。iPhone 原始 smoke 首轮暴露
+5 个稳定失败：登录按钮 accessibility identifier 被状态容器继承覆盖、
+列表容器 ID 被 root 容器投影、以及设置入口被新 Debug 行挤出首屏。
+最小修正后原 5 项 5/5，完整 iPhone smoke 17/17、iPad smoke 5/5
+均通过。完整 quality 结果见阶段审计。
+
+## 阶段 13 Known Limitations
+
+1. 真实 authenticated ForumGuide 请求未发出，因此 endpoint 的服务器
+   接受性、MIME、正常 body、真实数量、identity 稳定性与错误 taxonomy
+   仍为 `UNKNOWN`；Production 保持 evidence-blocked。
+2. 当前凭证恢复失败的根因未经证明；为遵守用户保留凭证的要求，
+   本阶段没有重新登录、覆盖或清除会话。
+3. Android 实际候选 wire 含 common/sign interceptor；iOS 的两字段
+   unsigned subset 只有本地/Mock 证据，不应为追求成功而猜测或复制设备
+   telemetry。
+4. Proto candidate response 没有分页字段，Android 注释只声明最多
+   200 项；无法宣称超大关注列表完整。
+5. 真实过期码仍未锁定；普通错误保守地显示为可重试加载失败。
+   若未来获得明确 expiry，当前“保留 Keychain、只撤销 lease”语义在
+   重启后缺少 durable expired marker，可能再度投影 signed-in。
+6. 吧头像使用统一占位；没有新建图片缓存、下采样或 live image loader。
+
+## 阶段 13 变更边界
+
+- 新增动画、手势、overlay、fullScreenCover、依赖：无。
+- Pager、MediaViewer、Renderer、InteractionKit：无修改。
+- 吧首页/吧内帖子：未实现；`ForumRoute` 仅进入明确未开放页。
+- 真实网络：本阶段没有发出 ForumGuide 请求；Production fail closed。
+- 敏感数据：没有 Cookie/凭证值、账号、请求体、原始响应或用户关注
+  内容进入日志、fixture、文档、测试或 Git。
+- Android submodule：只读且保持 clean。
+- 阶段 14：`NOT_STARTED`，本轮停止。
 
 ## 阶段 12 当前结果与停止点
 

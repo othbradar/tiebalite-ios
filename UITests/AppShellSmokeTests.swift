@@ -7,17 +7,16 @@ final class AppShellSmokeTests: XCTestCase {
 
     @MainActor
     func testIndependentRootPathsAndCurrentTabReselection() {
-        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+        let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
 
         UITestHarness.requireTabSelected(.recommendations, in: app)
         openFixtureThread(in: app)
         UITestHarness.tapTab(.followedForums, in: app)
         UITestHarness.requireTabSelected(.followedForums, in: app)
         UITestHarness.requirePresent(.followedForumsRoot, in: app)
-        UITestHarness.tap(.openForum, in: app)
+        UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
+        UITestHarness.tap(.followedForumsFirstRow, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
-        UITestHarness.tap(.openThread, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
 
         UITestHarness.tapTab(.recommendations, in: app)
         UITestHarness.requireTabSelected(.recommendations, in: app)
@@ -26,39 +25,29 @@ final class AppShellSmokeTests: XCTestCase {
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
 
         UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.routeForum, in: app)
     }
 
     @MainActor
     func testSystemBackReturnsToThePreviousFixtureRoute() {
-        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+        let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
 
-        pushForumAndThread(in: app)
-        UITestHarness.tapSystemBack(in: app, returningTo: .routeForum)
+        pushForumRoute(in: app)
+        UITestHarness.tapSystemBack(
+            in: app,
+            returningTo: .followedForumsFirstRow
+        )
     }
 
     @MainActor
     func testSystemEdgeSwipeReturnsToThePreviousFixtureRoute() {
-        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+        let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
 
-        pushForumAndThread(in: app)
-        UITestHarness.swipeSystemBack(in: app, returningTo: .routeForum)
-    }
-
-    @MainActor
-    func testDebugSettingsPathSurvivesTabSwitch() {
-        let app = UITestHarness.launch(scenario: .emptyShell)
-
-        UITestHarness.tapTab(.settings, in: app)
-        UITestHarness.requireTabSelected(.settings, in: app)
-        UITestHarness.tap(.debugOpenGallery, in: app)
-        UITestHarness.requirePresent(.galleryRoot, in: app)
-
-        UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requireTabSelected(.followedForums, in: app)
-        UITestHarness.tapTab(.settings, in: app)
-        UITestHarness.requireTabSelected(.settings, in: app)
-        UITestHarness.requirePresent(.galleryRoot, in: app)
+        pushForumRoute(in: app)
+        UITestHarness.swipeSystemBack(
+            in: app,
+            returningTo: .followedForumsFirstRow
+        )
     }
 
     @MainActor
@@ -385,13 +374,39 @@ final class AppShellSmokeTests: XCTestCase {
 
 extension AppShellSmokeTests {
     @MainActor
-    private func pushForumAndThread(in app: XCUIApplication) {
+    func testDebugSettingsPathSurvivesTabSwitch() {
+        let app = UITestHarness.launch(scenario: .emptyShell)
+
+        UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.requireTabSelected(.settings, in: app)
+        UITestHarness.scrollToHittable(.debugOpenGallery, in: app)
+        UITestHarness.tap(.debugOpenGallery, in: app)
+        UITestHarness.requirePresent(.galleryRoot, in: app)
+
+        UITestHarness.tapTab(.followedForums, in: app)
+        UITestHarness.requireTabSelected(.followedForums, in: app)
+        UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.requireTabSelected(.settings, in: app)
+        UITestHarness.requirePresent(.galleryRoot, in: app)
+    }
+
+    @MainActor
+    func testFollowedForumsSignedOutShowsLoginPrompt() {
+        let app = UITestHarness.launch(scenario: .sessionSignedOut)
+
+        UITestHarness.tapTab(.followedForums, in: app)
+        UITestHarness.requirePresent(.followedForumsSignedOut, in: app)
+        UITestHarness.requirePresent(.followedForumsLogin, in: app)
+        UITestHarness.requireAbsent(.followedForumsFirstRow, in: app)
+    }
+
+    @MainActor
+    private func pushForumRoute(in app: XCUIApplication) {
         UITestHarness.tapTab(.followedForums, in: app)
         UITestHarness.requirePresent(.followedForumsRoot, in: app)
-        UITestHarness.tap(.openForum, in: app)
+        UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
+        UITestHarness.tap(.followedForumsFirstRow, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
-        UITestHarness.tap(.openThread, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
     }
 
     @MainActor

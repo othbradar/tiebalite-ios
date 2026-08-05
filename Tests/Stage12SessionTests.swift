@@ -91,7 +91,9 @@ struct Stage12SessionStoreTests {
 
         #expect(dependencies.store.state == .expired)
         #expect(await dependencies.auth.snapshot().status == .expired)
-        #expect(try await dependencies.credentials.load() == nil)
+        #expect(try await dependencies.credentials.load() != nil)
+        #expect(await dependencies.credentials.deleteCount() == 0)
+        #expect(dependencies.websiteData.clearCount == 0)
         #expect(throws: RequestAuthorizationError.credentialUnavailable) {
             _ = try dependencies.auth.authorization(for: context)
         }

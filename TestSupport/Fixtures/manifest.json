@@ -19,6 +19,15 @@
       "source": "crossLanguageGenerated"
     },
     {
+      "format": "protobuf",
+      "id": "followed-forums.forum-guide.synthetic",
+      "path": "API/FollowedForums/forum_guide_synthetic.pb",
+      "purpose": "ForumGuide decode, domain mapping, and fixture UI contract",
+      "sanitized": true,
+      "sha256": "cee302e05739389ace936631417daf361de9a3a5df726f9cdf83a68096ed4b47",
+      "source": "synthetic"
+    },
+    {
       "format": "json",
       "id": "json.success",
       "path": "JSON/success.json",

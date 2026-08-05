@@ -86,6 +86,12 @@ struct SettingsPlaceholderView: View {
                     client: httpClient,
                     authContextProvider: authContextProvider
                 )
+
+                DebugFollowedForumsProbeView(
+                    sessionStore: sessionStore,
+                    client: httpClient,
+                    authContextProvider: authContextProvider
+                )
 #endif
 
 #if DEBUG
@@ -141,6 +147,23 @@ struct FixtureRouteView: View {
         .background(SemanticColor.background)
         .navigationTitle(route.title)
         .accessibilityIdentifier(route.accessibilityIdentifier)
+    }
+}
+
+@MainActor
+struct ForumRouteUnavailableView: View {
+    let forum: ForumRoute
+
+    var body: some View {
+        EmptyStateView(
+            title: "\(forum.rawValue)吧",
+            message: "吧首页暂未开放，将在后续版本提供。",
+            systemImage: "rectangle.stack"
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(SemanticColor.background)
+        .navigationTitle(forum.rawValue)
+        .accessibilityIdentifier(AppAccessibilityID.routeForum)
     }
 }
 

@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE12_ACTIVE_SESSION_PERSONALIZED_RUNTIME_OBSERVATION_PBPAGE_LOCAL_ADAPTER`
+状态：`STAGE13_FORUMGUIDE_LOCAL_CANDIDATE_STAGE12_ACTIVE_SESSION_OBSERVATION`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -175,8 +175,8 @@ call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
   SHA-256
   `54a838f8bd05c39e90b84b3bba4d4224dc81fe11b63934e23dd65be937eebb4a`。
 - Fixture 类型：`CROSS_LANGUAGE_GENERATED`；Java 21.0.10 +
-  protobuf-java 4.35.1 `DynamicMessage` 从同一 126-file union 中的
-  Personalized descriptor closure
+  protobuf-java 4.35.1 `DynamicMessage` 从固定 51-file Personalized
+  descriptor closure
   生成，来源见相邻 `PROVENANCE.md`。
 - 已验证行为：Android 静态调用链和 request 字段；request protobuf golden、
   Android multipart boundary/data/file 形态、optional default presence、未知
@@ -192,24 +192,44 @@ call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
 ### `followedForums.forumGuide`
 
 - 用户任务：登录后读取全部关注吧。
-- HTTP method / URL family：POST `http://c.tieba.baidu.com/c/f/forum/forumGuide`；`BLOCKED`。
-- Android 来源文件：`OfficialTiebaApi.kt`、`MixedTiebaApiImpl.kt`、`HomeViewModel.kt`。
-- Android symbol：`forumGuideFlow`、`allForumGuideFlow`、`HomePartialChangeProducer.produceRefreshPartialChangeFlow`。
-- 请求构建来源：Retrofit form + common-param/sign interceptors。
-- 认证要求：`required-by-client`；ForceLogin，`tbs` 与 `stoken`。
-- 请求编码：form-urlencoded。
-- 请求 Protobuf：无。
-- 响应 Protobuf/DTO：`ForumGuideBean`；`like_forum`、`like_forum_has_more`、公共 JSON 错误。
-- 分页字段：`page_no` 从 1；`res_num=50`；循环到 `like_forum_has_more=false`。
-- 服务端错误字段：JSON common aliases；真实会话失效码 `UNKNOWN`。
-- 关键 headers：Official Android client headers；具体最小合法集合 `UNKNOWN`。
-- 设备/版本参数：common Android params 和 legacy sign；不得复制。
-- 敏感字段：STOKEN、TBS、可能的 Cookie/device id。
-- iOS domain mapper：`ForumGuideBean → FollowedForumPage`；稳定 forum id/name。Repository 可在内部逐页聚合，但对 Store 只原子返回同一 session 的完整集合，或返回带 failedPage 的失败；不得发布部分 membership。
-- Fixture 路径：`TestSupport/Fixtures/API/FollowedForums/`（`NOT_CREATED`）。
-- Fixture 获取/生成方式：必须先确认 HTTPS 等价 endpoint，再用测试账号脱敏采集；不得通过 HTTP 采集凭据。
-- 已验证行为：Android 当前 Home 的权威 call site 是 form endpoint；Proto `forumGuideNewFlow` 未发现 Home caller。
-- UNKNOWN：安全 HTTPS 路径、token 最小集合、会话过期、空列表、账号超多页、Proto endpoint 能否等价替代。
+- 状态：`HTTPS_PROTO_CANDIDATE_RUNTIME_NOT_VERIFIED`；Android Home 权威 legacy
+  路径继续 `BLOCKED_INSECURE_HTTP`。
+- `CODE_EVIDENCE`：当前 Android Home 使用 POST
+  `http://c.tieba.baidu.com/c/f/forum/forumGuide`，form + ForceLogin，并从
+  `page_no=1`、`res_num=50` 聚合到 `like_forum_has_more=false`。该路径不得进入
+  iOS。
+- `CODE_EVIDENCE`：相同 pinned commit 定义 POST
+  `https://tiebac.baidu.com/c/f/forum/forumGuide?cmd=309683&format=protobuf`，
+  request/response 为 `ForumGuideRequest/ForumGuideResponse`；当前没有 UI 或
+  Repository caller，因此只是 HTTPS Proto candidate。
+- 请求 data：`sort_type#2=2`、`call_from#3=0`；认证位于 outer multipart 的
+  `BDUSS`/`stoken` 与当前 lease。`CODE_EVIDENCE`：Android 实际 Retrofit
+  链还通过 V11 common-parameter 和 sort/sign interceptor；最终 outer fields
+  包含非敏感 common params 与大写 MD5 sign。iOS 刻意只实验
+  BDUSS/STOKEN-only、unsigned subset，属于
+  `INFERENCE/RUNTIME_UNVERIFIED`，不声称与 Android final wire 精确一致；
+  device/common/sign 最小必需集仍为 `UNKNOWN`，iOS 不复制 device telemetry。
+- 响应 `data.like_forum#2`：`forum_id`、`forum_name`、`avatar`、hot/member/thread
+  counts、`level_id/name`、`is_sign`；无分页字段。Android 接口注释声明最多 200。
+- 错误：`Error.error_code != 0` 只形成 generic server error；`is_login` 无消费点，
+  没有已证 session-expired server code。
+- iOS Proto closure：两个 root 共 58 个输入；复用当前 48 个，新增 10 个锁定输入，
+  union 为 136。现有 `tieba.LikeForumInfo` wire 不兼容，不得替代。
+- Fixture 路径：`TestSupport/Fixtures/API/FollowedForums/`；只允许合成、脱敏数据。
+- Runtime：`NOT_RUN_AUTH_CONTEXT_RESTORE_FAILED`。2026-08-05 在保留用户
+  凭证的 iPhone 17 Pro / iOS 26.5 Simulator 上，macOS 解锁后仅重启
+  App 进程，会话仍投影为凭证存储失败，所以 Probe 按设计 disabled。
+  未执行 logout、卸载、Keychain/WebKit 清理、重新登录或网络请求；
+  不将此观察写成服务端失败，也不证明凭证已被删除。Production
+  保持 `EvidenceBlockedFollowedForumsRepository`。
+  `application/octet-stream` 仅来自同 host/Proto family 的 Personalized
+  先前观察，不是 ForumGuide MIME 证据。Probe 只记录 HTTP、MIME、
+  body size、decode、item count、typed error；不得保存 body、Cookie
+  或用户内容。
+- `UNKNOWN`：当前构建无法恢复 AuthContext 的根因、服务端是否接受当前
+  lease 的最小 auth subset、sign/device 参数必要性、
+  MIME、空列表、error taxonomy、超过 200 个关注吧的完整性，以及 Proto forum ID
+  与 Home identity 的运行等价性。
 
 ### `forum.frsPage`
 

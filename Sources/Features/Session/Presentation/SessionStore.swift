@@ -141,28 +141,9 @@ final class SessionStore {
         guard authContextProvider.expire(context: context) else {
             return
         }
-        let generation = beginOperation()
+        hasAttemptedRestore = true
+        cancelCurrentOperation()
         state = .expired
-        let credentialStore = credentialStore
-        let websiteDataCleaner = websiteDataCleaner
-        let task = Task { @MainActor [weak self] in
-            let cleared = await Self.clearPersistedSession(
-                credentialStore: credentialStore,
-                websiteDataCleaner: websiteDataCleaner
-            )
-            guard !Task.isCancelled else {
-                self?.finishCancellation(generation: generation)
-                return
-            }
-            guard let self,
-                  self.activeGeneration == generation else {
-                return
-            }
-            self.state = cleared ? .expired : .failed(.credentialStore)
-            self.finishOperation(generation: generation)
-        }
-        operationTask = task
-        await awaitOperation(task)
     }
 
     func logout() async {

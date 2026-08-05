@@ -4,6 +4,9 @@ enum AppAccessibilityID {
     static let debugOpenThreadContentRenderer =
         "app.debug.open-thread-content-renderer-lab"
     static let followedForumsRoot = "app.root.followed-forums"
+    static let followedForumsLogin = "followed-forums.session.login"
+    static let followedForumsSignedOut =
+        "followed-forums.session.signed-out"
     static let galleryAppearance = "design-system.gallery.appearance"
     static let galleryDynamicType = "design-system.gallery.dynamic-type"
     static let galleryReduceMotion = "design-system.gallery.reduce-motion"

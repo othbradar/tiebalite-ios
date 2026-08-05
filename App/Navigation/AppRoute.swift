@@ -70,6 +70,8 @@ struct ForumName: Codable, Hashable, Sendable {
     }
 }
 
+typealias ForumRoute = ForumName
+
 struct ThreadID: Codable, Hashable, Sendable {
     let rawValue: Int64
 
@@ -127,7 +129,7 @@ struct PostID: Codable, Hashable, Sendable {
 }
 
 enum RouteIdentity: Codable, Hashable, Sendable {
-    case forum(ForumName)
+    case forum(ForumRoute)
     case subposts(threadID: ThreadID, postID: PostID)
     case thread(ThreadID)
 }

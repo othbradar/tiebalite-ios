@@ -18,6 +18,13 @@ enum AppRouter {
         return .thread(threadID)
     }
 
+    static func forumRoute(for forum: FollowedForum) -> RouteIdentity? {
+        guard let forum = ForumRoute(forum.name) else {
+            return nil
+        }
+        return .forum(forum)
+    }
+
     @ViewBuilder
     static func destination(
         for route: RouteIdentity,
@@ -35,19 +42,12 @@ enum AppRouter {
                 imageLoader: dependencies.imageLoader,
                 onOpenMedia: dependencies.onOpenMedia
             )
-        case .forum, .subposts:
+        case let .forum(forum):
+            ForumRouteUnavailableView(forum: forum)
+        case .subposts:
             FixtureRouteView(
                 route: route,
-                openThread: {
-                    guard let fixtureThreadID = ThreadID(100_003) else {
-                        return
-                    }
-                    _ = dependencies.featureStores.threadReaderStore(
-                        for: root,
-                        threadID: fixtureThreadID
-                    )
-                    navigation.push(.thread(fixtureThreadID), in: root)
-                },
+                openThread: {},
                 openSubposts: { threadID in
                     guard let postID = PostID(2_001) else {
                         return

@@ -270,12 +270,15 @@ private struct IPhoneAppShellView: View {
                 }
             )
         case .followedForums:
-            FixtureRootPlaceholderView(root: root) {
-                guard let forum = ForumName("swiftui") else {
-                    return
+            FollowedForumsAppRootView(
+                store: featureStores.followedForumsStore,
+                sessionStore: sessionStore,
+                authContextProvider: authContextProvider,
+                openLogin: onOpenLogin,
+                openRoute: { route in
+                    navigation.push(route, in: root)
                 }
-                navigation.push(.forum(forum), in: root)
-            }
+            )
         }
     }
 }
@@ -454,12 +457,15 @@ private struct IPadAppShellView: View {
                     }
                 )
             case .followedForums:
-                FixtureRootPlaceholderView(root: root) {
-                    guard let forum = ForumName("swiftui") else {
-                        return
+                FollowedForumsAppRootView(
+                    store: featureStores.followedForumsStore,
+                    sessionStore: sessionStore,
+                    authContextProvider: authContextProvider,
+                    openLogin: onOpenLogin,
+                    openRoute: { route in
+                        navigation.replaceRootDetail(route, in: root)
                     }
-                    navigation.replaceRootDetail(.forum(forum), in: root)
-                }
+                )
             }
         }
     }
@@ -494,8 +500,8 @@ private struct RegularDetailColumn: View {
             }
         } else {
             EmptyStateView(
-                title: "选择一个占位项目",
-                message: "阶段 05 只验证系统容器和导航状态。",
+                title: "选择内容",
+                message: "从列表中选择关注的吧或推荐帖子。",
                 systemImage: "sidebar.right"
             )
         }
@@ -560,41 +566,6 @@ private extension View {
             accessibilityAddTraits(.isSelected)
         } else {
             self
-        }
-    }
-}
-
-private extension AppTab {
-    var title: String {
-        switch self {
-        case .recommendations:
-            "推荐"
-        case .followedForums:
-            "关注的吧"
-        case .settings:
-            "设置"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .recommendations:
-            "sparkles"
-        case .followedForums:
-            "star"
-        case .settings:
-            "gearshape"
-        }
-    }
-
-    var accessibilityIdentifier: String {
-        switch self {
-        case .recommendations:
-            AppAccessibilityID.tabRecommendations
-        case .followedForums:
-            AppAccessibilityID.tabFollowedForums
-        case .settings:
-            AppAccessibilityID.tabSettings
         }
     }
 }

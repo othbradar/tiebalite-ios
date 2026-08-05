@@ -18,5 +18,6 @@
 | `ADR-0012-thread-content-protobuf-adapter.md` | Accepted，精确增加阶段 08 Core mapper；不扩 Proto 闭包/分发范围 |
 | `ADR-0013-pbpage-protobuf-and-live-reading.md` | Accepted，联合锁定 PBPage 闭包与唯一 Live Reading adapter；公开分发仍阻塞 |
 | `ADR-0014-wkwebview-session-beta.md` | Accepted，阶段 12 可见 WKWebView、最小 Keychain 与 lease-aware AuthContext；发布级恢复仍延期 |
+| `ADR-0015-followed-forums-protobuf-candidate.md` | Accepted，阶段 13 关注吧 HTTPS Proto 候选、最小会话子集与 136-file 闭包 |
 
 Accepted ADR 是实现约束；变更必须新建 superseding ADR，不能静默改历史。

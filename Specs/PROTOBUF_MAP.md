@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`PERSONALIZED_THREAD_CONTENT_AND_PBPAGE_LOCAL_VERIFIED`
+状态：`PERSONALIZED_THREAD_CONTENT_PBPAGE_AND_FORUMGUIDE_LOCAL_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -22,9 +22,9 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - canonical package lock：`Config/SwiftPM/Package.resolved`；生成工程 lock
   由脚本单向 materialize 并逐字节比较。
 - schema manifest：历史文件名
-  `Config/Protobuf/Personalized.inputs.tsv` 现锁定三个 root 的 126 个输入，
+  `Config/Protobuf/Personalized.inputs.tsv` 现锁定五个 root 的 136 个输入，
   均有 relative path、SHA-256、relationship 和 direct imports。
-- generated output：`Generated/Protobuf` 的 126 个 `.pb.swift`、生成 metadata
+- generated output：`Generated/Protobuf` 的 136 个 `.pb.swift`、生成 metadata
   与逐文件 SHA-256；两次 clean generation 与 tracked output 一致。
 - `GeneratedProtobuf` 是独立静态 target；UI/Feature import 被静态门禁拒绝。
 - 首个 binary fixture 是 250-byte `CROSS_LANGUAGE_GENERATED` JVM fixture，
@@ -59,9 +59,12 @@ App Store 和商业使用继续 `BLOCKED`。
 - response closure：119
 - PBPage union：125
 - 与 Personalized closure 重叠：50
-- 当前三-root union / generated output：126
+- 阶段 11 三-root union：126
 - 新增 generated files：75
-- generated `@unchecked Sendable` 精确 allowlist：17 个文件；手写代码仍为 0
+- 阶段 13 增加 ForumGuide request/response 两个 root；其 union 为 58，与阶段 11
+  集合重叠 48，当前五-root union / generated output 为 136
+- 阶段 13 新增 generated files：10
+- generated `@unchecked Sendable` 精确 allowlist：19 个文件；手写代码仍为 0
 
 ## 生成层次
 
@@ -102,6 +105,7 @@ Wire/SwiftProtobuf 实际会按 import graph 解析；下列顺序是可审查�
 | GeneralTab | `GeneralTabListRequestData` | `GeneralTabListResponseData` | `ForumThreadPage` |
 | PB Page | `PbPageRequestData` | `PbPageResponseData` | `ThreadSnapshot + PostPage` |
 | PB Floor | `PbFloorRequestData` | `PbFloorResponseData` | `SubpostPage` |
+| Forum Guide | `ForumGuideRequestData` | `ForumGuideResponseData` | `FollowedForum` 列表 |
 
 ### Layer 3：外层 wrapper
 
@@ -113,10 +117,12 @@ Wire/SwiftProtobuf 实际会按 import graph 解析；下列顺序是可审查�
 | GeneralTab | `GeneralTabListRequest` | `GeneralTabListResponse` | `Error` |
 | PB Page | `PbPageRequest` | `PbPageResponse` | `Error` |
 | PB Floor | `PbFloorRequest` | `PbFloorResponse` | `Error` |
+| Forum Guide | `ForumGuideRequest` | `ForumGuideResponse` | `Error` |
 
 PBPage 两个 root 的递归 closure 已由阶段 11 脚本锁定为 125，并与
-Personalized 合并为 126；PB Floor 仍未进入当前生成集合，不能从旧的约数
-推断其闭包。
+Personalized 合并为 126；阶段 13 再与 ForumGuide request/response
+closure 合并为当前 136 个文件。PB Floor 仍未进入当前生成集合，
+不能从旧的约数推断其闭包。
 
 ## P0 message 映射
 
@@ -266,8 +272,9 @@ FRS、PB Floor、真实 live pagination 与普通楼层折叠/删除常态仍为
 Android reference 根目录含 GPL version 3 许可证文本，README 另有非商业
 声明；逐文件授权、上游权利链及两者关系仍为 `UNKNOWN`。ADR-0011 仅在项目
 负责人明确的本地/个人/非商业范围允许从 exact pinned submodule 生成历史
-51-file Personalized closure；ADR-0013 在同一边界内批准当前 126-file
-Personalized + PBPage union。不把 `.proto` 复制进 iOS 树，也不使用
+51-file Personalized closure；ADR-0013 在同一边界内批准历史 126-file
+Personalized + PBPage union；ADR-0015 以相同边界批准当前五个 root、
+136-file union。不把 `.proto` 复制进 iOS 树，也不使用
 `n0099`。公开分发、
 App Store、商业使用及 notice/源码义务仍 `BLOCKED`；扩大范围前必须按
 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 新建权利决策，必要时切换到

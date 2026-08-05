@@ -186,6 +186,9 @@ struct Stage10FixtureReadingFlowTests {
         )
         let repository = FixtureThreadReaderRepository()
         let registry = AppFeatureStoreRegistry(
+            followedForumsStore: FollowedForumsStore(
+                repository: FixtureFollowedForumsRepository()
+            ),
             recommendationsStore: recommendationStore,
             makeThreadReaderStore: { threadID in
                 ThreadReaderStore(

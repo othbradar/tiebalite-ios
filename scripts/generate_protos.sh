@@ -19,6 +19,8 @@ root_protos=(
   "Personalized.proto"
   "PbPage/PbPageRequest.proto"
   "PbPage/PbPageResponse.proto"
+  "ForumGuide/ForumGuideRequest.proto"
+  "ForumGuide/ForumGuideResponse.proto"
 )
 
 if [[ "${1:-}" == "--output" ]]; then
@@ -181,8 +183,8 @@ while IFS=$'\t' read -r expected_hash relative_path relationship direct_imports;
   proto_sources+=("$source_path")
 done < "$manifest"
 
-[[ "${#proto_args[@]}" -eq 126 ]] || {
-  printf 'ERROR: expected 126 locked proto inputs; found %d.\n' \
+[[ "${#proto_args[@]}" -eq 136 ]] || {
+  printf 'ERROR: expected 136 locked proto inputs; found %d.\n' \
     "${#proto_args[@]}" >&2
   exit 1
 }
@@ -207,8 +209,8 @@ protoc \
   "${proto_args[@]}"
 
 generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-[[ "$generated_count" -eq 126 ]] || {
-  printf 'ERROR: expected 126 generated Swift files; found %s.\n' \
+[[ "$generated_count" -eq 136 ]] || {
+  printf 'ERROR: expected 136 generated Swift files; found %s.\n' \
     "$generated_count" >&2
   exit 1
 }
@@ -223,10 +225,10 @@ generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d 
 ) > "$generated/GENERATED_SHA256SUMS"
 
 cat > "$generated/GENERATION_METADATA.txt" <<EOF
-endpoints=recommendations.personalized,thread.pbPage
-roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto
+endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide
+roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto
 reference_commit=$expected_commit
-input_count=126
+input_count=136
 protoc=$expected_protoc
 protoc_gen_swift=$expected_generator
 swiftprotobuf_runtime=$expected_generator
@@ -250,5 +252,5 @@ find "$output_dir" -type f \
      -o -name 'GENERATION_METADATA.txt' \) -delete
 cp -R "$generated/." "$output_dir/"
 
-printf 'Generated %s Swift protobuf files for Stage 11 reading endpoints.\n' \
+printf 'Generated %s Swift protobuf files for locked read endpoints.\n' \
   "$generated_count"

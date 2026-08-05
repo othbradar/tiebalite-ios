@@ -11,7 +11,7 @@ help:
 	  'make tool-versions - enforce the accepted build-tool versions' \
 	  'make instructions  - validate AGENTS instruction-size chains and repo skills' \
 	  'make reference-check - verify the Android reference is clean and locked' \
-	  'make generate-protos - regenerate the locked Personalized Proto closure' \
+	  'make generate-protos - regenerate the locked read-endpoint Proto closure' \
 	  'make verify-protos - verify deterministic Proto generation and drift' \
 	  'make generate-personalized-fixture - rebuild the JVM cross-language fixture' \
 	  'make verify-personalized-fixture - verify JVM fixture determinism (tool cache required)' \

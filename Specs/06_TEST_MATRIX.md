@@ -43,6 +43,13 @@
 - 进入吧首页返回位置保持。
 - 大量吧列表滚动和图片复用。
 
+阶段 13 Beta 子集已用合成 Proto/Mock 覆盖 fixture 列表、授权候选
+request、映射、未登录不请求、替换/取消、typed expired 与普通错误
+重试；iPhone 覆盖未登录与 signed-in fixture 列表/ForumRoute，iPad
+覆盖 fixture 列表、系统导航返回与 regular/compact 投影。头像因尚无
+production image loader 而使用统一占位；legacy 多页聚合、真实过期码和
+超过 200 个吧仍属后续证据范围。
+
 ## 吧首页
 
 - 吧信息加载与主题列表独立失败策略。

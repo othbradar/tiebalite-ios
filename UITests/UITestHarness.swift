@@ -13,6 +13,9 @@ enum UITestElementID: String, CaseIterable {
     case debugOpenThreadContentRenderer =
         "app.debug.open-thread-content-renderer-lab"
     case followedForumsRoot = "app.root.followed-forums"
+    case followedForumsFirstRow = "followed-forums.row.f13001"
+    case followedForumsLogin = "followed-forums.session.login"
+    case followedForumsSignedOut = "followed-forums.session.signed-out"
     case galleryAppearance = "design-system.gallery.appearance"
     case galleryDynamicType = "design-system.gallery.dynamic-type"
     case galleryReduceMotion = "design-system.gallery.reduce-motion"

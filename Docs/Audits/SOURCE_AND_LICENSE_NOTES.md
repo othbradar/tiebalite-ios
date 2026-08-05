@@ -49,6 +49,20 @@
   公开分发、App Store、商业使用、服务条款、隐私与 Proto provenance 结论均
   不变。
 
+## 阶段 13 本地 ForumGuide 扩展
+
+- ADR-0015 在同一仅本地、个人、非商业边界内增加
+  `ForumGuideRequest/ForumGuideResponse` 两个 root；它们的 union 为 58，与阶段
+  11 集合重叠 48，因此只新增 10 个锁定输入，当前唯一生成集合为 136 个文件。
+- 生成器继续直接只读相同 pinned、clean Android submodule；历史 manifest 记录
+  每个新增路径、SHA-256、root/import 关系，没有复制 `.proto`，也没有引入
+  Android Kotlin、资源、设备标识或 `n0099` schema。
+- HTTPS Proto 路径在 Android 锁定源码中只有 API/实现，没有 Home consumer；
+  authenticated Debug Probe 成功前仅为 candidate。当前 Android Home 的明文
+  form endpoint 继续禁止进入 iOS。
+- 运行可达性不会扩大 schema 来源授权、服务使用权或品牌授权。公开分发、
+  App Store、商业使用、notice/源码义务和文件级 provenance 结论保持不变。
+
 ## Reference 身份
 
 - submodule path：`References/TiebaLite-Android`
@@ -105,7 +119,7 @@
 | 观察用户任务和状态语义 | 允许 | 用独立 iOS 设计与代码表达；保留证据路径 |
 | 记录公开 protocol fact（path、field number、wire shape） | 审慎允许用于规格 | 必须有本地源码/脱敏运行证据；不凭字段名猜语义 |
 | 独立实现 mapper/state machine | 允许 | 不逐行翻译；用 fixture/tests 定义行为 |
-| 从 pinned submodule 生成 Personalized + PBPage 三-root/126-file union | 仅本地/个人/非商业允许 | ADR-0011/0013；exact commit/path/hash/import lock；不复制 `.proto`；公开分发仍阻塞 |
+| 从 pinned submodule 生成五-root/136-file read-endpoint union | 仅本地/个人/非商业允许 | ADR-0011/0013/0015；exact commit/path/hash/import lock；不复制 `.proto`；公开分发仍阻塞 |
 | 使用 `n0099` 或其他外部 schema 集 | 禁止 | 不作为直接/间接输入；需要独立来源与权利决策 |
 | 复制 Kotlin/Java/Compose | 禁止默认复制 | 需要独立授权和完整 GPL 影响评估 |
 | 复制 UI 资源/图标/品牌 | 禁止 | 产品章程禁止造成官方授权误导 |

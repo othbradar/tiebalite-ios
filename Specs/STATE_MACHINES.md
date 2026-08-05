@@ -137,6 +137,13 @@ FollowedForumsAggregation =
 - forum id 去重；缺 id 时使用不可导航的降级 item，不按名称猜 id。
 - 本地置顶/历史若进入 P1，使用独立 store，不与 P0 网络 membership 的完成条件互相门控。
 
+阶段 13 的 Open-Source Beta 实现保留上述长期契约，但当前
+HTTPS Proto candidate 只有单次原子 response、没有分页字段。因此当前
+Store 只投影 `signedOut/signingIn/expired/initialLoading/loaded/empty/
+initialFailure/refreshing/refreshFailure`，以单一 Task + generation 拒绝旧响应；
+这不宣称已完成 legacy Home 的多页聚合契约。明确的远端过期
+taxonomy 仍是 `UNKNOWN`，普通网络/解码错误不得转成 `expired`。
+
 ## 吧首页 / FRS
 
 Android 静态证据（`CODE_EVIDENCE`）：
