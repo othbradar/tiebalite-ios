@@ -14,8 +14,11 @@ struct TiebaLiteApp: App {
     }
 #else
     private let compositionRoot = AppCompositionRoot.production()
-#if DEBUG
+#if DEBUG && !UITESTING
     private let runsStage11LiveProbe = DebugLiveAPIProbeLaunch.isRequested(
+        arguments: ProcessInfo.processInfo.arguments
+    )
+    private let runsStage14ForumProbe = DebugForumHomeProbeLaunch.isRequested(
         arguments: ProcessInfo.processInfo.arguments
     )
 #endif
@@ -41,8 +44,10 @@ struct TiebaLiteApp: App {
                 LaunchScenarioFailureView(code: code)
             }
 #else
-#if DEBUG
-            if runsStage11LiveProbe {
+#if DEBUG && !UITESTING
+            if runsStage14ForumProbe {
+                DebugForumHomeProbeView()
+            } else if runsStage11LiveProbe {
                 DebugLiveAPIProbeView()
             } else {
                 AppSceneRoot(compositionRoot: compositionRoot)

@@ -5,7 +5,7 @@ import Testing
 struct DeepLinkParserTests {
     @Test
     func allowlistedForumAndThreadLinksProduceDeterministicCommands() throws {
-        let forum = try #require(ForumName("Swift UI"))
+        let forum = try #require(ForumRoute("Swift UI"))
         let thread = try #require(ThreadID(123))
         let cases: [(String, NavigationCommand)] = [
             (
@@ -57,7 +57,7 @@ struct DeepLinkParserTests {
     @Test
     @MainActor
     func applyingExternalLinkPreservesTheUnselectedRootPath() throws {
-        let followedForum = try #require(ForumName("followed"))
+        let followedForum = try #require(ForumRoute("followed"))
         let deepLinkedThread = try #require(ThreadID(123))
         let store = AppNavigationStore()
 
@@ -78,7 +78,7 @@ struct DeepLinkParserTests {
     @Test
     @MainActor
     func rejectedExternalLinkLeavesTheEntireNavigationStateUnchanged() throws {
-        let forum = try #require(ForumName("swiftui"))
+        let forum = try #require(ForumRoute("swiftui"))
         let thread = try #require(ThreadID(123))
         let store = AppNavigationStore()
 

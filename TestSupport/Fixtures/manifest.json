@@ -28,6 +28,15 @@
       "source": "synthetic"
     },
     {
+      "format": "protobuf",
+      "id": "forum-home.frs-page.synthetic",
+      "path": "API/ForumHome/frs_page_synthetic.pb",
+      "purpose": "FRS first-page decode, domain mapping, and ForumHome UI contract",
+      "sanitized": true,
+      "sha256": "940d1df7631795791eccde105a7cb4dcbf3f38d465a8ebf9bac6af4c850887b0",
+      "source": "synthetic"
+    },
+    {
       "format": "json",
       "id": "json.success",
       "path": "JSON/success.json",

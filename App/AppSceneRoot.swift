@@ -74,7 +74,7 @@ struct AppSceneRoot: View {
             navigationStore.handleExternalURL(url)
         }
         .onChange(of: navigationStore.state) { _, newState in
-            featureStores.retainThreadStores(in: newState)
+            featureStores.retainFeatureStores(in: newState)
         }
     }
 

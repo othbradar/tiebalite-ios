@@ -23,7 +23,7 @@ if ! rg -q 'readingDataSourceMode: \.fixture' \
   TestSupport/LaunchScenarios/LaunchScenarioFactory.swift; then
   fail "LaunchScenarioFactory does not force fixture repositories."
 fi
-if rg -n '\.live\b|URLSessionHTTPClient|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
+if rg -n '\.live\b|URLSessionHTTPClient|LiveForumHomeRepository|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
   TestSupport/LaunchScenarios >/dev/null; then
   fail "LaunchScenario test support can reach live reading dependencies."
 fi
@@ -97,6 +97,9 @@ while IFS= read -r file_list; do
   fi
   if ! rg -F '/UITests/IPadAppShellSmokeTests.swift' "$file_list" >/dev/null; then
     fail "UI test source list lacks IPadAppShellSmokeTests.swift."
+  fi
+  if ! rg -F '/UITests/ForumHomeSmokeTests.swift' "$file_list" >/dev/null; then
+    fail "UI test source list lacks ForumHomeSmokeTests.swift."
   fi
   if ! rg -F '/UITests/ThreadContentUITestSupport.swift' "$file_list" >/dev/null; then
     fail "UI test source list lacks ThreadContentUITestSupport.swift."

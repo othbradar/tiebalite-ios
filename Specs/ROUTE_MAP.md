@@ -15,7 +15,7 @@ AppTab = recommendations | followedForums | settings
 RootID = recommendations | followedForums
 
 RouteIdentity =
-  forum(validatedForumName)
+  forum(validatedForumID?, validatedForumName)
   | thread(threadID)
   | subposts(threadID, postID)
 
@@ -48,13 +48,15 @@ root 打开是两个 Store；同 root 的同一 identity 加新 intent 复用 St
 |---|---|---|---|---|---|---|
 | recommendations root | RootID | 无 | public；live 匿名 UNKNOWN | root + safe list snapshot ref | Tab 内 root list | content list |
 | followedForums root | RootID | session capability | required | root；不持 membership/sessionID | Tab 内 root list/login state | content list/login state |
-| forum | 非空且通过边界校验的 forumName | initial tab/sort/classify | public；live 匿名 UNKNOWN | identity + approved safe filter | push | detail root |
+| forum | 可选正 forumID + 非空且通过边界校验的 forumName | initial tab/sort/classify | public；FRS 匿名首屏已验证 | identity + approved safe filter | push | detail root |
 | thread | 正 Int64 threadID | anchor/filter/sort/forum context | public；live 匿名 UNKNOWN | identity + approved safe read state | push | detail root/tail |
 | subposts | 正 threadID + postID | targetSubpostID/forum context | inherit thread | identity；target 是否保留由 safe snapshot | push | detail tail |
 | MediaViewer presentation | source root/route/item + ordered descriptors + initial media ID | boundary context | inherit source | 否 | 唯一 full-screen presentation | 同一唯一 presentation |
 | Authentication presentation | attemptID + 平台容器输入 | continuation 在 coordinator | 不适用 | 否 | 受控 sheet/full-screen | 受控 presentation |
 
-forumName 只做单次 percent decode、trim、空值和本地资源上限校验；不宣称
+关注吧和其他已证业务入口同时携带正 forumID 与 forumName；只含吧名的外部
+deep link 使用 `forumID=nil`，不得猜造 ID。forumName 只做单次 percent decode、
+trim、空值和本地资源上限校验；不宣称
 Unicode normalization 已确定，NFC/NFKC 与服务端等价性继续由 U-43 跟踪。
 未知服务端大小限制不猜测。数值 ID 溢出、零/负值或缺失时拒绝命令，不构造
 占位业务 ID。
@@ -134,6 +136,10 @@ restoration 完成后应用 deep link：
 - followedForums routes 不变；
 - warm/cold 结果相同；
 - App 内点击不强制换 root。
+
+阶段 14 的 `ForumHomeStore` 以 `(rootID, ForumRoute)` 缓存；Forum → Thread
+push 时保留同一 Store 和稳定帖子 anchor，系统 pop 后恢复原列表位置。替换或
+移除 Forum route 后才取消并释放对应 Store；普通 View 更新不会重复首屏请求。
 
 不跟随未批准 redirect，不把 URL/query 写日志。
 

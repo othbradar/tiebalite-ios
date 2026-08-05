@@ -8,14 +8,14 @@ enum FixtureReadingRepositoryError: Error, Equatable, Sendable {
 struct FixtureRecommendationRepository: RecommendationRepository {
     func loadRecommendations() async throws -> [RecommendationSummary] {
         try Task.checkCancellation()
-        return FixtureReadingCatalog.seeds.map(\.recommendation)
+        return FixtureReadingCatalog.recommendationSeeds.map(\.recommendation)
     }
 }
 
 struct FixtureThreadReaderRepository: ThreadReaderRepository {
     func loadThread(threadID: Int64) async throws -> ThreadReaderSnapshot {
         try Task.checkCancellation()
-        guard let seed = FixtureReadingCatalog.seeds.first(where: {
+        guard let seed = FixtureReadingCatalog.allThreadSeeds.first(where: {
             $0.threadID == threadID
         }) else {
             throw FixtureReadingRepositoryError.threadNotFound
@@ -24,8 +24,8 @@ struct FixtureThreadReaderRepository: ThreadReaderRepository {
     }
 }
 
-private enum FixtureReadingCatalog {
-    static let seeds: [FixtureThreadSeed] = [
+enum FixtureReadingCatalog {
+    static let recommendationSeeds: [FixtureThreadSeed] = [
         FixtureThreadSeed(
             threadID: 100_001,
             title: "把一个周末小项目整理成开源仓库的过程",
@@ -130,6 +130,122 @@ private enum FixtureReadingCatalog {
             imageResources: [FixtureReadingImageResource.green]
         )
     ]
+
+    static let forumThreadSeeds: [FixtureThreadSeed] = [
+        FixtureThreadSeed(
+            threadID: 140_001,
+            title: "置顶：Swift 6 严格并发迁移经验汇总",
+            forumName: "Swift开发",
+            authorName: "并发实验室",
+            replyCount: 48,
+            imageResources: []
+        ),
+        FixtureThreadSeed(
+            threadID: 140_002,
+            title: "置顶：新人提问与资料索引",
+            forumName: "Swift开发",
+            authorName: "版务小组",
+            replyCount: 26,
+            imageResources: []
+        ),
+        FixtureThreadSeed(
+            threadID: 140_003,
+            title: "Observation 在中型 SwiftUI 项目里的实际用法",
+            forumName: "Swift开发",
+            authorName: "类型推导",
+            replyCount: 19,
+            imageResources: [FixtureReadingImageResource.blue]
+        ),
+        FixtureThreadSeed(
+            threadID: 140_004,
+            title: "一个可取消 Store 如何防止旧响应覆盖",
+            forumName: "Swift开发",
+            authorName: "Actor 信箱",
+            replyCount: 12,
+            imageResources: []
+        ),
+        FixtureThreadSeed(
+            threadID: 140_005,
+            title: "Swift Testing 的几个小型测试组织技巧",
+            forumName: "Swift开发",
+            authorName: "红绿循环",
+            replyCount: 8,
+            imageResources: []
+        ),
+        FixtureThreadSeed(
+            threadID: 140_006,
+            title: "用稳定业务 ID 恢复列表返回位置",
+            forumName: "Swift开发",
+            authorName: "路线记录员",
+            replyCount: 15,
+            imageResources: []
+        ),
+        FixtureThreadSeed(
+            threadID: 140_007,
+            title: "深色模式下卡片背景的一次排查",
+            forumName: "Swift开发",
+            authorName: "夜间构建",
+            replyCount: 7,
+            imageResources: []
+        ),
+        FixtureThreadSeed(
+            threadID: 140_008,
+            title: "吧首页返回位置 Fixture 验证帖",
+            forumName: "Swift开发",
+            authorName: "回程线",
+            replyCount: 4,
+            imageResources: []
+        )
+    ]
+
+    static let iosForumThreadSeeds = remapForumThreadSeeds(
+        baseThreadID: 150_000,
+        forumName: "iOS技术"
+    )
+
+    static let openSourceForumThreadSeeds = remapForumThreadSeeds(
+        baseThreadID: 160_000,
+        forumName: "开源软件"
+    )
+
+    static func forumThreadSeeds(
+        for route: ForumRoute
+    ) -> [FixtureThreadSeed] {
+        let forumID = route.forumID?.rawValue
+        switch (forumID, route.forumName.rawValue) {
+        case (13_001, "Swift开发"), (nil, "Swift开发"):
+            return forumThreadSeeds
+        case (13_002, "iOS技术"), (nil, "iOS技术"):
+            return iosForumThreadSeeds
+        case (13_003, "开源软件"), (nil, "开源软件"):
+            return openSourceForumThreadSeeds
+        default:
+            return []
+        }
+    }
+
+    static var allThreadSeeds: [FixtureThreadSeed] {
+        recommendationSeeds
+            + forumThreadSeeds
+            + iosForumThreadSeeds
+            + openSourceForumThreadSeeds
+    }
+
+    private static func remapForumThreadSeeds(
+        baseThreadID: Int64,
+        forumName: String
+    ) -> [FixtureThreadSeed] {
+        forumThreadSeeds.enumerated().map { index, seed in
+            FixtureThreadSeed(
+                threadID: baseThreadID + Int64(index) + 1,
+                title: "\(forumName)：\(seed.title)",
+                forumName: forumName,
+                authorName: seed.authorName,
+                replyCount: seed.replyCount,
+                imageResources: seed.imageResources
+            )
+        }
+    }
 
     static func snapshot(
         from seed: FixtureThreadSeed
@@ -272,7 +388,7 @@ private enum FixtureReadingCatalog {
     }
 }
 
-private struct FixtureThreadSeed: Sendable {
+struct FixtureThreadSeed: Sendable {
     let threadID: Int64
     let title: String
     let forumName: String

@@ -22,6 +22,7 @@ source scripts/project.env
 : "${UI_TEST_TARGET:?}"
 : "${UI_SMOKE_TEST_IDENTIFIER:?}"
 : "${UI_SHELL_SMOKE_TEST_IDENTIFIER:?}"
+: "${FORUM_HOME_UI_TEST_IDENTIFIER:=TiebaLiteUITests/ForumHomeSmokeTests}"
 : "${IPAD_UI_SMOKE_TEST_IDENTIFIER:?}"
 : "${RENDERER_UI_TEST_IDENTIFIER:=TiebaLiteUITests/AppShellSmokeTests/testThreadContentRendererLabUsesDomainFixturesAndStableIntents}"
 : "${IPAD_RENDERER_UI_TEST_IDENTIFIER:=TiebaLiteUITests/IPadAppShellSmokeTests/testThreadContentRendererLabSurvivesIPadProjectionAndRotation}"
@@ -194,7 +195,8 @@ case "$mode" in
       -only-test-configuration "$UI_SMOKE_TEST_PLAN_CONFIGURATION" \
       test \
       -only-testing:"$UI_SMOKE_TEST_IDENTIFIER" \
-      -only-testing:"$UI_SHELL_SMOKE_TEST_IDENTIFIER"
+      -only-testing:"$UI_SHELL_SMOKE_TEST_IDENTIFIER" \
+      -only-testing:"$FORUM_HOME_UI_TEST_IDENTIFIER"
     ;;
   ui-smoke-ipad)
     ui_ipad_udid="$(ipad_udid)"

@@ -1,12 +1,16 @@
 # TASK_STATE
 
-- 当前阶段：13
-- 状态：`PHASE_13_FOLLOWED_FORUMS_RUNTIME_EVIDENCE_PARTIAL`
+- 当前阶段：14
+- 状态：`PHASE_14_FORUM_HOME_COMPLETE`
+- `PHASE_14_FORUM_HOME = COMPLETE`
+- `FORUM_HOME_FIXTURE = BETA_READY`
+- `LIVE_FORUM_HOME = ANONYMOUS_FIRST_SCREEN_RUNTIME_VERIFIED`
+- `PHASE_15 = NOT_STARTED`
 - `PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`
 - `FOLLOWED_FORUMS_LOCAL_IMPLEMENTATION = BETA_READY`
 - `FORUM_GUIDE_AUTHENTICATED_PROBE = NOT_RUN_AUTH_CONTEXT_RESTORE_FAILED`
 - `LIVE_FOLLOWED_FORUMS = EVIDENCE_BLOCKED`
-- `PHASE_14 = NOT_STARTED`
+- `PHASE_14 = COMPLETE`
 - `PHASE_12_SESSION_AND_LOGIN = RUNTIME_EVIDENCE_PARTIAL`
 - `SESSION_IMPLEMENTATION = BETA_READY`
 - `SESSION_SIGNED_IN_SEMANTICS = WEB_COMPLETION_CANDIDATE`
@@ -44,7 +48,68 @@
 - 阶段 11：`RUNTIME_EVIDENCE_PARTIAL`
 - 阶段 12：`RUNTIME_EVIDENCE_PARTIAL`
 - 阶段 13：`RUNTIME_EVIDENCE_PARTIAL`
-- 阶段 14：`NOT_STARTED`
+- 阶段 14：`PHASE_14_FORUM_HOME = COMPLETE`
+- 阶段 15：`NOT_STARTED`
+
+## 阶段 14 当前结果与停止点
+
+阶段 14 从阶段 13 提交
+`b6090a19c95fb720f24415975dc43e7729cae1df` 开始，完成吧首页和吧内帖子
+首屏，没有进入分页或阶段 15：
+
+- 新建 `ForumHomeRepository` 领域边界、Fixture/Live 实现、
+  `ForumHomeStore` 与 `ForumHomeView`。页面显示吧名、简介、已证统计、
+  置顶/普通主题，并处理 initial loading、loaded、empty、failure、
+  retry 和 retained refresh；
+- `ForumRoute` 保留可选正 `forumID` 和已校验 `forumName`，deep link
+  仅有名称时不猜 ID。列表用 `ThreadInfo.id` 作 item identity，使用
+  `threadId` 打开现有 ThreadReader；
+- Store 只持一个 Task 和递增 generation。新 forum 取消旧请求，迟到
+  结果不得覆盖新 route，取消不显示普通错误，同 route View 更新不
+  重复发请求；
+- App 根 registry 在 Forum → ThreadReader → pop 期间复用同一 Store 和
+  scroll anchor。iPhone Fixture smoke 实测打开中间帖子后返回，位置在
+  12pt 容差内；iPad 使用同一业务状态；
+- FRS 依锁定 Android reference 实现为
+  `POST https://tiebac.baidu.com/c/f/frs/page?cmd=301001`，请求/响应
+  为 `FrsPageRequest/FrsPageResponse`。Proto 闭包由 136 扩至 156 个文件，
+  两次 clean generation 与 tracked output 一致；
+- 固定公开测试吧在无凭证 iPhone/iPad Simulator 均得到 HTTP 200、
+  `application/octet-stream`、Proto decode 成功和 13 条主题。最终 iPhone
+  复验为 55,996 bytes、`typed-error=none`、`outcome=success`；没有
+  保存 raw body 或用户内容。
+
+阶段 14 定向 Unit 12/12；完整 Unit 260 个逻辑测试/279 次执行。
+iPhone smoke 18/18、interaction 15/15、iPad smoke 5/5、interaction 2/2
+全部通过。`make quality-fast` 和因共享导航接入而执行的完整
+`make quality` 均通过；完整门禁输出 `Quality gate completed.`。
+
+## 阶段 14 Known Limitations
+
+1. 只验证匿名首屏。`thread_id_list + ThreadList`、下一页、动态 tab、
+   sort 变体、限流与完整 FRS 错误 taxonomy 未验证，分页留待阶段 15。
+2. Live 运行只检查一个固定公开吧，不证明所有吧、所有主题或服务端
+   字段长期稳定。Production 例外仅适用匿名首屏，失效时 fail closed。
+3. 未实现 live 吧头像加载；当前显示统一占位。Fixture 三个吧有独立
+   帖子 identity，但简介文案共用一份合成描述。
+4. Xcode 26 `simctl io` 不再提供手工 rotate 命令；横竖屏由 iPad
+   XCUITest orientation/regular-compact 用例和先前的 Simulator 视觉检查覆盖。
+5. Live 吧主题会形成正确 ThreadRoute 并进入现有 ThreadReader，但阶段 11
+   的 Production Live Thread 仍 evidence-blocked；真实帖子正文不属于本阶段完成证据。
+6. 阶段 11、12、13 原有状态保持不变；本阶段没有解决 AuthContext
+   恢复问题，也没有使用或清除真实登录凭证。
+
+## 阶段 14 变更边界
+
+- 新增动画、手势、overlay、fullScreenCover、依赖：无。
+- Pager、MediaViewer、MediaZoomImageView、ThreadContentRenderer、InteractionKit：
+  无修改。
+- 实时网络：仅 Debug-only 固定公开吧少量匿名 Probe；自动化始终
+  Fixture/FakeSession/Mock HTTP。
+- 敏感数据：没有 Cookie、BDUSS、STOKEN、账号、请求体、响应正文或
+  用户内容进入日志、fixture、文档、测试或 Git。
+- Android submodule：只读且 clean。
+- 阶段 15：`NOT_STARTED`，本轮停止。
 
 ## 阶段 13 当前结果与停止点
 

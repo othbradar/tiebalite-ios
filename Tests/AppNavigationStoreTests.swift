@@ -5,7 +5,7 @@ import Testing
 struct AppNavigationStoreTests {
     @Test
     func rootsKeepIndependentPathsAndCurrentTabReselectionIsANoOp() throws {
-        let forum = try #require(ForumName("swiftui"))
+        let forum = try #require(ForumRoute("swiftui"))
         let recommendationsThread = try #require(ThreadID(101))
         let followedThread = try #require(ThreadID(202))
         let store = AppNavigationStore()
@@ -38,7 +38,7 @@ struct AppNavigationStoreTests {
 
     @Test
     func duplicateRoutePopsToExistingIdentityWithoutDuplicatingIt() throws {
-        let forum = try #require(ForumName("swiftui"))
+        let forum = try #require(ForumRoute("swiftui"))
         let thread = try #require(ThreadID(101))
         let post = try #require(PostID(303))
         let store = AppNavigationStore()
@@ -76,7 +76,7 @@ struct AppNavigationStoreTests {
 
     @Test
     func regularAndCompactProjectionNeverMutateCanonicalRoutes() throws {
-        let forum = try #require(ForumName("swiftui"))
+        let forum = try #require(ForumRoute("swiftui"))
         let thread = try #require(ThreadID(101))
         let store = AppNavigationStore()
 
@@ -111,7 +111,7 @@ struct AppNavigationStoreTests {
 
     @Test
     func settingsPathAndBusinessPathsRemainIndependent() throws {
-        let forum = try #require(ForumName("swiftui"))
+        let forum = try #require(ForumRoute("swiftui"))
         let store = AppNavigationStore()
 
         #expect(store.push(.forum(forum), in: .recommendations))
@@ -133,7 +133,7 @@ struct AppNavigationStoreTests {
 
     @Test
     func currentTabReselectionDoesNotBlockARealSystemPop() throws {
-        let forum = try #require(ForumName("swiftui"))
+        let forum = try #require(ForumRoute("swiftui"))
         let thread = try #require(ThreadID(101))
         let store = AppNavigationStore()
 

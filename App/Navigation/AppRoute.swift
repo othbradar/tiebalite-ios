@@ -35,43 +35,6 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable, Sendable {
     }
 }
 
-struct ForumName: Codable, Hashable, Sendable {
-    static let maximumUTF8Length = 256
-
-    let rawValue: String
-
-    init?(_ value: String) {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty,
-              trimmed.utf8.count <= Self.maximumUTF8Length,
-              trimmed.unicodeScalars.allSatisfy({
-                  !CharacterSet.controlCharacters.contains($0)
-              }) else {
-            return nil
-        }
-        rawValue = trimmed
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let value = try container.decode(String.self)
-        guard let validated = Self(value) else {
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "Invalid forum name"
-            )
-        }
-        self = validated
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
-    }
-}
-
-typealias ForumRoute = ForumName
-
 struct ThreadID: Codable, Hashable, Sendable {
     let rawValue: Int64
 

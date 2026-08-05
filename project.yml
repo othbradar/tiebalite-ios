@@ -73,6 +73,7 @@ targets:
       - path: Sources/Features/MediaViewer
       - path: Sources/Features/Session
       - path: Sources/Features/FollowedForums
+      - path: Sources/Features/Forum
       - path: Sources/InteractionKit
         excludes:
           - AGENTS.md

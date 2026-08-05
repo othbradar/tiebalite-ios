@@ -82,12 +82,12 @@ enum DeepLinkParser {
             named: queryName,
             components: components
         ),
-        let forumName = ForumName(value) else {
+        let forumRoute = ForumRoute(value) else {
             return nil
         }
         return .replaceRootDetail(
             root: .recommendations,
-            route: .forum(forumName)
+            route: .forum(forumRoute)
         )
     }
 

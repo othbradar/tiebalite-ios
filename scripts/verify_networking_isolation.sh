@@ -68,13 +68,14 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(ForumGuideProtocol|PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
   fail protobuf-core-allowlist "$proto_usage"
 fi
 for proto_adapter in \
+  Sources/Core/TiebaAPI/FRSPageProtocol.swift \
   Sources/Core/TiebaAPI/ForumGuideProtocol.swift \
   Sources/Core/TiebaAPI/PBPageProtocol.swift \
   Sources/Core/TiebaAPI/PersonalizedProtocol.swift \
@@ -115,6 +116,18 @@ reject_swift_matches \
   followed-forums-interaction-leak \
   '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
   Sources/Features/FollowedForums
+reject_swift_matches \
+  forum-home-network-access \
+  '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
+  Sources/Features/Forum
+reject_swift_matches \
+  forum-home-credential-access \
+  '\b(SessionAuthorization|SessionCredential|Keychain)\b|BDUSS|STOKEN' \
+  Sources/Features/Forum
+reject_swift_matches \
+  forum-home-interaction-leak \
+  '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
+  Sources/Features/Forum
 reject_swift_matches \
   thread-reader-network-access \
   '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
@@ -167,12 +180,22 @@ if rg -q \
   App/AppCompositionRoot.swift; then
   fail production-followed-forums-live-before-runtime-evidence
 fi
+if ! rg -q \
+  'forumHomeRepository = LiveForumHomeRepository' \
+  App/AppCompositionRoot.swift; then
+  fail production-forum-home-live-after-runtime-evidence
+fi
+if rg -q \
+  'forumHomeRepository = EvidenceBlockedForumHomeRepository' \
+  App/AppCompositionRoot.swift; then
+  fail production-forum-home-evidence-regression
+fi
 if ! rg -q 'readingDataSourceMode: \.fixture' \
   TestSupport/LaunchScenarios/LaunchScenarioFactory.swift; then
   fail ui-scenario-fixture-mode
 fi
 scenario_live_usage="$(
-  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
+  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
     TestSupport/LaunchScenarios 2>/dev/null || true
 )"
 if [[ -n "$scenario_live_usage" ]]; then
@@ -248,7 +271,7 @@ if [[ -n "$generated_outside_allowlist" ]]; then
   fail generated-protobuf-location "$generated_outside_allowlist"
 fi
 generated_count="$(find Generated/Protobuf -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-if [[ "$generated_count" -ne 136 ]]; then
+if [[ "$generated_count" -ne 156 ]]; then
   fail generated-protobuf-count "$generated_count"
 fi
 
@@ -288,6 +311,10 @@ expected_unchecked_files="$(
     'Generated/Protobuf/CommonReq.pb.swift' \
     'Generated/Protobuf/CommonRequest.pb.swift' \
     'Generated/Protobuf/ForumGuide/LikeForum.pb.swift' \
+    'Generated/Protobuf/FrsPage/ForumInfo.pb.swift' \
+    'Generated/Protobuf/FrsPage/FrsPage.pb.swift' \
+    'Generated/Protobuf/FrsPage/HeadImgs.pb.swift' \
+    'Generated/Protobuf/FrsPage/SignInfo.pb.swift' \
     'Generated/Protobuf/GoodsInfo.pb.swift' \
     'Generated/Protobuf/Item.pb.swift' \
     'Generated/Protobuf/OriginThreadInfo.pb.swift' \
@@ -309,7 +336,7 @@ unchecked_count="$(
   rg -n '@unchecked[[:space:]]+Sendable' Generated/Protobuf | wc -l | tr -d ' '
 )"
 if [[ "$actual_unchecked_files" != "$expected_unchecked_files" ||
-      "$unchecked_count" -ne 19 ]]; then
+      "$unchecked_count" -ne 24 ]]; then
   fail generated-unchecked-sendable-allowlist "$actual_unchecked_files"
 fi
 

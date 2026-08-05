@@ -42,7 +42,7 @@ NavigationSplitView
 | `recommendationsRoot` | `PersonalizedPage` / Explore personalized | 无 | route id | 列表、cursor/page、滚动、错误尾状态 | `CODE_EVIDENCE` + 产品范围 |
 | `followedForumsRoot` | `HomePage` 的关注吧区域 | 无 | route id + session ref | 同一 session 的列表、加载/错误状态、滚动；不含 P1 置顶/历史 | `CODE_EVIDENCE` + 产品范围 |
 | `settingsRoot` | `UserPage` → `SettingsPage` | 无 | route id | P1 设置页层级与按规格允许的未提交 UI 状态 | Android 页面为 `CODE_EVIDENCE`；独立 iOS root 为 `INFERENCE`；P1 |
-| `forum` | `ForumPageDestination` | `forumName: String` 必需；`initialTab/sort` 仅本地状态 | 单次 decode/trim 后非空；Unicode normalization 仍为 U-43 | 当前 tab、sort/classify、各 tab 列表与滚动 | `CODE_EVIDENCE` |
+| `forum` | `ForumPageDestination` | `forumName: String` 必需；已知业务入口另携可选正 `forumID`；`initialTab/sort` 仅本地状态 | 单次 decode/trim 后非空；外部 deep link 的 forumID 为 nil，不猜造；Unicode normalization 仍为 U-43 | 吧摘要、首屏帖子、当前 tab/sort/classify、各 tab 列表与滚动 | `CODE_EVIDENCE` + 阶段 14 决策 |
 | `thread` | `ThreadPageDestination` | identity 仅 `threadID: Int64`；`forumID/anchorPostID/authorFilter/sort` 是一次性 NavigationIntent；Android `from/scrollToReply` 不进入稳定 route | threadID | 已加载楼层、前后 cursor、sort/filter、阅读锚、滚动 | Android 参数为 `CODE_EVIDENCE`；identity/intent 拆分为阶段 02 决策 |
 | `subposts` | `SubPostsPage/SheetDestination` | identity 为 `threadID + postID`；`forumID/targetSubpostID` 是一次性 NavigationIntent；Android `loadFromSubPost` 不进入 route identity | threadID + postID | 楼中楼列表、页码、目标 subpost | Android 参数为 `CODE_EVIDENCE`；identity/intent 拆分为阶段 02 决策 |
 | `mediaViewer`（非持久 overlay） | `PhotoViewActivity` | 进程内 `sourceRouteIdentity/sourceItemID`、有序 `MediaDescriptor`、initial media id、可选边界上下文 | 不单独做进程恢复；恢复父 route 后关闭 overlay | 来源 route、来源滚动；当前进程内按 media id 定位 | Android输入模型为 `CODE_EVIDENCE`；非持久 overlay 与 descriptor 契约为 `INFERENCE` |
@@ -62,7 +62,7 @@ NavigationSplitView
 | 推荐列表 | 点主题/回复数 | `thread` | threadID 必须可解析；forumID 可选 |
 | 推荐列表 | 点吧名 | `forum` | forumName 非空 |
 | 推荐列表 | 点作者 | `userProfile` | P1；userID 合法 |
-| 关注吧列表 | 点吧 | `forum` | forumName 非空 |
+| 关注吧列表 | 点吧 | `forum` | 正 forumID + forumName 非空 |
 | Forum 最新/精品/GeneralTab | 点主题 | `thread` | threadID 必须可解析 |
 | Forum toolbar | 搜索 | `search` 或 forum-scoped search | P1；携带 forumName |
 | Forum header | 吧资料 | `forumDetail` | P1 |
@@ -107,6 +107,10 @@ NavigationSplitView
 2. 子页只持有业务 ID，不拥有父列表。
 3. pop 后复用原 Store；不因 `onAppear` 无条件刷新。
 4. 已有内容过期时可后台 refresh，但必须保持滚动与旧内容。
+
+阶段 14 已用 Fixture 验证 Forum 中部帖子 → 现有 ThreadReader → 系统返回后
+稳定 row 的屏幕位置保持；Forum Store 在 route chain 仍含 Forum 时继续由
+scene/root registry 持有。该证据不证明阶段 15 分页后的跨页位置恢复。
 
 ### Tab 切换
 

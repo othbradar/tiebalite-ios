@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE13_FORUMGUIDE_LOCAL_CANDIDATE_STAGE12_ACTIVE_SESSION_OBSERVATION`
+状态：`STAGE14_FRS_ANONYMOUS_FIRST_SCREEN_RUNTIME_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -41,6 +41,15 @@ Personalized 请求；不证明服务端实际消费了 credential、把响应�
 PBPage 或 Production evidence gate。请求的 `page_thread_count=11` 只是
 call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
 
+阶段 14 在同一 HTTPS Proto family 中加入 FRS Page 的最小生成闭包、typed
+request/mapper、synthetic fixture 和 Debug-only 匿名 Probe。2026-08-05，
+固定公开测试吧在无凭证 iPhone 与测试 iPad Simulator 上均观察到 HTTP 200、
+`application/octet-stream`、54068 bytes、Proto decode 成功、13 mapped
+threads、`outcome=success`；页面能显示吧摘要和帖子列表。没有保存 raw
+response、帖子/作者内容、Cookie、请求体或设备标识。这足以解除 Forum Home
+匿名首屏的 Production evidence gate，但不证明分页、ThreadList、所有吧、
+错误 taxonomy 或内容长期稳定。
+
 ## 公共传输证据
 
 ### Protobuf family
@@ -54,7 +63,9 @@ call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
 - `CODE_EVIDENCE`：`CommonRequest` 可包含 BDUSS/STOKEN、设备/安装/屏幕/版本字段；外层 multipart 也可能附 `stoken`。
 - `CODE_EVIDENCE`：`buildCommonRequest(TIEBA_V12, bduss, stoken)` 的 V12 分支忽略传入的两个参数，改读全局 `AccountUtil`；`buildProtobufRequestBody(..., needSToken=true)` 的外层 stoken 也读全局账户。
 - `INFERENCE`：这会让“为新登录账户显式传凭据”的 caller 与实际发送账户不一致，可能发送旧/空 session。它是必须规避的 Android 实现风险，不是 iOS 认证契约。
-- `UNKNOWN`：哪些字段是服务端最小必需值、哪些仅为 Android telemetry、匿名请求是否接受、iOS 合法客户端标识、签名与版本兼容。
+- `UNKNOWN`：哪些字段是服务端最小必需值、哪些仅为 Android telemetry、
+  iOS 合法客户端标识、签名与版本兼容。匿名接受性默认逐 endpoint 保持
+  `UNKNOWN`；阶段 14 FRS 固定公开吧首屏已有下文的限定运行证据。
 
 ### Form / JSON family
 
@@ -72,7 +83,8 @@ call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
 - `not-sent-by-client`：源码明确去掉凭据；仍不等于服务端匿名行为已验证。
 - `unknown`：静态源码不足。
 
-任何 `optional-in-request` endpoint 的匿名能力都是 `UNKNOWN`。
+`optional-in-request` 只描述客户端静态构造，不自动证明匿名能力；匿名状态以各
+endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首屏已限定验证。
 
 ## 阶段 12 登录与 authenticated Probe 证据
 
@@ -238,20 +250,46 @@ call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
 - Android 来源文件：`OfficialProtobufTiebaApi.kt`、`MixedTiebaApiImpl.kt`、`FrsPageRepository.kt`、`ForumThreadListViewModel.kt`。
 - Android symbol：`frsPageFlow`、`frsPage`、`FrsPageRepository.frsPage`。
 - 请求构建来源：`FrsPageRequest` + multipart protobuf。
-- 认证要求：`optional-in-request`；匿名行为 `UNKNOWN`。
-- 请求编码：multipart/form-data + protobuf；另有 `forum_name` header。
+- 认证要求：iOS 首屏选择 `.anonymous`；Android 无 ForceLogin 且会在无账户时
+  调用。2026-08-05 固定公开吧的匿名服务器接受性已 `RUNTIME_VERIFIED`。
+- 请求编码：multipart/form-data，固定 boundary
+  `--------7da3d81520810*`，binary part `name=data`、`filename=file`、无 part
+  MIME；另有 Java form-urlencoded 的 `forum_name` header。
 - 请求 Protobuf：`FrsPageRequest/FrsPageRequestData`，`FrsPage/FrsPage.proto`。
 - 响应 Protobuf/DTO：`FrsPageResponse/FrsPageResponseData`。
 - 分页字段：`pn`、`load_type`、`Page.has_more`、`thread_id_list`；sort/cid/is_good 影响列表。
 - 服务端错误字段：`Error`。
-- 关键 headers：protobuf data type、URL-encoded forum name header。
-- 设备/版本参数：CommonRequest、AppPos、screen、V12 version。
-- 敏感字段：可选 session/device fields。
-- iOS domain mapper：`FrsPageResponse → ForumSnapshot + ForumThreadPage + ServerTabs`；user_list 关联失败必须形成可降级作者，而非抛异常。
-- Fixture 路径：`TestSupport/Fixtures/API/Forum/FRSPage/`（`NOT_CREATED`）。
-- Fixture 获取/生成方式：匿名和登录两组脱敏样本；另构造动态 tab、置顶、精品分类、缺 user、重复 id、空页。
-- 已验证行为：字段构造、当前 call chain、Android Page.has_more 读取。
-- UNKNOWN：动态 tab 类型、置顶顺序、匿名差异、`thread_id_list` 语义、sort 值域、合法空页。
+- 关键 headers：`x_bd_data_type=protobuf`、`client_type=2`、`Charset=UTF-8`、
+  固定 V12 User-Agent 和 form-urlencoded `forum_name`；没有 `format=protobuf`
+  query。
+- iOS request data：锁定 `pn=1/load_type=1/q_type=2/rn=90/rn_need=30`、
+  `sort_type=0/with_group=1/st_type=recom_flist`、Android call-site 的其余零值
+  字段及 `ad_param(load=0,refresh=4,yoga=1.0)`；CommonRequest 只带已验证的
+  非敏感 V12 client type/version/from/user-agent。没有复制 AppPos、屏幕尺寸、
+  CUID、安装 ID、签名或 Android 设备 telemetry。
+- 敏感字段：匿名实现不读取或发送 Session、Keychain、BDUSS、STOKEN、Cookie
+  或 device identifiers。
+- iOS domain mapper：`FrsPageResponse → ForumHomeSnapshot`。吧信息只映射已证
+  字段；`ThreadInfo.id` 用作 row identity、`threadId` 用作 ThreadRoute；
+  `isTop == 1` 分组且保持服务器顺序；`user_list` 关联失败降级，不抛整页。
+- Fixture 路径：
+  `TestSupport/Fixtures/API/ForumHome/frs_page_synthetic.pb`，454 bytes，SHA-256
+  `940d1df7631795791eccde105a7cb4dcbf3f38d465a8ebf9bac6af4c850887b0`。
+- Fixture 类型：`LOCAL_SYNTHETIC`，由固定 textproto + pinned schema 编码；包含
+  2 个置顶、2 个普通主题、item/thread ID 分离、作者回填和缺失作者降级，
+  不含真实吧、用户或帖子内容。
+- Runtime：固定公开测试吧、无凭证 iPhone/iPad，HTTP 200、
+  `application/octet-stream`、54068 bytes、decode=true、13 threads、
+  outcome=success。最终 iPhone 复验响应为 55996 bytes，仍为
+  decode=true、13 threads、typed-error=none、outcome=success；body 大小不作
+  稳定产品契约。Production 因此使用唯一 `LiveForumHomeRepository`；
+  UITesting 始终使用 Fixture + Mock HTTP。
+- 已验证行为：Android 当前 call chain、确定性最小首屏 request、synthetic
+  response mapper、匿名 live transport/MIME/decode/map，以及 iPhone/iPad
+  基本视觉投影。
+- UNKNOWN：动态 tab 类型、跨吧稳定性、`thread_id_list` 语义、ThreadList
+  顺序/遗漏、下一页、所有 sort 值、限流和 FRS 专属错误 taxonomy。分页明确
+  留到阶段 15。
 
 ### `forum.threadList`
 
@@ -509,3 +547,8 @@ call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
 5. 请求日志默认脱敏，测试附件不含 session/device secret。
 6. 分页终止、去重、过期响应和错误状态有确定性测试。
 7. 来源和许可证记录与 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 一致。
+
+`forum.frsPage` 匿名首屏按 ADR-0016 使用范围受限的开源 Beta
+例外：它只在精确 HTTPS/MIME/请求形状、合成成功 fixture、request/
+mapper/cancel/stale 测试和无凭证运行成功后启用首屏。完整错误矩阵和
+分页仍未验证，不能用该例外启用其他 endpoint。

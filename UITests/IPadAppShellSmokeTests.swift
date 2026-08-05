@@ -13,6 +13,7 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
         UITestHarness.requirePresent(.layoutRegular, in: app)
         pushForumRoute(in: app)
+        UITestHarness.requirePresent(.forumHomeHeader, in: app)
 
         device.orientation = .portrait
         UITestHarness.requirePresent(.layoutRegular, in: app)

@@ -28,7 +28,7 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | Personalized 已有无 session 非空但不可复现的观察，也有一次携带 active Session candidate 的 12-item 成功；PBPage 未发出。仍需同一公开内容/参数的无 session 与测试 session 对照，只比较公开字段 |
+| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | FRS 的一个固定公开吧匿名首屏已在无凭证 iPhone/iPad 上 HTTP 200、Proto decode/map 成功；只关闭该限定路径。Personalized 仍有不可复现的无 session 非空观察，PBPage/PBFloor 未发出；跨吧、分页及认证对照继续 `UNKNOWN` |
 | U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 阶段 11 静态字段证明 HTTP/Proto 可达；阶段 12 按 Android evidence 增加 CommonRequest BDUSS/STOKEN 与外层 stoken 后单次成功，但没有逐字段消融，也不证明服务器实际消费 credential，不能称为最小集合；禁止复制 Android telemetry 全集 |
 | U-08 | legacy sign 是否仍必需、是否允许 iOS 使用 | 只通过已批准协议/法律审查和 HTTPS 受控验证；在此之前不实现 |
 | U-09 | Error.error_code、user_msg、HTTP status 的真实 taxonomy | 为成功、未登录、过期、无权限、删除、限流、服务器错误采脱敏 fixture |
@@ -53,12 +53,12 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-21 | SwiftProtobuf 对 selected schema 的生成 API | `CLOSED_FOR_PERSONALIZED_AND_PBPAGE_LOCAL`：1.38.1 runtime/generator、三 root/126-file manifest/hash、两次生成与 strict build 已验证；其他 P0 closure 仍 open |
+| U-21 | SwiftProtobuf 对 selected schema 的生成 API | `CLOSED_FOR_CURRENT_SIX_ROOT_LOCAL`：1.38.1 runtime/generator、Personalized/PBPage/ForumGuide/FRS 六 root、156-file manifest/hash、两次生成与 strict build 已验证；其他 P0 closure 仍 open |
 | U-22 | proto3 optional absent 与显式 0/空字符串 | `LOCAL_WIRE_VERIFIED`：AppPos optional false 与 absent bytes/presence 已测；服务端差异仍属 U-07 |
 | U-23 | 未知 tag 是否解码后可 round-trip 保留 | `LOCAL_WIRE_VERIFIED`：Personalized 顶层 field 2047 decode/re-encode/decode 保留；live server 行为不在结论内 |
 | U-24 | 裸 int 状态/排序/type 完整值域 | 累积多 fixture，领域类型始终保留 `.unknown(raw)` |
-| U-25 | 321 个 schema 中 P0 真正最小闭包 | `CLOSED_FOR_PERSONALIZED_AND_PBPAGE_LOCAL`：Personalized 51、PBPage 125、联合三 root 126；FRS/PBFloor 等其他 P0 仍 open |
-| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011/0013 允许本地、个人、非商业 exact pinned 生成当前 126-file union；公开分发/App Store/商业仍 `BLOCKED` |
+| U-25 | 321 个 schema 中 P0 真正最小闭包 | `CLOSED_FOR_PERSONALIZED_PBPAGE_FORUMGUIDE_AND_FRS_LOCAL`：Personalized 51、PBPage 125、ForumGuide 58、FRS 74，当前六-root union 156；ThreadList/PBFloor 等仍 open |
+| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011/0013/0015/0016 允许本地、个人、非商业 exact pinned 生成当前 156-file union；公开分发/App Store/商业仍 `BLOCKED` |
 
 阶段 07 local closure record：
 
@@ -130,6 +130,31 @@ fixture：没有保存 live response、请求体、用户内容或 credential；
 新增测试：Stage12SessionTests、Stage12SessionCleanupTests 以及登录 URL/port、
   active request、lease、redaction、replacement、cleanup 和 Fixture isolation 回归。
 结论标签：ACTIVE_SESSION_RUNTIME_OBSERVATION / LOCAL_BETA；非可复现 server fixture
+```
+
+阶段 14 FRS 本地闭包与匿名首屏观察：
+
+```text
+ID：U-03/U-06/U-09/U-15 保持 PARTIAL/OPEN；U-21/U-25 扩展本地关闭范围；
+  U-26 仍局部决策
+日期：2026-08-05
+Android build 与 commit：4.0-dev / 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
+iOS baseline：b6090a19c95fb720f24415975dc43e7729cae1df（阶段 13 提交）
+scenario：pinned FRS root/74-file closure，与既有集合形成六-root/156-file
+  generation；固定公开测试吧的 Debug-only 匿名首屏 Probe
+请求类别：HTTPS multipart protobuf；无 Cookie、BDUSS、STOKEN、Keychain、
+  AppPos、屏幕、安装或设备标识；没有循环重试
+fixture：TestSupport/Fixtures/API/ForumHome/frs_page_synthetic.pb；454 bytes；
+  SHA-256 940d1df7631795791eccde105a7cb4dcbf3f38d465a8ebf9bac6af4c850887b0；
+  完全合成，不是 live capture
+观察结果：无凭证 iPhone 与测试 iPad 均 HTTP 200、application/octet-stream、
+  54068 bytes、Proto decode 成功、13 mapped threads、outcome=success；未保存
+  response body 或内容
+与现有规格的差异：只关闭固定公开吧匿名 FRS 首屏的 transport/decode/map；
+  动态 tab、ThreadList、分页、跨吧稳定性、限流和错误 taxonomy 不变
+新增测试：Stage14ForumHomeTests、ForumHomeSmokeTests、iPad AppShell Forum smoke、
+  156-file generate/network/UI isolation gates
+结论标签：LIMITED_RUNTIME_EVIDENCE / LOCAL_SYNTHETIC_TESTED；非 live fixture
 ```
 
 ## 内容节点

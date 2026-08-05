@@ -1,0 +1,74 @@
+error {
+  error_code: 0
+}
+data {
+  forum {
+    id: 13001
+    name: "Swift开发"
+    member_num: 123456
+    thread_num: 7890
+    post_num: 456789
+    avatar: "fixture://forum/swift"
+    slogan: "本地合成的 Swift 开发吧首页"
+  }
+  page {
+    current_page: 1
+    total_page: 2
+    has_more: 1
+  }
+  user_list {
+    id: 501
+    name: "wire_reader"
+    nameShow: "线协议读者"
+  }
+  user_list {
+    id: 502
+    name: "fixture_moderator"
+    nameShow: "Fixture 版务"
+  }
+  thread_list {
+    id: 14001
+    threadId: 140001
+    title: "置顶：Swift 6 并发资料汇总"
+    replyNum: 41
+    viewNum: 501
+    isTop: 1
+    forumId: 13001
+    forumName: "Swift开发"
+    authorId: 501
+  }
+  thread_list {
+    id: 14002
+    threadId: 140002
+    title: "置顶：新人指南"
+    replyNum: 23
+    viewNum: 402
+    isTop: 1
+    forumId: 13001
+    forumName: "Swift开发"
+    authorId: 502
+  }
+  thread_list {
+    id: 14003
+    threadId: 140003
+    title: "Observation 的实践记录"
+    replyNum: 17
+    viewNum: 303
+    forumId: 13001
+    forumName: "Swift开发"
+    authorId: 501
+  }
+  thread_list {
+    id: 14004
+    threadId: 140004
+    replyNum: 5
+    viewNum: 104
+    forumId: 13001
+    forumName: "Swift开发"
+    authorId: 999
+    richAbstract {
+      type: 0
+      text: "无标题帖子的摘要降级"
+    }
+  }
+}

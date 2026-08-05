@@ -129,7 +129,7 @@ struct FollowedForumsView: View {
                         FollowedForumRow(forum: forum)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityHint("打开吧路线；吧首页尚未实现")
+                    .accessibilityHint("打开吧首页")
                     .accessibilityIdentifier(
                         FollowedForumsAccessibilityID.row(forum.forumID)
                     )

@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`PERSONALIZED_THREAD_CONTENT_PBPAGE_AND_FORUMGUIDE_LOCAL_VERIFIED`
+状态：`PERSONALIZED_THREAD_CONTENT_PBPAGE_FORUMGUIDE_AND_FRS_LOCAL_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -22,9 +22,9 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - canonical package lock：`Config/SwiftPM/Package.resolved`；生成工程 lock
   由脚本单向 materialize 并逐字节比较。
 - schema manifest：历史文件名
-  `Config/Protobuf/Personalized.inputs.tsv` 现锁定五个 root 的 136 个输入，
+  `Config/Protobuf/Personalized.inputs.tsv` 现锁定六个 root 的 156 个输入，
   均有 relative path、SHA-256、relationship 和 direct imports。
-- generated output：`Generated/Protobuf` 的 136 个 `.pb.swift`、生成 metadata
+- generated output：`Generated/Protobuf` 的 156 个 `.pb.swift`、生成 metadata
   与逐文件 SHA-256；两次 clean generation 与 tracked output 一致。
 - `GeneratedProtobuf` 是独立静态 target；UI/Feature import 被静态门禁拒绝。
 - 首个 binary fixture 是 250-byte `CROSS_LANGUAGE_GENERATED` JVM fixture，
@@ -34,6 +34,11 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - 阶段 11 依据 ADR-0013 增加 PBPage request/response 两个 root。PBPage
   request closure 为 6、response closure 为 119、合并为 125；与
   Personalized 51-file closure 重叠 50，当前唯一联合 closure 因而为 126。
+- 阶段 13 依据 ADR-0015 增加 ForumGuide request/response 两个 root，联合闭包
+  扩展为 136。
+- 阶段 14 依据 ADR-0016 增加唯一 FRS 首屏 root
+  `FrsPage/FrsPage.proto`。FRS closure 为 74，与原集合重叠 54，新增 20，
+  当前唯一联合闭包为 156；未提前加入阶段 15 的 ThreadList root。
 
 当前 local/personal/noncommercial schema 路径由 ADR-0011 批准；公开分发、
 App Store 和商业使用继续 `BLOCKED`。
@@ -64,7 +69,14 @@ App Store 和商业使用继续 `BLOCKED`。
 - 阶段 13 增加 ForumGuide request/response 两个 root；其 union 为 58，与阶段 11
   集合重叠 48，当前五-root union / generated output 为 136
 - 阶段 13 新增 generated files：10
-- generated `@unchecked Sendable` 精确 allowlist：19 个文件；手写代码仍为 0
+- 阶段 14 增加 FRS Page root；closure 为 74，与阶段 13 集合重叠 54，
+  当前六-root union / generated output 为 156
+- 阶段 14 新增 generated files：20
+- `FrsPage/AdParam.proto` 与已有 `PbPage/AdParam.proto` 会生成相同 basename；
+  生成器确定性地只将前者输出重命名为 `FrsPage/FRSAdParam.pb.swift`，Proto
+  message/module identity 不变，避免 Xcode target 输入冲突
+- generated `@unchecked Sendable` 精确 allowlist：23 个文件 / 24 处声明；
+  手写代码仍为 0
 
 ## 生成层次
 
@@ -121,7 +133,8 @@ Wire/SwiftProtobuf 实际会按 import graph 解析；下列顺序是可审查�
 
 PBPage 两个 root 的递归 closure 已由阶段 11 脚本锁定为 125，并与
 Personalized 合并为 126；阶段 13 再与 ForumGuide request/response
-closure 合并为当前 136 个文件。PB Floor 仍未进入当前生成集合，
+closure 合并为 136；阶段 14 加入 FRS Page 后为当前 156 个文件。
+PB Floor 与 ThreadList 仍未进入当前生成集合，
 不能从旧的约数推断其闭包。
 
 ## P0 message 映射
@@ -153,6 +166,13 @@ closure 合并为当前 136 个文件。PB Floor 仍未进入当前生成集合�
 | `thread_id_list` | 后续批量主题 id | 使用方式 `CODE_EVIDENCE`; 服务端语义 `UNKNOWN` |
 | `frs_tab_info/nav_tab_info` | 服务端 tab | `CODE_EVIDENCE`; 类型值域 `UNKNOWN` |
 | `forum_rule` | 规则入口摘要 | `CODE_EVIDENCE` |
+
+阶段 14 的生产 mapper 只消费首屏需要的 `forum`、`thread_list` 和
+`user_list`：`ForumInfo.id/name/slogan/avatar/member_num/thread_num/post_num`
+映射为 `ForumSummary`；`ThreadInfo.id` 是稳定 row identity，
+`ThreadInfo.threadId` 独立作为 `ThreadRoute`，二者不混同；
+`isTop == 1` 形成置顶分组并保持服务器顺序。作者优先按 `authorId` 从
+`user_list` 回填，缺失时再用 embedded author，最终降级为统一未知作者。
 
 ### PB Page
 
@@ -264,8 +284,10 @@ dispatcher P0 raw、unknown `999`、meme/poll message presence、URL/尺寸/空�
 PBPage wrapper、`Post.content#5`、首楼/普通楼层、图片 intent、server error
 和 route identity mismatch 已由阶段 11 完全合成的 Swift Proto response
 `LOCAL_SYNTHETIC_TESTED`；尚无 tracked cross-language 或 live PBPage fixture。
-FRS、PB Floor、真实 live pagination 与普通楼层折叠/删除常态仍为
-`NOT_CREATED/NOT_TESTED`；不得用首楼 fixture 或合成 mapper test 替代运行证据。
+FRS 已有 1 份完全合成、脱敏的 response fixture、确定性 request/mapper
+测试，以及 2026-08-05 匿名公开吧首屏运行观察；这不等于 live response
+fixture。PB Floor、FRS/ThreadList 真实分页与普通楼层折叠/删除常态仍为
+`NOT_CREATED/NOT_TESTED`；不得用首楼或 FRS synthetic fixture 替代运行证据。
 
 ## 来源与复制边界
 
@@ -274,7 +296,8 @@ Android reference 根目录含 GPL version 3 许可证文本，README 另有非�
 负责人明确的本地/个人/非商业范围允许从 exact pinned submodule 生成历史
 51-file Personalized closure；ADR-0013 在同一边界内批准历史 126-file
 Personalized + PBPage union；ADR-0015 以相同边界批准当前五个 root、
-136-file union。不把 `.proto` 复制进 iOS 树，也不使用
+136-file union；ADR-0016 在同一边界增加 FRS root，形成当前六-root、
+156-file union。不把 `.proto` 复制进 iOS 树，也不使用
 `n0099`。公开分发、
 App Store、商业使用及 notice/源码义务仍 `BLOCKED`；扩大范围前必须按
 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 新建权利决策，必要时切换到

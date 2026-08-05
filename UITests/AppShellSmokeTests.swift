@@ -407,6 +407,7 @@ extension AppShellSmokeTests {
         UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
         UITestHarness.tap(.followedForumsFirstRow, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requirePresent(.forumHomeHeader, in: app)
     }
 
     @MainActor

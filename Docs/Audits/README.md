@@ -10,3 +10,6 @@ Beta 限制见 `PHASE09_MEDIA_VIEWER.md`。
 
 阶段 10 Fixture 推荐→帖子→唯一 MediaViewer→原位置返回的垂直主链路、
 运行证据与 Beta 限制见 `PHASE10_FIXTURE_VERTICAL_SLICE.md`。
+
+阶段 14 吧首页、FRS 匿名首屏、Fixture→ThreadReader 返回位置及分页停止点见
+`PHASE14_FORUM_HOME.md`。

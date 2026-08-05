@@ -156,13 +156,13 @@ struct ForumRouteUnavailableView: View {
 
     var body: some View {
         EmptyStateView(
-            title: "\(forum.rawValue)吧",
+            title: "\(forum.forumName.rawValue)吧",
             message: "吧首页暂未开放，将在后续版本提供。",
             systemImage: "rectangle.stack"
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(SemanticColor.background)
-        .navigationTitle(forum.rawValue)
+        .navigationTitle(forum.forumName.rawValue)
         .accessibilityIdentifier(AppAccessibilityID.routeForum)
     }
 }
@@ -208,8 +208,8 @@ private extension RootID {
 private extension RouteIdentity {
     var title: String {
         switch self {
-        case let .forum(name):
-            "吧占位：\(name.rawValue)"
+        case let .forum(route):
+            "吧占位：\(route.forumName.rawValue)"
         case let .thread(threadID):
             "帖子占位：\(threadID.rawValue)"
         case let .subposts(_, postID):

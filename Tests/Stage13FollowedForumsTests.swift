@@ -173,7 +173,9 @@ struct Stage13FollowedForumsTests {
     @Test
     func forumRouteUsesValidatedNameInsteadOfListIdentity() throws {
         let forum = followedForum(id: 91_001, name: "  Swift开发  ")
-        let route = try #require(ForumRoute("Swift开发"))
+        let route = try #require(
+            ForumRoute(forumID: 91_001, forumName: "Swift开发")
+        )
 
         #expect(AppRouter.forumRoute(for: forum) == .forum(route))
     }

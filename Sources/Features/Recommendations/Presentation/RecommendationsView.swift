@@ -111,58 +111,22 @@ private struct RecommendationRow: View {
     let imageLoader: any ImageLoading
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.small) {
-            Text(item.title)
-                .font(Typography.font(.headline))
-                .foregroundStyle(SemanticColor.primaryText)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
+        ContentSummaryCard(
+            title: item.title,
+            primaryMetadata: item.forumName,
+            primarySystemImage: "rectangle.stack",
+            secondaryMetadata: item.authorName,
+            secondarySystemImage: "person",
+            trailingMetadata: "\(item.replyCount)",
+            trailingAccessibilityLabel: "\(item.replyCount) 条回复"
+        ) {
             if let thumbnail = item.thumbnail {
                 RecommendationThumbnailView(
                     thumbnail: thumbnail,
                     imageLoader: imageLoader
                 )
             }
-
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: Spacing.small) {
-                    metadata(item.forumName, systemImage: "rectangle.stack")
-                    metadata(item.authorName, systemImage: "person")
-                    Spacer(minLength: Spacing.xSmall)
-                    replyCount
-                }
-
-                VStack(alignment: .leading, spacing: Spacing.xSmall) {
-                    metadata(item.forumName, systemImage: "rectangle.stack")
-                    metadata(item.authorName, systemImage: "person")
-                    replyCount
-                }
-            }
         }
-        .padding(Spacing.medium)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-    }
-
-    private func metadata(
-        _ value: String,
-        systemImage: String
-    ) -> some View {
-        Label(value, systemImage: systemImage)
-            .font(Typography.font(.caption))
-            .foregroundStyle(SemanticColor.secondaryText)
-            .lineLimit(2)
-    }
-
-    private var replyCount: some View {
-        Label("\(item.replyCount)", systemImage: "bubble.left")
-            .font(Typography.font(.caption))
-            .foregroundStyle(SemanticColor.secondaryText)
-            .accessibilityLabel("\(item.replyCount) 条回复")
     }
 }
 

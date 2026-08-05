@@ -18,8 +18,8 @@
 | 深链基础 | `MainActivityV2.kt::checkIntent` 把 forumName/threadId 映射到 Forum/Thread | 产品公开；endpoint 认证另见目标页面 | 仅凭稳定 ID/name 从冷启动打开吧/帖子；坏参数安全拒绝；不依赖预载 Proto；cold/warm 均进入 recommendations root | `CODE_EVIDENCE` + `INFERENCE` |
 | 推荐流 | `PersonalizedPage/ViewModel` → `PersonalizedRepository` → Personalized Proto | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | fixture 启动：成功、空、失败；刷新保留旧内容；分页去重且保序；尾部失败可重试；同页互斥；旧响应不能覆盖新请求 | `CODE_EVIDENCE`; auth/终止 `UNKNOWN` |
 | 关注的吧 | `HomeViewModel` → `allForumGuideFlow` → `ForumGuideBean` | 产品要求登录 | 未登录显示明确登录入口；按 session 原子聚合多页；后续页失败/重试可测；刷新保留同 session 旧列表；账号切换立即隐藏旧 membership；点击进入正确 forumName | `LOCAL_SYNTHETIC_TESTED`; HTTPS `EVIDENCE_BLOCKED`;失效码 `UNKNOWN` |
-| 吧首页信息 | `ForumPage` + `ForumViewModel.Load` → FRS Page | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | forumName 自足打开；显示吧名/头像/统计的已证字段；缺字段降级；返回保留所选 tab、sort 和滚动 | `CODE_EVIDENCE` + `INFERENCE` |
-| 吧内主题列表 | `ForumThreadListViewModel`、`GeneralTabListViewModel` → FRS/ThreadList/GeneralTab | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | latest/good/已证服务端 tab；刷新/分页/空/失败；置顶与普通项稳定；重复页按 thread id 去重保序；动态 tab 未知时安全回退 | `CODE_EVIDENCE`; tab/分页边界 `UNKNOWN` |
+| 吧首页信息 | `ForumPage` + `ForumViewModel.Load` → FRS Page | 产品公开；固定公开吧匿名首屏已验证 | forumName 自足打开；显示吧名/简介/统计的已证字段；缺字段降级；返回保留首屏列表与滚动；头像显示延后 | `LIMITED_RUNTIME_EVIDENCE` + Fixture tests |
+| 吧内主题列表 | `ForumThreadListViewModel`、`GeneralTabListViewModel` → FRS/ThreadList/GeneralTab | 产品公开；FRS 固定公开吧匿名首屏已验证，ThreadList/GeneralTab 未验证 | 首屏置顶与普通项稳定并可进入帖子；动态 tab、排序和分页留待后续，未知时安全回退 | 首屏 `LIMITED_RUNTIME_EVIDENCE`; tab/分页边界 `UNKNOWN` |
 | 帖子阅读 | `ThreadPage/ViewModel` → `PbPageRepository` → PB Page Proto | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | threadId 自足打开；标题/作者/首楼/回复；升降序与只看楼主按 fixture；首尾分页；缺作者、删除、私密、畸形内容不崩溃；返回保持锚点 | `CODE_EVIDENCE`; anchor/删除形态 `UNKNOWN` |
 | 楼中楼只读 | `SubPostsPage/ViewModel` → PB Floor Proto | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | inline 摘要可进完整楼中楼；刷新/分页去重；空/失败/缺作者有稳定状态；不出现回复或发布能力 | `CODE_EVIDENCE` + `INFERENCE` |
 | 内容节点 | `PbContent.proto` + `Extensions.kt::renders` + `ThreadPage.PostCard` | 继承来源页面 | text/link/emoji/mention/image 正常；video/voice/poll 按矩阵展示或降级；未知 raw type 保留占位和相邻顺序；所有畸形 fixture 不崩溃 | `CODE_EVIDENCE` + `INFERENCE` |
