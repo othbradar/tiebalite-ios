@@ -1,18 +1,18 @@
 # 模块与依赖地图
 
-状态：`IMPLEMENTED_THROUGH_PHASE_09_PRODUCTION_MEDIA_VIEWER`
+状态：`IMPLEMENTED_THROUGH_PHASE_15_THREAD_READING`
 
 本文件把根目录结构解释为逻辑模块和 owner；它不表示阶段 02 已创建 Swift
 target。工程生成决策见 `Docs/ADRs/ADR-0001-project-generation.md`。
 
 ## 编译 target 与逻辑模块
 
-阶段 09 当前编译 target：
+阶段 15 当前编译 target：
 
 | 编译 target | 内容 | 可依赖 |
 |---|---|---|
 | `TiebaLite` | App、Core、DesignSystem、ThreadReader Renderer、MediaViewer、InteractionKit；仅 UITesting 配置加入 `TestSupport/LaunchScenarios/**` | Apple SDK；已批准且实际引入的 production package |
-| `GeneratedProtobuf` | pinned Personalized 51-file closure 的 tracked 生成 Swift；静态库 | SwiftProtobuf 1.38.1 only |
+| `GeneratedProtobuf` | 锁定只读 endpoint 的 156-file closure 所生成的 tracked Swift；静态库 | SwiftProtobuf 1.38.1 only |
 | `TiebaLiteTests` | State/mapper/repository/integration tests；单独编译所需 TestSupport 源 | `TiebaLite`、test-only helper |
 | `TiebaLiteUITests` | XCUITest flows，只向 App 传 scenario ID | App 的 UITesting build；不可链接 production secret/live fixture |
 
@@ -36,11 +36,11 @@ endpoint 再拆重复 generated target。
 | `Sources/Core/Images/` | 唯一 ImageRepository、请求合并/cache policy | ImageRequest/Result/lease | 第二网络栈、raw URL 日志 |
 | `Sources/Core/Logging/` | DiagnosticsClient、Signposter、安全事件 | 白名单 event API | raw Error/request/payload |
 | `Sources/DesignSystem/` | 颜色、排版、Motion、Loading/Empty/Error 组件 | 语义 token/component | Feature、网络、route |
-| `Sources/InteractionKit/` | 唯一 PagerContainer 及通用交互桥接 | PageID/selection/capability | Feature 数据、第二 Pager |
+| `Sources/InteractionKit/` | 唯一 PagerContainer、媒体交互桥接及薄 VirtualizedList 承载 | PageID/selection/capability；稳定 item ID、row builder、prefetch/anchor | Feature 数据、第二 Pager、帖子或吧首页业务语义 |
 | `Sources/Features/Recommendations/` | 推荐 Store/View | route 输入、领域 state/action | 其他 Feature 内部类型、Core concrete |
 | `Sources/Features/FollowedForums/` | 关注吧 Store/View | session capability、领域 state/action | credential、HTTP |
 | `Sources/Features/Forum/` | 吧信息/tab/主题 timeline | forumName route、领域 state/action | PB internals |
-| `Sources/Features/ThreadReader/` | Thread/Subposts/Content renderer | thread/post route、ContentNode | MediaViewer 内部状态 |
+| `Sources/Features/ThreadReader/` | Thread/Subposts/Content renderer 与预计算 RowModel | thread/post route、ContentNode、稳定 ThreadReaderRowID | MediaViewer 内部状态、第二列表容器、Proto/UI 映射 |
 | `Sources/Features/MediaViewer/` | 唯一 Viewer presentation/load state/page composition | MediaPresentation | 精确 zoom owner、自制 Pager、父列表复制 |
 | `Generated/Protobuf/` | 机器生成 wire Message | 仅供 Core/TiebaAPI mapper | UI/Feature/domain 行为 |
 | `Resources/` | asset/localization/config resources | typed resource access | secret/live response |
@@ -102,6 +102,12 @@ item load phase 与 chrome。`AppSceneRoot` 每 scene 最多持有一个进程�
 `fullScreenCover`。UITesting 注入固定 loader；Release 注入
 `DisabledImageLoader`，因此本阶段没有建立 live 图片、cache/downsample/
 candidate/lease 或第二网络栈。
+
+阶段 15 的具体边界：`Sources/InteractionKit/VirtualList` 是无业务语义的单
+section UITableView/diffable/UIHostingConfiguration adapter；它不 import
+ThreadReader/Forum domain。`ThreadReaderListPresentation` 在 Feature 内把领域
+posts 预计算为稳定 RowModel，生产 View 只有这一个列表容器。阶段 14 生产代码
+尚未使用该 adapter；后续 14P 只能复用其当前最薄接口，不能反向加入 FRS 语义。
 
 登录验证/续期同样不允许 Session 直接构造 transport。Core/Session 拥有无
 HTTP/DTO 的 `SessionValidationClient`/`CredentialRefreshClient` 协议，

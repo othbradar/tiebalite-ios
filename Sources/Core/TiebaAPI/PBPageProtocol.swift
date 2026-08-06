@@ -5,33 +5,42 @@ import SwiftProtobuf
 enum PBPageProtocolError: Error, Equatable, Sendable {
     case emptyBody
     case invalidStaticConfiguration
+    case invalidPageNumber
+    case invalidPostID
     case invalidThreadID
     case missingData
     case missingFirstPost
+    case missingPage
     case missingThread
     case threadIdentityMismatch(requested: Int64, received: Int64)
 }
 
 struct PBPageRequestInput: Equatable, Sendable {
     let threadID: Int64
+    let pageNumber: Int
+    let postID: Int64
 
-    init(threadID: Int64) throws {
+    init(
+        threadID: Int64,
+        pageNumber: Int = 0,
+        postID: Int64 = 0
+    ) throws {
         guard threadID > 0 else {
             throw PBPageProtocolError.invalidThreadID
         }
+        guard pageNumber >= 0, pageNumber <= Int(Int32.max) else {
+            throw PBPageProtocolError.invalidPageNumber
+        }
+        guard postID >= 0 else {
+            throw PBPageProtocolError.invalidPostID
+        }
         self.threadID = threadID
+        self.pageNumber = pageNumber
+        self.postID = postID
     }
 }
 
 enum PBPageProtocol {
-    private struct PostMappingContext {
-        let threadID: Int64
-        let scope: ThreadContentSource.Scope
-        let fallbackAuthor: ThreadReaderAuthor?
-        let users: [Tieba_User]
-        let poll: Tieba_PollInfo?
-    }
-
     static let fixtureResponseMIMEType = "application/x-protobuf"
     static let liveResponseMIMEType = "application/octet-stream"
 
@@ -83,14 +92,14 @@ enum PBPageProtocol {
         data.kz = input.threadID
         data.lz = 0
         data.r = 0
-        data.pid = 0
+        data.pid = input.postID
         data.withFloor = 1
         data.floorRn = 4
         data.weipost = 0
         data.sModel = 0
         data.rn = 15
         data.qType = 2
-        data.pn = 0
+        data.pn = Int32(input.pageNumber)
         data.stType = ""
         data.threadType = 0
         data.banner = 0
@@ -159,69 +168,17 @@ enum PBPageProtocol {
         _ response: Tieba_PbPage_PbPageResponse,
         requestedThreadID: Int64
     ) throws -> ThreadReaderSnapshot {
-        guard response.hasData else {
-            throw PBPageProtocolError.missingData
-        }
-        let data = response.data
-        guard data.hasThread else {
-            throw PBPageProtocolError.missingThread
-        }
-
-        let receivedThreadID = firstPositive(
-            data.thread.threadID,
-            data.thread.id
+        try map(
+            response,
+            request: .initial(threadID: requestedThreadID)
         )
-        if receivedThreadID > 0, receivedThreadID != requestedThreadID {
-            throw PBPageProtocolError.threadIdentityMismatch(
-                requested: requestedThreadID,
-                received: receivedThreadID
-            )
-        }
+    }
 
-        let firstPost = data.postList.first { $0.floor == 1 }
-            ?? (data.hasFirstFloorPost ? data.firstFloorPost : nil)
-        guard let firstPost,
-              let firstReaderPost = makePost(
-                  firstPost,
-                  context: PostMappingContext(
-                      threadID: requestedThreadID,
-                      scope: .firstPost,
-                      fallbackAuthor: mapAuthor(data.thread.author),
-                      users: data.userList,
-                      poll: data.thread.hasPollInfo
-                          ? data.thread.pollInfo
-                          : nil
-                  )
-              ) else {
-            throw PBPageProtocolError.missingFirstPost
-        }
-
-        var seenPostIDs: Set<Int64> = [firstReaderPost.id.postID]
-        var posts = [firstReaderPost]
-        for post in data.postList where post.floor != 1 {
-            guard let mapped = makePost(
-                post,
-                context: PostMappingContext(
-                    threadID: requestedThreadID,
-                    scope: .post,
-                    fallbackAuthor: nil,
-                    users: data.userList,
-                    poll: nil
-                )
-            ), seenPostIDs.insert(mapped.id.postID).inserted else {
-                continue
-            }
-            posts.append(mapped)
-        }
-
-        return ThreadReaderSnapshot(
-            threadID: requestedThreadID,
-            title: nonempty(data.thread.title, fallback: "无标题"),
-            forumName: forumName(data),
-            author: mapAuthor(data.thread.author),
-            replyCount: max(0, data.thread.replyNum),
-            posts: posts
-        )
+    static func map(
+        _ response: Tieba_PbPage_PbPageResponse,
+        request: ThreadReaderPageRequest
+    ) throws -> ThreadReaderSnapshot {
+        try PBPageDomainMapper.map(response, request: request)
     }
 
     static func pipeline(
@@ -238,93 +195,18 @@ enum PBPageProtocol {
         )
     }
 
-    private static func makePost(
-        _ post: Tieba_Post,
-        context: PostMappingContext
-    ) -> ThreadReaderPost? {
-        guard post.id > 0,
-              post.id <= UInt64(Int64.max) else {
-            return nil
-        }
-        let postID = Int64(post.id)
-        let source = ThreadContentSource(
-            threadID: context.threadID,
-            postID: postID,
-            scope: context.scope
-        )
-        let availability: ThreadContentAvailability = post.isFold == 0
-            ? .available
-            : .unavailable(.folded(
-                message: post.foldTip.isEmpty ? nil : post.foldTip
-            ))
-        let document = ThreadContentProtoMapper.map(
-            postContent: post.content,
-            source: source,
-            availability: availability,
-            poll: context.poll
-        )
-        let floor = Int(exactly: post.floor) ?? 0
-        return ThreadReaderPost(
-            floorNumber: context.scope == .firstPost ? max(1, floor) : floor,
-            author: postAuthor(
-                post,
-                fallback: context.fallbackAuthor,
-                users: context.users
-            ),
-            metadata: nonempty(post.timeEx, fallback: "公开帖子"),
-            document: document
+    static func pipeline(
+        request: ThreadReaderPageRequest
+    ) -> EndpointPipeline<
+        Tieba_PbPage_PbPageResponse,
+        ThreadReaderSnapshot
+    > {
+        EndpointPipeline(
+            decode: decode,
+            map: { response in
+                try map(response, request: request)
+            }
         )
     }
 
-    private static func postAuthor(
-        _ post: Tieba_Post,
-        fallback: ThreadReaderAuthor?,
-        users: [Tieba_User]
-    ) -> ThreadReaderAuthor {
-        if post.hasAuthor {
-            return mapAuthor(post.author)
-        }
-        if let user = users.first(where: { user in
-            post.authorID > 0 && user.id == post.authorID
-        }) {
-            return mapAuthor(user)
-        }
-        return fallback ?? unknownAuthor(rawUserID: post.authorID)
-    }
-
-    private static func mapAuthor(_ user: Tieba_User) -> ThreadReaderAuthor {
-        let name = nonempty(user.nameShow, fallback: user.name)
-        return ThreadReaderAuthor(
-            rawUserID: max(0, user.id),
-            displayName: nonempty(name, fallback: "未知作者")
-        )
-    }
-
-    private static func unknownAuthor(rawUserID: Int64) -> ThreadReaderAuthor {
-        ThreadReaderAuthor(
-            rawUserID: max(0, rawUserID),
-            displayName: "未知作者"
-        )
-    }
-
-    private static func forumName(
-        _ data: Tieba_PbPage_PbPageResponseData
-    ) -> String {
-        if data.hasForum, !data.forum.name.isEmpty {
-            return data.forum.name
-        }
-        return nonempty(data.thread.forumName, fallback: "未知吧")
-    }
-
-    private static func firstPositive(_ values: Int64...) -> Int64 {
-        values.first(where: { $0 > 0 }) ?? 0
-    }
-
-    private static func nonempty(
-        _ value: String,
-        fallback: String
-    ) -> String {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? fallback : trimmed
-    }
 }

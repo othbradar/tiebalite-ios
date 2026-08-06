@@ -13,14 +13,37 @@ struct FixtureRecommendationRepository: RecommendationRepository {
 }
 
 struct FixtureThreadReaderRepository: ThreadReaderRepository {
-    func loadThread(threadID: Int64) async throws -> ThreadReaderSnapshot {
+    private let failsNextPage: Bool
+
+    init(failsNextPage: Bool = false) {
+        self.failsNextPage = failsNextPage
+    }
+
+    func loadPage(
+        _ request: ThreadReaderPageRequest
+    ) async throws -> ThreadReaderSnapshot {
         try Task.checkCancellation()
         guard let seed = FixtureReadingCatalog.allThreadSeeds.first(where: {
-            $0.threadID == threadID
+            $0.threadID == request.threadID
         }) else {
             throw FixtureReadingRepositoryError.threadNotFound
         }
-        return FixtureReadingCatalog.snapshot(from: seed)
+        switch request.pageNumber {
+        case 0:
+            return FixtureThreadReaderPages.firstPage(from: seed)
+        case 2:
+            guard request.postID == FixtureThreadReaderPages.nextPostID(
+                for: seed
+            ) else {
+                throw FixtureReadingRepositoryError.unavailable
+            }
+            if failsNextPage {
+                throw FixtureReadingRepositoryError.unavailable
+            }
+            return FixtureThreadReaderPages.secondPage(from: seed)
+        default:
+            throw FixtureReadingRepositoryError.unavailable
+        }
     }
 }
 
@@ -250,141 +273,7 @@ enum FixtureReadingCatalog {
     static func snapshot(
         from seed: FixtureThreadSeed
     ) -> ThreadReaderSnapshot {
-        let firstPostID = seed.threadID + 10_000
-        let firstPost = ThreadReaderPost(
-            floorNumber: 1,
-            author: seed.author,
-            metadata: "首楼 · Fixture",
-            document: document(
-                threadID: seed.threadID,
-                postID: firstPostID,
-                scope: .firstPost,
-                paragraphs: [
-                    "这是一篇完全由本地 Fixture 提供的只读帖子，用来验证推荐、阅读和图片查看链路。",
-                    "内容不会访问真实贴吧，也不会发送任何网络请求。"
-                ],
-                imageResources: seed.imageResources
-            )
-        )
-        let replies = (2...4).map { floorNumber in
-            let postID = seed.threadID + Int64(floorNumber * 10_000)
-            return ThreadReaderPost(
-                floorNumber: floorNumber,
-                author: ThreadReaderAuthor(
-                    rawUserID: seed.threadID + Int64(floorNumber),
-                    displayName: "Fixture 读者 \(floorNumber - 1)"
-                ),
-                metadata: "\(floorNumber) 楼 · 只读 Fixture",
-                document: document(
-                    threadID: seed.threadID,
-                    postID: postID,
-                    scope: .post,
-                    paragraphs: [
-                        "这是第 \(floorNumber) 楼的固定正文。它使用独立 postID，并继续复用统一内容 Renderer。"
-                    ],
-                    imageResources: []
-                )
-            )
-        }
-        return ThreadReaderSnapshot(
-            threadID: seed.threadID,
-            title: seed.title,
-            forumName: seed.forumName,
-            author: seed.author,
-            replyCount: seed.replyCount,
-            posts: [firstPost] + replies
-        )
-    }
-
-    private static func document(
-        threadID: Int64,
-        postID: Int64,
-        scope: ThreadContentSource.Scope,
-        paragraphs: [String],
-        imageResources: [String]
-    ) -> ThreadContentDocument {
-        let source = ThreadContentSource(
-            threadID: threadID,
-            postID: postID,
-            scope: scope
-        )
-        var nodes: [ThreadContentNode] = []
-
-        for paragraph in paragraphs.prefix(1) {
-            nodes.append(textNode(
-                paragraph,
-                source: source,
-                ordinal: nodes.count
-            ))
-        }
-        for (index, resourceID) in imageResources.enumerated() {
-            nodes.append(imageNode(
-                resourceID: resourceID,
-                source: source,
-                ordinal: nodes.count,
-                imageIndex: index
-            ))
-        }
-        for paragraph in paragraphs.dropFirst() {
-            nodes.append(textNode(
-                paragraph,
-                source: source,
-                ordinal: nodes.count
-            ))
-        }
-
-        return ThreadContentDocument(
-            source: source,
-            availability: .available,
-            nodes: nodes,
-            poll: nil
-        )
-    }
-
-    private static func textNode(
-        _ value: String,
-        source: ThreadContentSource,
-        ordinal: Int
-    ) -> ThreadContentNode {
-        ThreadContentNode(
-            id: ThreadContentNodeID(source: source, ordinal: ordinal),
-            rawType: 0,
-            payload: .text(ThreadTextContent(value: value))
-        )
-    }
-
-    private static func imageNode(
-        resourceID: String,
-        source: ThreadContentSource,
-        ordinal: Int,
-        imageIndex: Int
-    ) -> ThreadContentNode {
-        let nodeID = ThreadContentNodeID(source: source, ordinal: ordinal)
-        return ThreadContentNode(
-            id: nodeID,
-            rawType: 3,
-            payload: .image(ThreadImageContent(
-                rawType: 3,
-                mediaID: ThreadMediaID(sourceNodeID: nodeID),
-                request: ThreadImageRequestDescriptor(
-                    resourceID: resourceID,
-                    candidates: [ThreadImageCandidate(
-                        role: .source,
-                        destination: ValidatedWebDestination(
-                            absoluteString:
-                                "https://fixture.invalid/stage10/\(resourceID).png",
-                            scheme: .https
-                        )
-                    )]
-                ),
-                dimensions: imageIndex == 2
-                    ? .known(width: 800, height: 1_200)
-                    : .known(width: 1_200, height: 800),
-                alternativeText: "Fixture 图片 \(imageIndex + 1)",
-                originalByteCount: nil,
-                showsOriginalControlHint: false
-            ))
-        )
+        FixtureThreadReaderPages.firstPage(from: seed)
     }
 }
 

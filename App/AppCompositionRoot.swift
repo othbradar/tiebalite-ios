@@ -40,7 +40,9 @@ final class AppCompositionRoot {
             )
             recommendationRepository =
                 EvidenceBlockedRecommendationRepository()
-            threadReaderRepository = EvidenceBlockedThreadReaderRepository()
+            threadReaderRepository = LiveThreadReaderRepository(
+                client: environment.httpClient
+            )
         }
     }
 

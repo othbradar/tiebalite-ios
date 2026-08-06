@@ -89,8 +89,12 @@ final class AppFeatureStoreRegistry {
                 }
             }
         )
-        threadReaderStores = threadReaderStores.filter { key, _ in
-            activeKeys.contains(key)
+        threadReaderStores = threadReaderStores.filter { key, store in
+            guard activeKeys.contains(key) else {
+                store.cancel()
+                return false
+            }
+            return true
         }
     }
 

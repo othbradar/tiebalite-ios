@@ -59,7 +59,7 @@ enum LaunchScenarioFactory {
             httpBehavior = .controlled
             sessionStatus = .signedIn
             safeLabel = "Harness: Session signed in fixture"
-            imageLoader = HarnessFixtureImageLoader(fixtures: [:])
+            imageLoader = FixtureReadingImageLoader()
         case .sessionExpired:
             networkMode = .controlled
             httpBehavior = .controlled

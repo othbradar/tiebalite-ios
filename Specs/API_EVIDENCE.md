@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE14_FRS_ANONYMOUS_FIRST_SCREEN_RUNTIME_VERIFIED`
+状态：`STAGE15_PBPAGE_ANONYMOUS_TWO_PAGE_RUNTIME_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -23,12 +23,12 @@ host、没有发送真实请求，production composition 继续使用
 或内容 fixture，因而这只是 `RUNTIME_OBSERVATION`，不能关闭稳定匿名能力、
 最小参数、分页、错误 taxonomy 或 canonical identity。
 
-最终推荐空页没有提供正 threadID，链式 PBPage Probe 按设计未运行。
-PBPage 当前只有锁定 Android call site/schema、确定性 request、合成 response
-mapper 和 MockHTTPClient contract evidence。由于推荐和 PBPage 都未达到可复现
-运行证据门槛，Production 两项能力继续 fail closed，不把 local adapter 或单次
-观察冒充 live-ready。凡仍使用明文 HTTP 的链路
-状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
+阶段 11 最终推荐空页没有提供正 threadID，链式 PBPage Probe 按设计未运行；
+当时 PBPage 只有锁定 Android call site/schema、确定性 request、合成 response
+mapper 和 MockHTTPClient contract evidence，因此推荐和帖子两项 Production
+能力均 fail closed。阶段 15 后续以公开 FRS 主题取得真实 threadID，并补齐下文
+PBPage 匿名两页运行证据；推荐能力仍保持 fail closed。凡仍使用明文 HTTP 的
+链路状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
 
 阶段 12 在同一 evidence-locked Personalized request 上增加显式 active
 AuthContext：由可见 WKWebView 取得 Android 已证的两个候选 Cookie 字段，经
@@ -84,7 +84,8 @@ response、帖子/作者内容、Cookie、请求体或设备标识。这足以�
 - `unknown`：静态源码不足。
 
 `optional-in-request` 只描述客户端静态构造，不自动证明匿名能力；匿名状态以各
-endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首屏已限定验证。
+endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首屏和 PBPage
+匿名首屏/一页下一页得到限定运行验证。
 
 ## 阶段 12 登录与 authenticated Probe 证据
 
@@ -353,25 +354,30 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   `personalized_rec_switch=1` 和 call-site 静态 PBPage 字段，不编码 AppPos、
   screen、设备或 session。
 - 敏感字段：可选 BDUSS/STOKEN 与 device fields。
-- iOS domain mapper：阶段 11 的 `PBPageProtocol` 把公开标题、吧名、作者、
-  首楼、普通楼层与 `Post.content#5` 转为现有 `ThreadReaderSnapshot` /
-  `ThreadContentDocument`；缺作者映射为未知作者，未知节点保留 raw type，
-  图片候选生成稳定 MediaIntent。当前只读首屏，不声明 `PostPage` 分页完成。
-- Fixture 路径：`TestSupport/Fixtures/API/Thread/PBPage/`（仍
-  `NOT_CREATED`）；当前 mapper test 使用完全合成的 Swift Proto response，
-  不是 live capture 或 cross-language fixture。
-- Fixture 获取/生成方式：脱敏采集首屏/中页/末页/锚点/升降热序；构造缺 data/page/author/forum/anti、空 post_list、重叠 pid、畸形 pids。
+- iOS domain mapper：阶段 15 的 `PBPageProtocol` 把公开标题、吧名、作者、
+  首楼、普通楼层、`Post.content#5`、`Post.sub_post_list#15` 与 Page 字段转为
+  `ThreadReaderSnapshot` / `ThreadContentDocument`。Post/SubPost 使用真实稳定
+  ID；缺作者降级，未知节点保留 raw type，折叠只消费 `is_fold/fold_tip`，
+  图片候选生成稳定 MediaIntent。
+- Fixture 路径：`FixtureThreadReaderPages` 与
+  `Tests/Stage15ThreadReadingTests.swift` 的完全合成、脱敏 Swift Proto response；
+  两页覆盖首楼、普通楼层、内联楼中楼、图片、未知节点、折叠楼层、重叠
+  postID、畸形 pids、终止页和下一页失败。它们不是 live capture 或
+  cross-language fixture。
+- Fixture 获取/生成方式：只由测试代码与稳定业务 ID 构造；不保存服务端
+  response。倒序、只看楼主、跳楼与完整 PBFloor 继续 `NOT_CREATED`。
 - 已验证行为：Android 当前完整 Thread UI 使用 Proto 链；阶段 11 锁定
-  PBPage 125-file closure（与 Personalized 合并后 126）、确定性 request、
-  empty body/server error/identity mismatch、首楼/普通楼层/图片
-  MediaIntent、Live Repository mock pipeline/cancellation，以及 Store stale
-  replacement。
-- 运行态：`NOT_RUN_NO_RECOMMENDATION_THREAD_ID`。最终 Debug 推荐 Probe 为
-  合法空页，未猜测或另取 threadID，Production 使用 typed evidence-blocked
-  Repository 且不发 PBPage 请求。
-- UNKNOWN：匿名接受、MIME/正常 body 大小、`page=0 + pid`、合法空页、
-  删除/私密/折叠、sort 值域与真实错误 taxonomy。Store stale 请求时序已由
-  local deterministic tests 关闭，但不代表服务器行为已验证。
+  PBPage closure；阶段 15 新增 `pn/pid` 下一页 request、Page/cursor、
+  后续页无首楼、楼中楼/时间、非法单楼降级、分页去重保序、保留内容失败/
+  重试、防重复、取消与 route 离开回归。Proto 闭包仍为当前 156 文件。
+- 运行态：`ANONYMOUS_TWO_PAGE_RUNTIME_VERIFIED`。2026-08-05 Debug-only Probe
+  从公开 FRS 主题取得真实 threadID；PBPage 首屏/第二页均 HTTP 200、
+  `application/octet-stream`、24,567/17,106 bytes、Proto decode 成功。首屏
+  有首楼、16 个普通楼层、60 条楼中楼且 has-next；第二页 15 个普通楼层。
+  没有保存响应正文、Proto dump、threadID、标题或用户内容。
+- UNKNOWN：合法空页、删除/私密的完整语义、`is_post_visible` proto3 零值、
+  sort 值域、倒序/跳楼/PBFloor、真实错误 taxonomy、限流与跨主题稳定性。
+  Production 图片 loader 仍 disabled，Live 图片不是本次运行证据。
 
 ### `thread.pbFloor`
 
@@ -552,3 +558,8 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 例外：它只在精确 HTTPS/MIME/请求形状、合成成功 fixture、request/
 mapper/cancel/stale 测试和无凭证运行成功后启用首屏。完整错误矩阵和
 分页仍未验证，不能用该例外启用其他 endpoint。
+
+`thread.pbPage` 按 ADR-0017 使用另一个独立、范围受限的开源 Beta 例外：
+仅启用普通升序匿名首屏和一页顺序下一页。该例外由真实 FRS threadID、两页
+HTTP/MIME/Proto 运行证据与确定性 pagination tests 支持，不扩展到 PB Floor、
+倒序、跳楼、只看楼主、Live 图片或其他 endpoint。

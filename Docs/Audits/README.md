@@ -13,3 +13,7 @@ Beta 限制见 `PHASE09_MEDIA_VIEWER.md`。
 
 阶段 14 吧首页、FRS 匿名首屏、Fixture→ThreadReader 返回位置及分页停止点见
 `PHASE14_FORUM_HOME.md`。
+
+阶段 15 PBPage 匿名两页、楼层/楼中楼映射、保留内容分页、SwiftUI A/B、
+UITableView 虚拟化和 1000 楼 Fixture 见
+`PHASE15_READ_ONLY_THREAD_BROWSING.md`。

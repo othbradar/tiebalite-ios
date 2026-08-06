@@ -112,6 +112,45 @@ final class IPadAppShellSmokeTests: XCTestCase {
     }
 
     @MainActor
+    func testFixtureForumThreadShowsSubpostsPaginationAndMediaOnIPad() {
+        let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
+        let device = XCUIDevice.shared
+        device.orientation = .landscapeLeft
+
+        pushForumRoute(in: app)
+        UITestHarness.scrollToHittable(.forumHomeSelectedRow, in: app)
+        UITestHarness.tap(.forumHomeSelectedRow, in: app)
+        UITestHarness.requirePresent(.forumThreadReaderScreen, in: app)
+        UITestHarness.scrollToHittable(
+            .forumThreadSubpost,
+            inside: .forumThreadReaderScroll,
+            in: app
+        )
+        UITestHarness.scrollToHittable(
+            .forumThreadLastPagePost,
+            inside: .forumThreadReaderScroll,
+            in: app
+        )
+        UITestHarness.scrollBackToHittable(
+            .forumThreadImageAction,
+            inside: .forumThreadReaderScroll,
+            in: app
+        )
+        UITestHarness.requireValue(
+            .forumThreadImageAction,
+            equals: "已加载",
+            in: app
+        )
+        UITestHarness.tap(.forumThreadImageAction, in: app)
+        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        MediaViewerProductionAssertions.requirePosition("1 / 1", in: app)
+        UITestHarness.tap(.mediaViewerClose, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+
+        device.orientation = .portrait
+    }
+
+    @MainActor
     func testThreadContentRendererLabSurvivesIPadProjectionAndRotation() {
         let app = UITestHarness.launch(scenario: .threadContentRenderer)
         let device = XCUIDevice.shared

@@ -68,7 +68,7 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
@@ -91,6 +91,13 @@ do
     fail protobuf-core-exact-imports "$proto_adapter: $proto_imports"
   fi
 done
+pb_page_mapper_imports="$(
+  rg '^import (GeneratedProtobuf|SwiftProtobuf)$' \
+    Sources/Core/TiebaAPI/PBPageDomainMapper.swift | sort
+)"
+if [[ "$pb_page_mapper_imports" != 'import GeneratedProtobuf' ]]; then
+  fail protobuf-domain-mapper-exact-imports "$pb_page_mapper_imports"
+fi
 
 reject_swift_matches \
   thread-content-domain-leak \
@@ -100,6 +107,10 @@ reject_swift_matches \
   thread-content-mapper-side-effect \
   '@MainActor|\b(URLSession|HTTPClient|HTTPRequest|Endpoint|FileManager|UserDefaults|HTTPCookieStorage|Keychain)\b|SecItem(Add|CopyMatching|Update|Delete)' \
   Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift
+reject_swift_matches \
+  pb-page-domain-mapper-side-effect \
+  '@MainActor|\b(URLSession|HTTPClient|HTTPRequest|Endpoint|FileManager|UserDefaults|HTTPCookieStorage|Keychain)\b|SecItem(Add|CopyMatching|Update|Delete)' \
+  Sources/Core/TiebaAPI/PBPageDomainMapper.swift
 reject_swift_matches \
   thread-reader-protobuf-leak \
   '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \

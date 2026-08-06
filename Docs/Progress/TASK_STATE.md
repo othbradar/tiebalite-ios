@@ -1,11 +1,17 @@
 # TASK_STATE
 
-- 当前阶段：14
-- 状态：`PHASE_14_FORUM_HOME_COMPLETE`
+- 当前阶段：15
+- 状态：`PHASE_15_THREAD_READING_COMPLETE`
+- `PHASE_15_THREAD_READING = COMPLETE`
+- `THREAD_READER_CONTAINER = VIRTUALIZED_UITABLEVIEW_BETA`
+- `THREAD_READER_LARGE_FIXTURE = LOCAL_5_PAGE_1000_FLOOR_BOUND_VERIFIED`
+- `THREAD_READER_SWIFTUI_AB = ONE_DEBUG_OBSERVATION`
+- `LIVE_THREAD = ANONYMOUS_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`
+- `PHASE_16 = NOT_STARTED`
 - `PHASE_14_FORUM_HOME = COMPLETE`
 - `FORUM_HOME_FIXTURE = BETA_READY`
 - `LIVE_FORUM_HOME = ANONYMOUS_FIRST_SCREEN_RUNTIME_VERIFIED`
-- `PHASE_15 = NOT_STARTED`
+- `PHASE_15 = COMPLETE`
 - `PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`
 - `FOLLOWED_FORUMS_LOCAL_IMPLEMENTATION = BETA_READY`
 - `FORUM_GUIDE_AUTHENTICATED_PROBE = NOT_RUN_AUTH_CONTEXT_RESTORE_FAILED`
@@ -22,7 +28,8 @@
 - `PRODUCTION_EXPIRED_SIGNAL = NOT_RUNTIME_VERIFIED`
 - `PHASE_11 = RUNTIME_EVIDENCE_PARTIAL`
 - `LIVE_RECOMMENDATION = PARTIAL`
-- `LIVE_THREAD = NOT_RUNTIME_VERIFIED`
+- `LIVE_THREAD` 的阶段 11 原始证据缺口已由阶段 15 匿名 PBPage 两页运行证据
+  收窄；`PHASE_11` 整体仍保持 `RUNTIME_EVIDENCE_PARTIAL`
 - `PHASE_13 = RUNTIME_EVIDENCE_PARTIAL`
 - 当前分支：`main`
 - 阶段 07 提交：
@@ -38,7 +45,8 @@
 - 阶段 10 提交：包含本文件的
   `feat: complete stage 10 fixture reading flow`
 - production live：`RECOMMENDATIONS_BLOCKED_PENDING_REPRODUCIBLE_EVIDENCE`；
-  `THREAD_BLOCKED_PENDING_RUNTIME_EVIDENCE`；`LIVE_IMAGES_DISABLED`
+  `THREAD_ANONYMOUS_PBPAGE_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`；
+  `LIVE_IMAGES_DISABLED`
 - 阶段 06：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
   （`OPEN_SOURCE_BETA` 范围；已由阶段 09 迁移为唯一生产交互基础）
 - 阶段 06C-C：`DEFERRED_POST_BETA`
@@ -49,7 +57,77 @@
 - 阶段 12：`RUNTIME_EVIDENCE_PARTIAL`
 - 阶段 13：`RUNTIME_EVIDENCE_PARTIAL`
 - 阶段 14：`PHASE_14_FORUM_HOME = COMPLETE`
-- 阶段 15：`NOT_STARTED`
+- 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`
+- 阶段 16：`NOT_STARTED`
+
+## 阶段 15 当前结果与停止点
+
+阶段 15 从阶段 14 提交
+`bf0a0884bcda44aab1a159b756e45d41f0d3c367` 开始，完成只读帖子分页、
+楼层/楼中楼呈现与 ThreadReader 长列表虚拟化，没有进入阶段 14P 或阶段 16：
+
+- 匿名 PBPage 首屏与第二页均为 HTTP 200、Proto 解码成功；首屏含首楼和
+  16 个普通楼层，第二页含 15 个普通楼层，共观察到 60 条内联楼中楼。
+  Probe 只保留 HTTP/MIME/body 大小/decode/count/typed error，不记录 threadID、
+  标题、用户内容、Cookie、请求体或响应正文；
+- Store 使用一个 Task、递增 generation、页级 in-flight guard 和稳定 postID
+  去重。Fixture 两页由 17 个顶层 post 增量追加到 32 个唯一 post，失败保留
+  旧楼层并显示重试，取消和迟到响应不覆盖当前状态；
+- 原 `ScrollView + LazyVStack` 的真实可变高度楼层首次滚动稳定卡住；同一
+  Fixture/Store/nav 下固定 120pt 文本 Row 的一次隔离 1/1 通过。最终生产页
+  只有一个 `UITableView + UITableViewDiffableDataSource +
+  UIHostingConfiguration`，顶层项为 header、firstPost、post 和单一分页 footer；
+- Debug-only 5×200 Fixture 依次得到 200/400/600/800/1000 个唯一楼层，
+  请求序列为 `0,2,3,4,5`。component test 验证 diffable 增量 snapshot、
+  1000/500/1 楼跳转、cell 数量有界、发生复用且 teardown 后 weak table 释放；
+- 手工检查在无凭证 iPhone Air / iOS 26.5 Simulator 上用 Debug 和
+  `SWIFT_OPTIMIZATION_LEVEL=-O` 构建各完成连续 5 次系统向下滚动，首屏可立即
+  滚动，未再现数秒主线程卡死、白块、遮挡或错页。期间发现并修复了
+  `didEndDisplaying` 过早清空 hosting content 造成的回弹空白 Cell，清理改在
+  `prepareForReuse`，并以修复前失败、修复后通过的生命周期回归锁定。
+
+阶段 15 定向 Unit 为 15/15。完整 Unit 为 275 个逻辑测试、294 次执行；
+iPhone smoke 19/19、interaction 15/15，iPad smoke 6/6、interaction 2/2。
+`make quality-fast` 首轮仅因新增 `PBPageDomainMapper.swift` 未列入精确
+GeneratedProtobuf import allowlist 而失败；收紧脚本为单文件、单 import、
+禁止副作用后，`make networking-isolation` 与 `make quality-fast` 通过。
+最终 `make quality` 退出 0，并输出 `Quality gate completed.`。最终结果包：
+
+- Unit：`Artifacts/TestResults/20260806-100432-13175-unit.xcresult`
+- iPhone smoke：`Artifacts/TestResults/20260806-100503-13542-ui-smoke.xcresult`
+- iPhone interaction：
+  `Artifacts/TestResults/20260806-101617-14657-ui-interaction.xcresult`
+- iPad smoke：
+  `Artifacts/TestResults/20260806-104821-16949-ui-smoke-ipad.xcresult`
+- iPad interaction：
+  `Artifacts/TestResults/20260806-105328-17396-ui-interaction-ipad.xcresult`
+
+## 阶段 15 Known Limitations
+
+1. SwiftUI A/B 和手工滚动只在 iOS 26.5 Simulator 各作一次确定性观察，
+   不是 iOS 18、真机或统计性能基准。
+2. 未做 50 页、长期 Instruments、内存警告或单个极端超长富媒体楼层矩阵。
+3. 1000 楼 Fixture 图片为固定小图，不覆盖 full-resolution Live 图片压力；
+   Production Live 图片 loader 仍 disabled。
+4. 领域层仍持有 1000 个 Sendable 值对象；已验证的是 Cell/host 生命周期有界，
+   不是数据库或领域对象流式驱逐。
+5. 完整楼中楼页面与 PB Floor 分页未实现；阶段 15 只显示 PBPage 已返回的少量
+   内联预览和“查看全部 N 条回复”提示。
+6. 阶段 14 的 1000 条主题、`thread_id_list` 分批加载与增量分页留给独立
+   14P；本轮未修改 ForumHome 生产代码。
+
+## 阶段 15 变更边界
+
+- 新增动画、业务手势、overlay、第三方依赖：无。
+- Pager、MediaViewer、MediaZoomImageView、ThreadContentRenderer 核心：无修改。
+- ForumHomeView、ForumHomeStore、FRS 分页：无修改。
+- 自动化：Fixture/Mock-only；长帖 Lab 与 Live PBPage Probe 均为 Debug-only，
+  Release isolation 通过。
+- 用户登录凭证：未读取、未清除、未写入日志或 Git；完整门禁使用独立无凭证
+  Simulator，结束后已恢复原 `project.env` UDID。
+- Android submodule：只读且 clean，锁定
+  `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
+- 阶段 16：`NOT_STARTED`，本轮停止。
 
 ## 阶段 14 当前结果与停止点
 
@@ -94,8 +172,9 @@ iPhone smoke 18/18、interaction 15/15、iPad smoke 5/5、interaction 2/2
    帖子 identity，但简介文案共用一份合成描述。
 4. Xcode 26 `simctl io` 不再提供手工 rotate 命令；横竖屏由 iPad
    XCUITest orientation/regular-compact 用例和先前的 Simulator 视觉检查覆盖。
-5. Live 吧主题会形成正确 ThreadRoute 并进入现有 ThreadReader，但阶段 11
-   的 Production Live Thread 仍 evidence-blocked；真实帖子正文不属于本阶段完成证据。
+5. Live 吧主题会形成正确 ThreadRoute 并进入现有 ThreadReader；阶段 14 验收时
+   Production Live Thread 仍 evidence-blocked，后来由阶段 15 的匿名 PBPage
+   两页证据收窄。真实帖子正文不属于阶段 14 本身的完成证据。
 6. 阶段 11、12、13 原有状态保持不变；本阶段没有解决 AuthContext
    恢复问题，也没有使用或清除真实登录凭证。
 

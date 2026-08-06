@@ -1,6 +1,6 @@
 # P0 状态机
 
-状态：`APPROVED_FOR_PHASE_03_SCAFFOLD_WITH_UNKNOWNS`
+状态：`IMPLEMENTED_THROUGH_PHASE_15_THREAD_READING_WITH_UNKNOWNS`
 
 本文件定义 iOS 可测试的领域状态。Android reducer 是 `CODE_EVIDENCE`，但其中缺少的错误、取消和过期响应状态由根规则补齐，不复制 Android 的 Toast-only 或布尔堆叠实现。
 
@@ -228,8 +228,25 @@ ThreadReaderState {
 - `post_list=[]` 可能是 empty、deleted、private 或 malformed；在有运行证据前映射为 `unavailable` 而非通用 crash。
 - `thread.author/forum/anti` 缺失不能在 mapper 强制解包；只有真正不可构建 identity 时才成为页面失败。
 - `pids` 非数字 token 被忽略并记录脱敏 diagnostics；不能使整页失败。
+- 阶段 15 Beta 只开放首屏与一页下一页：只有首屏 `hasMore` 可产生 nextCursor，
+  后续页无论 wire `has_more` 值为何都提交为 terminal；不得隐式请求第三页。
 - refresh/load-next/load-previous 互斥规则由 generation + cursor 保证。
 - readAnchor 使用稳定 post id；数组 index 只用于瞬时滚动实现。
+
+### ThreadReader presentation 不变量
+
+- 领域 Store 保留 `ThreadReaderSnapshot.posts`；table cell reuse 只回收展示，
+  不等同于领域数据驱逐或分页回退。
+- 顶层 presentation 一楼一项，普通楼层 identity 只用稳定 threadID/postID；
+  header 与分页 footer 也使用确定性枚举 ID，禁止 UUID 和数组 index。
+- 下一页成功只追加去重后的新 post row 并替换 footer；已有 post 内容未变化时
+  identity 与 hosted state 保持，diffable apply 不使用 `reloadData` 或动画。
+- prefetch 只产生 load-next 意图，Store 的单 Task、generation、page 和 hasMore
+  决定能否请求；cell `onAppear` 不写分页状态。
+- readAnchor 只在滚动终止时接收当前顶部 post ID；snapshot append、图片状态和
+  self-sizing layout 不写 Store anchor，MediaViewer 返回继续使用同一 table。
+- hosted Row task 在 `prepareForReuse` 或容器 dismantle 取消；
+  `didEndDisplaying` 不提前销毁仍可能因回弹再次可见的 cell。
 
 ## 楼中楼
 

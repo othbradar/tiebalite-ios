@@ -4,6 +4,7 @@ struct ThreadContentSource: Hashable, Sendable {
     enum Scope: String, Hashable, Sendable {
         case firstPost
         case post
+        case subPost
     }
 
     let threadID: Int64

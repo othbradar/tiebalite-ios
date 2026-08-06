@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`PERSONALIZED_THREAD_CONTENT_PBPAGE_FORUMGUIDE_AND_FRS_LOCAL_VERIFIED`
+状态：`PBPAGE_TWO_PAGE_RUNTIME_AND_156_FILE_CLOSURE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -188,7 +188,22 @@ PB Floor 与 ThreadList 仍未进入当前生成集合，
 | response `thread/forum/page/anti` | 帖子元数据/吧/页/服务元数据 | `CODE_EVIDENCE` |
 | `post_list/user_list` | 楼层与作者表 | `CODE_EVIDENCE` |
 | `first_floor_post` | 首楼 | `CODE_EVIDENCE` |
+| `Post.id/floor/time/content` | 稳定楼层、楼号、Unix 秒与正文 | `CODE_EVIDENCE` + 阶段 15 `RUNTIME_EVIDENCE` |
+| `Post.sub_post_number/sub_post_list` | 楼中楼总数与内联预览 | `CODE_EVIDENCE` + 阶段 15 `RUNTIME_EVIDENCE` |
+| `SubPostList.id/content/time/author_id/author` | 稳定楼中楼、正文、时间与作者 | `CODE_EVIDENCE` + 阶段 15 `RUNTIME_EVIDENCE` |
 | 其余广告、推荐、业务推广字段 | P0 不映射，必要时作为未消费 DTO | 存在 `CODE_EVIDENCE`; 语义 `UNKNOWN` |
+
+阶段 15 普通升序首屏固定请求 `pn=0,pid=0`。下一页使用响应
+`current_page + 1`，并从 `ThreadInfo.pids` 中排除本页 postID 后取最后一个
+合法正 Int64 作为 `pid`；畸形 token 被忽略。首屏的 `Page.has_more != 0`
+只决定是否允许当前 Beta 已验证的一页下一页；任何后续页在领域快照中强制
+terminal，不据其 `has_more` 请求第三页。`new_total_page` 优先于 `total_page`
+映射展示元数据。后续页允许没有 `first_floor_post`，追加时按 `Post.id` 去重且
+保持服务器顺序。
+
+`SubPostList` 没有独立可靠的 reply-to 字段。iOS 只在正文出现已知 type-4
+mention 时显示回复对象，不把 `title` 猜成关系。当前只映射 PBPage 内联预览，
+不声明 PB Floor 或全部楼中楼完成。
 
 ### PB Floor
 
@@ -281,9 +296,11 @@ malformed）、3、4、raw `999` 和结构隔离已 `TESTED`。阶段 08 以
 dispatcher P0 raw、unknown `999`、meme/poll message presence、URL/尺寸/空内容
 降级与严格保序，状态为 `CROSS_LANGUAGE_GENERATED_AND_TESTED`。
 
-PBPage wrapper、`Post.content#5`、首楼/普通楼层、图片 intent、server error
-和 route identity mismatch 已由阶段 11 完全合成的 Swift Proto response
-`LOCAL_SYNTHETIC_TESTED`；尚无 tracked cross-language 或 live PBPage fixture。
+PBPage wrapper、`Post.content#5`、首楼/普通楼层、楼中楼、图片 intent、
+Page/cursor、server error 和 route identity mismatch 已由阶段 11/15 完全
+合成的 Swift Proto response `LOCAL_SYNTHETIC_TESTED`。阶段 15 另有匿名公开
+主题两页 `RUNTIME_EVIDENCE`，但没有保存 live body，也尚无 tracked
+cross-language PBPage fixture。
 FRS 已有 1 份完全合成、脱敏的 response fixture、确定性 request/mapper
 测试，以及 2026-08-05 匿名公开吧首屏运行观察；这不等于 live response
 fixture。PB Floor、FRS/ThreadList 真实分页与普通楼层折叠/删除常态仍为

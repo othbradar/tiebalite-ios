@@ -1,11 +1,3 @@
-struct EvidenceBlockedThreadReaderRepository: ThreadReaderRepository {
-    func loadThread(threadID: Int64) async throws -> ThreadReaderSnapshot {
-        _ = threadID
-        try Task.checkCancellation()
-        throw LiveReadingCapabilityError.runtimeEvidenceUnavailable
-    }
-}
-
 struct LiveThreadReaderRepository: ThreadReaderRepository {
     private let client: any HTTPClient
     private let host: String
@@ -18,8 +10,14 @@ struct LiveThreadReaderRepository: ThreadReaderRepository {
         self.host = host
     }
 
-    func loadThread(threadID: Int64) async throws -> ThreadReaderSnapshot {
-        let input = try PBPageRequestInput(threadID: threadID)
+    func loadPage(
+        _ request: ThreadReaderPageRequest
+    ) async throws -> ThreadReaderSnapshot {
+        let input = try PBPageRequestInput(
+            threadID: request.threadID,
+            pageNumber: request.pageNumber,
+            postID: request.postID
+        )
         let endpoint = try PBPageProtocol.makeDescriptor(host: host)
         let executor = EndpointExecutor(
             client: client,
@@ -31,7 +29,7 @@ struct LiveThreadReaderRepository: ThreadReaderRepository {
             endpoint: endpoint,
             authentication: .anonymous,
             body: try PBPageProtocol.makeRequestBody(input),
-            pipeline: PBPageProtocol.pipeline(requestedThreadID: threadID)
+            pipeline: PBPageProtocol.pipeline(request: request)
         )
         try Task.checkCancellation()
         return snapshot

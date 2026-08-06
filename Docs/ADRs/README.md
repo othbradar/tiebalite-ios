@@ -20,5 +20,7 @@
 | `ADR-0014-wkwebview-session-beta.md` | Accepted，阶段 12 可见 WKWebView、最小 Keychain 与 lease-aware AuthContext；发布级恢复仍延期 |
 | `ADR-0015-followed-forums-protobuf-candidate.md` | Accepted，阶段 13 关注吧 HTTPS Proto 候选、最小会话子集与 136-file 闭包 |
 | `ADR-0016-frs-forum-home.md` | Accepted，阶段 14 匿名 FRS 首屏、Forum identity/Repository 边界与 156-file 闭包 |
+| `ADR-0017-pbpage-read-only-pagination-beta.md` | Accepted，阶段 15 匿名 PBPage 首屏/顺序下一页、楼中楼预览与保留内容分页 |
+| `ADR-0018-thread-reader-table-virtualization-beta.md` | Accepted，阶段 15 唯一 UITableView/diffable/UIHostingConfiguration 长帖承载层 |
 
 Accepted ADR 是实现约束；变更必须新建 superseding ADR，不能静默改历史。

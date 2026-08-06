@@ -273,8 +273,13 @@ struct Stage11PBPageProtocolTests {
         reply.content = [replyText]
 
         var data = Tieba_PbPage_PbPageResponseData()
+        var page = Tieba_Page()
+        page.currentPage = 1
+        page.newTotalPage = 1
+        page.hasMore_p = 0
         data.thread = thread
         data.forum = forum
+        data.page = page
         data.firstFloorPost = firstPost
         data.postList = [reply]
 

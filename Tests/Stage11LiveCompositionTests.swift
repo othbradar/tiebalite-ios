@@ -38,7 +38,7 @@ struct Stage11LiveCompositionTests {
 
     @MainActor
     @Test
-    func liveModeFailsClosedWithoutFixtureOrTransportFallback() async {
+    func liveModeKeepsRecommendationFailClosedWithoutFixtureFallback() async {
         let client = HarnessMockHTTPClient()
         let root = AppCompositionRoot(
             environment: makeEnvironment(
@@ -48,19 +48,16 @@ struct Stage11LiveCompositionTests {
             )
         )
         let recommendationStore = root.makeRecommendationsStore()
-        let threadStore = root.makeThreadReaderStore(threadID: 8_001)
 
         await recommendationStore.loadIfNeeded()
-        await threadStore.loadIfNeeded()
 
         #expect(recommendationStore.state == .initialFailure(.unavailable))
-        #expect(threadStore.state == .initialFailure(.unavailable))
         #expect(await client.events().isEmpty)
     }
 
     @MainActor
     @Test
-    func liveModeBlocksThreadTransportUntilRuntimeEvidenceExists() async {
+    func liveModeUsesTheRuntimeVerifiedThreadTransport() async throws {
         let client = HarnessMockHTTPClient()
         let root = AppCompositionRoot(
             environment: makeEnvironment(
@@ -71,10 +68,23 @@ struct Stage11LiveCompositionTests {
         )
 
         let store = root.makeThreadReaderStore(threadID: 8_001)
-        await store.loadIfNeeded()
+        let load = Task {
+            await store.loadIfNeeded()
+        }
+        try await client.waitForPendingCallCount(1)
+        let call = try #require(await client.pendingCalls().first)
 
-        #expect(store.state == .initialFailure(.unavailable))
-        #expect(await client.events().isEmpty)
+        #expect(
+            call.request.url.absoluteString ==
+                "https://tiebac.baidu.com/c/f/pb/page" +
+                "?cmd=302001&format=protobuf"
+        )
+        store.cancel()
+        await load.value
+        #expect(await client.events() == [
+            .started(call.id),
+            .cancelled(call.id)
+        ])
     }
 
     private func makeEnvironment(

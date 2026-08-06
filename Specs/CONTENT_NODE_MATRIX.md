@@ -110,6 +110,9 @@ Proto。`Post.proto` 需要额外 25 个输入且未获 ADR-0011 批准；普通
    保持 cancellation 语义，不能降级为 fetch failure。
 7. 所有状态保持同一确定性尺寸框；状态语义修正不改变 wire、mapper、候选排序
    或图片网络管线。
+8. ThreadReader table cell 继续承载唯一 `ThreadContentRenderer`；cell reuse 只在
+   `prepareForReuse`/dismantle 终止 hosted image task，不改变节点 ID、六态、
+   accessibility 或 MediaIntent 合同，也不复制第二套 Renderer。
 
 ## Cross-language fixture
 

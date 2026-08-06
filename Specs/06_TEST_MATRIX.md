@@ -69,6 +69,14 @@ production image loader 而使用统一占位；legacy 多页聚合、真实过�
 - 加载下一页失败保留已读内容。
 - 返回列表保持位置。
 
+阶段 15 Open-Source Beta 已用 5×200 的 1000 楼合成 Fixture 验证唯一生产
+`UITableView + DiffableDataSource + UIHostingConfiguration`：snapshot 依次为
+200/400/600/800/1000，稳定 postID 去重保序，跳到 1000/500/1 楼仍能显示，
+reuse 大于 0，创建 cell 不超过 4 个峰值 viewport，reuse/dismantle 会取消 hosted
+task 并释放 table。31/32 楼 Fixture 的 iPhone 首次滚动连续 5 次及 iPad
+ThreadReader smoke 属于阶段出口；真机、iOS 18、50 页和 full-resolution 图片
+压力为 `DEFERRED_POST_BETA`。
+
 阶段 08 只关闭其中的“正文节点映射 + 隔离 Renderer”子集：
 
 - `ThreadInfo.firstPostContent` cross-language fixture 覆盖 P0 raw、poll、

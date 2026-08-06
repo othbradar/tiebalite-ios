@@ -185,6 +185,12 @@ enum UITestElementID: String, CaseIterable {
         "thread-reader.content.image.t100003.p110003.sfirstPost.n2.action"
     case threadReaderImageSecondState =
         "thread-reader.content.image.t100003.p110003.sfirstPost.n2.state"
+    case forumThreadImageAction = "thread-reader.content.image.t140006.p170006.spost.n1.action"
+    case forumThreadImageState = "thread-reader.content.image.t140006.p170006.spost.n1.state"
+    case forumThreadLastPagePost = "thread-reader.post.t140006.p460006.spost"
+    case forumThreadLoadMore = "thread-reader.pagination.load-more.t140006"
+    case forumThreadReaderScroll = "thread-reader.scroll.t140006"
+    case forumThreadSubpost = "thread-reader.subpost.t140006.p160007.ssubPost"
     case threadReaderScreen = "thread-reader.screen.t100003"
     case threadReaderScroll = "thread-reader.scroll.t100003"
     case debugOpenInteractionLab = "app.debug.open-interaction-lab"
