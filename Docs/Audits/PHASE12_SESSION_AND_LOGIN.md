@@ -3,9 +3,11 @@
 - 日期：2026-08-04
 - 基线：`2221793302250edcd0cdde591b0f92dfbc22db46`
 - Android reference：`5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`
-- 状态：`PHASE_12_SESSION_AND_LOGIN = RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 12 提交时状态：`PHASE_12_SESSION_AND_LOGIN = RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 15.5 当前状态：`PHASE_12_SESSION_AND_LOGIN = COMPLETE`
+  （`OPEN_SOURCE_BETA`；真实 logout 仍按用户要求 deferred）
 - 实现成熟度：`SESSION_IMPLEMENTATION = BETA_READY`
-- 后续阶段：`PHASE_13 = NOT_STARTED`
+- 阶段 12 当时后续阶段：`PHASE_13 = NOT_STARTED`
 
 ## 目标与范围
 
@@ -185,3 +187,27 @@ Production Repository。`page_thread_count=11` 是 Android call-site hint；本�
 范围，但真实 logout→重启验收因用户保留凭证未执行。`PHASE_11` 继续保持
 `RUNTIME_EVIDENCE_PARTIAL`，`PHASE_13 = NOT_STARTED`。本任务在提交阶段 12
 成果后停止，不自动进入阶段 13。
+
+## 阶段 15.5 后续修订（2026-08-09）
+
+阶段 12 的手工登录/一次性重启记录是真实历史观察，但当时的 tracked
+Simulator 默认构建不能稳定复现该签名产物。阶段 15.5 定位到确定根因：
+`Config/Shared.xcconfig` 对 Simulator 设置 `CODE_SIGNING_ALLOWED=NO`，生成 App
+缺少 simulated `application-identifier` 和嵌入 entitlements；Simulator
+`securityd` 因而以 `-34018` 拒绝 Keychain 访问。未读取、清除或判定原
+credential 无效。
+
+移除该 override 后，正常 Debug Simulator build 由 Xcode 本地签名。新增
+`make simulator-keychain-entitlement`，确定性检查 App codesign、生成
+`application-identifier` 与 bundle identifier 匹配，以及 Mach-O
+`__entitlements`；`make quality-fast` 依赖该门禁。App shell 还会等待
+`SessionStore.isLaunchRestoreResolved`，确保同一 credential owner 已完成
+install/revoke 后才让页面触发 live 请求。
+
+在同一 Simulator 上覆装签名 App（没有卸载、logout、Keychain/WebKit 清理或
+重新登录）后，App 进程重启自动恢复 `signedIn`，同一 provider 投影 active
+AuthContext，并由 Production Repository 成功消费 matching lease。按阶段 15.5
+当前用户给出的开源 Beta 完成条件，
+`PHASE_12_SESSION_AND_LOGIN = COMPLETE`。真实 logout 与 logout 后重启仍因
+“保留登录凭证”要求未运行，继续作为 Known Limitation；真实失效码、rotation、
+最小 credential 集合及发布级安全审计也仍为 `UNKNOWN`。

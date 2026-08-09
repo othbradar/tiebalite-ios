@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor bootstrap-tools bootstrap-fixture-tools tool-versions instructions reference-check generate-protos verify-protos generate-personalized-fixture verify-personalized-fixture generate-thread-content-fixture verify-thread-content-fixture generate resolve-packages verify-swiftpm-lock verify-generate lint forbidden static-canaries secret-scan networking-isolation build release-build release-isolation ipad-build test-unit test-ui-smoke test-ui-smoke-ipad test-ui-renderer test-ui-renderer-ipad test-ui-interaction test-ui-interaction-ipad ui-test-isolation test-all quality-fast quality clean
+.PHONY: help doctor bootstrap-tools bootstrap-fixture-tools tool-versions instructions reference-check generate-protos verify-protos generate-personalized-fixture verify-personalized-fixture generate-thread-content-fixture verify-thread-content-fixture generate resolve-packages verify-swiftpm-lock verify-generate lint forbidden static-canaries secret-scan networking-isolation build simulator-keychain-entitlement release-build release-isolation ipad-build test-unit test-ui-smoke test-ui-smoke-ipad test-ui-renderer test-ui-renderer-ipad test-ui-interaction test-ui-interaction-ipad ui-test-isolation test-all quality-fast quality clean
 
 help:
 	@printf '%s\n' \
@@ -26,6 +26,7 @@ help:
 	  'make static-canaries - prove static source-policy rejection/approval paths' \
 	  'make networking-isolation - enforce fixture/Proto/renderer isolation' \
 	  'make build         - build for a generic iOS Simulator' \
+	  'make simulator-keychain-entitlement - verify Simulator Keychain signing capability' \
 	  'make release-build - build Release for a generic iOS Simulator' \
 	  'make release-isolation - prove Release excludes test support' \
 	  'make ipad-build    - build using an available iPad Simulator' \
@@ -117,6 +118,9 @@ networking-isolation: generate
 build: generate
 	@scripts/run_xcodebuild.sh build
 
+simulator-keychain-entitlement: build
+	@scripts/verify_simulator_keychain_entitlement.sh
+
 release-build: generate
 	@scripts/run_xcodebuild.sh release-build
 
@@ -153,7 +157,7 @@ ui-test-isolation: test-unit test-ui-smoke
 test-all: generate
 	@scripts/run_xcodebuild.sh tests
 
-quality-fast: instructions reference-check verify-protos verify-personalized-fixture verify-thread-content-fixture verify-swiftpm-lock verify-generate forbidden static-canaries secret-scan networking-isolation lint build test-unit
+quality-fast: instructions reference-check verify-protos verify-personalized-fixture verify-thread-content-fixture verify-swiftpm-lock verify-generate forbidden static-canaries secret-scan networking-isolation lint build simulator-keychain-entitlement test-unit
 	@git diff --check
 
 quality: quality-fast ui-test-isolation test-ui-interaction ipad-build test-ui-smoke-ipad test-ui-interaction-ipad release-isolation

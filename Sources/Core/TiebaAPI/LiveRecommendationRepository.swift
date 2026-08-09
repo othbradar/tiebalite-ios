@@ -4,44 +4,51 @@ enum LiveReadingCapabilityError: Error, Equatable, Sendable {
     case runtimeEvidenceUnavailable
 }
 
-struct EvidenceBlockedRecommendationRepository: RecommendationRepository {
-    func loadRecommendations() async throws -> [RecommendationSummary] {
-        try Task.checkCancellation()
-        throw LiveReadingCapabilityError.runtimeEvidenceUnavailable
-    }
-}
-
 struct LiveRecommendationRepository: RecommendationRepository {
     private let client: any HTTPClient
+    private let authContextProvider: any AuthContextProviding
     private let host: String
 
     init(
         client: any HTTPClient,
+        authContextProvider: any AuthContextProviding,
         host: String = "tiebac.baidu.com"
     ) {
         self.client = client
+        self.authContextProvider = authContextProvider
         self.host = host
     }
 
     func loadRecommendations() async throws -> [RecommendationSummary] {
+        try Task.checkCancellation()
+        let context = await authContextProvider.context()
+        let authorization = try await authContextProvider.authorization(
+            for: context
+        )
         let input = try PersonalizedRequestInput(
             loadKind: .refresh,
             page: 1
         )
-        let endpoint = try PersonalizedProtocol.makeDescriptor(host: host)
+        let endpoint = try PersonalizedProtocol.makeActiveDescriptor(host: host)
         let executor = EndpointExecutor(
             client: client,
             requestBuilder: EndpointRequestBuilder(
-                authorizer: FixtureOnlyRequestAuthorizer()
+                authorizer: ActiveSessionRequestAuthorizer(
+                    authContextProvider: authContextProvider
+                )
             )
         )
         let page = try await executor.execute(
             endpoint: endpoint,
-            authentication: .anonymous,
-            body: try PersonalizedProtocol.makeRequestBody(input),
+            authentication: context,
+            body: try PersonalizedProtocol.makeAuthenticatedRequestBody(
+                input,
+                authorization: authorization
+            ),
             pipeline: PersonalizedProtocol.pipeline(requestedPage: input.page)
         )
         try Task.checkCancellation()
+        _ = try await authContextProvider.authorization(for: context)
         return Self.makeSummaries(from: page)
     }
 

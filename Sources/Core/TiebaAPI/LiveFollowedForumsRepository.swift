@@ -1,13 +1,3 @@
-struct EvidenceBlockedFollowedForumsRepository: FollowedForumsRepository {
-    func loadFollowedForums(
-        authentication: AuthContext
-    ) async throws -> [FollowedForum] {
-        _ = authentication
-        try Task.checkCancellation()
-        throw LiveReadingCapabilityError.runtimeEvidenceUnavailable
-    }
-}
-
 struct LiveFollowedForumsRepository: FollowedForumsRepository {
     private let client: any HTTPClient
     private let authContextProvider: any AuthContextProviding

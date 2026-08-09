@@ -34,12 +34,18 @@ final class AppCompositionRoot {
             threadReaderRepository = FixtureThreadReaderRepository()
         case .live:
             followedForumsRepository =
-                EvidenceBlockedFollowedForumsRepository()
+                LiveFollowedForumsRepository(
+                    client: environment.httpClient,
+                    authContextProvider: resolvedAuthContextProvider
+                )
             forumHomeRepository = LiveForumHomeRepository(
                 client: environment.httpClient
             )
             recommendationRepository =
-                EvidenceBlockedRecommendationRepository()
+                LiveRecommendationRepository(
+                    client: environment.httpClient,
+                    authContextProvider: resolvedAuthContextProvider
+                )
             threadReaderRepository = LiveThreadReaderRepository(
                 client: environment.httpClient
             )

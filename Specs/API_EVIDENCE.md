@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE14P_FRS_NEXT_PAGE_AND_STAGE15_PBPAGE_RUNTIME_VERIFIED`
+状态：`STAGE15_5_ACTIVE_RECOMMENDATION_AND_FORUM_GUIDE_RUNTIME_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -27,8 +27,8 @@ host、没有发送真实请求，production composition 继续使用
 当时 PBPage 只有锁定 Android call site/schema、确定性 request、合成 response
 mapper 和 MockHTTPClient contract evidence，因此推荐和帖子两项 Production
 能力均 fail closed。阶段 15 后续以公开 FRS 主题取得真实 threadID，并补齐下文
-PBPage 匿名两页运行证据；推荐能力仍保持 fail closed。凡仍使用明文 HTTP 的
-链路状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
+PBPage 匿名两页运行证据；推荐能力当时仍保持 fail closed。凡仍使用明文 HTTP
+的链路状态为 `BLOCKED`，必须先找到并验证 HTTPS 等价路径。
 
 阶段 12 在同一 evidence-locked Personalized request 上增加显式 active
 AuthContext：由可见 WKWebView 取得 Android 已证的两个候选 Cookie 字段，经
@@ -40,6 +40,24 @@ Personalized 请求；不证明服务端实际消费了 credential、把响应�
 接受它们作为最小集合，也不关闭匿名稳定性、token rotation、expired taxonomy、
 PBPage 或 Production evidence gate。请求的 `page_thread_count=11` 只是
 call-site hint；本次映射 12 项，不能把 11 声明为响应上限。
+
+阶段 15.5 修复的是 Simulator Keychain 签名前置条件与启动 restore gate，不是
+请求字段猜测。2026-08-09，在保留原 Keychain item、没有 logout/卸载/清理或
+重新登录的签名 iPhone Simulator 构建中，App 自动恢复 active lease：
+
+- Production active Personalized 首屏：HTTP 200、
+  `application/octet-stream`、74924 bytes、Proto decode=true、mapped=12、
+  typed outcome=success，推荐页显示非空内容；
+- Production authenticated ForumGuide：HTTP 200、
+  `application/octet-stream`、9199 bytes、Proto decode=true、mapped=18、
+  typed outcome=success，“我关注的吧”显示真实列表；
+- 两页往返没有重复登录提示。Repository 在请求前和响应后复验同一 lease；
+  signed-out 在 HTTP 前 fail closed，替换 lease 的迟到响应不发布。
+
+本次只记录 status、MIME、body byte count、decode、mapped count 和 typed
+outcome；没有记录或保存 Cookie/credential、Cookie/Authorization header 或完整
+headers、请求体、raw response、吧名、帖子正文或用户内容。自动化继续只使用
+FakeSession、Fixture 和 Mock HTTP。
 
 阶段 14 在同一 HTTPS Proto family 中加入 FRS Page 的最小生成闭包、typed
 request/mapper、synthetic fixture 和 Debug-only 匿名 Probe。2026-08-05，
@@ -118,8 +136,12 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 - `UNKNOWN`：两个字段是否是所有账号/风控场景的最小集合、服务端是否实际
   消费了它们、Cookie host-only 与 Domain 精确语义、rotation、真实失效码、
   authenticated/anonymous 差异、rate limit、PBPage 与关注吧能力。
-- 结论：`ACTIVE_SESSION_PERSONALIZED_RUNTIME_OBSERVATION`；不是可提交 live
-  fixture，不解除 Production fail closed，也不把阶段 11 标为 COMPLETE。
+- 历史结论（阶段 12）：`ACTIVE_SESSION_PERSONALIZED_RUNTIME_OBSERVATION`；当时
+  不解除 Production fail closed。
+- 阶段 15.5 当前结论：
+  `ACTIVE_SESSION_FIRST_PAGE_RUNTIME_VERIFIED`。Production 使用同一 active
+  Repository 路径并实际显示 12 项；没有 tracked live fixture，匿名稳定性、
+  分页、字段最小性与服务端是否消费 credential 仍为 `UNKNOWN`。
 
 ### 安全与 fixture 规则
 
@@ -204,33 +226,37 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   Android multipart boundary/data/file 形态、optional default presence、未知
   field round-trip、empty/missing data、service error、malformed/empty body、
   raw integer 保留与 JVM→Swift mapper；Live Repository 的 evidence-locked
-  candidate request、transport/HTTP/MIME/decode/map 与 Fixture/blocked-production
+  candidate request、transport/HTTP/MIME/decode/map 与 Fixture/Production
   显式选择由 mock tests 验证。Debug Probe 观察到一次匿名非空和多次匿名合法
-  空页；阶段 12 又观察到一次 active Session 的 12-item 成功页，但均没有
-  可复现 server fixture，不能升级为稳定 `RUNTIME_EVIDENCE`。
+  空页；阶段 12 与阶段 15.5 分别观察到 active Session 的 12-item 成功页，且
+  阶段 15.5 的 Production 页面实际显示 12 项。没有可复现 server fixture，
+  因而只验证 active 首屏，不扩展到匿名稳定性或分页。
 - UNKNOWN：最终静态字段组合为何只返回空页、稳定匿名能力、终止条件、page
   起点以外边界、广告/直播节点、稳定顺序、限流与错误码。
 
 ### `followedForums.forumGuide`
 
 - 用户任务：登录后读取全部关注吧。
-- 状态：`HTTPS_PROTO_CANDIDATE_RUNTIME_NOT_VERIFIED`；Android Home 权威 legacy
-  路径继续 `BLOCKED_INSECURE_HTTP`。
+- 状态：`ACTIVE_LEASE_HTTPS_PROTO_RUNTIME_VERIFIED`；Android Home 权威 legacy
+  明文路径继续 `BLOCKED_INSECURE_HTTP`。
 - `CODE_EVIDENCE`：当前 Android Home 使用 POST
   `http://c.tieba.baidu.com/c/f/forum/forumGuide`，form + ForceLogin，并从
   `page_no=1`、`res_num=50` 聚合到 `like_forum_has_more=false`。该路径不得进入
   iOS。
 - `CODE_EVIDENCE`：相同 pinned commit 定义 POST
   `https://tiebac.baidu.com/c/f/forum/forumGuide?cmd=309683&format=protobuf`，
-  request/response 为 `ForumGuideRequest/ForumGuideResponse`；当前没有 UI 或
-  Repository caller，因此只是 HTTPS Proto candidate。
+  request/response 为 `ForumGuideRequest/ForumGuideResponse`；Android 当前没有
+  UI 或 Repository caller。iOS 阶段 15.5 已在受保护 lease 下通过同一候选的
+  Production Repository 与页面运行验证。
 - 请求 data：`sort_type#2=2`、`call_from#3=0`；认证位于 outer multipart 的
   `BDUSS`/`stoken` 与当前 lease。`CODE_EVIDENCE`：Android 实际 Retrofit
   链还通过 V11 common-parameter 和 sort/sign interceptor；最终 outer fields
   包含非敏感 common params 与大写 MD5 sign。iOS 刻意只实验
   BDUSS/STOKEN-only、unsigned subset，属于
-  `INFERENCE/RUNTIME_UNVERIFIED`，不声称与 Android final wire 精确一致；
-  device/common/sign 最小必需集仍为 `UNKNOWN`，iOS 不复制 device telemetry。
+  阶段 13 时属于 `INFERENCE/RUNTIME_UNVERIFIED`；阶段 15.5 已证明该最小候选
+  能在当前会话得到并映射成功响应，但不声称与 Android final wire 精确一致，
+  也不证明字段最小性。device/common/sign 必要性仍为 `UNKNOWN`，iOS 不复制
+  device telemetry。
 - 响应 `data.like_forum#2`：`forum_id`、`forum_name`、`avatar`、hot/member/thread
   counts、`level_id/name`、`is_sign`；无分页字段。Android 接口注释声明最多 200。
 - 错误：`Error.error_code != 0` 只形成 generic server error；`is_login` 无消费点，
@@ -238,20 +264,16 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 - iOS Proto closure：两个 root 共 58 个输入；复用当前 48 个，新增 10 个锁定输入，
   union 为 136。现有 `tieba.LikeForumInfo` wire 不兼容，不得替代。
 - Fixture 路径：`TestSupport/Fixtures/API/FollowedForums/`；只允许合成、脱敏数据。
-- Runtime：`NOT_RUN_AUTH_CONTEXT_RESTORE_FAILED`。2026-08-05 在保留用户
-  凭证的 iPhone 17 Pro / iOS 26.5 Simulator 上，macOS 解锁后仅重启
-  App 进程，会话仍投影为凭证存储失败，所以 Probe 按设计 disabled。
-  未执行 logout、卸载、Keychain/WebKit 清理、重新登录或网络请求；
-  不将此观察写成服务端失败，也不证明凭证已被删除。Production
-  保持 `EvidenceBlockedFollowedForumsRepository`。
-  `application/octet-stream` 仅来自同 host/Proto family 的 Personalized
-  先前观察，不是 ForumGuide MIME 证据。Probe 只记录 HTTP、MIME、
-  body size、decode、item count、typed error；不得保存 body、Cookie
-  或用户内容。
-- `UNKNOWN`：当前构建无法恢复 AuthContext 的根因、服务端是否接受当前
-  lease 的最小 auth subset、sign/device 参数必要性、
-  MIME、空列表、error taxonomy、超过 200 个关注吧的完整性，以及 Proto forum ID
-  与 Home identity 的运行等价性。
+- 历史 Runtime：2026-08-05 为
+  `NOT_RUN_AUTH_CONTEXT_RESTORE_FAILED`；没有发请求，该观察不属于服务端失败。
+- 阶段 15.5 Runtime：`ACTIVE_LEASE_PRODUCTION_RUNTIME_VERIFIED`。同一保留会话
+  恢复 active lease；ForumGuide 为 HTTP 200、`application/octet-stream`、
+  9199 bytes、Proto decode=true、mapped=18、typed outcome=success，Production
+  页面实际显示列表。未执行 logout/卸载/清理/重新登录；未保存 body、Cookie、
+  吧名或用户内容。
+- `UNKNOWN`：服务端是否实际消费当前 lease 字段及最小 auth subset、sign/device
+  参数必要性、空列表、真实 expired/error taxonomy、超过 200 个关注吧的完整性，
+  以及 Proto forum ID 与 Home identity 的长期等价性。
 
 ### `forum.frsPage`
 

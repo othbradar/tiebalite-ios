@@ -96,9 +96,14 @@ private actor DebugLiveProbeCapturingHTTPClient: HTTPClient {
 
 private struct DebugLiveRecommendationProbe: Sendable {
     private let client: any HTTPClient
+    private let authContextProvider: any AuthContextProviding
 
-    init(client: any HTTPClient = URLSessionHTTPClient.production()) {
+    init(
+        client: any HTTPClient,
+        authContextProvider: any AuthContextProviding
+    ) {
         self.client = client
+        self.authContextProvider = authContextProvider
     }
 
     func run() async -> DebugLiveProbeResult {
@@ -107,7 +112,8 @@ private struct DebugLiveRecommendationProbe: Sendable {
         let capturingClient = DebugLiveProbeCapturingHTTPClient(base: client)
         do {
             let summaries = try await LiveRecommendationRepository(
-                client: capturingClient
+                client: capturingClient,
+                authContextProvider: authContextProvider
             ).loadRecommendations()
             guard let response = await capturingClient.capturedResponse() else {
                 return failure(
@@ -117,26 +123,23 @@ private struct DebugLiveRecommendationProbe: Sendable {
                     clock: clock
                 )
             }
-            let thread: DebugThreadProbeResult
-            if let threadID = summaries.first.flatMap({ summary in
-                debugPositiveThreadID(summary.threadID)
-            }) {
-                thread = await DebugLiveThreadProbe(client: client).run(
-                    threadID: threadID
-                )
-            } else {
-                thread = .notRun
-            }
             return makeResult(
                 response: response,
                 mappedItemCount: summaries.count,
                 outcome: .success,
                 started: started,
-                thread: thread
+                thread: .notRun
             )
         } catch is CancellationError {
             return failure(
                 outcome: .cancelled,
+                response: await capturingClient.capturedResponse(),
+                started: started,
+                clock: clock
+            )
+        } catch is RequestAuthorizationError {
+            return failure(
+                outcome: .authentication,
                 response: await capturingClient.capturedResponse(),
                 started: started,
                 clock: clock
@@ -416,6 +419,10 @@ private func debugMilliseconds(from duration: Duration) -> Int {
 
 @MainActor
 struct DebugLiveAPIProbeView: View {
+    let sessionStore: SessionStore
+    let client: any HTTPClient
+    let authContextProvider: any AuthContextProviding
+
     @State private var hasStarted = false
     @State private var result = DebugLiveProbeResult.pending
 
@@ -483,7 +490,11 @@ struct DebugLiveAPIProbeView: View {
                 return
             }
             hasStarted = true
-            result = await DebugLiveRecommendationProbe().run()
+            await sessionStore.restoreIfNeeded()
+            result = await DebugLiveRecommendationProbe(
+                client: client,
+                authContextProvider: authContextProvider
+            ).run()
         }
     }
 }

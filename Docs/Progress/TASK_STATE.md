@@ -1,12 +1,30 @@
 # TASK_STATE
 
-- 当前阶段：14P（阶段 15 后的 Forum Home 性能加固）
-- 状态：`PHASE_14_FORUM_HOME_PERFORMANCE_COMPLETE`
+- 当前阶段：15.5（核心 Live 能力收口）
+- 状态：`PHASE_15_5_CORE_LIVE_INTEGRATION = COMPLETE`
+- `PHASE_11 = COMPLETE`
+- `PHASE_11_LIVE_READ_FLOW = COMPLETE`
+- `LIVE_RECOMMENDATION = ACTIVE_SESSION_FIRST_PAGE_RUNTIME_VERIFIED`
+- `LIVE_THREAD = ANONYMOUS_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`
+- `PHASE_12_SESSION_AND_LOGIN = COMPLETE`
+- `SESSION_IMPLEMENTATION = BETA_READY`
+- `SIMULATOR_KEYCHAIN_ENTITLEMENT = DETERMINISTIC_BUILD_GATE_VERIFIED`
+- `KEYCHAIN_PROCESS_RESTART_RESTORE = RUNTIME_REVERIFIED`
+- `AUTH_CONTEXT_RESTORE = RUNTIME_VERIFIED`
+- `ACTIVE_SESSION_PROBE = RUNTIME_VERIFIED`
+- `MANUAL_LOGOUT_RUNTIME = DEFERRED_BY_USER_CREDENTIAL_RETENTION`
+- `LOGOUT_IMPLEMENTATION = DETERMINISTIC_TEST_VERIFIED`
+- `PRODUCTION_EXPIRED_SIGNAL = NOT_RUNTIME_VERIFIED`
+- `PHASE_13 = COMPLETE`
+- `PHASE_13_FOLLOWED_FORUMS = COMPLETE`
+- `PHASE_15_5_ACCEPTANCE_STANDARD = OPEN_SOURCE_BETA`
+- `FOLLOWED_FORUMS_LOCAL_IMPLEMENTATION = BETA_READY`
+- `FORUM_GUIDE_AUTHENTICATED_PROBE = HTTP_200_PROTO_18_RUNTIME_VERIFIED`
+- `LIVE_FOLLOWED_FORUMS = ACTIVE_LEASE_PRODUCTION_RUNTIME_VERIFIED`
 - `PHASE_15_THREAD_READING = COMPLETE`
 - `THREAD_READER_CONTAINER = VIRTUALIZED_UITABLEVIEW_BETA`
 - `THREAD_READER_LARGE_FIXTURE = LOCAL_5_PAGE_1000_FLOOR_BOUND_VERIFIED`
 - `THREAD_READER_SWIFTUI_AB = ONE_DEBUG_OBSERVATION`
-- `LIVE_THREAD = ANONYMOUS_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`
 - `PHASE_16 = NOT_STARTED`
 - `PHASE_14_FORUM_HOME = COMPLETE`
 - `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
@@ -15,25 +33,11 @@
 - `FORUM_HOME_FIXTURE = BETA_READY`
 - `LIVE_FORUM_HOME = ANONYMOUS_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`
 - `PHASE_15 = COMPLETE`
-- `PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`
-- `FOLLOWED_FORUMS_LOCAL_IMPLEMENTATION = BETA_READY`
-- `FORUM_GUIDE_AUTHENTICATED_PROBE = NOT_RUN_AUTH_CONTEXT_RESTORE_FAILED`
-- `LIVE_FOLLOWED_FORUMS = EVIDENCE_BLOCKED`
 - `PHASE_14 = COMPLETE`
-- `PHASE_12_SESSION_AND_LOGIN = RUNTIME_EVIDENCE_PARTIAL`
-- `SESSION_IMPLEMENTATION = BETA_READY`
 - `SESSION_SIGNED_IN_SEMANTICS = WEB_COMPLETION_CANDIDATE`
-- `KEYCHAIN_PROCESS_RESTART_RESTORE = RUNTIME_VERIFIED`
-- `ACTIVE_SESSION_PROBE = RUNTIME_OBSERVATION`
-- `MANUAL_LOGOUT_RUNTIME = DEFERRED_BY_USER_CREDENTIAL_RETENTION`
-- `LOGOUT_IMPLEMENTATION = DETERMINISTIC_TEST_VERIFIED`
 - `RESTORE_VALIDATION = STRUCTURAL_KEYCHAIN_ONLY`
-- `PRODUCTION_EXPIRED_SIGNAL = NOT_RUNTIME_VERIFIED`
-- `PHASE_11 = RUNTIME_EVIDENCE_PARTIAL`
-- `LIVE_RECOMMENDATION = PARTIAL`
-- `LIVE_THREAD` 的阶段 11 原始证据缺口已由阶段 15 匿名 PBPage 两页运行证据
-  收窄；`PHASE_11` 整体仍保持 `RUNTIME_EVIDENCE_PARTIAL`
-- `PHASE_13 = RUNTIME_EVIDENCE_PARTIAL`
+- `RESTORE_VALIDATION` 仅描述服务器端有效性仍未验证，不否定本阶段已复验的
+  Keychain envelope → active lease 本地恢复链。
 - 当前分支：`main`
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
@@ -47,7 +51,8 @@
   `feat: implement production media viewer`
 - 阶段 10 提交：包含本文件的
   `feat: complete stage 10 fixture reading flow`
-- production live：`RECOMMENDATIONS_BLOCKED_PENDING_REPRODUCIBLE_EVIDENCE`；
+- production live：`RECOMMENDATIONS_ACTIVE_SESSION_FIRST_PAGE_RUNTIME_VERIFIED`；
+  `FOLLOWED_FORUMS_ACTIVE_LEASE_RUNTIME_VERIFIED`；
   `THREAD_ANONYMOUS_PBPAGE_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`；
   `LIVE_IMAGES_DISABLED`
 - 阶段 06：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
@@ -56,13 +61,72 @@
 - 阶段 09 前置条件：`PHASE_09_PREREQUISITES_SATISFIED`
 - 阶段 09：`PHASE_09_PRODUCTION_MEDIA_VIEWER_COMPLETE`
 - 阶段 10：`PHASE_10_FIXTURE_VERTICAL_SLICE = COMPLETE`
-- 阶段 11：`RUNTIME_EVIDENCE_PARTIAL`
-- 阶段 12：`RUNTIME_EVIDENCE_PARTIAL`
-- 阶段 13：`RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 11：`COMPLETE`（`OPEN_SOURCE_BETA`）
+- 阶段 12：`COMPLETE`（`OPEN_SOURCE_BETA`）
+- 阶段 13：`COMPLETE`（`OPEN_SOURCE_BETA`）
 - 阶段 14/14P：`PHASE_14_FORUM_HOME = COMPLETE`；
   `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
 - 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`
 - 阶段 16：`NOT_STARTED`
+
+## 阶段 15.5 当前结果与停止点
+
+阶段 15.5 从阶段 14P 提交
+`9f45b63f311f608239a9cda999e14fe07e52eb96` 开始，只收口启动会话恢复、
+AuthContext/ProtectedDataLease 投影，以及推荐和关注吧的生产只读接线；没有进入
+阶段 16：
+
+- 根因不是 credential 内容、Cookie 选择或 lease 时序。tracked
+  `Config/Shared.xcconfig` 对 Simulator 禁用了 code signing，正常生成的 App
+  缺少 simulated `application-identifier` 和嵌入 entitlements；Simulator
+  `securityd` 因此以 `-34018` fail closed。移除该 override 后，新增确定性
+  `simulator-keychain-entitlement` 门禁检查本地签名、application identifier
+  与 Mach-O `__entitlements`；
+- `SessionStore` 只有在 Keychain restore 已安装或撤销唯一 credential owner
+  后才发布 `isLaunchRestoreResolved`。App shell 在此之前只显示完整背景的启动
+  loading，避免推荐页先于 restore 发出 active 请求并缓存失败；
+- Production factory 的同一 `SessionAuthContextProvider` 同时服务于
+  Keychain-backed `SessionStore`、`AppEnvironment.session`、推荐和关注吧
+  Repository。两条 Repository 均在请求前取得 matching authorization，并在
+  响应后复验同一 lease；signed-out 在 HTTP 前 fail closed，替换 lease 的迟到
+  响应不能发布；
+- 在保留原 Keychain item、没有卸载/清理/logout/重新登录的 iPhone 17 Pro /
+  iOS 26.5 Simulator 上覆装并重启签名构建，Session 自动恢复为 `signedIn`
+  且 AuthContext 为 active；
+- active Personalized：HTTP 200、`application/octet-stream`、74924 bytes、
+  Proto decode=true、mapped=12、typed outcome=success；Production 推荐页显示
+  非空内容；
+- ForumGuide：HTTP 200、`application/octet-stream`、9199 bytes、Proto
+  decode=true、mapped=18、typed outcome=success；Production “我关注的吧”
+  显示真实列表；切到推荐再返回没有重复登录提示；
+- 上述 Probe/文档只记录 status、MIME、body 大小、decode、映射数量和 typed
+  outcome。没有记录或保存 credential、Cookie header、请求体、响应正文、吧名、
+  帖子正文或用户内容；自动化继续使用 FakeSession、Fixture 和 Mock HTTP。
+- 最终 `make test-unit` 与 `make quality-fast` 均通过；289 个逻辑 Unit、308 次
+  执行、0 failed/0 skipped。entitlement 门禁、secret scan、lint（182 个 Swift
+  文件）、networking isolation、Debug build 和 `git diff --check` 均通过。
+  App 启动壳额外以 Fixture 跑过 iPhone smoke 19/19、iPad smoke 6/6；未重复
+  运行本轮禁止修改的 Pager/Media interaction 矩阵。
+
+### 阶段 15.5 Known Limitations
+
+1. 按用户保留现有 credential 的要求，本轮没有执行真实 logout；logout 的 lease
+   revoke、Keychain delete 和 App-owned WebKit cleanup 仍只有确定性测试证据。
+2. 当前 `signedIn` 仍是本地完整 credential/active lease 语义；服务器是否实际
+   消费两个字段、最小 credential 子集、轮换与真实失效码仍为 `UNKNOWN`。
+3. Personalized 本轮只验证 active-session 首屏；匿名稳定性、分页，以及登录后
+   对已显示失败页的自动刷新未验证。signed-out 不触网，登录后可由现有“重试”
+   重新加载。
+4. ForumGuide response 没有分页字段；超过 Android 注释所述 200 项的完整性、
+   空列表和真实 expired taxonomy 仍为 `UNKNOWN`。
+5. 自动化没有访问 Live 服务或真实 Keychain；真实 smoke 是个人开源 Beta 的
+   单 Simulator 受控观察，不是多账号、真机、App Store 或发布级安全矩阵。
+6. Production Live 图片仍 disabled。阶段 14P/15 虚拟列表、Pager、
+   MediaViewer 与 Renderer 均未修改。
+
+下文阶段 11、12、13 的“当前结果”保留各阶段提交时的历史快照；其中关于
+Production evidence-blocked、AuthContext 恢复失败和 ForumGuide 未发请求的结论，
+已由本节 2026-08-09 的阶段 15.5 证据取代。
 
 ## 阶段 14P 当前结果与停止点
 

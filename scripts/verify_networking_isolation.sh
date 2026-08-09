@@ -182,14 +182,24 @@ if printf '%s\n' "$production_block" |
   fail production-live-composition-leak "$production_block"
 fi
 if ! rg -q \
-  'followedForumsRepository =.*EvidenceBlockedFollowedForumsRepository|EvidenceBlockedFollowedForumsRepository\(\)' \
+  'followedForumsRepository =.*LiveFollowedForumsRepository|LiveFollowedForumsRepository\(' \
   App/AppCompositionRoot.swift; then
-  fail production-followed-forums-evidence-gate
+  fail production-followed-forums-live-after-runtime-evidence
 fi
 if rg -q \
-  'followedForumsRepository = LiveFollowedForumsRepository' \
+  'followedForumsRepository =.*EvidenceBlockedFollowedForumsRepository|EvidenceBlockedFollowedForumsRepository\(\)' \
   App/AppCompositionRoot.swift; then
-  fail production-followed-forums-live-before-runtime-evidence
+  fail production-followed-forums-evidence-regression
+fi
+if ! rg -q \
+  'recommendationRepository =.*LiveRecommendationRepository|LiveRecommendationRepository\(' \
+  App/AppCompositionRoot.swift; then
+  fail production-recommendations-live-after-runtime-evidence
+fi
+if rg -q \
+  'recommendationRepository =.*EvidenceBlockedRecommendationRepository|EvidenceBlockedRecommendationRepository\(\)' \
+  App/AppCompositionRoot.swift; then
+  fail production-recommendations-evidence-regression
 fi
 if ! rg -q \
   'forumHomeRepository = LiveForumHomeRepository' \

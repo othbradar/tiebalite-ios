@@ -33,16 +33,24 @@ struct AppSceneRoot: View {
     }
 
     var body: some View {
-        AppShellView(
-            navigation: navigationStore,
-            harnessLabel: harnessLabel,
-            environment: compositionRoot.environment,
-            featureStores: featureStores,
-            sessionStore: sessionStore,
-            authContextProvider: compositionRoot.authContextProvider,
-            onOpenLogin: openLogin,
-            onOpenMedia: presentMedia
-        )
+        Group {
+            if sessionStore.isLaunchRestoreResolved {
+                AppShellView(
+                    navigation: navigationStore,
+                    harnessLabel: harnessLabel,
+                    environment: compositionRoot.environment,
+                    featureStores: featureStores,
+                    sessionStore: sessionStore,
+                    authContextProvider: compositionRoot.authContextProvider,
+                    onOpenLogin: openLogin,
+                    onOpenMedia: presentMedia
+                )
+            } else {
+                InitialLoadingView(title: "正在恢复会话")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(SemanticColor.background)
+            }
+        }
         .fullScreenCover(item: $mediaPresentation) { presentation in
             MediaViewer(
                 presentation: presentation,

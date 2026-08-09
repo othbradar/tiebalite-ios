@@ -1,5 +1,4 @@
 import Foundation
-import GeneratedProtobuf
 import Testing
 @testable import TiebaLite
 
@@ -147,7 +146,55 @@ struct Stage12SessionStoreTests {
 
         #expect(rebuilt.state == .signedIn)
         #expect(await rebuiltAuth.snapshot().status == .signedIn)
+        let restoredContext = rebuiltAuth.context()
+        guard case .active = restoredContext else {
+            Issue.record("Restored credential did not publish an active context")
+            return
+        }
+        #expect(
+            try rebuiltAuth.authorization(for: restoredContext) ==
+                SessionAuthorization(credential: credential)
+        )
         #expect(await fakeCredentials.loadCount() == 2)
+    }
+
+    @Test
+    func launchRestoreResolvesOnlyAfterTheCredentialOwnerPublishesItsLease() async throws {
+        let credential = try #require(
+            SessionCredential(
+                bduss: "fx-launch-b",
+                stoken: "fx-launch-s"
+            )
+        )
+        let delayedCredentials = HarnessDelayedSessionCredentialStore(
+            delayedCredential: credential
+        )
+        let auth = SessionAuthContextProvider()
+        let store = SessionStore(
+            credentialStore: delayedCredentials,
+            authContextProvider: auth,
+            websiteDataCleaner: HarnessSessionWebsiteDataCleaner()
+        )
+
+        #expect(!store.isLaunchRestoreResolved)
+        let restore = Task { @MainActor in
+            await store.restoreIfNeeded()
+        }
+        try await delayedCredentials.loadStarted.wait()
+        #expect(!store.isLaunchRestoreResolved)
+        #expect(auth.context() == .anonymous)
+
+        #expect(delayedCredentials.loadResult.succeed(credential))
+        await restore.value
+
+        #expect(store.isLaunchRestoreResolved)
+        #expect(store.state == .signedIn)
+        let context = auth.context()
+        guard case .active = context else {
+            Issue.record("Launch restore resolved without an active lease")
+            return
+        }
+        _ = try auth.authorization(for: context)
     }
 
     @Test
@@ -260,6 +307,14 @@ struct Stage12SessionStoreTests {
         await descriptor.compositionRoot.sessionStore.restoreIfNeeded()
 
         #expect(descriptor.compositionRoot.sessionStore.state == .signedIn)
+        #expect(
+            descriptor.compositionRoot.sessionStore.isLaunchRestoreResolved
+        )
+        guard case .active =
+            descriptor.compositionRoot.authContextProvider.context() else {
+            Issue.record("UI fixture did not use its fake active context")
+            return
+        }
         #expect(
             await descriptor.compositionRoot.environment.session
                 .snapshot().status == .signedIn
@@ -465,69 +520,6 @@ struct Stage12LoginNavigationTests {
         #expect(values.bduss == nil)
         #expect(values.credential == nil)
     }
-}
-
-struct Stage12AuthenticatedProbeContractTests {
-    @Test
-    func authenticatedPersonalizedBodyUsesTheActiveLeaseFieldsWithoutChangingAnonymousGolden() throws {
-        let input = try PersonalizedRequestInput(loadKind: .refresh, page: 1)
-        let anonymous = try PersonalizedProtocol.encodeRequest(input)
-        let authorization = SessionAuthorization(
-            bduss: "fx-auth-b",
-            stoken: "fx-auth-s"
-        )
-        let body = try PersonalizedProtocol.makeAuthenticatedRequestBody(
-            input,
-            authorization: authorization
-        )
-
-        guard case let .multipartBinary(_, fields, part) = body else {
-            Issue.record("Authenticated probe changed multipart body family")
-            return
-        }
-        let request = try Tieba_PersonalizedRequest(
-            serializedBytes: part.data
-        )
-        #expect(request.data.common.bduss == "fx-auth-b")
-        #expect(request.data.common.stoken == "fx-auth-s")
-        #expect(fields == [
-            EndpointField(name: "stoken", value: "fx-auth-s")
-        ])
-        #expect(try PersonalizedProtocol.encodeRequest(input) == anonymous)
-        #expect(
-            try PersonalizedProtocol.makeActiveDescriptor(
-                host: "fixture.invalid"
-            ).authentication == .active
-        )
-    }
-
-#if DEBUG
-    @Test
-    func decodedServerFailureIsReportedAsTypedServerOutcome() throws {
-        var error = Tieba_Error()
-        error.errorCode = 17
-        var response = Tieba_PersonalizedResponse()
-        response.error = error
-        let endpoint = try PersonalizedProtocol.makeActiveDescriptor(
-            host: "fixture.invalid"
-        )
-
-        let result = DebugAuthenticatedSessionProbe.map(
-            response: HTTPResponse(
-                statusCode: 200,
-                headers: [
-                    "content-type": PersonalizedProtocol.liveResponseMIMEType
-                ],
-                body: try response.serializedData()
-            ),
-            endpoint: endpoint
-        )
-
-        #expect(result.decoded)
-        #expect(result.itemCount == nil)
-        #expect(result.outcome == .server)
-    }
-#endif
 }
 
 private actor HarnessMemoryKeychainDataStore: KeychainDataStoring {

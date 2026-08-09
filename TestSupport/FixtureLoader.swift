@@ -166,6 +166,25 @@ struct FixtureLoader: Sendable {
         catalog = try FixtureCatalog(entries: document.entries)
     }
 
+    static func loadTestBundleData(
+        id: FixtureID,
+        expectedFormat: FixtureFormat
+    ) throws -> Data {
+        guard let root = Bundle(for: FixtureBundleMarker.self).url(
+            forResource: "Fixtures",
+            withExtension: nil
+        ) else {
+            throw FixtureLoaderError(
+                category: .missing,
+                logicalPath: "Fixtures"
+            )
+        }
+        return try FixtureLoader(rootDirectory: root).loadData(
+            id: id,
+            expectedFormat: expectedFormat
+        )
+    }
+
     func loadData(
         id: FixtureID,
         expectedFormat: FixtureFormat

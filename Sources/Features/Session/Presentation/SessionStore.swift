@@ -5,6 +5,7 @@ import Observation
 final class SessionStore {
     private(set) var state: SessionState
     private(set) var isBusy = false
+    private(set) var isLaunchRestoreResolved: Bool
 
     private let credentialStore: any SessionCredentialStore
     private let authContextProvider: SessionAuthContextProvider
@@ -29,6 +30,8 @@ final class SessionStore {
         self.restoresOnLaunch = restoresOnLaunch
         state = initialState
         hasAttemptedRestore = !restoresOnLaunch
+        isLaunchRestoreResolved =
+            !restoresOnLaunch || initialState != .signedOut
     }
 
     func restoreIfNeeded() async {
@@ -42,6 +45,7 @@ final class SessionStore {
 
     func restore() async {
         hasAttemptedRestore = true
+        isLaunchRestoreResolved = false
         let generation = beginOperation()
         let credentialStore = credentialStore
         let task = Task { @MainActor [weak self] in
@@ -59,6 +63,7 @@ final class SessionStore {
                     self.authContextProvider.revoke()
                     self.state = .signedOut
                 }
+                self.isLaunchRestoreResolved = true
                 self.finishOperation(generation: generation)
             } catch is CancellationError {
                 self?.finishRestoreCancellation(generation: generation)
@@ -69,6 +74,7 @@ final class SessionStore {
                 }
                 self.authContextProvider.revoke()
                 self.state = .failed(.credentialStore)
+                self.isLaunchRestoreResolved = true
                 self.finishOperation(generation: generation)
             }
         }
@@ -81,6 +87,7 @@ final class SessionStore {
             return
         }
         hasAttemptedRestore = true
+        isLaunchRestoreResolved = true
         cancelCurrentOperation()
         state = .signingIn
     }
@@ -142,6 +149,7 @@ final class SessionStore {
             return
         }
         hasAttemptedRestore = true
+        isLaunchRestoreResolved = true
         cancelCurrentOperation()
         state = .expired
     }
@@ -206,6 +214,7 @@ final class SessionStore {
         }
         authContextProvider.revoke()
         state = .signedOut
+        isLaunchRestoreResolved = true
         finishOperation(generation: generation)
     }
 
@@ -216,6 +225,7 @@ final class SessionStore {
         authContextProvider.revoke()
         state = .signedOut
         hasAttemptedRestore = false
+        isLaunchRestoreResolved = false
         finishOperation(generation: generation)
     }
 

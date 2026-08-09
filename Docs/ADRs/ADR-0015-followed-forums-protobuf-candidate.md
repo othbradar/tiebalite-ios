@@ -86,3 +86,18 @@ count、Proto decode 或关注吧数量证据。
 发送会话。`ForumGuideProtocol` 与 `LiveFollowedForumsRepository` 仅保留在
 Mock HTTP/Debug Probe 边界内。阶段 13 因此收口为
 `RUNTIME_EVIDENCE_PARTIAL`，阶段 14 保持 `NOT_STARTED`。
+
+## 2026-08-09 阶段 15.5 运行决议
+
+2026-08-05 的回滚是当时正确的安全决策；阶段 15.5 已以独立根因证据和真实
+运行结果取代该临时 Production gate。修复 Simulator Keychain 签名前置条件后，
+保留会话自动恢复为 active context。同一精确 ForumGuide request 得到 HTTP 200、
+`application/octet-stream`、9199 bytes、Proto decode=true、mapped=18、typed
+outcome=success，Production 页面也实际显示列表。
+
+因此允许 Production 使用 `LiveFollowedForumsRepository`，条件是请求前、响应后
+均以同一 `ProtectedDataLease` 授权；signed-out、credential 不完整或 lease 被
+替换时 fail closed。Fixture/UITesting 继续不读 Keychain、不访问 live 网络。
+服务端是否消费或要求全部候选字段、真实 expired code、空列表、超过 200 项的
+完整性和 forumID 长期稳定性仍为 `UNKNOWN`；若这些边界出现可复现失败，回滚
+该 Repository，而不是猜签名或设备字段。

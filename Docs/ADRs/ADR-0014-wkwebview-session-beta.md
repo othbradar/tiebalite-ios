@@ -156,3 +156,24 @@ credential 可能暂时投影为 `signedIn`。
   WebKit data。真实登录、重启和 Probe 已观察；logout 后再次启动未运行，故
   阶段保持 `RUNTIME_EVIDENCE_PARTIAL`，该未运行项不能写成通过。
 - 因改动 App 根 presentation，阶段出口运行完整 `make quality`。
+
+## 2026-08-09 阶段 15.5 修订
+
+阶段 12 的一次性签名构建运行观察不等于默认构建链具备 Keychain entitlement。
+阶段 15.5 证明 tracked `CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]=NO` 会使正常
+Simulator App 缺少 simulated `application-identifier`/embedded entitlements，
+Keychain 因此 fail closed。现决策要求：可访问真实 Keychain 的 Simulator App
+必须由 Xcode 本地签名，生成 application identifier 必须与 bundle identifier
+匹配，Mach-O 必须嵌入 entitlements，并由确定性 quality-fast gate 检查。
+
+启动期间 `SessionStore` 在 credential owner 完成 install/revoke 前保持 restore
+unresolved；App shell 不在该窗口创建，避免 active-only Repository 抢先请求。
+Production factory 必须把同一 `SessionAuthContextProvider` 交给 Keychain-backed
+`SessionStore`、环境 session 与所有 active Repository。Repository 在发送前取得 matching lease，
+并在响应后复验；signed-out 不得发送 HTTP，旧 lease 不得发布响应。
+
+原决策第 10 条是阶段 12 当时的 evidence gate。阶段 15.5 的脱敏运行证据现允许
+active-session Personalized 首屏和 authenticated ForumGuide 进入 Production；
+ThreadReader 依据阶段 15 的独立匿名证据。Fixture/UITesting、无有效会话、真实
+expired taxonomy 未知时仍 fail closed。真实 logout、字段最小性、token rotation、
+真机/App Store entitlement 与发布级安全审计的延期结论不变。

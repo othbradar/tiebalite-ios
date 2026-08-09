@@ -3,10 +3,13 @@
 - 日期：2026-08-05
 - 基线：`4f2c055a2fd01c78db6f413f30c87e568c3717ed`
 - Android reference：`5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`
-- 状态：`PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 13 提交时状态：`PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`
+- 阶段 15.5 当前状态：`PHASE_13_FOLLOWED_FORUMS = COMPLETE`
+  （`OPEN_SOURCE_BETA`；见文末后续修订）
 - 本地实现：`FOLLOWED_FORUMS_LOCAL_IMPLEMENTATION = BETA_READY`
-- Production Live：`EVIDENCE_BLOCKED`
-- 后续阶段：`PHASE_14 = NOT_STARTED`
+- 阶段 13 提交时 Production Live：`EVIDENCE_BLOCKED`
+- 当前 Production Live：`ACTIVE_LEASE_PRODUCTION_RUNTIME_VERIFIED`
+- 阶段 13 当时后续阶段：`PHASE_14 = NOT_STARTED`
 
 ## 目标与范围
 
@@ -168,3 +171,23 @@ HTTP status、MIME、body byte count、Proto decode 或关注吧数量。这不�
 `PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`，Production 保持
 `EVIDENCE_BLOCKED`，`PHASE_11` 与 `PHASE_12` 原状态不变。
 `PHASE_14 = NOT_STARTED`，本轮在提交阶段 13 成果后停止。
+
+## 阶段 15.5 后续修订（2026-08-09）
+
+上文“AuthContext 恢复失败、ForumGuide 未发请求、Production evidence-blocked”
+是 2026-08-05 的历史观察。阶段 15.5 修复 Simulator Keychain 签名前置条件并
+在保留的会话上恢复 active lease 后，精确 HTTPS Proto 候选
+`POST https://tiebac.baidu.com/c/f/forum/forumGuide?cmd=309683&format=protobuf`
+得到 HTTP 200、`application/octet-stream`、9199 bytes、Proto decode=true、
+mapped=18、typed outcome=success；Production “我关注的吧”页面实际显示列表，
+与推荐页往返没有重复登录提示。
+
+Production 现使用 `LiveFollowedForumsRepository`。它只接受当前 active
+AuthContext，在请求前取得 authorization、响应后复验同一 lease；替换 lease 的
+迟到响应、signed-out zero-request、普通错误不误判 expired 和 Fixture/UITesting
+隔离均有确定性测试。Probe 与文档没有记录 credential、Cookie header、请求体、
+响应正文、吧名或其他用户内容。
+
+因此 `PHASE_13_FOLLOWED_FORUMS = COMPLETE`（`OPEN_SOURCE_BETA`）。仍未证明
+服务端实际消费两个 credential 字段或它们是最小集合；真实 expired code、超过
+200 项的完整性、forumID 长期稳定性、空列表和头像加载保持 `UNKNOWN`。

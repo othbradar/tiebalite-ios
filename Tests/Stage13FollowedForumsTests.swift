@@ -19,17 +19,6 @@ struct Stage13FollowedForumsTests {
     }
 
     @Test
-    func productionRepositoryRemainsEvidenceBlockedWithoutRuntimeProbe() async {
-        let repository = EvidenceBlockedFollowedForumsRepository()
-
-        await #expect(throws: LiveReadingCapabilityError.self) {
-            _ = try await repository.loadFollowedForums(
-                authentication: activeFixtureContext()
-            )
-        }
-    }
-
-    @Test
     func syntheticProtoMapsStableIdentityNameAndAvailableFields() throws {
         let response = try ForumGuideProtocol.decode(forumGuideFixtureData())
         let forums = try ForumGuideProtocol.map(response)
@@ -329,23 +318,19 @@ struct Stage13FollowedForumsTests {
         #expect(await client.events().isEmpty)
     }
 
-    private func forumGuideFixtureData() throws -> Data {
-        let bundle = Bundle(for: FixtureBundleMarker.self)
-        let root = try #require(
-            bundle.url(forResource: "Fixtures", withExtension: nil)
-        )
-        return try FixtureLoader(rootDirectory: root).loadData(
-            id: FixtureID("followed-forums.forum-guide.synthetic"),
-            expectedFormat: .protobuf
-        )
-    }
-
     private func activeFixtureContext() -> AuthContext {
         .active(
             ProtectedDataLease(
                 sessionID: SessionID(rawValue: 13),
                 generation: 1
             )
+        )
+    }
+
+    private func forumGuideFixtureData() throws -> Data {
+        try FixtureLoader.loadTestBundleData(
+            id: FixtureID("followed-forums.forum-guide.synthetic"),
+            expectedFormat: .protobuf
         )
     }
 

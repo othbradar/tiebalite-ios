@@ -1,6 +1,6 @@
 # 功能矩阵
 
-状态：`IMPLEMENTED_THROUGH_PHASE_15_WITH_STAGE14P_FORUM_PERFORMANCE`
+状态：`IMPLEMENTED_THROUGH_PHASE_15_5_CORE_LIVE_INTEGRATION`
 
 本矩阵把 Android `4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2` 的静态证据转换为 iOS 验收范围。它不授权真实接口接入；endpoint 必须先满足 `Specs/API_EVIDENCE.md` 的 fixture 和运行证据门槛。
 
@@ -16,15 +16,15 @@
 |---|---|---:|---|---|
 | App Shell / 主 Tab | `MainPage.kt::MainPage`；home/explore/notification/user；单 root NavHost | 产品无认证要求 | P0 两个 root（推荐/关注吧）各自独立 push 两层，切换往返仍保留栈、列表与滚动；当前 root 重选按 ADR-0003 固定为 no-op；iPhone/iPad 只投影同一 canonical routes，宽度切换不丢 route | `CODE_EVIDENCE` + 阶段 02 决策 |
 | 深链基础 | `MainActivityV2.kt::checkIntent` 把 forumName/threadId 映射到 Forum/Thread | 产品公开；endpoint 认证另见目标页面 | 仅凭稳定 ID/name 从冷启动打开吧/帖子；坏参数安全拒绝；不依赖预载 Proto；cold/warm 均进入 recommendations root | `CODE_EVIDENCE` + `INFERENCE` |
-| 推荐流 | `PersonalizedPage/ViewModel` → `PersonalizedRepository` → Personalized Proto | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | fixture 启动：成功、空、失败；刷新保留旧内容；分页去重且保序；尾部失败可重试；同页互斥；旧响应不能覆盖新请求 | `CODE_EVIDENCE`; auth/终止 `UNKNOWN` |
-| 关注的吧 | `HomeViewModel` → `allForumGuideFlow` → `ForumGuideBean` | 产品要求登录 | 未登录显示明确登录入口；按 session 原子聚合多页；后续页失败/重试可测；刷新保留同 session 旧列表；账号切换立即隐藏旧 membership；点击进入正确 forumName | `LOCAL_SYNTHETIC_TESTED`; HTTPS `EVIDENCE_BLOCKED`;失效码 `UNKNOWN` |
+| 推荐流 | `PersonalizedPage/ViewModel` → `PersonalizedRepository` → Personalized Proto | active-session 首屏已有限运行验证；匿名能力 `UNKNOWN` | Fixture 状态/替换保护保持；Production active lease 下首屏非空，signed-out 不触网；分页与登录后自动刷新未实现 | `ACTIVE_SESSION_FIRST_PAGE_RUNTIME_VERIFIED`; anonymous/pagination `UNKNOWN` |
+| 关注的吧 | `HomeViewModel` → `allForumGuideFlow` → `ForumGuideBean` | 产品要求登录；HTTPS ForumGuide active lease 已有限运行验证 | 未登录显示登录入口；Production 列表成功/空/失败/重试；旧请求和旧 lease 不覆盖；点击进入正确 forumName | `ACTIVE_LEASE_HTTPS_RUNTIME_VERIFIED`; >200/失效码 `UNKNOWN` |
 | 吧首页信息 | `ForumPage` + `ForumViewModel.Load` → FRS Page | 产品公开；固定公开吧匿名首屏+一页下一页已验证 | forumName 自足打开；显示吧名/简介/统计的已证字段；缺字段降级；返回保留列表与滚动；头像显示延后 | `LIMITED_RUNTIME_EVIDENCE` + Fixture tests |
 | 吧内主题列表 | `ForumThreadListViewModel`、`GeneralTabListViewModel` → FRS/ThreadList/GeneralTab | 产品公开；FRS 固定公开吧匿名首屏+一页下一页已验证，ThreadList/GeneralTab 未验证 | 单顶层虚拟列表；稳定 threadID；FRS 顺序分页按 threadID 去重保序；下一页失败保留已有列表；1000 条/10 页 Fixture 验证复用有界 | `LIMITED_RUNTIME_EVIDENCE` + `LOCAL_1000_THREAD_VIRTUALIZATION_TESTED`；ThreadList/tab/sort `UNKNOWN` |
 | 帖子阅读 | `ThreadPage/ViewModel` → `PbPageRepository` → PB Page Proto | 产品公开；匿名普通升序首屏与一页下一页已有限运行验证 | threadId 自足打开；标题/作者/首楼/回复；基本下一页按 postID 去重保序；缺作者、折叠、畸形内容降级；返回保持锚点；唯一虚拟列表以 1000 楼合成 Fixture 验证 | `LIMITED_RUNTIME_EVIDENCE` + `LOCAL_1000_FLOOR_VIRTUALIZATION_TESTED`；倒序/只看楼主/跳楼/完整错误形态 `UNKNOWN` |
 | 楼中楼只读 | `SubPostsPage/ViewModel` → PB Floor Proto | PBPage 内联预览已有限运行验证；独立 PB Floor 匿名能力 `UNKNOWN` | 当前按稳定 ID 内联最多 4 条 PBPage 预览并显示总数；完整楼中楼页/分页仍待后续；不出现回复或发布能力 | 内联 `LIMITED_RUNTIME_EVIDENCE`；完整页 `CODE_EVIDENCE` + `UNKNOWN` |
 | 内容节点 | `PbContent.proto` + `Extensions.kt::renders` + `ThreadPage.PostCard` | 继承来源页面 | text/link/emoji/mention/image 正常；video/voice/poll 按矩阵展示或降级；未知 raw type 保留占位和相邻顺序；所有畸形 fixture 不崩溃 | `CODE_EVIDENCE` + `INFERENCE` |
 | MediaViewer | `PhotoViewActivity/ViewModel` 提供来源集合、索引和边界加载语义 | 继承来源页面 | 唯一查看器；黑底；从点击图开始；左右分页、双击/捏合/平移；缩放与翻页仲裁；失败占位/重试；关闭回到原位置；旋转/尺寸变化稳定；进程恢复只回父 route | `CODE_EVIDENCE` + iOS 契约 |
-| Session / 登录 | `LoginPage.LoginWebViewClient`、`AccountUtil`、`Account` entity | 不适用；只能由用户显式发起 | 平台无关的成功/取消/失败/过期事件；凭据仅 Keychain；profile 与凭据分离；重复 completion 只创建一次 session；退出原子清理 app-owned 数据；不得使用明文 HTTP | `CODE_EVIDENCE`; 登录边界 `UNKNOWN` |
+| Session / 登录 | `LoginPage.LoginWebViewClient`、`AccountUtil`、`Account` entity | 不适用；只能由用户显式发起 | 可见 Web 登录、Keychain 保存/重启恢复、active lease、未登录/失败/过期与确定性 logout cleanup；不得使用明文 HTTP | `OPEN_SOURCE_BETA_RUNTIME_VERIFIED`; 真实 logout 本轮按用户要求 deferred；真实失效码 `UNKNOWN` |
 | 状态保持 | Android 内存态与 history anchor 提供行为线索 | 否 | 返回、Tab 切换、旋转和分屏不丢列表/筛选/导航/阅读锚；进程恢复策略有测试并明确哪些状态不恢复 | `INFERENCE`; Android 进程恢复 `UNKNOWN` |
 | iPhone/iPad 布局 | Android window size class 证明宽度适配需求 | 否 | iPhone 系统 NavigationStack；iPad 系统 split；横竖屏和常见分屏宽度；无设备型号/固定屏幕判断 | 产品契约 |
 | 可访问性与外观 | Android 仅提供部分 contentDescription/主题证据 | 否 | Dynamic Type、VoiceOver、稳定 identifier、触控区域、深色模式、Reduce Motion；状态与手势在关闭动效后仍可用 | 产品契约；Android 覆盖 `UNKNOWN` |

@@ -15,6 +15,16 @@ struct Stage11LiveCompositionTests {
 
     @MainActor
     @Test
+    func productionCompositionUsesOneSessionAuthorizationOwner() {
+        let root = AppCompositionRoot.production()
+        let environmentProvider =
+            root.environment.session as? SessionAuthContextProvider
+
+        #expect(environmentProvider === root.authContextProvider)
+    }
+
+    @MainActor
+    @Test
     func fixtureModeKeepsReadingFlowOffline() async {
         let client = HarnessMockHTTPClient(defaultBehavior: .failure(.offline))
         let root = AppCompositionRoot(
@@ -38,21 +48,37 @@ struct Stage11LiveCompositionTests {
 
     @MainActor
     @Test
-    func liveModeKeepsRecommendationFailClosedWithoutFixtureFallback() async {
-        let client = HarnessMockHTTPClient()
+    func liveModeConnectsTheActiveLeaseToRecommendationTransport() async throws {
+        let client = HarnessMockHTTPClient(
+            defaultBehavior: .failure(.offline)
+        )
+        let provider = SessionAuthContextProvider()
+        provider.install(
+            try #require(
+                SessionCredential(
+                    bduss: "fx-composition-b",
+                    stoken: "fx-composition-s"
+                )
+            )
+        )
         let root = AppCompositionRoot(
             environment: makeEnvironment(
                 mode: .live,
                 client: client,
-                imageLoader: DisabledImageLoader()
-            )
+                imageLoader: DisabledImageLoader(),
+                session: provider
+            ),
+            authContextProvider: provider
         )
         let recommendationStore = root.makeRecommendationsStore()
 
         await recommendationStore.loadIfNeeded()
 
         #expect(recommendationStore.state == .initialFailure(.unavailable))
-        #expect(await client.events().isEmpty)
+        #expect(await client.events() == [
+            .started(HarnessHTTPCallID(rawValue: 1)),
+            .failed(HarnessHTTPCallID(rawValue: 1), .offline)
+        ])
     }
 
     @MainActor
@@ -90,7 +116,8 @@ struct Stage11LiveCompositionTests {
     private func makeEnvironment(
         mode: ReadingDataSourceMode,
         client: any HTTPClient,
-        imageLoader: any ImageLoading
+        imageLoader: any ImageLoading,
+        session: (any SessionProviding)? = nil
     ) -> AppEnvironment {
         AppEnvironment(
             readingDataSourceMode: mode,
@@ -99,7 +126,7 @@ struct Stage11LiveCompositionTests {
                 values: [OperationID(sequence: 1)]
             ),
             httpClient: client,
-            session: HarnessFixtureSessionProvider(
+            session: session ?? HarnessFixtureSessionProvider(
                 snapshot: SessionSnapshot(status: .signedOut, revision: 1)
             ),
             imageLoader: imageLoader,

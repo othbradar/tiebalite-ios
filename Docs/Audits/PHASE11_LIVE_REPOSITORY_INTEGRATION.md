@@ -1,6 +1,9 @@
 # 阶段 11：只读 Live Repository 接入审计
 
-状态：`RUNTIME_EVIDENCE_PARTIAL`
+阶段 11 提交时状态：`RUNTIME_EVIDENCE_PARTIAL`
+
+阶段 15.5 当前状态：`PHASE_11_LIVE_READ_FLOW = COMPLETE`
+（`OPEN_SOURCE_BETA`；见文末后续修订）
 
 基线：`302b7b8fb34a8da3e1171e6bc5dc48afe548494e`
 
@@ -119,3 +122,22 @@ fail closed 后被主动中断（exit 130），不计为绿色；修正后的最
 
 阶段 10 Fixture 主链路、阶段 08 renderer 图片状态和阶段 09 唯一 MediaViewer
 保持不变。阶段 11 在上述证据边界停止，不开始阶段 12。
+
+## 阶段 15.5 后续修订（2026-08-09）
+
+本审计此前的 Production fail-closed 结论是阶段 11 提交时的历史快照。阶段
+15.5 修复 Simulator Keychain 签名前置条件并在保留的真实会话上重新取得 active
+`ProtectedDataLease` 后，使用 Production `LiveRecommendationRepository` 的
+同一 request/mapper 路径得到：HTTP 200、`application/octet-stream`、74924
+bytes、Proto decode=true、mapped=12、typed outcome=success；推荐页实际显示
+非空内容。
+
+Production 现在只在 active context 下发出 Personalized 首屏请求；signed-out
+在 HTTP 前 fail closed，请求返回后复验原 lease，替换 lease 的迟到响应不得
+发布。Mock composition、signed-out zero-request 与 post-response lease replacement
+已有确定性回归。Fixture/UITesting 仍固定使用 Fixture/FakeSession/Mock HTTP。
+
+结合阶段 15 已取得的匿名 PBPage 首屏与一页下一页运行证据，当前
+`PHASE_11_LIVE_READ_FLOW = COMPLETE`（`OPEN_SOURCE_BETA`）。该结论不扩展为
+匿名 Personalized、推荐分页、登录完成后的自动刷新、完整错误 taxonomy 或
+Live 图片；已在 signed-out 失败页时，用户登录后需点击现有“重试”。

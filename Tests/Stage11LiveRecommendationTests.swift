@@ -4,12 +4,15 @@ import SwiftProtobuf
 import Testing
 @testable import TiebaLite
 
+@MainActor
 struct Stage11LiveRecommendationTests {
     @Test
-    func liveRepositoryUsesEvidenceLockedAnonymousRequestAndMapsDomain() async throws {
+    func liveRepositoryUsesRestoredActiveLeaseAndMapsDomain() async throws {
         let client = HarnessMockHTTPClient()
+        let provider = try activeProvider()
         let repository = LiveRecommendationRepository(
             client: client,
+            authContextProvider: provider,
             host: "fixture.invalid"
         )
         let load = Task {
@@ -25,6 +28,7 @@ struct Stage11LiveRecommendationTests {
         #expect(call.request.headers["x_bd_data_type"] == "protobuf")
         #expect(call.request.headers["Authorization"] == nil)
         #expect(call.request.headers["Cookie"] == nil)
+        #expect(!(try #require(call.request.body)).isEmpty)
 
         try await client.succeed(
             call.id,
@@ -46,8 +50,10 @@ struct Stage11LiveRecommendationTests {
     @Test
     func liveRepositoryMapsAnExplicitEmptyEnvelopeToEmptyDomain() async throws {
         let client = HarnessMockHTTPClient()
+        let provider = try activeProvider()
         let repository = LiveRecommendationRepository(
             client: client,
+            authContextProvider: provider,
             host: "fixture.invalid"
         )
         let load = Task {
@@ -76,8 +82,10 @@ struct Stage11LiveRecommendationTests {
     @Test
     func liveRepositoryKeepsHTTPFailureTyped() async throws {
         let client = HarnessMockHTTPClient()
+        let provider = try activeProvider()
         let repository = LiveRecommendationRepository(
             client: client,
+            authContextProvider: provider,
             host: "fixture.invalid"
         )
         let load = Task {
@@ -101,8 +109,10 @@ struct Stage11LiveRecommendationTests {
     @Test
     func liveRepositoryKeepsCancellationObservable() async throws {
         let client = HarnessMockHTTPClient()
+        let provider = try activeProvider()
         let repository = LiveRecommendationRepository(
             client: client,
+            authContextProvider: provider,
             host: "fixture.invalid"
         )
         let load = Task {
@@ -120,6 +130,61 @@ struct Stage11LiveRecommendationTests {
             .started(call.id),
             .cancelled(call.id)
         ])
+    }
+
+    @Test
+    func signedOutRecommendationFailsClosedWithoutSendingHTTP() async {
+        let client = HarnessMockHTTPClient()
+        let provider = SessionAuthContextProvider()
+        let repository = LiveRecommendationRepository(
+            client: client,
+            authContextProvider: provider,
+            host: "fixture.invalid"
+        )
+
+        await #expect(throws: RequestAuthorizationError.self) {
+            _ = try await repository.loadRecommendations()
+        }
+        #expect(await client.events().isEmpty)
+    }
+
+    @Test
+    func replacementLeaseRejectsTheOldRecommendationResponse() async throws {
+        let client = HarnessMockHTTPClient()
+        let provider = try activeProvider()
+        let repository = LiveRecommendationRepository(
+            client: client,
+            authContextProvider: provider,
+            host: "fixture.invalid"
+        )
+        let load = Task {
+            try await repository.loadRecommendations()
+        }
+
+        try await client.waitForPendingCallCount(1)
+        let call = try #require(await client.pendingCalls().first)
+        provider.install(
+            try #require(
+                SessionCredential(
+                    bduss: "fx-replacement-b",
+                    stoken: "fx-replacement-s"
+                )
+            )
+        )
+        try await client.succeed(
+            call.id,
+            with: HTTPResponse(
+                statusCode: 200,
+                headers: [
+                    "content-type": PersonalizedProtocol.liveResponseMIMEType
+                ],
+                body: try personalizedFixtureData()
+            )
+        )
+
+        await #expect(throws: RequestAuthorizationError.contextMismatch) {
+            try await load.value
+        }
     }
 
     @MainActor
@@ -194,6 +259,19 @@ struct Stage11LiveRecommendationTests {
             replyCount: 1,
             thumbnail: nil
         )
+    }
+
+    private func activeProvider() throws -> SessionAuthContextProvider {
+        let provider = SessionAuthContextProvider()
+        provider.install(
+            try #require(
+                SessionCredential(
+                    bduss: "fx-live-b",
+                    stoken: "fx-live-s"
+                )
+            )
+        )
+        return provider
     }
 }
 

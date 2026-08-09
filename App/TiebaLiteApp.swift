@@ -60,7 +60,11 @@ struct TiebaLiteApp: App {
             } else if runsStage14ForumProbe {
                 DebugForumHomeProbeView()
             } else if runsStage11LiveProbe {
-                DebugLiveAPIProbeView()
+                DebugLiveAPIProbeView(
+                    sessionStore: compositionRoot.sessionStore,
+                    client: compositionRoot.environment.httpClient,
+                    authContextProvider: compositionRoot.authContextProvider
+                )
             } else {
                 AppSceneRoot(compositionRoot: compositionRoot)
             }
