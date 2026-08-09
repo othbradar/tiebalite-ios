@@ -1,5 +1,4 @@
 import XCTest
-
 enum UITestElementID: String, CaseIterable {
     case componentEmpty = "design-system.empty-state"
     case componentFullPageError = "design-system.full-page-error"
@@ -136,6 +135,8 @@ enum UITestElementID: String, CaseIterable {
     case openSubposts = "app.fixture.thread.open-subposts"
     case openThread = "app.fixture.forum.open-thread"
     case recommendationsList = "recommendations.list"
+    case recommendationsLastPageRow = "recommendations.row.t100012"
+    case recommendationsLastPageThreadScreen = "thread-reader.screen.t100012"
     case recommendationsSelectedRow = "recommendations.row.t100003"
     case recommendationsRoot = "app.root.recommendations"
     case routeForum = "app.route.forum"
@@ -187,7 +188,7 @@ enum UITestElementID: String, CaseIterable {
         "thread-reader.content.image.t100003.p110003.sfirstPost.n2.state"
     case forumThreadImageAction = "thread-reader.content.image.t140006.p170006.spost.n1.action"
     case forumThreadImageState = "thread-reader.content.image.t140006.p170006.spost.n1.state"
-    case forumThreadLastPagePost = "thread-reader.post.t140006.p460006.spost"
+    case forumThreadLastPagePost = "thread-reader.post.t140006.p910006.spost"
     case forumThreadLoadMore = "thread-reader.pagination.load-more.t140006"
     case forumThreadReaderScroll = "thread-reader.scroll.t140006"
     case forumThreadSubpost = "thread-reader.subpost.t140006.p160007.ssubPost"
@@ -195,7 +196,6 @@ enum UITestElementID: String, CaseIterable {
     case threadReaderScroll = "thread-reader.scroll.t100003"
     case debugOpenInteractionLab = "app.debug.open-interaction-lab"
 }
-
 enum UITestHarness {
     static let scenarioFlag = "--launch-scenario"
     private static let invalidScenarioCanary = "unknown.fixture-scenario"

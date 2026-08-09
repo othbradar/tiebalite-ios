@@ -18,6 +18,61 @@ struct RecommendationSummary: Identifiable, Equatable, Sendable {
 
 protocol RecommendationRepository: Sendable {
     func loadRecommendations() async throws -> [RecommendationSummary]
+    func loadPage(
+        _ request: RecommendationPageRequest
+    ) async throws -> RecommendationRepositoryPage
+}
+
+enum RecommendationPageLoadKind: Equatable, Sendable {
+    case refresh
+    case nextPage
+}
+
+struct RecommendationPageRequest: Equatable, Sendable {
+    let loadKind: RecommendationPageLoadKind
+    let page: UInt32
+
+    static let initial = RecommendationPageRequest(
+        loadKind: .refresh,
+        page: 1
+    )
+}
+
+struct RecommendationRepositoryPage: Equatable, Sendable {
+    let items: [RecommendationSummary]
+    let requestedPage: UInt32
+    let nextPageCandidate: UInt32?
+}
+
+enum RecommendationRepositoryError: Error, Equatable, Sendable {
+    case invalidRequest
+    case paginationUnavailable
+}
+
+extension RecommendationPageRequest {
+    var isValid: Bool {
+        switch loadKind {
+        case .refresh:
+            page == 1
+        case .nextPage:
+            page > 1
+        }
+    }
+}
+
+extension RecommendationRepository {
+    func loadPage(
+        _ request: RecommendationPageRequest
+    ) async throws -> RecommendationRepositoryPage {
+        guard request == .initial else {
+            throw RecommendationRepositoryError.paginationUnavailable
+        }
+        return RecommendationRepositoryPage(
+            items: try await loadRecommendations(),
+            requestedPage: request.page,
+            nextPageCandidate: nil
+        )
+    }
 }
 
 struct ThreadReaderAuthor: Equatable, Sendable {
@@ -127,12 +182,26 @@ struct ThreadReaderPageRequest: Equatable, Sendable {
     let threadID: Int64
     let pageNumber: Int
     let postID: Int64
+    let loadedPostIDs: Set<Int64>
+
+    init(
+        threadID: Int64,
+        pageNumber: Int,
+        postID: Int64,
+        loadedPostIDs: Set<Int64> = []
+    ) {
+        self.threadID = threadID
+        self.pageNumber = pageNumber
+        self.postID = postID
+        self.loadedPostIDs = loadedPostIDs
+    }
 
     static func initial(threadID: Int64) -> ThreadReaderPageRequest {
         ThreadReaderPageRequest(
             threadID: threadID,
             pageNumber: 0,
-            postID: 0
+            postID: 0,
+            loadedPostIDs: []
         )
     }
 }

@@ -8,8 +8,13 @@ struct Stage10FixtureReadingFlowTests {
         let recommendationRepository = FixtureRecommendationRepository()
         let threadRepository = FixtureThreadReaderRepository()
 
-        let recommendations = try await recommendationRepository
-            .loadRecommendations()
+        let recommendationStore = RecommendationsStore(
+            repository: recommendationRepository
+        )
+        await recommendationStore.loadIfNeeded()
+        await recommendationStore.loadNextPage()
+        await recommendationStore.loadNextPage()
+        let recommendations = try #require(recommendationStore.state.items)
 
         #expect(recommendations.count == 12)
         #expect(Set(recommendations.map(\.threadID)).count == 12)

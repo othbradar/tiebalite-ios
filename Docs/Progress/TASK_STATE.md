@@ -1,11 +1,12 @@
 # TASK_STATE
 
-- 当前阶段：15.5（核心 Live 能力收口）
-- 状态：`PHASE_15_5_CORE_LIVE_INTEGRATION = COMPLETE`
+- 当前阶段：15.6（核心 Live 分页收口）
+- 状态：`PHASE_15_LIVE_PAGINATION = COMPLETE`
+- `PHASE_15_5_CORE_LIVE_INTEGRATION = COMPLETE`
 - `PHASE_11 = COMPLETE`
 - `PHASE_11_LIVE_READ_FLOW = COMPLETE`
-- `LIVE_RECOMMENDATION = ACTIVE_SESSION_FIRST_PAGE_RUNTIME_VERIFIED`
-- `LIVE_THREAD = ANONYMOUS_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`
+- `LIVE_RECOMMENDATION = ACTIVE_SESSION_SECOND_PAGE_RUNTIME_VERIFIED`
+- `LIVE_THREAD = ANONYMOUS_THREE_PAGE_RUNTIME_VERIFIED`
 - `PHASE_12_SESSION_AND_LOGIN = COMPLETE`
 - `SESSION_IMPLEMENTATION = BETA_READY`
 - `SIMULATOR_KEYCHAIN_ENTITLEMENT = DETERMINISTIC_BUILD_GATE_VERIFIED`
@@ -51,9 +52,9 @@
   `feat: implement production media viewer`
 - 阶段 10 提交：包含本文件的
   `feat: complete stage 10 fixture reading flow`
-- production live：`RECOMMENDATIONS_ACTIVE_SESSION_FIRST_PAGE_RUNTIME_VERIFIED`；
+- production live：`RECOMMENDATIONS_ACTIVE_SESSION_SECOND_PAGE_RUNTIME_VERIFIED`；
   `FOLLOWED_FORUMS_ACTIVE_LEASE_RUNTIME_VERIFIED`；
-  `THREAD_ANONYMOUS_PBPAGE_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`；
+  `THREAD_ANONYMOUS_PBPAGE_THREE_PAGE_RUNTIME_VERIFIED`；
   `LIVE_IMAGES_DISABLED`
 - 阶段 06：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
   （`OPEN_SOURCE_BETA` 范围；已由阶段 09 迁移为唯一生产交互基础）
@@ -66,8 +67,59 @@
 - 阶段 13：`COMPLETE`（`OPEN_SOURCE_BETA`）
 - 阶段 14/14P：`PHASE_14_FORUM_HOME = COMPLETE`；
   `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
-- 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`
+- 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`；
+  `PHASE_15_LIVE_PAGINATION = COMPLETE`
 - 阶段 16：`NOT_STARTED`
+
+## 阶段 15.6 当前结果与停止点
+
+阶段 15.6 从提交 `9a8cec68096a722772419bc9926bd2146dfdb31a`
+开始，只补齐 ThreadReader 与推荐的普通顺序 Live 分页，没有进入阶段 16：
+
+- 锁定 Android PBPage 以首屏 `pn=0/pid=0`、后续
+  `pn=current_page+1` 连续请求，每页以 wire `Page.has_more=0`
+  作为 Android 已证 client stop signal / iOS wire terminal 合同，
+  不设本地固定最大页。真实三页均为 1，服务端末页仍为
+  `RUNTIME_UNKNOWN`。后续页必须精确响应
+  requested `current_page`；
+- 从 `ThreadInfo.pids` 排除全部累计 postID 与当前页 postID，
+  取最后一个未见正值；无候选时依已证 Android fallback 发送
+  `pid=0`。跨页按 postID first-wins 去重保序；`has_more=1`
+  却无新稳定 postID 时保留旧楼层并进入可重试 no-progress failure；
+- 公开长帖匿名 Live Probe 连续取得三页：HTTP 全部 200、
+  MIME 全部 `application/octet-stream`、body 24893/16779/13805 bytes、
+  Proto decode 全部成功、`current_page=1/2/3`、映射 17/15/15 楼、
+  累计 45 个唯一 postID；第三页仍 `has_more=1`，证明本地两页
+  硬帽已移除；
+- Personalized 继续使用 active lease：首屏
+  `load_type=1,pn=1`，后续 `load_type=2,pn=N`，
+  `page_thread_count=11`。Store 以单 Task/generation/page 保护分页，tail-4
+  Store-owned 预取，按 `ThreadInfo.id` first-wins 增量追加；下一页
+  失败/取消保留旧内容，刷新拒绝迟到分页；
+- 推荐 Live 第二页为 HTTP 200、`application/octet-stream`、72958
+  bytes、Proto decode=true、mapped=12，相对首屏新增 12 个稳定 ID，
+  typed outcome=success。响应没有服务端 terminal 字段；空页或
+  duplicate-only 页停止是受测 client no-progress policy；
+- Fixture 推荐连续三页，ThreadReader 连续五页聚合 77 楼；
+  原 5×200/1000 楼 UITableView 虚拟化承载未修改且继续通过回归。
+  最终 `make test-unit` 为 302 个逻辑测试、321 次执行、0 failed/
+  0 skipped；iPhone 推荐/帖子两条分页主链路 2/2 通过；iPad
+  帖子五页 1/1 通过，推荐三页在 XCUITest split-column 手势坐标
+  根因修正后 1/1 通过。`make instructions`、`make secret-scan`、
+  `make lint`（185 files/0 violations）、`make quality-fast` 均 exit 0。
+
+### 阶段 15.6 Known Limitations
+
+1. PBPage 三页运行证据只来自一个公开长帖，且本样本三页均
+   `has_more=1`；真实末页、合法空页、删除/私密、倒序、跳楼与跨主题
+   稳定性仍为 `UNKNOWN`。
+2. Personalized 只运行验证 active-session 第二页；匿名稳定性、
+   第三页及更后 live 稳定性、服务终止语义、限流与完整错误
+   taxonomy 仍为 `UNKNOWN`。
+3. 自动化完全使用 Fixture/Mock/FakeSession，不读真实 Keychain、不访问
+   Live 服务。真实 smoke 只是单 Simulator 开源 Beta 证据。
+4. 本轮未修改 `VirtualizedList`、ForumHome、Pager、MediaViewer、
+   Renderer、Session/Keychain 或生产图片 loader。
 
 ## 阶段 15.5 当前结果与停止点
 

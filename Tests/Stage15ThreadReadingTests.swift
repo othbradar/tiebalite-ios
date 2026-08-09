@@ -36,7 +36,7 @@ struct Stage15ThreadReadingTests {
         )
 
         #expect(snapshot.currentPage == 1)
-        #expect(snapshot.totalPage == 2)
+        #expect(snapshot.totalPage == 3)
         #expect(snapshot.hasMore)
         #expect(snapshot.nextPostID == 9_015)
         #expect(snapshot.posts.map(\.document.source.postID) == [
@@ -76,11 +76,12 @@ struct Stage15ThreadReadingTests {
     }
 
     @Test
-    func secondPageDoesNotRequireFirstFloorAndKeepsServerOrder() throws {
+    func subsequentPageKeepsServerOrderAndWirePaginationState() throws {
         let request = ThreadReaderPageRequest(
             threadID: Stage15ProtoFixture.threadID,
             pageNumber: 2,
-            postID: 9_015
+            postID: 9_015,
+            loadedPostIDs: [9_001, 9_002, 9_003]
         )
         let snapshot = try PBPageProtocol.map(
             Stage15ProtoFixture.secondPage(),
@@ -89,13 +90,80 @@ struct Stage15ThreadReadingTests {
 
         #expect(snapshot.posts.map(\.document.source.postID) == [9_003, 9_004])
         #expect(snapshot.currentPage == 2)
-        #expect(snapshot.totalPage == 2)
+        #expect(snapshot.totalPage == 3)
+        #expect(snapshot.hasMore)
+        #expect(snapshot.nextPostID == 9_025)
+    }
+
+    @Test
+    func subsequentPageRequiresExactWirePageIdentity() throws {
+        let request = ThreadReaderPageRequest(
+            threadID: Stage15ProtoFixture.threadID,
+            pageNumber: 2,
+            postID: 9_015,
+            loadedPostIDs: [9_001, 9_002, 9_003]
+        )
+        var missingIdentity = try Stage15ProtoFixture.secondPage()
+        missingIdentity.data.page.currentPage = 0
+        #expect(
+            throws: PBPageProtocolError.pageIdentityMismatch(
+                requested: 2,
+                received: 0
+            )
+        ) {
+            try PBPageProtocol.map(missingIdentity, request: request)
+        }
+
+        var skippedIdentity = try Stage15ProtoFixture.secondPage()
+        skippedIdentity.data.page.currentPage = 3
+        #expect(
+            throws: PBPageProtocolError.pageIdentityMismatch(
+                requested: 2,
+                received: 3
+            )
+        ) {
+            try PBPageProtocol.map(skippedIdentity, request: request)
+        }
+    }
+
+    @Test
+    func thirdPageAndLaterRemainRequestableUntilWireTerminal() throws {
+        let request = ThreadReaderPageRequest(
+            threadID: Stage15ProtoFixture.threadID,
+            pageNumber: 3,
+            postID: 9_025,
+            loadedPostIDs: [9_001, 9_002, 9_003, 9_004]
+        )
+        let snapshot = try PBPageProtocol.map(
+            Stage15ProtoFixture.thirdPage(),
+            request: request
+        )
+
+        #expect(snapshot.currentPage == 3)
+        #expect(snapshot.posts.map(\.document.source.postID) == [9_004, 9_005])
         #expect(!snapshot.hasMore)
         #expect(snapshot.nextPostID == nil)
     }
 
     @Test
-    func fixtureTwoPagesDedupeAndKeepAnchorAtTerminal() async throws {
+    func wireHasMoreWithoutAnUnseenCursorUsesAndroidZeroFallback() throws {
+        var response = try Stage15ProtoFixture.secondPage()
+        response.data.thread.pids = "9001,9002,9003,9004"
+        let request = ThreadReaderPageRequest(
+            threadID: Stage15ProtoFixture.threadID,
+            pageNumber: 2,
+            postID: 9_015,
+            loadedPostIDs: [9_001, 9_002, 9_003, 9_004]
+        )
+
+        let snapshot = try PBPageProtocol.map(response, request: request)
+
+        #expect(snapshot.hasMore)
+        #expect(snapshot.nextPostID == 0)
+    }
+
+    @Test
+    func fixtureFivePagesDedupeAndKeepAnchorAtTerminal() async throws {
         let store = ThreadReaderStore(
             threadID: 140_006,
             repository: FixtureThreadReaderRepository()
@@ -119,13 +187,20 @@ struct Stage15ThreadReadingTests {
             $0.document.availability != .available
         })
 
-        await store.loadNextPage()
+        for expectedCount in [32, 47, 62, 77] {
+            await store.loadNextPage()
+            let merged = try #require(store.state.snapshot)
+            #expect(merged.posts.count == expectedCount)
+            #expect(
+                Set(merged.posts.map(\.document.source.postID)).count
+                    == expectedCount
+            )
+            #expect(merged.posts[1].id == retainedPostID)
+        }
+
         let merged = try #require(store.state.snapshot)
-        #expect(merged.posts.count == 32)
-        #expect(Set(merged.posts.map(\.document.source.postID)).count == 32)
-        #expect(merged.currentPage == 2)
+        #expect(merged.currentPage == 5)
         #expect(!merged.hasMore)
-        #expect(merged.posts[1].id == retainedPostID)
 
         await store.loadNextPage()
         #expect(store.state.snapshot == merged)
@@ -147,7 +222,7 @@ struct Stage15ThreadReadingTests {
         await store.loadNextPage()
         let recovered = try #require(store.state.snapshot)
         #expect(recovered.posts.count == 32)
-        #expect(!recovered.hasMore)
+        #expect(recovered.hasMore)
         #expect(await repository.nextPageAttemptCount() == 2)
     }
 
@@ -335,12 +410,23 @@ private enum Stage15ProtoFixture {
     }
 
     static func secondPage() throws -> Tieba_PbPage_PbPageResponse {
-        let thread = makeThread()
+        var thread = makeThread()
+        thread.pids = "9025,9002"
         var data = makeData(thread: thread, currentPage: 2, hasMore: true)
         data.postList = [
             makePost(id: 9_000, floor: 1, text: "后续页重复首楼"),
             makePost(id: 9_003, floor: 3, text: "重复楼层"),
             makePost(id: 9_004, floor: 4, text: "第二页楼层")
+        ]
+        return response(data)
+    }
+
+    static func thirdPage() throws -> Tieba_PbPage_PbPageResponse {
+        let thread = makeThread()
+        var data = makeData(thread: thread, currentPage: 3, hasMore: false)
+        data.postList = [
+            makePost(id: 9_004, floor: 4, text: "重复楼层"),
+            makePost(id: 9_005, floor: 5, text: "第三页楼层")
         ]
         return response(data)
     }
@@ -355,7 +441,7 @@ private enum Stage15ProtoFixture {
         forum.name = "脱敏测试吧"
         var page = Tieba_Page()
         page.currentPage = currentPage
-        page.newTotalPage = 2
+        page.newTotalPage = 3
         page.hasMore_p = hasMore ? 1 : 0
         var data = Tieba_PbPage_PbPageResponseData()
         data.thread = thread

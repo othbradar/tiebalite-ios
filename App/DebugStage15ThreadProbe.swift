@@ -114,44 +114,40 @@ private struct DebugStage15ThreadProbe: Sendable {
         do {
             let forum = try await LiveForumHomeRepository(client: client)
                 .loadForumHome(route: route)
-            guard let thread = forum.threads.first(where: {
-                !$0.isPinned && $0.replyCount > 15
-            }) ?? forum.threads.first else {
+            let candidates = forum.threads.filter { !$0.isPinned }
+            guard let thread = candidates.filter({
+                $0.replyCount > 60
+            }).max(by: {
+                $0.replyCount < $1.replyCount
+            }) ?? candidates.filter({
+                $0.replyCount > 30
+            }).max(by: {
+                $0.replyCount < $1.replyCount
+            }) else {
                 return failureSummary(
                     responses: await client.capturedResponses(),
                     typedError: "empty-frs"
                 )
             }
 
-            let repository = LiveThreadReaderRepository(client: client)
-            let first = try await repository.loadPage(
-                .initial(threadID: thread.threadID)
-            )
-            guard first.hasMore else {
-                return successSummary(
-                    responses: await client.capturedResponses(),
-                    first: first,
-                    second: nil,
-                    outcome: "terminal-first-page"
-                )
-            }
-            let second = try await repository.loadPage(
-                ThreadReaderPageRequest(
-                    threadID: thread.threadID,
-                    pageNumber: first.currentPage + 1,
-                    postID: first.nextPostID ?? 0
-                )
+            let pages = try await loadThreePages(
+                client: client,
+                threadID: thread.threadID
             )
             return successSummary(
                 responses: await client.capturedResponses(),
-                first: first,
-                second: second,
+                pages: pages,
                 outcome: "success"
             )
         } catch is CancellationError {
             return failureSummary(
                 responses: await client.capturedResponses(),
                 typedError: "cancelled"
+            )
+        } catch let error as DebugStage15ThreadProbeError {
+            return failureSummary(
+                responses: await client.capturedResponses(),
+                typedError: error.diagnostic
             )
         } catch is PBPageProtocolError {
             return failureSummary(
@@ -163,10 +159,12 @@ private struct DebugStage15ThreadProbe: Sendable {
                 responses: await client.capturedResponses(),
                 typedError: "frs-mapping"
             )
-        } catch is EndpointExecutionError {
+        } catch let error as EndpointExecutionError {
+            let responses = await client.capturedResponses()
+            let stage = responses.count > 1 ? "pb" : "frs"
             return failureSummary(
-                responses: await client.capturedResponses(),
-                typedError: "endpoint"
+                responses: responses,
+                typedError: "\(stage)-\(endpointCategory(error))"
             )
         } catch {
             return failureSummary(
@@ -176,13 +174,84 @@ private struct DebugStage15ThreadProbe: Sendable {
         }
     }
 
+    private func loadThreePages(
+        client: DebugStage15CapturingHTTPClient,
+        threadID: Int64
+    ) async throws -> [ThreadReaderSnapshot] {
+        let repository = LiveThreadReaderRepository(client: client)
+        let firstRequest = ThreadReaderPageRequest.initial(
+            threadID: threadID
+        )
+        let first = try await loadPage(
+            repository: repository,
+            client: client,
+            request: firstRequest
+        )
+        guard first.currentPage == 1 else {
+            throw DebugStage15ThreadProbeError.pageMismatch
+        }
+        var pages = [first]
+        var loadedPostIDs = Set(
+            first.posts.map(\.document.source.postID)
+        )
+        while pages.count < 3 {
+            guard let current = pages.last,
+                  current.hasMore,
+                  let cursor = current.nextPostID else {
+                throw DebugStage15ThreadProbeError.terminalBeforeThirdPage
+            }
+            let request = ThreadReaderPageRequest(
+                threadID: threadID,
+                pageNumber: current.currentPage + 1,
+                postID: cursor,
+                loadedPostIDs: loadedPostIDs
+            )
+            let next = try await loadPage(
+                repository: repository,
+                client: client,
+                request: request
+            )
+            guard next.currentPage == request.pageNumber else {
+                throw DebugStage15ThreadProbeError.pageMismatch
+            }
+            let nextPostIDs = Set(
+                next.posts.map(\.document.source.postID)
+            )
+            guard !nextPostIDs.subtracting(loadedPostIDs).isEmpty else {
+                throw DebugStage15ThreadProbeError.noProgress
+            }
+            pages.append(next)
+            loadedPostIDs.formUnion(nextPostIDs)
+        }
+        return pages
+    }
+
+    private func loadPage(
+        repository: LiveThreadReaderRepository,
+        client: DebugStage15CapturingHTTPClient,
+        request: ThreadReaderPageRequest
+    ) async throws -> ThreadReaderSnapshot {
+        do {
+            return try await repository.loadPage(request)
+        } catch EndpointExecutionError.mapping {
+            guard let response = await client.capturedResponses().last,
+                  let wire = try? PBPageProtocol.decode(response.body) else {
+                throw EndpointExecutionError.mapping
+            }
+            do {
+                return try PBPageProtocol.map(wire, request: request)
+            } catch let error as PBPageProtocolError {
+                throw DebugStage15ThreadProbeError.mapping(error)
+            }
+        }
+    }
+
     private func successSummary(
         responses: [HTTPResponse],
-        first: ThreadReaderSnapshot,
-        second: ThreadReaderSnapshot?,
+        pages: [ThreadReaderSnapshot],
         outcome: String
     ) -> String {
-        let pbResponses = Array(responses.dropFirst())
+        let pbResponses = Array(responses.suffix(pages.count))
         let status = pbResponses.map { String($0.statusCode) }.joined(
             separator: ","
         )
@@ -195,20 +264,26 @@ private struct DebugStage15ThreadProbe: Sendable {
         let decoded = pbResponses.allSatisfy {
             (try? PBPageProtocol.decode($0.body)) != nil
         }
-        let ordinaryCount = first.posts.filter {
-            $0.document.source.scope == .post
-        }.count
-        let subpostCount = first.posts.reduce(0) {
-            $0 + $1.subposts.count
-        }
-        let secondCount = second?.posts.filter {
-            $0.document.source.scope == .post
-        }.count
-        return "status=\(status) mime=\(mime) bytes=\(bytes) " +
-            "decoded=\(decoded) title=\(!first.title.isEmpty) " +
-            "first-floor=\(first.posts.first?.floorNumber == 1) " +
-            "ordinary=\(ordinaryCount) subposts=\(subpostCount) " +
-            "has-next=\(first.hasMore) page2-ordinary=\(secondCount ?? 0) " +
+        let mappedCounts = pages.map { String($0.posts.count) }.joined(
+            separator: ","
+        )
+        let pageNumbers = pages.map { String($0.currentPage) }.joined(
+            separator: ","
+        )
+        let hasMore = pages.map { $0.hasMore ? "1" : "0" }.joined(
+            separator: ","
+        )
+        let cursorPresent = pages.map {
+            ($0.nextPostID ?? 0) > 0 ? "1" : "0"
+        }.joined(separator: ",")
+        let uniquePostCount = Set(
+            pages.flatMap { $0.posts.map(\.document.source.postID) }
+        ).count
+        return "requests=\(responses.count) status=\(status) " +
+            "mime=\(mime) bytes=\(bytes) " +
+            "decoded=\(decoded) pages=\(pageNumbers) " +
+            "mapped=\(mappedCounts) unique=\(uniquePostCount) " +
+            "has-more=\(hasMore) cursor=\(cursorPresent) " +
             "typed-error=none outcome=\(outcome)"
     }
 
@@ -217,15 +292,43 @@ private struct DebugStage15ThreadProbe: Sendable {
         typedError: String
     ) -> String {
         let response = responses.last
-        let decoded = response.flatMap {
-            try? PBPageProtocol.decode($0.body)
-        } != nil
-        return "status=\(response.map { String($0.statusCode) } ?? "none") " +
+        let decoded: Bool
+        if responses.count > 1 {
+            decoded = response.flatMap {
+                try? PBPageProtocol.decode($0.body)
+            } != nil
+        } else {
+            decoded = response.map {
+                FRSPageProtocol.inspectForDiagnostics($0.body).decoded
+            } ?? false
+        }
+        return "requests=\(responses.count) " +
+            "status=\(response.map { String($0.statusCode) } ?? "none") " +
             "mime=\(response.map { safeMIME($0.headers) } ?? "unavailable") " +
             "bytes=\(response?.body.count ?? 0) decoded=\(decoded) " +
-            "title=false first-floor=false ordinary=0 subposts=0 " +
-            "has-next=false page2-ordinary=0 " +
+            "pages=none mapped=0 unique=0 has-more=none cursor=none " +
             "typed-error=\(typedError) outcome=failure"
+    }
+
+    private func endpointCategory(_ error: EndpointExecutionError) -> String {
+        switch error {
+        case .authentication:
+            "authentication"
+        case .decode:
+            "decode"
+        case .http:
+            "http"
+        case .mapping:
+            "mapping"
+        case .responseTooLarge:
+            "response-too-large"
+        case .server:
+            "server"
+        case .transport:
+            "transport"
+        case .unsupportedContent:
+            "mime"
+        }
     }
 
     private func safeMIME(_ headers: [String: String]) -> String {
@@ -236,6 +339,55 @@ private struct DebugStage15ThreadProbe: Sendable {
             .first?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased() ?? "unavailable"
+    }
+}
+
+private enum DebugStage15ThreadProbeError: Error {
+    case terminalBeforeThirdPage
+    case mapping(PBPageProtocolError)
+    case noProgress
+    case pageMismatch
+
+    var diagnostic: String {
+        switch self {
+        case .terminalBeforeThirdPage:
+            "terminal-before-page3"
+        case let .mapping(error):
+            "pb-\(Self.mappingCategory(error))"
+        case .noProgress:
+            "pb-no-progress"
+        case .pageMismatch:
+            "pb-page-mismatch"
+        }
+    }
+
+    private static func mappingCategory(
+        _ error: PBPageProtocolError
+    ) -> String {
+        switch error {
+        case .emptyBody:
+            "empty"
+        case .invalidStaticConfiguration:
+            "configuration"
+        case .invalidPageNumber:
+            "page"
+        case .invalidPostID:
+            "post-id"
+        case .invalidThreadID:
+            "thread-id"
+        case .missingData:
+            "missing-data"
+        case .missingFirstPost:
+            "missing-first-post"
+        case .missingPage:
+            "missing-page"
+        case .missingThread:
+            "missing-thread"
+        case .pageIdentityMismatch:
+            "page-mismatch"
+        case .threadIdentityMismatch:
+            "thread-mismatch"
+        }
     }
 }
 #endif

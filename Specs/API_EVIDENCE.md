@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE15_5_ACTIVE_RECOMMENDATION_AND_FORUM_GUIDE_RUNTIME_VERIFIED`
+状态：`STAGE15_6_CORE_LIVE_PAGINATION_RUNTIME_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -76,6 +76,31 @@ response、帖子/作者内容、Cookie、请求体或设备标识。这足以�
 用户内容或设备标识。该证据只解除顺序 FRS 第二页的开源
 Beta 门禁；第三页以及 `thread_id_list + ThreadList` 仍无运行证据。
 
+阶段 15.6 只补齐 PBPage 与 Personalized 的普通顺序分页，不扩大
+Proto 闭包、Session 或列表承载边界。2026-08-09 的脱敏运行证据：
+
+- 一个公开长帖以匿名普通升序 PBPage 连续取得三页；三页 HTTP
+  均为 200，MIME 均为 `application/octet-stream`，body 为
+  24893/16779/13805 bytes，Proto decode 均成功，分别映射
+  17/15/15 个楼层，按 `Post.id` 累计 45 个唯一楼层。服务端
+  `current_page=1/2/3`，三页 `has_more` 均为 1，因此第三页
+  已证不再被本地强制 terminal。首屏固定使用 `pid=0`；
+  page2/page3 因前一页 pids 无未见正候选而按 Android 回退规则
+  使用 `pid=0`。page3 映射出的未来 cursor 也为 0，但未发出 page4；
+- 保留的 active session 下，Personalized 首页
+  `load_type=1,pn=1`，第二页 `load_type=2,pn=2`，
+  `page_thread_count=11`。第二页 HTTP 200、
+  `application/octet-stream`、72958 bytes、Proto decode=true、mapped=12，
+  相对首页新增 12 个稳定 `ThreadInfo.id`，typed outcome=success。
+
+运行只记录 status、MIME、byte count、decode、page/count 和 typed
+outcome；没有记录 threadID/postID 值、标题、正文、完整响应、请求体或
+credential。Android 代码证据表明 `Page.has_more=0` 是客户端停止信号，
+iOS 将其作为 wire terminal 合同；真实三页都为 1，服务端末页行为仍是
+`RUNTIME_UNKNOWN`。
+Personalized response 仍没有 terminal 字段；空页或 duplicate-only 页
+停止是 iOS 的受测 client no-progress policy，不是服务端 `hasMore`。
+
 ## 公共传输证据
 
 ### Protobuf family
@@ -142,6 +167,10 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   `ACTIVE_SESSION_FIRST_PAGE_RUNTIME_VERIFIED`。Production 使用同一 active
   Repository 路径并实际显示 12 项；没有 tracked live fixture，匿名稳定性、
   分页、字段最小性与服务端是否消费 credential 仍为 `UNKNOWN`。
+- 阶段 15.6 当前结论：
+  `ACTIVE_SESSION_SECOND_PAGE_RUNTIME_VERIFIED`。第二页
+  `load_type=2,pn=2`成功并有 12 个新稳定 ID；匿名稳定性、第三页+
+  live 与服务 terminal 仍为 `UNKNOWN`。
 
 ### 安全与 fixture 规则
 
@@ -229,10 +258,14 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   candidate request、transport/HTTP/MIME/decode/map 与 Fixture/Production
   显式选择由 mock tests 验证。Debug Probe 观察到一次匿名非空和多次匿名合法
   空页；阶段 12 与阶段 15.5 分别观察到 active Session 的 12-item 成功页，且
-  阶段 15.5 的 Production 页面实际显示 12 项。没有可复现 server fixture，
-  因而只验证 active 首屏，不扩展到匿名稳定性或分页。
-- UNKNOWN：最终静态字段组合为何只返回空页、稳定匿名能力、终止条件、page
-  起点以外边界、广告/直播节点、稳定顺序、限流与错误码。
+  阶段 15.5 的 Production 页面实际显示 12 项。阶段 15.6 进一步在
+  同一 active-session 路径验证 `load_type=2,pn=2`：HTTP 200、
+  `application/octet-stream`、72958 bytes、decode=true、mapped=12，且
+  较首屏新增 12 个稳定 `ThreadInfo.id`。Fixture/Store 连续覆盖三页、
+  跨页 first-wins、下一页保留失败/重试与 refresh generation 隔离。
+- UNKNOWN：稳定匿名能力、服务端终止条件、空页/duplicate-only 页的服务语义、
+  第三页及更后 live 稳定性、广告/直播节点、限流与错误码。当前停止
+  空页/无新 ID 只是 client policy，不声称服务端 `hasMore`。
 
 ### `followedForums.forumGuide`
 
@@ -400,20 +433,26 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   图片候选生成稳定 MediaIntent。
 - Fixture 路径：`FixtureThreadReaderPages` 与
   `Tests/Stage15ThreadReadingTests.swift` 的完全合成、脱敏 Swift Proto response；
-  两页覆盖首楼、普通楼层、内联楼中楼、图片、未知节点、折叠楼层、重叠
-  postID、畸形 pids、终止页和下一页失败。它们不是 live capture 或
+  阶段 15.6 连续五页覆盖首楼、普通楼层、内联楼中楼、图片、未知节点、
+  折叠楼层、跨页重叠 postID、畸形/累计 pids、终止页和下一页失败。
+  聚合为 77 个唯一楼层；独立 5×200 的 1000 楼虚拟化 fixture 保持不变。
+  它们不是 live capture 或
   cross-language fixture。
 - Fixture 获取/生成方式：只由测试代码与稳定业务 ID 构造；不保存服务端
   response。倒序、只看楼主、跳楼与完整 PBFloor 继续 `NOT_CREATED`。
 - 已验证行为：Android 当前完整 Thread UI 使用 Proto 链；阶段 11 锁定
-  PBPage closure；阶段 15 新增 `pn/pid` 下一页 request、Page/cursor、
-  后续页无首楼、楼中楼/时间、非法单楼降级、分页去重保序、保留内容失败/
-  重试、防重复、取消与 route 离开回归。Proto 闭包仍为当前 156 文件。
-- 运行态：`ANONYMOUS_TWO_PAGE_RUNTIME_VERIFIED`。2026-08-05 Debug-only Probe
-  从公开 FRS 主题取得真实 threadID；PBPage 首屏/第二页均 HTTP 200、
-  `application/octet-stream`、24,567/17,106 bytes、Proto decode 成功。首屏
-  有首楼、16 个普通楼层、60 条楼中楼且 has-next；第二页 15 个普通楼层。
-  没有保存响应正文、Proto dump、threadID、标题或用户内容。
+  PBPage closure；阶段 15/15.6 覆盖任意顺序 `pn/pid`、精确
+  `current_page`、每页 `has_more`、累计 cursor 排除与已证 `pid=0`
+  fallback、后续页无首楼、楼中楼/时间、非法单楼降级、分页去重保序、
+  retained failure/重试、防重复、no-progress、取消与 route 离开回归。
+  Proto 闭包仍为当前 156 文件。
+- 运行态：`ANONYMOUS_THREE_PAGE_RUNTIME_VERIFIED`。2026-08-09 Debug-only
+  Probe 从公开 FRS 选择长帖；PBPage 连续三页均 HTTP 200、
+  `application/octet-stream`，为 24893/16779/13805 bytes，Proto decode 成功，
+  `current_page=1/2/3`，分别映射 17/15/15 楼，累计 45 个唯一 postID。
+  三页 `has_more=1`；首屏固定 `pid=0`，后续两页以 Android 已证
+  fallback `pid=0` 继续。没有保存响应正文、Proto dump、
+  threadID/postID 值、标题或用户内容。
 - UNKNOWN：合法空页、删除/私密的完整语义、`is_post_visible` proto3 零值、
   sort 值域、倒序/跳楼/PBFloor、真实错误 taxonomy、限流与跨主题稳定性。
   Production 图片 loader 仍 disabled，Live 图片不是本次运行证据。
@@ -600,7 +639,11 @@ cancel/stale 测试和无凭证运行成功后启用匿名首屏。阶段 14P
 解除一页顺序下一页。第三页及更后页的 live 证据、完整错误矩阵、
 `thread_id_list + ThreadList` 均未验证，不能用该例外启用其他 endpoint。
 
-`thread.pbPage` 按 ADR-0017 使用另一个独立、范围受限的开源 Beta 例外：
-仅启用普通升序匿名首屏和一页顺序下一页。该例外由真实 FRS threadID、两页
-HTTP/MIME/Proto 运行证据与确定性 pagination tests 支持，不扩展到 PB Floor、
+`thread.pbPage` 按 superseding `ADR-0019-core-live-pagination-beta.md` 使用
+另一个独立、
+范围受限的开源 Beta 例外：启用普通升序匿名 PBPage 顺序分页，
+不设本地固定最大页。该例外由真实 FRS threadID、连续三页
+HTTP/MIME/Proto/current-page 运行证据与五页确定性 pagination tests
+支持。Android 已证 `has_more=0` 是 client stop signal，iOS 以其作为
+wire terminal 合同；真实末页仍未运行验证。不扩展到 PB Floor、
 倒序、跳楼、只看楼主、Live 图片或其他 endpoint。

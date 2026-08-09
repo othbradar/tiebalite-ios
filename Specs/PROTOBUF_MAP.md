@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`FRS_NEXT_PAGE_PBPAGE_TWO_PAGE_AND_156_FILE_CLOSURE_VERIFIED`
+状态：`FRS_NEXT_PAGE_PBPAGE_CONTINUOUS_THREE_PAGE_RUNTIME_AND_156_FILE_CLOSURE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -152,6 +152,13 @@ PB Floor 与 ThreadList 仍未进入当前生成集合，
 | response `thread_personalized` | 按 tid 关联的推荐元数据 | `CODE_EVIDENCE` |
 | `weight/source/extra` | 不进入 P0 领域，保留 raw/忽略策略待定 | `UNKNOWN` |
 
+阶段 15.6 按 Android 调用约定使用首屏 `load_type=1,pn=1`，后续页
+`load_type=2,pn=N`，`page_thread_count=11`。响应没有 `has_more`、总页数或
+cursor；因此 `RecommendationPage.terminal` 仍为 unknown，不得发明服务端
+terminal。iOS 以空页或 duplicate-only 页停止自动继续，只是受测的
+client no-progress/terminal policy。跨页身份沿用 Android 实际导航字段
+`ThreadInfo.id`，按服务器首次顺序 first-wins 去重。
+
 ### FRS Page
 
 来源：`FrsPage/FrsPage.proto`。
@@ -198,13 +205,18 @@ threadID first-wins 去重并保持服务器首次出现顺序；`isTop == 1`
 | `SubPostList.id/content/time/author_id/author` | 稳定楼中楼、正文、时间与作者 | `CODE_EVIDENCE` + 阶段 15 `RUNTIME_EVIDENCE` |
 | 其余广告、推荐、业务推广字段 | P0 不映射，必要时作为未消费 DTO | 存在 `CODE_EVIDENCE`; 语义 `UNKNOWN` |
 
-阶段 15 普通升序首屏固定请求 `pn=0,pid=0`。下一页使用响应
-`current_page + 1`，并从 `ThreadInfo.pids` 中排除本页 postID 后取最后一个
-合法正 Int64 作为 `pid`；畸形 token 被忽略。首屏的 `Page.has_more != 0`
-只决定是否允许当前 Beta 已验证的一页下一页；任何后续页在领域快照中强制
-terminal，不据其 `has_more` 请求第三页。`new_total_page` 优先于 `total_page`
-映射展示元数据。后续页允许没有 `first_floor_post`，追加时按 `Post.id` 去重且
-保持服务器顺序。
+阶段 15.6 普通升序首屏固定请求 `pn=0,pid=0`，且要求服务端
+`current_page=1`。后续页以 `current_page + 1` 顺序请求，响应页号必须
+与请求精确相等。从 `ThreadInfo.pids` 中排除累计已加载和当前页的
+postID 后取最后一个合法正 Int64 作为 `pid`；畸形 token 被忽略，
+没有剩余候选时依 Android 已证策略发送 `pid=0`。每一页都消费
+`Page.has_more`；Android 代码证据表明 `has_more=0` 是 client stop signal，
+iOS 以其作为 wire terminal 合同，但真实服务端末页仍为
+`RUNTIME_UNKNOWN`。不设固定
+最大页。`has_more=1` 却无新稳定 postID 时保留旧楼层并进入可重试的
+client no-progress failure，不伪装成 terminal。`new_total_page` 优先于
+`total_page` 映射展示元数据。后续页允许没有 `first_floor_post`，追加时
+按 `Post.id` first-wins 去重且保持服务器首次顺序。
 
 `SubPostList` 没有独立可靠的 reply-to 字段。iOS 只在正文出现已知 type-4
 mention 时显示回复对象，不把 `title` 猜成关系。当前只映射 PBPage 内联预览，
@@ -302,10 +314,10 @@ dispatcher P0 raw、unknown `999`、meme/poll message presence、URL/尺寸/空�
 降级与严格保序，状态为 `CROSS_LANGUAGE_GENERATED_AND_TESTED`。
 
 PBPage wrapper、`Post.content#5`、首楼/普通楼层、楼中楼、图片 intent、
-Page/cursor、server error 和 route identity mismatch 已由阶段 11/15 完全
-合成的 Swift Proto response `LOCAL_SYNTHETIC_TESTED`。阶段 15 另有匿名公开
-主题两页 `RUNTIME_EVIDENCE`，但没有保存 live body，也尚无 tracked
-cross-language PBPage fixture。
+Page/cursor、server error 和 route identity mismatch 已由阶段 11/15/15.6
+完全合成的 Swift Proto response `LOCAL_SYNTHETIC_TESTED`。阶段 15.6 另有
+一个匿名公开长帖连续三页 `RUNTIME_EVIDENCE`，但没有保存 live body，
+也尚无 tracked cross-language PBPage fixture。
 FRS 已有 1 份完全合成、脱敏的 response fixture、确定性 request/mapper
 测试，2026-08-05 匿名公开吧首屏运行观察，以及 2026-08-09
 `pn=2/load_type=2` 的一页顺序下一页运行观察；这不等于 live

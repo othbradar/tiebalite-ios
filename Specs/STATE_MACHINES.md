@@ -91,11 +91,15 @@ RecommendationState {
 |---|---|---|---|---|
 | `appear` | idle | page 1/loadType refresh | loaded/empty；nextPage=2；terminal 仍 unknown | initialFailure |
 | `pullToRefresh` | 任意已显示态 | 新 generation page 1 | 替换或按已批准刷新语义合并；本规格采用替换列表并以 id 恢复 anchor | refreshFailure(previous) |
-| `reachTail` | loaded 且非 terminal 且 cursor 空闲 | nextPage | append+dedupe；空页是否 terminal 取决于 fixture | nextPageFailure |
+| `reachTail` | loaded 且 nextPage 存在且 page 空闲 | `load_type=2,pn=nextPage` | append+dedupe；空页或 duplicate-only 页以受测 client policy 停止 | nextPageFailure(previous) |
 | `retryInitial/Refresh/Next` | 对应失败态 | 原请求 identity 的新 attempt | 对应成功态 | 保持失败态并更新 error |
 | `filtersChanged` | loaded/empty | 新 generation refresh | 新过滤结果 | refreshFailure(previous) |
 
-`UNKNOWN`：推荐 endpoint 无已证终止信号。直到 fixture 证明规则，连续空页策略只能作为受测 client policy，不得伪称服务端 `hasMore`。
+`UNKNOWN`：推荐 endpoint 无已证终止信号。阶段 15.6 以空页或跨页
+duplicate-only 页停止，只是确定性 client no-progress policy，不得伪称
+服务端 `hasMore`。列表末尾 4 项只派发 Store-owned load-next 意图；单一
+Task、generation 与 page identity 防止重复请求，刷新取消旧分页且迟到结果
+不得覆盖新列表。
 
 ## 关注的吧
 
@@ -238,8 +242,15 @@ ThreadReaderState {
 - `post_list=[]` 可能是 empty、deleted、private 或 malformed；在有运行证据前映射为 `unavailable` 而非通用 crash。
 - `thread.author/forum/anti` 缺失不能在 mapper 强制解包；只有真正不可构建 identity 时才成为页面失败。
 - `pids` 非数字 token 被忽略并记录脱敏 diagnostics；不能使整页失败。
-- 阶段 15 Beta 只开放首屏与一页下一页：只有首屏 `hasMore` 可产生 nextCursor，
-  后续页无论 wire `has_more` 值为何都提交为 terminal；不得隐式请求第三页。
+- 阶段 15.6 取消两页本地硬帽。首屏 wire `pn=0` 必须映射服务端
+  `current_page=1`；后续 `pn=N` 必须精确响应 `current_page=N`。每页
+  `has_more=1` 允许顺序请求下一页。Android 已证 `has_more=0` 是
+  client stop signal，iOS 以其作为 wire terminal 合同；真实末页运行语义
+  仍为 `UNKNOWN`，不设固定最大页。
+- 下一页 cursor 从 `ThreadInfo.pids` 排除全部累计 postID，取最后一个
+  未见正数；无候选时依已证 Android fallback 使用 `pid=0`。
+- `has_more=1` 却无新稳定 postID 时，保留已读楼层与原 page/pid，
+  进入可重试 no-progress failure，防止空转；不伪装成服务端末页。
 - refresh/load-next/load-previous 互斥规则由 generation + cursor 保证。
 - readAnchor 使用稳定 post id；数组 index 只用于瞬时滚动实现。
 

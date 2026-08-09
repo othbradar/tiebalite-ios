@@ -22,5 +22,6 @@
 | `ADR-0016-frs-forum-home.md` | Accepted，阶段 14 匿名 FRS 首屏、Forum identity/Repository 边界与 156-file 闭包 |
 | `ADR-0017-pbpage-read-only-pagination-beta.md` | Accepted，阶段 15 匿名 PBPage 首屏/顺序下一页、楼中楼预览与保留内容分页 |
 | `ADR-0018-thread-reader-table-virtualization-beta.md` | Accepted，阶段 15 唯一 UITableView/diffable/UIHostingConfiguration 长帖承载层 |
+| `ADR-0019-core-live-pagination-beta.md` | Accepted，阶段 15.6 取代 PBPage 两页硬帽，并启用证据范围内的 Personalized 顺序分页 |
 
 Accepted ADR 是实现约束；变更必须新建 superseding ADR，不能静默改历史。

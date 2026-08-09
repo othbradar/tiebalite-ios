@@ -7,8 +7,36 @@ enum FixtureReadingRepositoryError: Error, Equatable, Sendable {
 
 struct FixtureRecommendationRepository: RecommendationRepository {
     func loadRecommendations() async throws -> [RecommendationSummary] {
+        try await loadPage(.initial).items
+    }
+
+    func loadPage(
+        _ request: RecommendationPageRequest
+    ) async throws -> RecommendationRepositoryPage {
         try Task.checkCancellation()
-        return FixtureReadingCatalog.recommendationSeeds.map(\.recommendation)
+        guard request.isValid else {
+            throw RecommendationRepositoryError.invalidRequest
+        }
+        let pageIndex = Int(request.page) - 1
+        guard FixtureReadingCatalog.recommendationPages.indices.contains(
+            pageIndex
+        ) else {
+            throw FixtureReadingRepositoryError.unavailable
+        }
+        let expectedKind: RecommendationPageLoadKind = request.page == 1
+            ? .refresh
+            : .nextPage
+        guard request.loadKind == expectedKind else {
+            throw FixtureReadingRepositoryError.unavailable
+        }
+        let pages = FixtureReadingCatalog.recommendationPages
+        return RecommendationRepositoryPage(
+            items: pages[pageIndex].map(\.recommendation),
+            requestedPage: request.page,
+            nextPageCandidate: pageIndex + 1 < pages.count
+                ? request.page + 1
+                : nil
+        )
     }
 }
 
@@ -31,16 +59,20 @@ struct FixtureThreadReaderRepository: ThreadReaderRepository {
         switch request.pageNumber {
         case 0:
             return FixtureThreadReaderPages.firstPage(from: seed)
-        case 2:
+        case 2...5:
             guard request.postID == FixtureThreadReaderPages.nextPostID(
-                for: seed
+                for: seed,
+                afterPage: request.pageNumber - 1
             ) else {
                 throw FixtureReadingRepositoryError.unavailable
             }
             if failsNextPage {
                 throw FixtureReadingRepositoryError.unavailable
             }
-            return FixtureThreadReaderPages.secondPage(from: seed)
+            return FixtureThreadReaderPages.subsequentPage(
+                from: seed,
+                pageNumber: request.pageNumber
+            )
         default:
             throw FixtureReadingRepositoryError.unavailable
         }
@@ -153,6 +185,14 @@ enum FixtureReadingCatalog {
             imageResources: [FixtureReadingImageResource.green]
         )
     ]
+
+    static var recommendationPages: [[FixtureThreadSeed]] {
+        [
+            Array(recommendationSeeds[0..<4]),
+            [recommendationSeeds[3]] + Array(recommendationSeeds[4..<8]),
+            [recommendationSeeds[7]] + Array(recommendationSeeds[8..<12])
+        ]
+    }
 
     static let forumThreadSeeds: [FixtureThreadSeed] = [
         FixtureThreadSeed(

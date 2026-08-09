@@ -45,7 +45,7 @@ enum FixtureThreadReaderPages {
                 unavailablePost(seed: seed, floorNumber: 4)
             ] + laterPosts,
             currentPage: 1,
-            totalPage: 2,
+            totalPage: 5,
             hasMore: true,
             nextPostID: nextPostID(for: seed)
         )
@@ -54,25 +54,54 @@ enum FixtureThreadReaderPages {
     static func secondPage(
         from seed: FixtureThreadSeed
     ) -> ThreadReaderSnapshot {
-        ThreadReaderSnapshot(
+        subsequentPage(from: seed, pageNumber: 2)
+    }
+
+    static func subsequentPage(
+        from seed: FixtureThreadSeed,
+        pageNumber: Int
+    ) -> ThreadReaderSnapshot {
+        let previousLastFloor = 17 + (pageNumber - 2) * 15
+        let lastFloor = previousLastFloor + 15
+        let hasMore = pageNumber < 5
+        return ThreadReaderSnapshot(
             threadID: seed.threadID,
             title: seed.title,
             forumName: seed.forumName,
             author: seed.author,
             replyCount: seed.replyCount,
-            posts: [fixturePost(seed: seed, floorNumber: 17)]
-                + (18...32).map { floorNumber in
+            posts: [fixturePost(
+                seed: seed,
+                floorNumber: previousLastFloor
+            )] + ((previousLastFloor + 1)...lastFloor).map { floorNumber in
                     fixturePost(seed: seed, floorNumber: floorNumber)
                 },
-            currentPage: 2,
-            totalPage: 2,
-            hasMore: false,
-            nextPostID: nil
+            currentPage: pageNumber,
+            totalPage: 5,
+            hasMore: hasMore,
+            nextPostID: hasMore
+                ? postID(for: seed, floorNumber: lastFloor)
+                : nil
         )
     }
 
     static func nextPostID(for seed: FixtureThreadSeed) -> Int64 {
-        seed.threadID + 170_000
+        postID(for: seed, floorNumber: 17)
+    }
+
+    static func nextPostID(
+        for seed: FixtureThreadSeed,
+        afterPage pageNumber: Int
+    ) -> Int64 {
+        let lastFloor = 17 + (pageNumber - 1) * 15
+        return postID(for: seed, floorNumber: lastFloor)
+    }
+
+    private static func postID(
+        for seed: FixtureThreadSeed,
+        floorNumber: Int
+    ) -> Int64 {
+        seed.threadID + Int64(floorNumber * 10_000)
     }
 
     private static func fixturePost(

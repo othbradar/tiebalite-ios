@@ -141,3 +141,13 @@ Production 现在只在 active context 下发出 Personalized 首屏请求；sig
 `PHASE_11_LIVE_READ_FLOW = COMPLETE`（`OPEN_SOURCE_BETA`）。该结论不扩展为
 匿名 Personalized、推荐分页、登录完成后的自动刷新、完整错误 taxonomy 或
 Live 图片；已在 signed-out 失败页时，用户登录后需点击现有“重试”。
+
+## 阶段 15.6 后续修订（2026-08-09）
+
+阶段 11 “只加载推荐第一页”与 PBPage 无分页的结论是历史快照。
+阶段 15.6 已按锁定 Android 调用实现 active Personalized
+`load_type=2,pn=N`顺序分页，并在保留会话下验证第二页
+HTTP 200/Proto decode=true/mapped=12，相对首屏新增 12 个稳定 ID。
+PBPage 也已在一个公开长帖连续验证三页。精确合同、脱敏运行证据
+与未知项见 `PHASE15_6_LIVE_PAGINATION.md`；本审计的原始阶段 11
+命令和失败记录不被重写。

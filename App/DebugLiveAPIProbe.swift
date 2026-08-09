@@ -10,71 +10,6 @@ enum DebugLiveAPIProbeLaunch {
     }
 }
 
-private enum DebugLiveProbeOutcome: String, Sendable {
-    case authentication
-    case cancelled
-    case decode
-    case http
-    case mapping
-    case notRun = "not-run"
-    case request
-    case responseTooLarge = "response-too-large"
-    case server
-    case success
-    case transport
-    case unsupportedContent = "unsupported-content"
-}
-
-private struct DebugLiveProbeResult: Sendable {
-    let statusCode: Int?
-    let mimeType: String
-    let bodyByteCount: Int
-    let decoded: Bool
-    let mappedItemCount: Int?
-    let personalizationItemCount: Int?
-    let outcome: DebugLiveProbeOutcome
-    let durationMilliseconds: Int
-    let thread: DebugThreadProbeResult
-
-    static let pending = DebugLiveProbeResult(
-        statusCode: nil,
-        mimeType: "pending",
-        bodyByteCount: 0,
-        decoded: false,
-        mappedItemCount: nil,
-        personalizationItemCount: nil,
-        outcome: .transport,
-        durationMilliseconds: 0,
-        thread: .notRun
-    )
-}
-
-private struct DebugThreadProbeResult: Sendable {
-    let statusCode: Int?
-    let mimeType: String
-    let bodyByteCount: Int
-    let decoded: Bool
-    let titlePresent: Bool
-    let forumPresent: Bool
-    let postCount: Int?
-    let imageNodeCount: Int?
-    let outcome: DebugLiveProbeOutcome
-    let durationMilliseconds: Int
-
-    static let notRun = DebugThreadProbeResult(
-        statusCode: nil,
-        mimeType: "not-run",
-        bodyByteCount: 0,
-        decoded: false,
-        titlePresent: false,
-        forumPresent: false,
-        postCount: nil,
-        imageNodeCount: nil,
-        outcome: .notRun,
-        durationMilliseconds: 0
-    )
-}
-
 private actor DebugLiveProbeCapturingHTTPClient: HTTPClient {
     private let base: any HTTPClient
     private var latestResponse: HTTPResponse?
@@ -91,140 +26,6 @@ private actor DebugLiveProbeCapturingHTTPClient: HTTPClient {
 
     func capturedResponse() -> HTTPResponse? {
         latestResponse
-    }
-}
-
-private struct DebugLiveRecommendationProbe: Sendable {
-    private let client: any HTTPClient
-    private let authContextProvider: any AuthContextProviding
-
-    init(
-        client: any HTTPClient,
-        authContextProvider: any AuthContextProviding
-    ) {
-        self.client = client
-        self.authContextProvider = authContextProvider
-    }
-
-    func run() async -> DebugLiveProbeResult {
-        let clock = ContinuousClock()
-        let started = clock.now
-        let capturingClient = DebugLiveProbeCapturingHTTPClient(base: client)
-        do {
-            let summaries = try await LiveRecommendationRepository(
-                client: capturingClient,
-                authContextProvider: authContextProvider
-            ).loadRecommendations()
-            guard let response = await capturingClient.capturedResponse() else {
-                return failure(
-                    outcome: .transport,
-                    response: nil,
-                    started: started,
-                    clock: clock
-                )
-            }
-            return makeResult(
-                response: response,
-                mappedItemCount: summaries.count,
-                outcome: .success,
-                started: started,
-                thread: .notRun
-            )
-        } catch is CancellationError {
-            return failure(
-                outcome: .cancelled,
-                response: await capturingClient.capturedResponse(),
-                started: started,
-                clock: clock
-            )
-        } catch is RequestAuthorizationError {
-            return failure(
-                outcome: .authentication,
-                response: await capturingClient.capturedResponse(),
-                started: started,
-                clock: clock
-            )
-        } catch let error as EndpointExecutionError {
-            return failure(
-                outcome: debugOutcome(for: error),
-                response: await capturingClient.capturedResponse(),
-                started: started,
-                clock: clock
-            )
-        } catch {
-            return failure(
-                outcome: .request,
-                response: await capturingClient.capturedResponse(),
-                started: started,
-                clock: clock
-            )
-        }
-    }
-
-    private func makeResult(
-        response: HTTPResponse,
-        mappedItemCount: Int?,
-        outcome: DebugLiveProbeOutcome,
-        started: ContinuousClock.Instant,
-        thread: DebugThreadProbeResult
-    ) -> DebugLiveProbeResult {
-        let clock = ContinuousClock()
-        let mimeType = debugSafeMIMEType(response.headers)
-        var decoded = false
-        var personalizationItemCount: Int?
-        do {
-            let wire = try PersonalizedProtocol.decode(response.body)
-            decoded = true
-            personalizationItemCount = wire.hasData
-                ? wire.data.threadPersonalized.count
-                : nil
-        } catch {
-            decoded = false
-            personalizationItemCount = nil
-        }
-        return DebugLiveProbeResult(
-            statusCode: response.statusCode,
-            mimeType: mimeType,
-            bodyByteCount: response.body.count,
-            decoded: decoded,
-            mappedItemCount: mappedItemCount,
-            personalizationItemCount: personalizationItemCount,
-            outcome: outcome,
-            durationMilliseconds: debugMilliseconds(
-                from: started.duration(to: clock.now)
-            ),
-            thread: thread
-        )
-    }
-
-    private func failure(
-        outcome: DebugLiveProbeOutcome,
-        response: HTTPResponse?,
-        started: ContinuousClock.Instant,
-        clock: ContinuousClock
-    ) -> DebugLiveProbeResult {
-        if let response {
-            return makeResult(
-                response: response,
-                mappedItemCount: nil,
-                outcome: outcome,
-                started: started,
-                thread: .notRun
-            )
-        }
-        return DebugLiveProbeResult(
-            statusCode: nil,
-            mimeType: "unavailable",
-            bodyByteCount: 0,
-            decoded: false,
-            mappedItemCount: nil,
-            personalizationItemCount: nil,
-            outcome: outcome,
-            durationMilliseconds: debugMilliseconds(
-                from: started.duration(to: clock.now)
-            ),
-            thread: .notRun
-        )
     }
 }
 
@@ -429,20 +230,20 @@ struct DebugLiveAPIProbeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.small) {
-                Text("Stage 11 Live Probe")
+                Text("Stage 15.6 Live Pagination Probe")
                     .font(Typography.font(.title))
                 Text("endpoint=recommendations.personalized")
-                Text("status=\(result.statusCode.map(String.init) ?? "none")")
-                Text("mime=\(result.mimeType)")
-                Text("bytes=\(result.bodyByteCount)")
-                Text("proto-decoded=\(result.decoded ? "yes" : "no")")
-                Text(
-                    "mapped-items="
-                        + "\(result.mappedItemCount.map(String.init) ?? "none")"
+                recommendationPageSummary(
+                    result.firstPage,
+                    prefix: "page1"
+                )
+                recommendationPageSummary(
+                    result.secondPage,
+                    prefix: "page2"
                 )
                 Text(
-                    "personalization-items="
-                        + "\(result.personalizationItemCount.map(String.init) ?? "none")"
+                    "page2-new-items="
+                        + "\(result.secondPageNewItemCount.map(String.init) ?? "none")"
                 )
                 Text("typed-outcome=\(result.outcome.rawValue)")
                 Text("duration-ms=\(result.durationMilliseconds)")
@@ -496,6 +297,29 @@ struct DebugLiveAPIProbeView: View {
                 authContextProvider: authContextProvider
             ).run()
         }
+    }
+
+    @ViewBuilder
+    private func recommendationPageSummary(
+        _ page: DebugRecommendationPageProbeResult,
+        prefix: String
+    ) -> some View {
+        Text(
+            "\(prefix)-status="
+                + "\(page.statusCode.map(String.init) ?? "none")"
+        )
+        Text("\(prefix)-mime=\(page.mimeType)")
+        Text("\(prefix)-bytes=\(page.bodyByteCount)")
+        Text("\(prefix)-proto-decoded=\(page.decoded ? "yes" : "no")")
+        Text(
+            "\(prefix)-mapped-items="
+                + "\(page.mappedItemCount.map(String.init) ?? "none")"
+        )
+        Text(
+            "\(prefix)-personalization-items="
+                + "\(page.personalizationItemCount.map(String.init) ?? "none")"
+        )
+        Text("\(prefix)-outcome=\(page.outcome.rawValue)")
     }
 }
 #endif

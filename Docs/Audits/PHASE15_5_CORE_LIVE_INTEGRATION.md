@@ -131,3 +131,11 @@ Simulator 并直接覆装成功，没有卸载或清除数据。该中间环境�
    不是多账号、真机、App Store 或发布级安全矩阵。
 6. Live 图片仍 disabled。本阶段没有新增动画、手势、overlay、第三方依赖或
    写操作。
+
+## 阶段 15.6 后续修订（2026-08-09）
+
+上文 Personalized “只验证 active 首屏”是 15.5 的停止点。15.6
+继续使用同一 restored active lease 与请求前/响应后 lease 复验，
+真实验证 `load_type=2,pn=2`第二页，mapped=12 且新增 12 个
+稳定 ID。Session、Keychain、entitlement 与启动 restore gate 本轮未修改；
+分页实现与证据见 `PHASE15_6_LIVE_PAGINATION.md`。

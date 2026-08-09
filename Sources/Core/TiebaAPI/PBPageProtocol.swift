@@ -12,6 +12,7 @@ enum PBPageProtocolError: Error, Equatable, Sendable {
     case missingFirstPost
     case missingPage
     case missingThread
+    case pageIdentityMismatch(requested: Int, received: Int)
     case threadIdentityMismatch(requested: Int64, received: Int64)
 }
 

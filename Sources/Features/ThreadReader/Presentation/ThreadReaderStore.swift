@@ -64,10 +64,20 @@ final class ThreadReaderStore {
               retained.hasMore else {
             return
         }
+        guard let nextPostID = retained.nextPostID else {
+            state = .nextPageFailure(retained)
+            listPresentation?.setPagination(.failure(
+                nextPage: retained.currentPage + 1
+            ))
+            return
+        }
         let request = ThreadReaderPageRequest(
             threadID: threadID,
             pageNumber: retained.currentPage + 1,
-            postID: retained.nextPostID ?? 0
+            postID: nextPostID,
+            loadedPostIDs: Set(
+                retained.posts.map(\.document.source.postID)
+            )
         )
         listPresentation?.setPagination(.loading(
             nextPage: request.pageNumber
@@ -187,11 +197,15 @@ final class ThreadReaderStore {
         }
 
         if let retained {
-            guard page.currentPage >= request.pageNumber else {
+            guard page.currentPage == request.pageNumber else {
                 finishFailure(generation: generation, retained: retained)
                 return
             }
             let merged = merge(retained: retained, page: page)
+            if page.hasMore, merged.uniquePosts.isEmpty {
+                finishFailure(generation: generation, retained: retained)
+                return
+            }
             state = .loaded(merged.snapshot)
             if var presentation = listPresentation {
                 presentation.append(
@@ -207,6 +221,10 @@ final class ThreadReaderStore {
                 )
             }
         } else {
+            guard page.currentPage == 1 else {
+                finishFailure(generation: generation, retained: nil)
+                return
+            }
             state = .loaded(page)
             listPresentation = ThreadReaderListPresentation(
                 snapshot: page,

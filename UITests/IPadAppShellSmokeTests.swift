@@ -112,6 +112,33 @@ final class IPadAppShellSmokeTests: XCTestCase {
     }
 
     @MainActor
+    func testFixtureRecommendationsLoadThreePagesOnIPad() {
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+
+        UITestHarness.scrollToHittable(
+            .recommendationsLastPageRow,
+            inside: .recommendationsList,
+            gestureAnchor: .recommendationsSelectedRow,
+            in: app
+        )
+        UITestHarness.tap(.recommendationsLastPageRow, in: app)
+        UITestHarness.requirePresent(
+            .recommendationsLastPageThreadScreen,
+            in: app
+        )
+        UITestHarness.tapSystemBack(
+            in: app,
+            returningTo: .recommendationsLastPageRow
+        )
+        XCTAssertTrue(
+            UITestHarness.element(
+                .recommendationsLastPageRow,
+                in: app
+            ).isHittable
+        )
+    }
+
+    @MainActor
     func testFixtureForumThreadShowsSubpostsPaginationAndMediaOnIPad() {
         let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
         let device = XCUIDevice.shared

@@ -374,6 +374,38 @@ final class AppShellSmokeTests: XCTestCase {
 
 extension AppShellSmokeTests {
     @MainActor
+    func testFixtureRecommendationsLoadThreePagesAndPreservePosition() {
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+
+        UITestHarness.scrollToHittable(
+            .recommendationsLastPageRow,
+            inside: .recommendationsList,
+            gestureAnchor: .recommendationsSelectedRow,
+            in: app
+        )
+        let before = UITestHarness.element(
+            .recommendationsLastPageRow,
+            in: app
+        ).frame
+        UITestHarness.tap(.recommendationsLastPageRow, in: app)
+        UITestHarness.requirePresent(
+            .recommendationsLastPageThreadScreen,
+            in: app
+        )
+        UITestHarness.tapSystemBack(
+            in: app,
+            returningTo: .recommendationsLastPageRow
+        )
+
+        let returned = UITestHarness.element(
+            .recommendationsLastPageRow,
+            in: app
+        )
+        XCTAssertTrue(returned.isHittable)
+        XCTAssertEqual(returned.frame.midY, before.midY, accuracy: 12)
+    }
+
+    @MainActor
     func testDebugSettingsPathSurvivesTabSwitch() {
         let app = UITestHarness.launch(scenario: .emptyShell)
 

@@ -20,3 +20,7 @@ Beta 限制见 `PHASE09_MEDIA_VIEWER.md`。
 阶段 15 PBPage 匿名两页、楼层/楼中楼映射、保留内容分页、SwiftUI A/B、
 UITableView 虚拟化和 1000 楼 Fixture 见
 `PHASE15_READ_ONLY_THREAD_BROWSING.md`。
+
+阶段 15.6 PBPage 连续分页、Personalized 推荐分页、三页/第二页
+Live 脱敏证据、retained failure/generation 回归与未知项见
+`PHASE15_6_LIVE_PAGINATION.md`。

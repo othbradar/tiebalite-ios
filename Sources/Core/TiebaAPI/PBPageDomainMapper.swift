@@ -16,14 +16,20 @@ enum PBPageDomainMapper {
     ) throws -> ThreadReaderSnapshot {
         let data = try validatedData(response, request: request)
         let posts = try mappedPosts(data, request: request)
-        let currentPage = data.page.currentPage > 0
-            ? Int(data.page.currentPage)
-            : max(1, request.pageNumber)
+        let currentPage = Int(data.page.currentPage)
         let totalPage = firstPositive(
             data.page.newTotalPage,
             data.page.totalPage
         )
-        let hasMore = request.pageNumber == 0 && data.page.hasMore_p != 0
+        let hasMore = data.page.hasMore_p != 0
+        let nextPostID = hasMore
+            ? nextPagePostID(
+                from: data.thread.pids,
+                excluding: request.loadedPostIDs.union(
+                    posts.map(\.id.postID)
+                )
+            ) ?? 0
+            : nil
         return ThreadReaderSnapshot(
             threadID: request.threadID,
             title: nonempty(data.thread.title, fallback: "无标题"),
@@ -34,12 +40,7 @@ enum PBPageDomainMapper {
             currentPage: currentPage,
             totalPage: totalPage > 0 ? Int(totalPage) : nil,
             hasMore: hasMore,
-            nextPostID: hasMore
-                ? nextPagePostID(
-                    from: data.thread.pids,
-                    excluding: posts.map(\.id.postID)
-                )
-                : nil
+            nextPostID: nextPostID
         )
     }
 
@@ -56,6 +57,13 @@ enum PBPageDomainMapper {
         }
         guard data.hasPage else {
             throw PBPageProtocolError.missingPage
+        }
+        let expectedPage = request.pageNumber == 0 ? 1 : request.pageNumber
+        guard Int(data.page.currentPage) == expectedPage else {
+            throw PBPageProtocolError.pageIdentityMismatch(
+                requested: expectedPage,
+                received: Int(data.page.currentPage)
+            )
         }
         let receivedThreadID = firstPositive(
             data.thread.threadID,
@@ -255,13 +263,12 @@ enum PBPageDomainMapper {
 
     private static func nextPagePostID(
         from rawPIDs: String,
-        excluding postIDs: [Int64]
+        excluding postIDs: Set<Int64>
     ) -> Int64? {
-        let excluded = Set(postIDs)
         return rawPIDs
             .split(separator: ",")
             .compactMap { Int64(String($0).trimmingCharacters(in: .whitespaces)) }
-            .last(where: { $0 > 0 && !excluded.contains($0) })
+            .last(where: { $0 > 0 && !postIDs.contains($0) })
     }
 
     private static func timestampMetadata(

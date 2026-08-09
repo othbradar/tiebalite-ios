@@ -20,14 +20,23 @@ struct LiveRecommendationRepository: RecommendationRepository {
     }
 
     func loadRecommendations() async throws -> [RecommendationSummary] {
+        try await loadPage(.initial).items
+    }
+
+    func loadPage(
+        _ request: RecommendationPageRequest
+    ) async throws -> RecommendationRepositoryPage {
         try Task.checkCancellation()
+        guard request.isValid else {
+            throw RecommendationRepositoryError.invalidRequest
+        }
         let context = await authContextProvider.context()
         let authorization = try await authContextProvider.authorization(
             for: context
         )
         let input = try PersonalizedRequestInput(
-            loadKind: .refresh,
-            page: 1
+            loadKind: personalizedLoadKind(for: request.loadKind),
+            page: request.page
         )
         let endpoint = try PersonalizedProtocol.makeActiveDescriptor(host: host)
         let executor = EndpointExecutor(
@@ -49,7 +58,22 @@ struct LiveRecommendationRepository: RecommendationRepository {
         )
         try Task.checkCancellation()
         _ = try await authContextProvider.authorization(for: context)
-        return Self.makeSummaries(from: page)
+        return RecommendationRepositoryPage(
+            items: Self.makeSummaries(from: page),
+            requestedPage: page.requestedPage,
+            nextPageCandidate: page.nextPageCandidate
+        )
+    }
+
+    private func personalizedLoadKind(
+        for loadKind: RecommendationPageLoadKind
+    ) -> PersonalizedLoadKind {
+        switch loadKind {
+        case .refresh:
+            .refresh
+        case .nextPage:
+            .nextPage
+        }
     }
 
     private static func makeSummaries(

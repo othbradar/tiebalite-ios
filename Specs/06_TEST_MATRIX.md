@@ -35,6 +35,13 @@
 - 打开帖子返回，列表位置与内容保持。
 - 标题空、超长、多行、无头像、坏图。
 
+阶段 15.6 直接覆盖推荐三页 Fixture：`load_type=1,pn=1` 后
+`load_type=2,pn=2/3`，跨页按 `ThreadInfo.id` first-wins 去重保序；
+重复触底只有一个请求，下一页失败/取消保留首屏，重试相同页，
+刷新拒绝迟到分页。iPhone/iPad Fixture smoke 覆盖第三页打开帖子
+与返回锚点。Live 只有 active-session 第二页单 Simulator 运行证据；
+服务端终止信号仍为 `UNKNOWN`。
+
 ## 关注的吧
 
 - 未登录引导。
@@ -76,6 +83,12 @@ reuse 大于 0，创建 cell 不超过 4 个峰值 viewport，reuse/dismantle �
 task 并释放 table。31/32 楼 Fixture 的 iPhone 首次滚动连续 5 次及 iPad
 ThreadReader smoke 属于阶段出口；真机、iOS 18、50 页和 full-resolution 图片
 压力为 `DEFERRED_POST_BETA`。
+
+阶段 15.6 在不修改上述列表承载的前提下，新增五页、77 个唯一楼层
+Fixture，锁定页码 `0,2,3,4,5`、累计 pids cursor/`pid=0` fallback、
+wire `has_more=0` client-stop/terminal 合同、精确 `current_page`、跨页 postID 去重、
+no-progress、retained failure/retry、重复触底与迟到 generation。公开长帖
+Live smoke 连续取得三页、45 个唯一楼层。
 
 阶段 08 只关闭其中的“正文节点映射 + 隔离 Renderer”子集：
 

@@ -119,3 +119,12 @@ pagination footer；普通楼层以 threadID/postID 为稳定 identity。snapsho
 5. 完整楼中楼页面与 PB Floor 分页仍未实现；当前只展示 PBPage 返回的少量预览。
 6. 阶段 14 的 1000 条吧内主题、`thread_id_list` 分批加载与增量分页留给独立
    14P，本轮没有提前修改。
+
+## 阶段 15.6 后续修订（2026-08-09）
+
+上文“首屏 + 一页下一页”是阶段 15 提交时的运行边界。阶段 15.6
+不修改本文已验证的唯一 UITableView 虚拟化承载，只取消 PBPage
+的本地两页硬帽：连续消费 wire `has_more`，累计排除 pids，精确
+验证 `current_page`，并在一个公开长帖连续取得三页、45 个唯一楼层。
+五页 Fixture、retained retry/no-progress 和最终门禁见
+`PHASE15_6_LIVE_PAGINATION.md`。

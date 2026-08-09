@@ -40,7 +40,11 @@ struct RecommendationsView: View {
                 .accessibilityIdentifier(
                     RecommendationsAccessibilityID.initialLoading
                 )
-        case let .loaded(items):
+        case let .loaded(items),
+             let .loadingNextPage(items),
+             let .nextPageFailure(items),
+             let .refreshing(items),
+             let .refreshFailure(items):
             recommendationList(items)
         case .empty:
             EmptyStateView(
@@ -81,7 +85,18 @@ struct RecommendationsView: View {
                         RecommendationsAccessibilityID.row(item.threadID)
                     )
                     .id(item.threadID)
+                    .task(id: RecommendationPrefetchTaskID(
+                        threadID: item.threadID,
+                        nextPage: store.nextPage
+                    )) {
+                        store.requestNextPage(after: item.threadID)
+                    }
                 }
+
+                PaginationFooter(
+                    state: paginationFooterState,
+                    retry: requestNextPage
+                )
             }
             .scrollTargetLayout()
             .padding(Spacing.medium)
@@ -103,6 +118,30 @@ struct RecommendationsView: View {
         store.prepareRetry()
         retryGeneration &+= 1
     }
+
+    private func requestNextPage() {
+        Task { @MainActor in
+            await store.loadNextPage()
+        }
+    }
+
+    private var paginationFooterState: PaginationFooterState {
+        switch store.state {
+        case .loadingNextPage:
+            .loading
+        case .nextPageFailure:
+            .failure
+        case .loaded, .refreshing, .refreshFailure:
+            store.nextPage == nil ? .end : .idle
+        case .empty, .initialFailure, .initialLoading:
+            .idle
+        }
+    }
+}
+
+private struct RecommendationPrefetchTaskID: Hashable {
+    let threadID: Int64
+    let nextPage: UInt32?
 }
 
 @MainActor

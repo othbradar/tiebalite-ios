@@ -33,7 +33,7 @@ final class ForumHomeSmokeTests: XCTestCase {
     }
 
     @MainActor
-    func testFixtureForumThreadLoadsSecondPageSubpostsAndMedia() {
+    func testFixtureForumThreadLoadsFivePagesSubpostsAndMedia() {
         let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
 
         UITestHarness.tapTab(.followedForums, in: app)
