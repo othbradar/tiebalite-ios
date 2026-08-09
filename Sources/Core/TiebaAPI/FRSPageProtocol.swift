@@ -6,6 +6,7 @@ enum FRSPageProtocolError: Error, Equatable, Sendable {
     case emptyBody
     case forumIdentityMismatch
     case invalidItems
+    case invalidPage
     case invalidStaticConfiguration
     case missingData
     case missingForum
@@ -52,7 +53,13 @@ enum FRSPageProtocol {
         )
     }
 
-    static func encodeRequest(route: ForumRoute) throws -> Data {
+    static func encodeRequest(
+        request pageRequest: ForumHomePageRequest
+    ) throws -> Data {
+        guard (1...Int(Int32.max)).contains(pageRequest.pageNumber) else {
+            throw FRSPageProtocolError.invalidPage
+        }
+        let route = pageRequest.route
         var adParam = Tieba_FrsPage_AdParam()
         adParam.loadCount = 0
         adParam.refreshCount = 4
@@ -78,9 +85,9 @@ enum FRSPageProtocol {
         data.isSelection = 0
         data.kw = formEncode(route.forumName.rawValue)
         data.lastClickTid = 0
-        data.loadType = 1
+        data.loadType = pageRequest.pageNumber == 1 ? 1 : 2
         data.netError = 0
-        data.pn = 1
+        data.pn = Int32(pageRequest.pageNumber)
         data.qType = 2
         data.rn = 90
         data.rnNeed = 30
@@ -98,8 +105,18 @@ enum FRSPageProtocol {
         return try request.serializedData(options: options)
     }
 
+    static func encodeRequest(route: ForumRoute) throws -> Data {
+        try encodeRequest(request: ForumHomePageRequest(route: route))
+    }
+
     static func makeRequestBody(
         route: ForumRoute
+    ) throws -> EndpointRequestBody {
+        try makeRequestBody(request: ForumHomePageRequest(route: route))
+    }
+
+    static func makeRequestBody(
+        request: ForumHomePageRequest
     ) throws -> EndpointRequestBody {
         .multipartBinary(
             boundary: boundary,
@@ -108,7 +125,7 @@ enum FRSPageProtocol {
                 name: "data",
                 filename: "file",
                 mimeType: nil,
-                data: try encodeRequest(route: route)
+                data: try encodeRequest(request: request)
             )
         )
     }
@@ -147,6 +164,16 @@ enum FRSPageProtocol {
         _ response: Tieba_FrsPage_FrsPageResponse,
         requestedRoute: ForumRoute
     ) throws -> ForumHomeSnapshot {
+        try map(
+            response,
+            request: ForumHomePageRequest(route: requestedRoute)
+        )
+    }
+
+    static func map(
+        _ response: Tieba_FrsPage_FrsPageResponse,
+        request: ForumHomePageRequest
+    ) throws -> ForumHomeSnapshot {
         guard response.hasData else {
             throw FRSPageProtocolError.missingData
         }
@@ -155,6 +182,7 @@ enum FRSPageProtocol {
             throw FRSPageProtocolError.missingForum
         }
         let forum = data.forum
+        let requestedRoute = request.route
         if let requestedID = requestedRoute.forumID,
            forum.id > 0,
            forum.id != requestedID.rawValue {
@@ -169,22 +197,26 @@ enum FRSPageProtocol {
             data.userList.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        var seenItemIDs: Set<Int64> = []
+        var seenThreadIDs: Set<Int64> = []
         let threads = data.threadList.compactMap { thread -> ForumThreadSummary? in
             guard thread.id > 0,
                   thread.threadID > 0,
-                  seenItemIDs.insert(thread.id).inserted else {
+                  seenThreadIDs.insert(thread.threadID).inserted else {
                 return nil
             }
+            let title = threadTitle(thread)
             return ForumThreadSummary(
                 itemID: thread.id,
                 threadID: thread.threadID,
-                title: threadTitle(thread),
+                title: title,
+                summary: threadSummary(thread, excluding: title),
                 forumName: nonempty(thread.forumName, fallback: forumName),
                 authorName: authorName(thread, users: users),
                 replyCount: max(0, thread.replyNum),
                 viewCount: max(0, thread.viewNum),
-                isPinned: thread.isTop == 1
+                isPinned: thread.isTop == 1,
+                mediaCount: thread.media.count,
+                hasVideo: thread.hasVideoInfo
             )
         }
         guard data.threadList.isEmpty || !threads.isEmpty else {
@@ -203,7 +235,9 @@ enum FRSPageProtocol {
                 threadCount: Int(max(0, forum.threadNum)),
                 postCount: Int(max(0, forum.postNum))
             ),
-            threads: threads
+            threads: threads,
+            currentPage: request.pageNumber,
+            hasMore: data.hasPage && data.page.hasMore_p != 0
         )
     }
 
@@ -217,6 +251,20 @@ enum FRSPageProtocol {
             decode: decode,
             map: { response in
                 try map(response, requestedRoute: requestedRoute)
+            }
+        )
+    }
+
+    static func pipeline(
+        request: ForumHomePageRequest
+    ) -> EndpointPipeline<
+        Tieba_FrsPage_FrsPageResponse,
+        ForumHomeSnapshot
+    > {
+        EndpointPipeline(
+            decode: decode,
+            map: { response in
+                try map(response, request: request)
             }
         )
     }
@@ -253,6 +301,26 @@ enum FRSPageProtocol {
             .joined()
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return richAbstract.isEmpty ? "无标题" : richAbstract
+    }
+
+    private static func threadSummary(
+        _ thread: Tieba_ThreadInfo,
+        excluding title: String
+    ) -> String? {
+        let rich = thread.richAbstract
+            .filter { $0.type == 0 || $0.type == 40 }
+            .map(\.text)
+            .joined()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let legacy = thread.abstract
+            .map(\.text)
+            .joined()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let summary = rich.isEmpty ? legacy : rich
+        guard !summary.isEmpty, summary != title else {
+            return nil
+        }
+        return summary
     }
 
     private static func nonempty(_ value: String) -> String? {

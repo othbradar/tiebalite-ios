@@ -1,7 +1,7 @@
 # TASK_STATE
 
-- 当前阶段：15
-- 状态：`PHASE_15_THREAD_READING_COMPLETE`
+- 当前阶段：14P（阶段 15 后的 Forum Home 性能加固）
+- 状态：`PHASE_14_FORUM_HOME_PERFORMANCE_COMPLETE`
 - `PHASE_15_THREAD_READING = COMPLETE`
 - `THREAD_READER_CONTAINER = VIRTUALIZED_UITABLEVIEW_BETA`
 - `THREAD_READER_LARGE_FIXTURE = LOCAL_5_PAGE_1000_FLOOR_BOUND_VERIFIED`
@@ -9,8 +9,11 @@
 - `LIVE_THREAD = ANONYMOUS_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`
 - `PHASE_16 = NOT_STARTED`
 - `PHASE_14_FORUM_HOME = COMPLETE`
+- `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
+- `FORUM_HOME_LIST = VIRTUALIZED_UITABLEVIEW_BETA`
+- `FORUM_HOME_LARGE_FIXTURE = LOCAL_10_PAGE_1000_THREAD_BOUND_VERIFIED`
 - `FORUM_HOME_FIXTURE = BETA_READY`
-- `LIVE_FORUM_HOME = ANONYMOUS_FIRST_SCREEN_RUNTIME_VERIFIED`
+- `LIVE_FORUM_HOME = ANONYMOUS_FIRST_AND_NEXT_PAGE_RUNTIME_VERIFIED`
 - `PHASE_15 = COMPLETE`
 - `PHASE_13_FOLLOWED_FORUMS = RUNTIME_EVIDENCE_PARTIAL`
 - `FOLLOWED_FORUMS_LOCAL_IMPLEMENTATION = BETA_READY`
@@ -56,9 +59,62 @@
 - 阶段 11：`RUNTIME_EVIDENCE_PARTIAL`
 - 阶段 12：`RUNTIME_EVIDENCE_PARTIAL`
 - 阶段 13：`RUNTIME_EVIDENCE_PARTIAL`
-- 阶段 14：`PHASE_14_FORUM_HOME = COMPLETE`
+- 阶段 14/14P：`PHASE_14_FORUM_HOME = COMPLETE`；
+  `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
 - 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`
 - 阶段 16：`NOT_STARTED`
+
+## 阶段 14P 当前结果与停止点
+
+阶段 14P 从阶段 15 完成提交
+`c63a3c5065271bfc3ee6279ed3f79edc7aada9b4` 开始，只加固 Forum Home
+长列表，没有进入阶段 16：
+
+- 只有一个顶层 `VirtualizedList`，直接复用阶段 15 已验证且本轮
+  未修改的 `UITableView + UITableViewDiffableDataSource +
+  UIHostingConfiguration`。顶层 Row 为 header、retained status、section、
+  每个 thread 和单一 pagination footer/empty，不存在嵌套纵向列表；
+- Proto mapper 预计算摘要/媒体证据，Store 投影 `ForumThreadRowModel`。
+  UI identity 统一为稳定 `threadID`，wire `itemID` 只保留为证据字段；
+  RowKind 为 top/plainText/singleMedia/multiMedia/video，标题最多 2 行、
+  摘要最多 5 行、媒体占位最多 3 个，没有新图片管线；
+- Store 以一个 Task、递增 generation、route/page 与 tail-4 prefetch
+  做下一页门禁。分页按 threadID first-wins 去重并保序，追加
+  只插入新 ID；失败保留旧 rows 并重试同一 page，route 替换拒绝
+  迟到下一页；
+- Production 只使用已有 FRS：首屏 `pn=1/load_type=1`，后续页
+  `pn=N/load_type=2`。无凭证 Probe 的第二页为 HTTP 200、
+  `application/octet-stream`、156269 bytes、decode=true；首屏 13 条
+  追加 30 条后聚合 43 条，typed error 为 none。
+  `thread_id_list + ThreadList` 仍未启用；
+- Debug-only 大吧 Fixture 固定 10 页×100 条，混合置顶/文字/单媒体/
+  多媒体/视频证据，可对指定页 fail-once。确定性组件测试从
+  100 增量到 1000 条，前缀保持、去重、snapshot 只增量变更，
+  Cell 创建/存活数有界且发生复用；
+- iPhone Debug Lab 实际到达 `items=1000 page=10 has-more=false`，中部
+  thread 990424 打开并返回后原可见 rows 990422～990425 保持；iPad
+  快速滚动到 200 条/第 2 页，`SWIFT_OPTIMIZATION_LEVEL=-O` 的近 Release
+  Lab 快速滚动到 300 条/第 3 页，均未见稳定卡顿、持续白块或错页；
+- 最终 Unit 为 284 个逻辑测试/303 次执行，iPhone smoke 19/19；iPad
+  Forum 流程修复测试滚动容器后两次定向 1/1 通过。完整 iPad smoke
+  一次为 5/6，仅余 MediaViewer close 视觉存在但 XCUITest not hittable
+  的非稳定测试波动；`make quality-fast` 通过。共享 `VirtualizedList`
+  未修改，因此按阶段约定未重复完整 `make quality`。
+
+### 阶段 14P Known Limitations
+
+1. Live 只对一个固定公开吧验证首屏和一页顺序下一页；
+   第三页及更后页只有 Android 静态证据和合成 Fixture，没有另称
+   完整 live 运行证据。
+2. `thread_id_list + ThreadList`、dynamic tab、sort 变体、完整错误
+   taxonomy 和限流行为仍为 `UNKNOWN`，Production 不猜请求。
+3. 没有新建图片 loader/cache/downsampling；媒体列表只显示尺寸稳定
+   的本地占位。
+4. 性能验收是个人开源 Beta 的 Simulator/近 Release 手工观察，
+   不是精确 FPS、Instruments 长期基准、真机或全系统版本矩阵。
+5. 完整 iPad smoke 留有一次 MediaViewer close hit-testing 的 XCUITest
+   波动；同一 Forum 流程两次定向复验以及套件内另外两个 MediaViewer
+   测试均通过，当前没有稳定生产回归，本轮没有越界修改 MediaViewer。
 
 ## 阶段 15 当前结果与停止点
 
@@ -113,8 +169,9 @@ GeneratedProtobuf import allowlist 而失败；收紧脚本为单文件、单 im
    不是数据库或领域对象流式驱逐。
 5. 完整楼中楼页面与 PB Floor 分页未实现；阶段 15 只显示 PBPage 已返回的少量
    内联预览和“查看全部 N 条回复”提示。
-6. 阶段 14 的 1000 条主题、`thread_id_list` 分批加载与增量分页留给独立
-   14P；本轮未修改 ForumHome 生产代码。
+6. 该阶段当时未修改 ForumHome；后续阶段 14P 已完成 1000 条主题、
+   虚拟化与顺序 FRS 增量分页。`thread_id_list + ThreadList` 仍因
+   Proto/运行证据不足而未启用。
 
 ## 阶段 15 变更边界
 
@@ -129,7 +186,10 @@ GeneratedProtobuf import allowlist 而失败；收紧脚本为单文件、单 im
   `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - 阶段 16：`NOT_STARTED`，本轮停止。
 
-## 阶段 14 当前结果与停止点
+## 阶段 14 历史结果（阶段 14P 前）
+
+本节保留阶段 14 首屏验收快照；其 itemID identity、无分页与
+长列表限制已由上文阶段 14P 结果取代。
 
 阶段 14 从阶段 13 提交
 `b6090a19c95fb720f24415975dc43e7729cae1df` 开始，完成吧首页和吧内帖子

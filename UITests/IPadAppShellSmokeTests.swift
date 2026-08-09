@@ -118,7 +118,11 @@ final class IPadAppShellSmokeTests: XCTestCase {
         device.orientation = .landscapeLeft
 
         pushForumRoute(in: app)
-        UITestHarness.scrollToHittable(.forumHomeSelectedRow, in: app)
+        UITestHarness.scrollToHittable(
+            .forumHomeSelectedRow,
+            inside: .forumHomeList,
+            in: app
+        )
         UITestHarness.tap(.forumHomeSelectedRow, in: app)
         UITestHarness.requirePresent(.forumThreadReaderScreen, in: app)
         UITestHarness.scrollToHittable(

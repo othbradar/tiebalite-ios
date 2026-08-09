@@ -186,6 +186,16 @@ ForumTimelineCursor =
 
 `UNKNOWN`：`thread_id_list` 的终止/乱序、dynamic tab 类型、置顶项归属。对应 fixture 未建立前不把推断编码为不可变 enum。
 
+阶段 14P 的开源 Beta 投影比上述长期状态更窄：当前只有一条
+latest timeline，不新建 tab/sort 状态。它区分 `initialLoading/loaded/empty/
+initialFailure/refreshing/refreshFailure/loadingNextPage/nextPageFailure`；所有
+retained 状态保留同一虚拟列表与稳定 threadID。接近末尾 4 条时只由
+table prefetch 触发 Store；Store 以单 Task、generation、forumID 和 page
+阻止重复/迟到提交。首屏用 FRS `pn=1/load_type=1`，后续页用
+`pn=N/load_type=2`，按 threadID first-wins 去重保序，`Page.has_more`
+终止。下一页失败只替换 footer 并保留旧 rows；重试同一 page。
+`thread_id_list + ThreadList`、dynamic tab 与 general tab 仍属未实现的长期模型。
+
 ## 帖子 / PB
 
 Android 静态证据（`CODE_EVIDENCE`）：

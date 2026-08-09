@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE15_PBPAGE_ANONYMOUS_TWO_PAGE_RUNTIME_VERIFIED`
+状态：`STAGE14P_FRS_NEXT_PAGE_AND_STAGE15_PBPAGE_RUNTIME_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -50,6 +50,14 @@ response、帖子/作者内容、Cookie、请求体或设备标识。这足以�
 匿名首屏的 Production evidence gate，但不证明分页、ThreadList、所有吧、
 错误 taxonomy 或内容长期稳定。
 
+阶段 14P 在同一精确 FRS request family 上增加顺序下一页。
+2026-08-09 的无凭证 Debug-only Probe 观察到 `pn=2/load_type=2`
+返回 HTTP 200、`application/octet-stream`、156269 bytes、Proto decode
+成功；首屏 13 条，追加 30 条后聚合 43 条，`typed-error=none`、
+`outcome=success`。没有保存 raw response、请求体、Cookie、吧/帖子/
+用户内容或设备标识。该证据只解除顺序 FRS 第二页的开源
+Beta 门禁；第三页以及 `thread_id_list + ThreadList` 仍无运行证据。
+
 ## 公共传输证据
 
 ### Protobuf family
@@ -84,7 +92,8 @@ response、帖子/作者内容、Cookie、请求体或设备标识。这足以�
 - `unknown`：静态源码不足。
 
 `optional-in-request` 只描述客户端静态构造，不自动证明匿名能力；匿名状态以各
-endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首屏和 PBPage
+endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首屏/
+一页下一页和 PBPage
 匿名首屏/一页下一页得到限定运行验证。
 
 ## 阶段 12 登录与 authenticated Probe 证据
@@ -251,8 +260,9 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 - Android 来源文件：`OfficialProtobufTiebaApi.kt`、`MixedTiebaApiImpl.kt`、`FrsPageRepository.kt`、`ForumThreadListViewModel.kt`。
 - Android symbol：`frsPageFlow`、`frsPage`、`FrsPageRepository.frsPage`。
 - 请求构建来源：`FrsPageRequest` + multipart protobuf。
-- 认证要求：iOS 首屏选择 `.anonymous`；Android 无 ForceLogin 且会在无账户时
-  调用。2026-08-05 固定公开吧的匿名服务器接受性已 `RUNTIME_VERIFIED`。
+- 认证要求：iOS 选择 `.anonymous`；Android 无 ForceLogin 且会在无账户时
+  调用。2026-08-05 固定公开吧首屏与 2026-08-09 顺序第二页的匿名
+  服务器接受性已限定 `RUNTIME_VERIFIED`。
 - 请求编码：multipart/form-data，固定 boundary
   `--------7da3d81520810*`，binary part `name=data`、`filename=file`、无 part
   MIME；另有 Java form-urlencoded 的 `forum_name` header。
@@ -263,7 +273,8 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 - 关键 headers：`x_bd_data_type=protobuf`、`client_type=2`、`Charset=UTF-8`、
   固定 V12 User-Agent 和 form-urlencoded `forum_name`；没有 `format=protobuf`
   query。
-- iOS request data：锁定 `pn=1/load_type=1/q_type=2/rn=90/rn_need=30`、
+- iOS request data：首屏锁定 `pn=1/load_type=1`，顺序后续页使用
+  `pn=N/load_type=2`；两者均使用 `q_type=2/rn=90/rn_need=30`、
   `sort_type=0/with_group=1/st_type=recom_flist`、Android call-site 的其余零值
   字段及 `ad_param(load=0,refresh=4,yoga=1.0)`；CommonRequest 只带已验证的
   非敏感 V12 client type/version/from/user-agent。没有复制 AppPos、屏幕尺寸、
@@ -271,8 +282,10 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 - 敏感字段：匿名实现不读取或发送 Session、Keychain、BDUSS、STOKEN、Cookie
   或 device identifiers。
 - iOS domain mapper：`FrsPageResponse → ForumHomeSnapshot`。吧信息只映射已证
-  字段；`ThreadInfo.id` 用作 row identity、`threadId` 用作 ThreadRoute；
-  `isTop == 1` 分组且保持服务器顺序；`user_list` 关联失败降级，不抛整页。
+  字段；`ThreadInfo.threadId` 是 row/route 的稳定业务 identity，
+  `ThreadInfo.id` 仅保留为 wire itemID；按 `threadID` first-wins 去重并保持
+  首次出现顺序。`isTop == 1` 形成置顶 RowKind；`user_list` 关联失败
+  降级，不抛整页。
 - Fixture 路径：
   `TestSupport/Fixtures/API/ForumHome/frs_page_synthetic.pb`，454 bytes，SHA-256
   `940d1df7631795791eccde105a7cb4dcbf3f38d465a8ebf9bac6af4c850887b0`。
@@ -285,12 +298,16 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   decode=true、13 threads、typed-error=none、outcome=success；body 大小不作
   稳定产品契约。Production 因此使用唯一 `LiveForumHomeRepository`；
   UITesting 始终使用 Fixture + Mock HTTP。
-- 已验证行为：Android 当前 call chain、确定性最小首屏 request、synthetic
-  response mapper、匿名 live transport/MIME/decode/map，以及 iPhone/iPad
-  基本视觉投影。
+  阶段 14P 第二页 Probe 为 HTTP 200、
+  `application/octet-stream`、156269 bytes、decode=true；首屏 13 条追加
+  30 条后聚合 43 条，`typed-error=none`、`outcome=success`。
+- 已验证行为：Android 当前 call chain、确定性首屏/后续页 request、
+  synthetic response mapper、`Page.has_more`、按 threadID 去重/保序、保留式
+  next-page failure，匿名首屏/一页下一页 live transport/MIME/decode/map，
+  以及 iPhone/iPad 基本视觉投影。
 - UNKNOWN：动态 tab 类型、跨吧稳定性、`thread_id_list` 语义、ThreadList
-  顺序/遗漏、下一页、所有 sort 值、限流和 FRS 专属错误 taxonomy。分页明确
-  留到阶段 15。
+  顺序/遗漏/空响应、第三页及更后页的 live 运行、所有 sort 值、
+  限流和 FRS 专属错误 taxonomy。
 
 ### `forum.threadList`
 
@@ -554,10 +571,12 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 6. 分页终止、去重、过期响应和错误状态有确定性测试。
 7. 来源和许可证记录与 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 一致。
 
-`forum.frsPage` 匿名首屏按 ADR-0016 使用范围受限的开源 Beta
-例外：它只在精确 HTTPS/MIME/请求形状、合成成功 fixture、request/
-mapper/cancel/stale 测试和无凭证运行成功后启用首屏。完整错误矩阵和
-分页仍未验证，不能用该例外启用其他 endpoint。
+`forum.frsPage` 按 ADR-0016 使用范围受限的开源 Beta 例外：
+它只在精确 HTTPS/MIME/请求形状、合成成功 fixture、request/mapper/
+cancel/stale 测试和无凭证运行成功后启用匿名首屏。阶段 14P
+另以 `pn=2/load_type=2` 运行成功、去重/保序/保留失败测试
+解除一页顺序下一页。第三页及更后页的 live 证据、完整错误矩阵、
+`thread_id_list + ThreadList` 均未验证，不能用该例外启用其他 endpoint。
 
 `thread.pbPage` 按 ADR-0017 使用另一个独立、范围受限的开源 Beta 例外：
 仅启用普通升序匿名首屏和一页顺序下一页。该例外由真实 FRS threadID、两页

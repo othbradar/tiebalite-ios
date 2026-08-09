@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`PBPAGE_TWO_PAGE_RUNTIME_AND_156_FILE_CLOSURE_VERIFIED`
+状态：`FRS_NEXT_PAGE_PBPAGE_TWO_PAGE_AND_156_FILE_CLOSURE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -167,12 +167,17 @@ PB Floor 与 ThreadList 仍未进入当前生成集合，
 | `frs_tab_info/nav_tab_info` | 服务端 tab | `CODE_EVIDENCE`; 类型值域 `UNKNOWN` |
 | `forum_rule` | 规则入口摘要 | `CODE_EVIDENCE` |
 
-阶段 14 的生产 mapper 只消费首屏需要的 `forum`、`thread_list` 和
-`user_list`：`ForumInfo.id/name/slogan/avatar/member_num/thread_num/post_num`
-映射为 `ForumSummary`；`ThreadInfo.id` 是稳定 row identity，
-`ThreadInfo.threadId` 独立作为 `ThreadRoute`，二者不混同；
-`isTop == 1` 形成置顶分组并保持服务器顺序。作者优先按 `authorId` 从
+阶段 14/14P 的生产 mapper 消费 `forum`、`thread_list`、`user_list`
+与 `Page.has_more`：
+`ForumInfo.id/name/slogan/avatar/member_num/thread_num/post_num`
+映射为 `ForumSummary`；`ThreadInfo.threadId` 是 row/route 的稳定业务
+identity，`ThreadInfo.id` 只保留为 wire itemID。分页在 mapper/store 边界按
+threadID first-wins 去重并保持服务器首次出现顺序；`isTop == 1`
+形成置顶 RowKind。作者优先按 `authorId` 从
 `user_list` 回填，缺失时再用 embedded author，最终降级为统一未知作者。
+首屏请求为 `pn=1/load_type=1`，顺序后续页为
+`pn=N/load_type=2`；阶段 14P 只以 FRS `Page.has_more` 控制继续，
+未引入 `thread_id_list + ThreadList`。
 
 ### PB Page
 
@@ -302,9 +307,11 @@ Page/cursor、server error 和 route identity mismatch 已由阶段 11/15 完全
 主题两页 `RUNTIME_EVIDENCE`，但没有保存 live body，也尚无 tracked
 cross-language PBPage fixture。
 FRS 已有 1 份完全合成、脱敏的 response fixture、确定性 request/mapper
-测试，以及 2026-08-05 匿名公开吧首屏运行观察；这不等于 live response
-fixture。PB Floor、FRS/ThreadList 真实分页与普通楼层折叠/删除常态仍为
-`NOT_CREATED/NOT_TESTED`；不得用首楼或 FRS synthetic fixture 替代运行证据。
+测试，2026-08-05 匿名公开吧首屏运行观察，以及 2026-08-09
+`pn=2/load_type=2` 的一页顺序下一页运行观察；这不等于 live
+response fixture。第三页及更后页的 live 运行、ThreadList、PB Floor 与
+普通楼层折叠/删除常态仍为 `NOT_CREATED/NOT_TESTED`；不得用 FRS
+synthetic fixture 或 10 页性能 Fixture 替代这些运行证据。
 
 ## 来源与复制边界
 

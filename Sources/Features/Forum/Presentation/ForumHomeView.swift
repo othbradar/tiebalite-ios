@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @MainActor
 struct ForumHomeView: View {
@@ -10,27 +11,25 @@ struct ForumHomeView: View {
         VStack(spacing: 0) {
             content
         }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(SemanticColor.background)
-            .navigationTitle(route.forumName.rawValue)
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier(AppAccessibilityID.routeForum)
-            .task(id: route) {
-                await store.synchronize(with: route)
-            }
-            .onDisappear {
-                store.cancel()
-            }
-            .toolbar {
-                if store.state.canReload {
-                    Button("重新加载", systemImage: "arrow.clockwise") {
-                        Task {
-                            await store.reload()
-                        }
-                    }
-                    .accessibilityIdentifier(ForumHomeAccessibilityID.reload)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(SemanticColor.background)
+        .navigationTitle(route.forumName.rawValue)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(AppAccessibilityID.routeForum)
+        .task(id: route) {
+            await store.synchronize(with: route)
+        }
+        .onDisappear {
+            store.cancel()
+        }
+        .toolbar {
+            if store.state.canReload {
+                Button("重新加载", systemImage: "arrow.clockwise") {
+                    requestReload()
                 }
+                .accessibilityIdentifier(ForumHomeAccessibilityID.reload)
             }
+        }
     }
 
     @ViewBuilder
@@ -48,117 +47,234 @@ struct ForumHomeView: View {
                 retry: requestReload
             )
             .accessibilityIdentifier(ForumHomeAccessibilityID.failure)
-        case let .empty(forum):
-            forumList(
-                ForumHomeSnapshot(forum: forum, threads: []),
-                empty: true
-            )
-        case let .loaded(snapshot):
-            forumList(snapshot)
-        case let .refreshing(snapshot):
-            forumList(snapshot, status: .loading)
-        case let .refreshFailure(snapshot, _):
-            forumList(snapshot, status: .failure)
+        case .empty,
+             .loaded,
+             .loadingNextPage,
+             .nextPageFailure,
+             .refreshFailure,
+             .refreshing:
+            forumList
         }
-    }
-
-    private func forumList(
-        _ snapshot: ForumHomeSnapshot,
-        status: RetainedForumStatus? = nil,
-        empty: Bool = false
-    ) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: Spacing.medium) {
-                ForumHeaderView(forum: snapshot.forum)
-
-                if status == .loading {
-                    InlineLoadingView(title: "正在重新加载")
-                } else if status == .failure {
-                    InlineErrorView(
-                        message: "重新加载失败，已保留原列表。",
-                        retry: requestReload
-                    )
-                }
-
-                if empty {
-                    EmptyStateView(
-                        title: "暂无帖子",
-                        message: "这个吧当前没有可显示的帖子。",
-                        systemImage: "rectangle.stack"
-                    )
-                    .frame(maxWidth: .infinity)
-                    .accessibilityIdentifier(ForumHomeAccessibilityID.empty)
-                } else {
-                    threadSection(
-                        title: "置顶帖",
-                        threads: snapshot.pinnedThreads,
-                        identifier: ForumHomeAccessibilityID.pinnedSection
-                    )
-                    threadSection(
-                        title: "全部帖子",
-                        threads: snapshot.regularThreads,
-                        identifier: ForumHomeAccessibilityID.regularSection
-                    )
-                }
-            }
-            .scrollTargetLayout()
-            .padding(Spacing.medium)
-        }
-        .scrollPosition(id: scrollAnchorBinding, anchor: .center)
-        .background(SemanticColor.background)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(ForumHomeAccessibilityID.list)
     }
 
     @ViewBuilder
-    private func threadSection(
-        title: String,
-        threads: [ForumThreadSummary],
-        identifier: String
-    ) -> some View {
-        if !threads.isEmpty {
-            Text(title)
-                .font(Typography.font(.headline))
-                .foregroundStyle(SemanticColor.primaryText)
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier(identifier)
-
-            ForEach(threads) { thread in
-                Button {
-                    onOpenThread(thread)
-                } label: {
-                    ContentSummaryCard(
-                        title: thread.title,
-                        primaryMetadata: thread.forumName,
-                        primarySystemImage: "rectangle.stack",
-                        secondaryMetadata: thread.authorName,
-                        secondarySystemImage: "person",
-                        trailingMetadata: "\(thread.replyCount)",
-                        trailingAccessibilityLabel:
-                            "\(thread.replyCount) 条回复"
+    private var forumList: some View {
+        if let presentation = store.listPresentation {
+            VirtualizedList(
+                items: presentation.rows,
+                backgroundColor: .systemBackground,
+                accessibilityIdentifier: ForumHomeAccessibilityID.list,
+                restoredAnchor: store.scrollAnchor.map(ForumHomeRowID.thread),
+                onPrefetch: { rowIDs in
+                    guard rowIDs.contains(where: {
+                        presentation.prefetchRowIDs.contains($0)
+                    }) else {
+                        return
+                    }
+                    requestNextPage()
+                },
+                onScrollSettled: store.setScrollAnchor,
+                rowContent: { row in
+                    ForumHomeRowView(
+                        row: row,
+                        onOpenThread: onOpenThread,
+                        requestReload: requestReload,
+                        requestNextPage: requestNextPage
                     )
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint("打开只读帖子")
-                .accessibilityIdentifier(
-                    ForumHomeAccessibilityID.row(thread.itemID)
-                )
-                .id(thread.itemID)
-            }
+            )
+            .background(SemanticColor.background)
+            .accessibilityElement(children: .contain)
+        } else {
+            InitialLoadingView(title: "正在加载吧首页")
         }
-    }
-
-    private var scrollAnchorBinding: Binding<Int64?> {
-        Binding(
-            get: { store.scrollAnchor },
-            set: { store.setScrollAnchor($0) }
-        )
     }
 
     private func requestReload() {
-        Task {
+        Task { @MainActor in
             await store.reload()
         }
+    }
+
+    private func requestNextPage() {
+        Task { @MainActor in
+            await store.loadNextPage()
+        }
+    }
+}
+
+@MainActor
+struct ForumHomeRowView: View {
+    let row: ForumHomeRowModel
+    let onOpenThread: (ForumThreadSummary) -> Void
+    let requestReload: () -> Void
+    let requestNextPage: () -> Void
+
+    @ViewBuilder
+    var body: some View {
+        switch row.content {
+        case let .header(forum):
+            ForumHeaderView(forum: forum)
+                .padding(.horizontal, Spacing.medium)
+                .padding(.top, Spacing.medium)
+                .padding(.bottom, Spacing.small)
+        case let .retainedStatus(status):
+            retainedStatus(status)
+                .padding(.horizontal, Spacing.medium)
+                .padding(.vertical, Spacing.small)
+        case let .section(section):
+            Text(section.title)
+                .font(Typography.font(.headline))
+                .foregroundStyle(SemanticColor.primaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.medium)
+                .padding(.top, Spacing.medium)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(section.accessibilityIdentifier)
+        case let .thread(thread):
+            Button {
+                onOpenThread(thread.sourceSummary)
+            } label: {
+                ForumThreadCard(row: thread)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, Spacing.medium)
+            .padding(.vertical, Spacing.small)
+            .accessibilityHint("打开只读帖子")
+            .accessibilityIdentifier(
+                ForumHomeAccessibilityID.row(thread.threadID)
+            )
+        case .empty:
+            EmptyStateView(
+                title: "暂无帖子",
+                message: "这个吧当前没有可显示的帖子。",
+                systemImage: "rectangle.stack"
+            )
+            .frame(maxWidth: .infinity, minHeight: 320)
+            .accessibilityIdentifier(ForumHomeAccessibilityID.empty)
+        case let .pagination(pagination):
+            PaginationFooter(
+                state: pagination.footerState,
+                retry: requestNextPage
+            )
+            .padding(.horizontal, Spacing.medium)
+            .padding(.vertical, Spacing.small)
+        }
+    }
+
+    @ViewBuilder
+    private func retainedStatus(_ status: ForumHomeRetainedStatus) -> some View {
+        switch status {
+        case .refreshing:
+            InlineLoadingView(title: "正在重新加载")
+        case .refreshFailure:
+            InlineErrorView(
+                message: "重新加载失败，已保留原列表。",
+                retry: requestReload
+            )
+        }
+    }
+}
+
+@MainActor
+private struct ForumThreadCard: View {
+    let row: ForumThreadRowModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.small) {
+            if row.rowKind == .top {
+                Label("置顶", systemImage: "pin.fill")
+                    .font(Typography.font(.caption))
+                    .foregroundStyle(SemanticColor.accent)
+            }
+
+            Text(row.title)
+                .font(Typography.font(.headline))
+                .foregroundStyle(SemanticColor.primaryText)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let summary = row.summary {
+                Text(summary)
+                    .font(Typography.font(.body))
+                    .foregroundStyle(SemanticColor.secondaryText)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            mediaPreview
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Spacing.small) {
+                    metadata(row.forumName, systemImage: "rectangle.stack")
+                    metadata(row.authorName, systemImage: "person")
+                    Spacer(minLength: Spacing.xSmall)
+                    metadata(
+                        "\(row.replyCount)",
+                        systemImage: "bubble.left"
+                    )
+                }
+                VStack(alignment: .leading, spacing: Spacing.xSmall) {
+                    metadata(row.forumName, systemImage: "rectangle.stack")
+                    metadata(row.authorName, systemImage: "person")
+                    metadata(
+                        "\(row.replyCount) 条回复",
+                        systemImage: "bubble.left"
+                    )
+                }
+            }
+        }
+        .padding(Spacing.medium)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SemanticColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var mediaPreview: some View {
+        if !row.thumbnailDescriptions.isEmpty {
+            HStack(spacing: Spacing.xSmall) {
+                ForEach(row.thumbnailDescriptions) { thumbnail in
+                    ZStack {
+                        SemanticColor.background
+                        Image(systemName: "photo")
+                            .foregroundStyle(SemanticColor.secondaryText)
+                            .accessibilityHidden(true)
+                        if thumbnail.id == row.thumbnailDescriptions.last?.id,
+                           row.additionalThumbnailCount > 0 {
+                            Text("+\(row.additionalThumbnailCount)")
+                                .font(Typography.font(.caption))
+                                .foregroundStyle(SemanticColor.primaryText)
+                        }
+                    }
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: CornerRadius.small)
+                    )
+                    .accessibilityLabel(thumbnail.alternativeText)
+                    .accessibilityValue("占位图")
+                }
+            }
+        } else if row.rowKind == .video {
+            Label("视频内容", systemImage: "play.rectangle.fill")
+                .font(Typography.font(.subheadline))
+                .foregroundStyle(SemanticColor.secondaryText)
+                .frame(maxWidth: .infinity, minHeight: 72)
+                .background(SemanticColor.background)
+                .clipShape(RoundedRectangle(cornerRadius: CornerRadius.small))
+        }
+    }
+
+    private func metadata(_ value: String, systemImage: String) -> some View {
+        Label(value, systemImage: systemImage)
+            .font(Typography.font(.caption))
+            .foregroundStyle(SemanticColor.secondaryText)
+            .lineLimit(2)
     }
 }
 
@@ -206,18 +322,52 @@ private struct ForumHeaderView: View {
     }
 }
 
-private enum RetainedForumStatus {
-    case failure
-    case loading
-}
-
 private extension ForumHomeState {
     var canReload: Bool {
         switch self {
-        case .empty, .initialFailure, .loaded, .refreshFailure:
+        case .empty,
+             .initialFailure,
+             .loaded,
+             .nextPageFailure,
+             .refreshFailure:
             true
-        case .initialLoading, .refreshing:
+        case .initialLoading, .loadingNextPage, .refreshing:
             false
+        }
+    }
+}
+
+private extension ForumHomeSection {
+    var title: String {
+        switch self {
+        case .pinned:
+            "置顶帖"
+        case .regular:
+            "全部帖子"
+        }
+    }
+
+    var accessibilityIdentifier: String {
+        switch self {
+        case .pinned:
+            ForumHomeAccessibilityID.pinnedSection
+        case .regular:
+            ForumHomeAccessibilityID.regularSection
+        }
+    }
+}
+
+private extension ForumHomePaginationPresentation {
+    var footerState: PaginationFooterState {
+        switch self {
+        case .idle:
+            .idle
+        case .loading:
+            .loading
+        case .failure:
+            .failure
+        case .end:
+            .end
         }
     }
 }
@@ -232,7 +382,7 @@ enum ForumHomeAccessibilityID {
     static let regularSection = "forum-home.section.regular"
     static let reload = "forum-home.reload"
 
-    static func row(_ itemID: Int64) -> String {
-        "forum-home.row.i\(itemID)"
+    static func row(_ threadID: Int64) -> String {
+        "forum-home.row.t\(threadID)"
     }
 }

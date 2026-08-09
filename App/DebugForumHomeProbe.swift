@@ -4,9 +4,14 @@ import SwiftUI
 
 enum DebugForumHomeProbeLaunch {
     static let flag = "--stage14-forum-home-probe"
+    static let nextPageFlag = "--stage14p-forum-next-page-probe"
 
     static func isRequested(arguments: [String]) -> Bool {
         arguments.filter { $0 == flag }.count == 1
+    }
+
+    static func requestsNextPage(arguments: [String]) -> Bool {
+        arguments.filter { $0 == nextPageFlag }.count == 1
     }
 }
 
@@ -33,8 +38,11 @@ private actor DebugForumHomeCapturingHTTPClient: HTTPClient {
 struct DebugForumHomeProbeView: View {
     private let route: ForumRoute?
     private let client: DebugForumHomeCapturingHTTPClient
+    private let probesNextPage: Bool
     @State private var store: ForumHomeStore?
     @State private var summary = "status=pending"
+    @State private var initialItemCount: Int?
+    @State private var requestedNextPage = false
 
     init() {
         let route = ForumRoute("minecraft")
@@ -43,6 +51,9 @@ struct DebugForumHomeProbeView: View {
         )
         self.route = route
         self.client = client
+        probesNextPage = DebugForumHomeProbeLaunch.requestsNextPage(
+            arguments: ProcessInfo.processInfo.arguments
+        )
         _store = State(
             initialValue: route.map {
                 ForumHomeStore(
@@ -72,6 +83,21 @@ struct DebugForumHomeProbeView: View {
                 )
             }
             .onChange(of: store.state) { _, state in
+                if case let .loaded(snapshot) = state,
+                   initialItemCount == nil {
+                    initialItemCount = snapshot.threads.count
+                }
+                if case let .loaded(snapshot) = state,
+                   probesNextPage,
+                   snapshot.currentPage == 1,
+                   snapshot.hasMore,
+                   !requestedNextPage {
+                    requestedNextPage = true
+                    Task { @MainActor in
+                        await store.loadNextPage()
+                    }
+                    return
+                }
                 guard state.isTerminalForProbe else {
                     return
                 }
@@ -102,10 +128,15 @@ struct DebugForumHomeProbeView: View {
         let typedError: String
         let outcome: String
         switch store.state {
-        case let .loaded(snapshot):
+        case let .loaded(snapshot),
+             let .loadingNextPage(snapshot):
             itemCount = String(snapshot.threads.count)
             typedError = "none"
             outcome = "success"
+        case let .nextPageFailure(snapshot, _):
+            itemCount = String(snapshot.threads.count)
+            typedError = "next-page-unavailable"
+            outcome = "failure"
         case .empty:
             itemCount = "0"
             typedError = "none"
@@ -131,6 +162,7 @@ struct DebugForumHomeProbeView: View {
         }
         return "status=\(response.statusCode) mime=\(mime) " +
             "bytes=\(response.body.count) decoded=\(inspection.decoded) " +
+            "initial-items=\(initialItemCount.map(String.init) ?? "none") " +
             "items=\(itemCount) typed-error=\(typedError) " +
             "outcome=\(outcome)"
     }
@@ -139,9 +171,13 @@ struct DebugForumHomeProbeView: View {
 private extension ForumHomeState {
     var isTerminalForProbe: Bool {
         switch self {
-        case .empty, .initialFailure, .loaded, .refreshFailure:
+        case .empty,
+             .initialFailure,
+             .loaded,
+             .nextPageFailure,
+             .refreshFailure:
             true
-        case .initialLoading, .refreshing:
+        case .initialLoading, .loadingNextPage, .refreshing:
             false
         }
     }

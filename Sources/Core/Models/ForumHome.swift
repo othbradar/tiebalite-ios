@@ -101,30 +101,99 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
     let itemID: Int64
     let threadID: Int64
     let title: String
+    let summary: String?
     let forumName: String
     let authorName: String
     let replyCount: Int32
     let viewCount: Int32
     let isPinned: Bool
+    let mediaCount: Int
+    let hasVideo: Bool
+
+    init(
+        itemID: Int64,
+        threadID: Int64,
+        title: String,
+        summary: String? = nil,
+        forumName: String,
+        authorName: String,
+        replyCount: Int32,
+        viewCount: Int32,
+        isPinned: Bool,
+        mediaCount: Int = 0,
+        hasVideo: Bool = false
+    ) {
+        self.itemID = itemID
+        self.threadID = threadID
+        self.title = title
+        self.summary = summary
+        self.forumName = forumName
+        self.authorName = authorName
+        self.replyCount = replyCount
+        self.viewCount = viewCount
+        self.isPinned = isPinned
+        self.mediaCount = max(0, mediaCount)
+        self.hasVideo = hasVideo
+    }
 
     var id: Int64 {
-        itemID
+        threadID
     }
 }
 
 struct ForumHomeSnapshot: Equatable, Sendable {
     let forum: ForumSummary
     let threads: [ForumThreadSummary]
+    let currentPage: Int
+    let hasMore: Bool
 
-    var pinnedThreads: [ForumThreadSummary] {
-        threads.filter(\.isPinned)
+    init(
+        forum: ForumSummary,
+        threads: [ForumThreadSummary],
+        currentPage: Int = 1,
+        hasMore: Bool = false
+    ) {
+        self.forum = forum
+        self.threads = threads
+        self.currentPage = currentPage
+        self.hasMore = hasMore
     }
 
-    var regularThreads: [ForumThreadSummary] {
-        threads.filter { !$0.isPinned }
+    func appending(_ page: ForumHomeSnapshot) -> ForumHomeSnapshot {
+        var seenThreadIDs = Set(threads.map(\.threadID))
+        var merged = threads
+        merged.reserveCapacity(threads.count + page.threads.count)
+        for thread in page.threads
+        where seenThreadIDs.insert(thread.threadID).inserted {
+            merged.append(thread)
+        }
+        return ForumHomeSnapshot(
+            forum: forum,
+            threads: merged,
+            currentPage: max(currentPage, page.currentPage),
+            hasMore: page.hasMore
+        )
+    }
+}
+
+struct ForumHomePageRequest: Equatable, Sendable {
+    let route: ForumRoute
+    let pageNumber: Int
+
+    init(route: ForumRoute, pageNumber: Int = 1) {
+        self.route = route
+        self.pageNumber = pageNumber
     }
 }
 
 protocol ForumHomeRepository: Sendable {
-    func loadForumHome(route: ForumRoute) async throws -> ForumHomeSnapshot
+    func loadForumHomePage(
+        _ request: ForumHomePageRequest
+    ) async throws -> ForumHomeSnapshot
+}
+
+extension ForumHomeRepository {
+    func loadForumHome(route: ForumRoute) async throws -> ForumHomeSnapshot {
+        try await loadForumHomePage(ForumHomePageRequest(route: route))
+    }
 }

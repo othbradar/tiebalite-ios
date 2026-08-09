@@ -1,6 +1,8 @@
 struct EvidenceBlockedForumHomeRepository: ForumHomeRepository {
-    func loadForumHome(route: ForumRoute) async throws -> ForumHomeSnapshot {
-        _ = route
+    func loadForumHomePage(
+        _ request: ForumHomePageRequest
+    ) async throws -> ForumHomeSnapshot {
+        _ = request
         try Task.checkCancellation()
         throw LiveReadingCapabilityError.runtimeEvidenceUnavailable
     }
@@ -18,12 +20,12 @@ struct LiveForumHomeRepository: ForumHomeRepository {
         self.host = host
     }
 
-    func loadForumHome(
-        route: ForumRoute
+    func loadForumHomePage(
+        _ request: ForumHomePageRequest
     ) async throws -> ForumHomeSnapshot {
         let endpoint = try FRSPageProtocol.makeDescriptor(
             host: host,
-            route: route
+            route: request.route
         )
         let executor = EndpointExecutor(
             client: client,
@@ -34,8 +36,8 @@ struct LiveForumHomeRepository: ForumHomeRepository {
         let snapshot = try await executor.execute(
             endpoint: endpoint,
             authentication: .anonymous,
-            body: try FRSPageProtocol.makeRequestBody(route: route),
-            pipeline: FRSPageProtocol.pipeline(requestedRoute: route)
+            body: try FRSPageProtocol.makeRequestBody(request: request),
+            pipeline: FRSPageProtocol.pipeline(request: request)
         )
         try Task.checkCancellation()
         return snapshot

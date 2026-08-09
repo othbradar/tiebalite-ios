@@ -48,7 +48,7 @@ root 打开是两个 Store；同 root 的同一 identity 加新 intent 复用 St
 |---|---|---|---|---|---|---|
 | recommendations root | RootID | 无 | public；live 匿名 UNKNOWN | root + safe list snapshot ref | Tab 内 root list | content list |
 | followedForums root | RootID | session capability | required | root；不持 membership/sessionID | Tab 内 root list/login state | content list/login state |
-| forum | 可选正 forumID + 非空且通过边界校验的 forumName | initial tab/sort/classify | public；FRS 匿名首屏已验证 | identity + approved safe filter | push | detail root |
+| forum | 可选正 forumID + 非空且通过边界校验的 forumName | initial tab/sort/classify | public；FRS 匿名首屏+一页下一页已验证 | identity + approved safe filter | push | detail root |
 | thread | 正 Int64 threadID | anchor/filter/sort/forum context | public；live 匿名 UNKNOWN | identity + approved safe read state | push | detail root/tail |
 | subposts | 正 threadID + postID | targetSubpostID/forum context | inherit thread | identity；target 是否保留由 safe snapshot | push | detail tail |
 | MediaViewer presentation | source root/route/item + ordered descriptors + initial media ID | boundary context | inherit source | 否 | 唯一 full-screen presentation | 同一唯一 presentation |

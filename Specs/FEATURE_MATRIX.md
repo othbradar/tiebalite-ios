@@ -1,6 +1,6 @@
 # 功能矩阵
 
-状态：`IMPLEMENTED_THROUGH_PHASE_15_THREAD_READING_WITH_UNKNOWNS`
+状态：`IMPLEMENTED_THROUGH_PHASE_15_WITH_STAGE14P_FORUM_PERFORMANCE`
 
 本矩阵把 Android `4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2` 的静态证据转换为 iOS 验收范围。它不授权真实接口接入；endpoint 必须先满足 `Specs/API_EVIDENCE.md` 的 fixture 和运行证据门槛。
 
@@ -18,8 +18,8 @@
 | 深链基础 | `MainActivityV2.kt::checkIntent` 把 forumName/threadId 映射到 Forum/Thread | 产品公开；endpoint 认证另见目标页面 | 仅凭稳定 ID/name 从冷启动打开吧/帖子；坏参数安全拒绝；不依赖预载 Proto；cold/warm 均进入 recommendations root | `CODE_EVIDENCE` + `INFERENCE` |
 | 推荐流 | `PersonalizedPage/ViewModel` → `PersonalizedRepository` → Personalized Proto | 产品公开；真实 endpoint 匿名能力 `UNKNOWN` | fixture 启动：成功、空、失败；刷新保留旧内容；分页去重且保序；尾部失败可重试；同页互斥；旧响应不能覆盖新请求 | `CODE_EVIDENCE`; auth/终止 `UNKNOWN` |
 | 关注的吧 | `HomeViewModel` → `allForumGuideFlow` → `ForumGuideBean` | 产品要求登录 | 未登录显示明确登录入口；按 session 原子聚合多页；后续页失败/重试可测；刷新保留同 session 旧列表；账号切换立即隐藏旧 membership；点击进入正确 forumName | `LOCAL_SYNTHETIC_TESTED`; HTTPS `EVIDENCE_BLOCKED`;失效码 `UNKNOWN` |
-| 吧首页信息 | `ForumPage` + `ForumViewModel.Load` → FRS Page | 产品公开；固定公开吧匿名首屏已验证 | forumName 自足打开；显示吧名/简介/统计的已证字段；缺字段降级；返回保留首屏列表与滚动；头像显示延后 | `LIMITED_RUNTIME_EVIDENCE` + Fixture tests |
-| 吧内主题列表 | `ForumThreadListViewModel`、`GeneralTabListViewModel` → FRS/ThreadList/GeneralTab | 产品公开；FRS 固定公开吧匿名首屏已验证，ThreadList/GeneralTab 未验证 | 首屏置顶与普通项稳定并可进入帖子；动态 tab、排序和分页留待后续，未知时安全回退 | 首屏 `LIMITED_RUNTIME_EVIDENCE`; tab/分页边界 `UNKNOWN` |
+| 吧首页信息 | `ForumPage` + `ForumViewModel.Load` → FRS Page | 产品公开；固定公开吧匿名首屏+一页下一页已验证 | forumName 自足打开；显示吧名/简介/统计的已证字段；缺字段降级；返回保留列表与滚动；头像显示延后 | `LIMITED_RUNTIME_EVIDENCE` + Fixture tests |
+| 吧内主题列表 | `ForumThreadListViewModel`、`GeneralTabListViewModel` → FRS/ThreadList/GeneralTab | 产品公开；FRS 固定公开吧匿名首屏+一页下一页已验证，ThreadList/GeneralTab 未验证 | 单顶层虚拟列表；稳定 threadID；FRS 顺序分页按 threadID 去重保序；下一页失败保留已有列表；1000 条/10 页 Fixture 验证复用有界 | `LIMITED_RUNTIME_EVIDENCE` + `LOCAL_1000_THREAD_VIRTUALIZATION_TESTED`；ThreadList/tab/sort `UNKNOWN` |
 | 帖子阅读 | `ThreadPage/ViewModel` → `PbPageRepository` → PB Page Proto | 产品公开；匿名普通升序首屏与一页下一页已有限运行验证 | threadId 自足打开；标题/作者/首楼/回复；基本下一页按 postID 去重保序；缺作者、折叠、畸形内容降级；返回保持锚点；唯一虚拟列表以 1000 楼合成 Fixture 验证 | `LIMITED_RUNTIME_EVIDENCE` + `LOCAL_1000_FLOOR_VIRTUALIZATION_TESTED`；倒序/只看楼主/跳楼/完整错误形态 `UNKNOWN` |
 | 楼中楼只读 | `SubPostsPage/ViewModel` → PB Floor Proto | PBPage 内联预览已有限运行验证；独立 PB Floor 匿名能力 `UNKNOWN` | 当前按稳定 ID 内联最多 4 条 PBPage 预览并显示总数；完整楼中楼页/分页仍待后续；不出现回复或发布能力 | 内联 `LIMITED_RUNTIME_EVIDENCE`；完整页 `CODE_EVIDENCE` + `UNKNOWN` |
 | 内容节点 | `PbContent.proto` + `Extensions.kt::renders` + `ThreadPage.PostCard` | 继承来源页面 | text/link/emoji/mention/image 正常；video/voice/poll 按矩阵展示或降级；未知 raw type 保留占位和相邻顺序；所有畸形 fixture 不崩溃 | `CODE_EVIDENCE` + `INFERENCE` |

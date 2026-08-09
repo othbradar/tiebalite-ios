@@ -17,8 +17,8 @@ struct Stage14ForumHomeTests {
         #expect(snapshot.forum.forumID == 13_001)
         #expect(snapshot.forum.name == "Swift开发")
         #expect(snapshot.forum.slogan?.isEmpty == false)
-        #expect(snapshot.pinnedThreads.count == 2)
-        #expect(snapshot.regularThreads.count == 6)
+        #expect(snapshot.threads.filter(\.isPinned).count == 2)
+        #expect(snapshot.threads.filter { !$0.isPinned }.count == 6)
         #expect(Set(snapshot.threads.map(\.itemID)).count == 8)
         #expect(snapshot.threads.allSatisfy { $0.threadID > 0 })
     }
@@ -38,7 +38,9 @@ struct Stage14ForumHomeTests {
         let nameOnly = try await homeRepository.loadForumHome(
             route: try #require(ForumRoute("iOS技术"))
         )
-        let selected = try #require(second.regularThreads.dropFirst(2).first)
+        let selected = try #require(
+            second.threads.filter { !$0.isPinned }.dropFirst(2).first
+        )
 
         #expect(Set(first.threads.map(\.threadID)).isDisjoint(
             with: Set(second.threads.map(\.threadID))
@@ -159,8 +161,10 @@ struct Stage14ForumHomeTests {
         #expect(snapshot.forum.memberCount == 123_456)
         #expect(snapshot.forum.threadCount == 7_890)
         #expect(snapshot.forum.postCount == 456_789)
-        #expect(snapshot.pinnedThreads.map(\.itemID) == [14_001, 14_002])
-        #expect(snapshot.regularThreads.map(\.itemID) == [14_003, 14_004])
+        let pinnedIDs = snapshot.threads.filter(\.isPinned).map(\.itemID)
+        let regularIDs = snapshot.threads.filter { !$0.isPinned }.map(\.itemID)
+        #expect(pinnedIDs == [14_001, 14_002])
+        #expect(regularIDs == [14_003, 14_004])
         #expect(snapshot.threads.map(\.threadID) == [140_001, 140_002, 140_003, 140_004])
         #expect(snapshot.threads[0].authorName == "线协议读者")
         #expect(snapshot.threads[3].authorName == "未知作者")
@@ -302,7 +306,7 @@ struct Stage14ForumHomeTests {
         let threadID = try #require(ThreadID(92_002))
 
         #expect(AppRouter.threadRoute(for: item) == .thread(threadID))
-        #expect(item.id == 91_001)
+        #expect(item.id == 92_002)
     }
 
     @Test
@@ -356,7 +360,9 @@ struct Stage14ForumHomeTests {
 
     private func makeSnapshot(
         route: ForumRoute,
-        itemID: Int64
+        itemID: Int64,
+        currentPage: Int = 1,
+        hasMore: Bool = false
     ) -> ForumHomeSnapshot {
         let forumID = route.forumID?.rawValue
         return ForumHomeSnapshot(
@@ -380,7 +386,100 @@ struct Stage14ForumHomeTests {
                     viewCount: 2,
                     isPinned: false
                 )
-            ]
+            ],
+            currentPage: currentPage,
+            hasMore: hasMore
+        )
+    }
+}
+
+@MainActor
+struct Stage14PForumHomeRouteReplacementTests {
+    @Test
+    func replacementForumRejectsLateNextPageResponse() async throws {
+        let repository = ControlledForumHomeRepository()
+        let firstRoute = try #require(
+            ForumRoute(forumID: 14_101, forumName: "旧分页吧")
+        )
+        let secondRoute = try #require(
+            ForumRoute(forumID: 14_102, forumName: "新分页吧")
+        )
+        let store = ForumHomeStore(route: firstRoute, repository: repository)
+
+        let initialLoad = Task {
+            await store.synchronize(with: firstRoute)
+        }
+        try await repository.waitForCallCount(1)
+        let firstPage = makeSnapshot(
+            route: firstRoute,
+            itemID: 101,
+            currentPage: 1,
+            hasMore: true
+        )
+        try await repository.succeed(call: 1, snapshot: firstPage)
+        await initialLoad.value
+
+        let oldNextPage = Task {
+            await store.loadNextPage()
+        }
+        try await repository.waitForCallCount(2)
+
+        let replacementLoad = Task {
+            await store.synchronize(with: secondRoute)
+        }
+        try await repository.waitForCallCount(3)
+        let latest = makeSnapshot(route: secondRoute, itemID: 303)
+        try await repository.succeed(call: 3, snapshot: latest)
+        await replacementLoad.value
+        #expect(store.state == .loaded(latest))
+
+        try await repository.succeed(
+            call: 2,
+            snapshot: makeSnapshot(
+                route: firstRoute,
+                itemID: 202,
+                currentPage: 2,
+                hasMore: false
+            )
+        )
+        await oldNextPage.value
+
+        #expect(store.route == secondRoute)
+        #expect(store.state == .loaded(latest))
+        #expect(store.listPresentation?.threadRows.map(\.itemID) == [303])
+        #expect(await repository.cancelledCalls() == [2])
+    }
+
+    private func makeSnapshot(
+        route: ForumRoute,
+        itemID: Int64,
+        currentPage: Int = 1,
+        hasMore: Bool = false
+    ) -> ForumHomeSnapshot {
+        ForumHomeSnapshot(
+            forum: ForumSummary(
+                forumID: route.forumID?.rawValue,
+                name: route.forumName.rawValue,
+                slogan: nil,
+                avatarResourceID: nil,
+                memberCount: 1,
+                threadCount: 1,
+                postCount: 1
+            ),
+            threads: [
+                ForumThreadSummary(
+                    itemID: itemID,
+                    threadID: itemID + 1_000,
+                    title: "Fixture 帖子",
+                    forumName: route.forumName.rawValue,
+                    authorName: "Fixture 作者",
+                    replyCount: 1,
+                    viewCount: 2,
+                    isPinned: false
+                )
+            ],
+            currentPage: currentPage,
+            hasMore: hasMore
         )
     }
 }
@@ -425,8 +524,10 @@ private actor ControlledForumHomeRepository: ForumHomeRepository {
     private var observers: [CountObserver] = []
     private var observedCancellation: [Int] = []
 
-    func loadForumHome(route: ForumRoute) async throws -> ForumHomeSnapshot {
-        _ = route
+    func loadForumHomePage(
+        _ request: ForumHomePageRequest
+    ) async throws -> ForumHomeSnapshot {
+        _ = request
         calls += 1
         let call = calls
         let gate = HarnessContinuationGate<ForumHomeSnapshot>()

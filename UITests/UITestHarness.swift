@@ -117,7 +117,7 @@ enum UITestElementID: String, CaseIterable {
     case invalidScenario = "app.launch-scenario.invalid"
     case forumHomeHeader = "forum-home.header"
     case forumHomeList = "forum-home.list"
-    case forumHomeSelectedRow = "forum-home.row.i14006"
+    case forumHomeSelectedRow = "forum-home.row.t140006"
     case forumThreadReaderScreen = "thread-reader.screen.t140006"
     case layoutControlCompact = "app.harness.layout.compact"
     case layoutControlRegular = "app.harness.layout.regular"

@@ -5,6 +5,7 @@ import Observation
 final class ForumHomeStore {
     private(set) var route: ForumRoute
     private(set) var state: ForumHomeState = .initialLoading
+    private(set) var listPresentation: ForumHomeListPresentation?
     private(set) var scrollAnchor: Int64?
 
     private let repository: any ForumHomeRepository
@@ -14,6 +15,8 @@ final class ForumHomeStore {
     @ObservationIgnored private var nextGeneration: UInt64 = 0
     @ObservationIgnored private var cancellationState: ForumHomeState =
         .initialLoading
+    @ObservationIgnored private var cancellationPresentation:
+        ForumHomeListPresentation?
 
     init(
         route: ForumRoute,
@@ -28,6 +31,7 @@ final class ForumHomeStore {
             cancelCurrentLoad()
             self.route = route
             state = .initialLoading
+            listPresentation = nil
             scrollAnchor = nil
             hasCompletedLoad = false
         }
@@ -36,13 +40,23 @@ final class ForumHomeStore {
               activeGeneration == nil else {
             return
         }
-        await replaceLoad(previous: nil)
+        await replaceInitialLoad(previous: nil)
     }
 
     func reload() async {
-        let previous = retainedSnapshot
+        let previous = state.snapshot
         hasCompletedLoad = false
-        await replaceLoad(previous: previous)
+        await replaceInitialLoad(previous: previous)
+    }
+
+    func loadNextPage() async {
+        guard activeGeneration == nil,
+              let previous = state.snapshot,
+              previous.hasMore else {
+            return
+        }
+        let nextPage = previous.currentPage + 1
+        await replaceNextPageLoad(previous: previous, pageNumber: nextPage)
     }
 
     func cancel() {
@@ -50,46 +64,43 @@ final class ForumHomeStore {
             return
         }
         let restoredState = cancellationState
+        let restoredPresentation = cancellationPresentation
         cancelCurrentLoad()
         state = restoredState
+        listPresentation = restoredPresentation
         hasCompletedLoad = restoredState.hasCompletedLoad
     }
 
-    func setScrollAnchor(_ itemID: Int64?) {
-        guard scrollAnchor != itemID else {
+    func setScrollAnchor(_ rowID: ForumHomeRowID?) {
+        let threadID: Int64?
+        if case let .thread(id) = rowID {
+            threadID = id
+        } else {
+            threadID = nil
+        }
+        guard scrollAnchor != threadID else {
             return
         }
-        scrollAnchor = itemID
+        scrollAnchor = threadID
     }
 
-    private var retainedSnapshot: ForumHomeSnapshot? {
-        switch state {
-        case let .loaded(snapshot),
-             let .refreshFailure(snapshot, _),
-             let .refreshing(snapshot):
-            snapshot
-        case .empty, .initialFailure, .initialLoading:
-            nil
-        }
-    }
-
-    private func replaceLoad(previous: ForumHomeSnapshot?) async {
-        loadTask?.cancel()
-        nextGeneration &+= 1
+    private func replaceInitialLoad(previous: ForumHomeSnapshot?) async {
+        beginOperation()
         let generation = nextGeneration
-        activeGeneration = generation
         cancellationState = previous.map(ForumHomeState.loaded)
             ?? .initialLoading
+        cancellationPresentation = listPresentation
         state = previous.map(ForumHomeState.refreshing)
             ?? .initialLoading
+        listPresentation?.setRetainedStatus(.refreshing)
 
         let repository = repository
-        let route = route
+        let request = ForumHomePageRequest(route: route)
         let task = Task { @MainActor [weak self] in
             do {
-                let snapshot = try await repository.loadForumHome(route: route)
+                let snapshot = try await repository.loadForumHomePage(request)
                 try Task.checkCancellation()
-                self?.finish(
+                self?.finishInitial(
                     generation: generation,
                     previous: previous,
                     result: .success(snapshot)
@@ -101,7 +112,7 @@ final class ForumHomeStore {
                     self?.finishCancellation(generation: generation)
                     return
                 }
-                self?.finish(
+                self?.finishInitial(
                     generation: generation,
                     previous: previous,
                     result: .failure(.unavailable)
@@ -109,7 +120,61 @@ final class ForumHomeStore {
             }
         }
         loadTask = task
+        await wait(for: task)
+    }
 
+    private func replaceNextPageLoad(
+        previous: ForumHomeSnapshot,
+        pageNumber: Int
+    ) async {
+        beginOperation()
+        let generation = nextGeneration
+        cancellationState = state
+        cancellationPresentation = listPresentation
+        state = .loadingNextPage(previous)
+        listPresentation?.setPagination(.loading)
+
+        let repository = repository
+        let request = ForumHomePageRequest(
+            route: route,
+            pageNumber: pageNumber
+        )
+        let task = Task { @MainActor [weak self] in
+            do {
+                let page = try await repository.loadForumHomePage(request)
+                try Task.checkCancellation()
+                self?.finishNextPage(
+                    generation: generation,
+                    previous: previous,
+                    page: page,
+                    failure: nil
+                )
+            } catch is CancellationError {
+                self?.finishCancellation(generation: generation)
+            } catch {
+                guard !Task.isCancelled else {
+                    self?.finishCancellation(generation: generation)
+                    return
+                }
+                self?.finishNextPage(
+                    generation: generation,
+                    previous: previous,
+                    page: nil,
+                    failure: .unavailable
+                )
+            }
+        }
+        loadTask = task
+        await wait(for: task)
+    }
+
+    private func beginOperation() {
+        loadTask?.cancel()
+        nextGeneration &+= 1
+        activeGeneration = nextGeneration
+    }
+
+    private func wait(for task: Task<Void, Never>) async {
         await withTaskCancellationHandler {
             await task.value
         } onCancel: {
@@ -117,7 +182,7 @@ final class ForumHomeStore {
         }
     }
 
-    private func finish(
+    private func finishInitial(
         generation: UInt64,
         previous: ForumHomeSnapshot?,
         result: Result<ForumHomeSnapshot, ForumHomeLoadFailure>
@@ -130,10 +195,51 @@ final class ForumHomeStore {
             state = snapshot.threads.isEmpty
                 ? .empty(snapshot.forum)
                 : .loaded(snapshot)
+            listPresentation = ForumHomeListPresentation(
+                snapshot: snapshot,
+                pagination: snapshot.hasMore ? .idle : .end
+            )
         case let .failure(failure):
-            state = previous.map {
-                .refreshFailure($0, failure)
-            } ?? .initialFailure(failure)
+            if let previous {
+                state = .refreshFailure(previous, failure)
+                listPresentation = cancellationPresentation
+                listPresentation?.setRetainedStatus(.refreshFailure)
+            } else {
+                state = .initialFailure(failure)
+                listPresentation = nil
+            }
+        }
+        hasCompletedLoad = true
+        finishOperation(generation: generation)
+    }
+
+    private func finishNextPage(
+        generation: UInt64,
+        previous: ForumHomeSnapshot,
+        page: ForumHomeSnapshot?,
+        failure: ForumHomeLoadFailure?
+    ) {
+        guard activeGeneration == generation else {
+            return
+        }
+        if let page {
+            let previousCount = previous.threads.count
+            let aggregate = previous.appending(page)
+            var presentation = cancellationPresentation
+                ?? ForumHomeListPresentation(
+                    snapshot: previous,
+                    pagination: .loading
+                )
+            presentation.append(
+                threads: Array(aggregate.threads.dropFirst(previousCount)),
+                pagination: aggregate.hasMore ? .idle : .end
+            )
+            listPresentation = presentation
+            state = .loaded(aggregate)
+        } else if let failure {
+            state = .nextPageFailure(previous, failure)
+            listPresentation = cancellationPresentation
+            listPresentation?.setPagination(.failure)
         }
         hasCompletedLoad = true
         finishOperation(generation: generation)
@@ -144,6 +250,7 @@ final class ForumHomeStore {
             return
         }
         state = cancellationState
+        listPresentation = cancellationPresentation
         hasCompletedLoad = cancellationState.hasCompletedLoad
         finishOperation(generation: generation)
     }
@@ -154,6 +261,7 @@ final class ForumHomeStore {
         }
         activeGeneration = nil
         loadTask = nil
+        cancellationPresentation = nil
     }
 
     private func cancelCurrentLoad() {
@@ -161,15 +269,20 @@ final class ForumHomeStore {
         nextGeneration &+= 1
         activeGeneration = nil
         loadTask = nil
+        cancellationPresentation = nil
     }
 }
 
 private extension ForumHomeState {
     var hasCompletedLoad: Bool {
         switch self {
-        case .empty, .initialFailure, .loaded, .refreshFailure:
+        case .empty,
+             .initialFailure,
+             .loaded,
+             .nextPageFailure,
+             .refreshFailure:
             true
-        case .initialLoading, .refreshing:
+        case .initialLoading, .loadingNextPage, .refreshing:
             false
         }
     }

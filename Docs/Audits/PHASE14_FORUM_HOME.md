@@ -6,6 +6,10 @@
 - 状态：`PHASE_14_FORUM_HOME = COMPLETE`
 - 后续阶段：`PHASE_15 = NOT_STARTED`
 
+> 历史快照：本文保留 2026-08-05 阶段 14 首屏验收。其中
+> `ThreadInfo.id` UI identity、无分页和长列表限制已由阶段 14P
+> 取代；当前契约见 `PHASE14P_FORUM_HOME_PERFORMANCE.md`。
+
 ## 目标与范围
 
 本阶段只实现 Forum Home 基础信息、吧内主题首屏、Fixture/Live

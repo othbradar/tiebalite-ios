@@ -20,7 +20,7 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 |---|---|---|---|---|
 | U-01 | 登录、验证码、Cookie/token 轮换、过期、多账号退出 | 阶段 12 已用可见 WKWebView 完成一次真实登录与 Keychain 重启恢复，携带两个候选字段的 active Personalized 请求成功返回；真实 logout 按用户保留凭证要求未运行，轮换/过期码/多账号仍未知 | 继续只由用户手工验证；logout 后重新登录、rotation、失效和重复回调只记录状态/字段存在性，不记录 token 值 | HTTPS 合法方案 + 脱敏 taxonomy + Session fixture/state tests + 真实 logout/expired evidence |
 | U-02 | HTTP endpoint 的安全 HTTPS 等价路径和最小参数 | 关注吧、登录、picpage 当前 call site 是 `http://c.tieba.baidu.com` | 不调用 HTTP；从官方可观察 HTTPS 流或 reference 新 Proto call site寻找候选；单 endpoint、无凭据的公开请求先验证 TLS/编码 | 全程 HTTPS、无降级、最小字段有 evidence、成功/错误 fixture |
-| U-03 | FRS dynamic tab 与 `thread_id_list`/page 契约 | client 先消费最多 30 ids，再取下一 FRS page | 同一公开吧抓首屏及两次分页；记录 tab raw fields、请求 ids、返回顺序、空/缺项、下一 page；匿名与登录分开 | 动态 tab 值域与稳定 id、排序、终止、缺项策略均有 fixture |
+| U-03 | FRS dynamic tab 与 `thread_id_list`/page 契约 | 阶段 14P 已验证匿名 FRS `pn=2/load_type=2` 一页下一页；Android client 仍先消费最多 30 ids，再取下一 FRS page | 继续对同一公开吧记录更后页、tab raw fields、ThreadList 请求 ids、返回顺序、空/缺项；匿名与登录分开 | 动态 tab 值域与稳定 id、ThreadList 排序/终止/缺项策略均有 fixture |
 | U-04 | PB `page=0+pid`、删除/私密/缺作者及并发 | Android 有多种锚点调用；mapper 强制 author；不同 intent 可并发 | 先构造 malformed/overlap fixture；再对公开帖验证首/中/末页、pid anchor、删除楼、升降序；用延迟 stub 重放竞态 | anchor/cursor/error taxonomy + stale-response tests |
 | U-05 | 推荐匿名能力、顺序、空页与终止条件 | 阶段 11 无 session Probe 有一次 67 项非空页后稳定空页；阶段 12 携带 active Session candidate 的请求单次映射 12 项。均未保存响应 fixture，不能据此证明匿名/认证稳定性、顺序或终止条件 | 无 session/测试 session 对照公开内容；限制最大请求页，记录脱敏 item id 序列、空页、重复页与错误类别 | 匿名规则、稳定去重顺序、客户端安全上限和终止策略均有 fixture/state tests |
 
@@ -28,7 +28,7 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | FRS 的一个固定公开吧匿名首屏已在无凭证 iPhone/iPad 上 HTTP 200、Proto decode/map 成功；只关闭该限定路径。Personalized 仍有不可复现的无 session 非空观察，PBPage/PBFloor 未发出；跨吧、分页及认证对照继续 `UNKNOWN` |
+| U-06 | Personalized、FRS、PB、PBFloor 是否真正支持匿名 | FRS 固定公开吧匿名首屏+一页下一页和 PBPage 公开帖匿名首屏+一页下一页已限定运行成功；Personalized 仍有不可复现的无 session 非空观察，PBFloor 未发出；跨吧、更多页及认证对照继续 `UNKNOWN` |
 | U-07 | `CommonRequest`/headers/外层 stoken 的最小必需集合 | 阶段 11 静态字段证明 HTTP/Proto 可达；阶段 12 按 Android evidence 增加 CommonRequest BDUSS/STOKEN 与外层 stoken 后单次成功，但没有逐字段消融，也不证明服务器实际消费 credential，不能称为最小集合；禁止复制 Android telemetry 全集 |
 | U-08 | legacy sign 是否仍必需、是否允许 iOS 使用 | 只通过已批准协议/法律审查和 HTTPS 受控验证；在此之前不实现 |
 | U-09 | Error.error_code、user_msg、HTTP status 的真实 taxonomy | 为成功、未登录、过期、无权限、删除、限流、服务器错误采脱敏 fixture |
@@ -155,6 +155,25 @@ fixture：TestSupport/Fixtures/API/ForumHome/frs_page_synthetic.pb；454 bytes�
 新增测试：Stage14ForumHomeTests、ForumHomeSmokeTests、iPad AppShell Forum smoke、
   156-file generate/network/UI isolation gates
 结论标签：LIMITED_RUNTIME_EVIDENCE / LOCAL_SYNTHETIC_TESTED；非 live fixture
+```
+
+阶段 14P FRS 顺序分页观察：
+
+```text
+ID：U-03/U-06/U-09/U-15 仍为 PARTIAL/OPEN
+日期：2026-08-09
+Android API build 与 commit：4.0-dev / 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
+最新 UI 参考：4.0-dev / 268f388c7824ae2c8f6ed549827a943ec8a7f352
+scenario：无凭证 Debug-only Probe，首屏 has_more 为真时单次请求
+  FRS pn=2/load_type=2；无循环重试
+观察结果：HTTP 200、application/octet-stream、156269 bytes、
+  Proto decode 成功；首屏 13 条，追加 30 条后聚合 43 条，
+  typed-error=none、outcome=success
+隐私：未保存 response body、请求体、Cookie、吧/帖子/用户内容
+与现有规格的差异：只关闭顺序 FRS 一页下一页的 transport/
+  decode/map；第三页以后、thread_id_list + ThreadList、dynamic tab、
+  sort、限流和错误 taxonomy 不变
+结论标签：LIMITED_RUNTIME_EVIDENCE；非 live fixture
 ```
 
 ## 内容节点
