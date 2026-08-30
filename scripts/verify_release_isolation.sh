@@ -13,7 +13,7 @@ release_intermediates="$derived_data_path/Build/Intermediates.noindex/TiebaLite.
 release_app="$derived_data_path/Build/Products/Release-iphonesimulator/TiebaLite.app"
 release_binary="$release_app/TiebaLite"
 forbidden_pattern='/(TestSupport|Tests|UITests)/|/App/Debug|/Sources/InteractionKit/InteractionLab/|LaunchScenario|Harness|FixtureLoader'
-symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY|INTERACTION_LAB|THREAD_CONTENT_RENDERER_LAB)_CANARY|app\.empty-shell|network\.offline|renderer\.thread-content|LaunchScenario|Debug(ComponentGallery|InteractionLab|SwiftUITabPager|ZoomImage|ThreadContentRenderer)|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation|Renderer)'
+symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY|INTERACTION_LAB|THREAD_CONTENT_RENDERER_LAB)_CANARY|app\.empty-shell|network\.offline|renderer\.thread-content|settings\.debug\.runtime-mode|LaunchScenario|Debug(ComponentGallery|InteractionLab|ProfileProbe|SwiftUITabPager|ZoomImage|ThreadContentRenderer)|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation|Renderer)'
 failures=0
 file_list_count=0
 
@@ -63,6 +63,14 @@ else
     if ! rg -F '/Sources/Core/TiebaAPI/PBPageProtocol.swift' \
       "$file_list" >/dev/null; then
       fail "Release source proof is missing PBPageProtocol.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/Core/TiebaAPI/LiveUserProfileRepository.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing LiveUserProfileRepository.swift: $file_list"
+    fi
+    if ! rg -F '/Sources/Core/TiebaAPI/ProfileProtocol.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing ProfileProtocol.swift: $file_list"
     fi
     if rg -n "$forbidden_pattern" "$file_list" >/dev/null; then
       fail "Release source list contains test-only input: $file_list"

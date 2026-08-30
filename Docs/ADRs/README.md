@@ -24,5 +24,6 @@
 | `ADR-0018-thread-reader-table-virtualization-beta.md` | Accepted，阶段 15 唯一 UITableView/diffable/UIHostingConfiguration 长帖承载层 |
 | `ADR-0019-core-live-pagination-beta.md` | Accepted，阶段 15.6 取代 PBPage 两页硬帽，并启用证据范围内的 Personalized 顺序分页 |
 | `ADR-0020-hybrid-search-and-navigation-beta.md` | Accepted，阶段 16A 匿名 Hybrid JSON 搜吧/搜帖、搜帖顺序分页与普通 Search route |
+| `ADR-0021-history-settings-user-profile.md` | Accepted，阶段 16B 本地历史、真实主题/阅读设置、Profile Proto 白名单与 Settings/UserProfile route |
 
 Accepted ADR 是实现约束；变更必须新建 superseding ADR，不能静默改历史。

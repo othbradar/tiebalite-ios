@@ -1,6 +1,6 @@
 # API / Protobuf 证据
 
-状态：`STAGE15_6_CORE_LIVE_PAGINATION_RUNTIME_VERIFIED`
+状态：`STAGE16B_USER_PROFILE_ANONYMOUS_RUNTIME_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -100,6 +100,16 @@ iOS 将其作为 wire terminal 合同；真实三页都为 1，服务端末页�
 `RUNTIME_UNKNOWN`。
 Personalized response 仍没有 terminal 字段；空页或 duplicate-only 页
 停止是 iOS 的受测 client no-progress policy，不是服务端 `hasMore`。
+
+阶段 16B 只扩展用户资料这一个 HTTPS Proto family。锁定 Android
+`MixedTiebaApiImpl.userProfileFlow` 调用 V12
+`ProfileRequest/ProfileResponse`；iOS 只使用正 `friend_uid` 查询他人公开
+资料，descriptor 为 anonymous，不读 Session/Keychain。请求和 mapper 的
+确定性、identity 匹配、公开字段白名单、合成 binary fixture 和 Mock
+Repository 已验证。2026-08-30 的 Debug-only anonymous Probe 返回
+HTTP 200、`application/octet-stream`、4475 bytes、Proto decode=true、
+11 个可展示字段、typed error=none。该 Probe 没有读取 Session/
+Keychain，且不记录公开作者的 ID、名称、正文或完整响应。
 
 ## 公共传输证据
 
@@ -445,7 +455,8 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   `current_page`、每页 `has_more`、累计 cursor 排除与已证 `pid=0`
   fallback、后续页无首楼、楼中楼/时间、非法单楼降级、分页去重保序、
   retained failure/重试、防重复、no-progress、取消与 route 离开回归。
-  Proto 闭包仍为当前 156 文件。
+  阶段 15.6 当时的 Proto 闭包为 156 文件；阶段 16B Profile 扩展后当前
+  联合闭包为 207 文件。
 - 运行态：`ANONYMOUS_THREE_PAGE_RUNTIME_VERIFIED`。2026-08-09 Debug-only
   Probe 从公开 FRS 选择长帖；PBPage 连续三页均 HTTP 200、
   `application/octet-stream`，为 24893/16779/13805 bytes，Proto decode 成功，
@@ -547,6 +558,49 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 - UNKNOWN：最小认证字段、全局账户为空/为旧账户时的实际服务端结果、资料隐私边界、session 失效码、字段稳定性。
 
 ## P1 endpoint
+
+### `user.profile`
+
+- 用户任务：从帖子作者打开基础公开用户资料。
+- HTTP method / URL family：POST
+  `https://tiebac.baidu.com/c/u/user/profile?cmd=303012&format=protobuf`。
+- Android 来源文件：`MixedTiebaApiImpl.kt`、`OfficialProtobufTiebaApi.kt`、
+  `UserProfileViewModel.kt`、`Profile/*.proto` 和 `User.proto`。
+- Android symbol：`userProfileFlow(uid)` → V12 `profileFlow(body)`。
+- 请求构建来源：`ProfileRequest(ProfileRequestData(...))` + V12 multipart
+  protobuf。他人资料已证字段为 `friend_uid`、`friend_uid_portrait=""`、
+  `has_plist=1`、`is_from_usercenter=1`、`is_guest=1`、
+  `need_post_count=1`、`page=1`、`pn=1`、`q_type=0`、`rn=20`。
+- 认证要求：iOS 本阶段 descriptor 为 `anonymous`，CommonRequest 只含
+  锁定的非敏感 client/version/from/user-agent/personalized switch，不传
+  BDUSS/STOKEN/uid。Android 的 self-profile 路径不在本阶段。
+- 请求编码：`multipart/form-data` binary `data` part；确定性 protobuf。
+- 请求/响应 Protobuf：`ProfileRequest/ProfileRequestData`；
+  `ProfileResponse/ProfileResponseData` + `User` + `Error`。
+- 分页字段：请求含 `page/pn/rn`，但阶段 16B 仅消费基础资料，
+  不实现用户帖子/动态列表或分页。
+- 服务端错误字段：公共 `Error.error_code`；完整 taxonomy `UNKNOWN`。
+- 关键 headers / 设备参数：V12 protobuf family。Android 传 `scr_w/scr_h/
+  scr_dip`；iOS 不猜测屏幕/设备值，保持 proto 零值。
+- 敏感字段：`User` schema 含 `BDUSS`、`passwd`、IP 类字段。它们
+  被 mapper 白名单边界显式排除，不进入领域、fixture、日志或 UI。
+- iOS domain mapper：response `User.id` 必须匹配请求 route；只映射
+  `nameShow/name`、portrait、intro、sex、concern/fans/post/thread/
+  total-agree counts 和公开 `tieba_uid`。`tieba_uid` 仅作内部映射字段，
+  Profile UI 不展示任何用户 ID；空 portrait 回退 route 候选值。
+- Fixture 路径：`TestSupport/Fixtures/API/UserProfile/profile_synthetic.pb`；
+  `SYNTHETIC_PROTOBUF`，manifest SHA-256
+  `64dd17342c4e6f488c57b505e27b8966856716f03e6a5fec876798525562097f`。
+- Fixture 获取/生成：`scripts/generate_profile_fixture.sh` 从人工合成
+  textproto 生成，不是 live capture；生成前后不读真实会话。
+- 已验证行为：精确 endpoint/query/request 静态快照，无 credential，
+  成功 mapper、identity mismatch、empty、Mock Live Repository、cancel/stale
+  及 Fixture UI route。generated closure 为 207 文件并两次 clean 确定性一致。
+- 运行证据：2026-08-30 iOS 26.5 Simulator Debug-only anonymous
+  Probe：HTTP 200、`application/octet-stream`、4475 bytes、decode=true、
+  display fields=11、typed error=none。
+- UNKNOWN：anonymous 长期接受性、屏幕字段必要性、self-profile、
+  删除/私密用户、完整错误 taxonomy、字段长期稳定性和头像加载。
 
 ### `feed.userLike`
 

@@ -1,6 +1,6 @@
 # 功能矩阵
 
-状态：`IMPLEMENTED_PHASE_16A_SEARCH_RUNTIME_EVIDENCE_PARTIAL`
+状态：`IMPLEMENTED_PHASE_16B_HISTORY_SETTINGS_PROFILE`
 
 本矩阵把 Android `4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2` 的静态证据转换为 iOS 验收范围。它不授权真实接口接入；endpoint 必须先满足 `Specs/API_EVIDENCE.md` 的 fixture 和运行证据门槛。
 
@@ -35,15 +35,15 @@
 | 功能 | Android 证据 | iOS 边界 | 状态 |
 |---|---|---|---|
 | 搜索吧/主题/用户 | `SearchPage`、`SearchForumViewModel`、`SearchThreadViewModel`；Hybrid JSON；SearchSug Proto 是未实现的联想路径 | 阶段 16A 实现吧/主题：用户显式 submit，latest-cancel/generation，稳定 ID 去重，thread `pn/has_more/current_page` 顺序分页与 retained failure；forum 首屏；结果进现有 ForumHome/ThreadReader。用户搜索延期 | 吧首屏与帖子第二页 `ANONYMOUS_RUNTIME_VERIFIED`；Fixture/UI `BETA_READY`；用户/联想 `NOT_IMPLEMENTED` |
-| 浏览历史 | `HistoryDao`、`HistoryUtil`、`HistoryPage` | 按吧/帖子分类、最近访问、阅读锚；无痕模式不写；畸形旧记录安全跳过 | `CODE_EVIDENCE` + `INFERENCE` |
-| 用户资料只读 | `UserProfilePage/ViewModel`、GetUserInfo/Profile Proto | 只展示已证公开字段；不提供关注、私信、编辑等写操作 | `CODE_EVIDENCE` |
-| 设置 | `SettingsPage`、`DataStore.kt`、`AppPreferencesUtils` | 只保留主题、字号、图片策略、阅读偏好等跨平台项；迁移和默认值可测试 | `CODE_EVIDENCE` + `INFERENCE` |
+| 浏览历史 | `HistoryDao`、`HistoryUtil`、`HistoryPage` | 阶段 16B 实现 thread/forum/user；actor/Codable JSON 原子持久，稳定 ID 去重插首，上限 500，单条删除/确认清空/损坏文件恢复；Fixture 隔离；不保存正文/凭据 | `LOCAL_JSON_BETA_READY` + iPhone/iPad Fixture `RUNTIME_EVIDENCE` |
+| 用户资料只读 | `UserProfilePage/ViewModel`、Profile Proto | 阶段 16B 从 ThreadReader 作者打开；稳定 userID，latest-generation，公开字段白名单，不提供关注/私信/编辑；头像占位 | Fixture UI `BETA_READY`；anonymous transport/decode/mapper `SINGLE_SIMULATOR_RUNTIME_VERIFIED` |
+| 设置 | `SettingsPage`、`DataStore.kt`、`AppPreferencesUtils` | 阶段 16B 实现 system/light/dark 和 small/standard/large 正文，UserDefaults 重启保留，全局主题与 Renderer 令牌真实生效；历史/账户/版本/许可，runtime mode 仅 Debug | `BETA_READY` + iPhone/iPad Fixture `RUNTIME_EVIDENCE` |
 | 收藏/关注只读展示 | ThreadStore、UserLikeForum 页面 | 只展示服务端已有状态，不触发收藏/关注写请求 | `CODE_EVIDENCE` |
 | 外链与分享 | PbContent link、WebView/launchUrl、Android share | 使用系统安全外链/分享边界；未知 scheme 不执行 | `CODE_EVIDENCE` + `INFERENCE` |
 
-P1 是已有范围的库存，不等于 endpoint 接入批准。用户资料、收藏/关注只读等尚未在
-`Specs/API_EVIDENCE.md` 形成完整候选条目；未来若排期，必须先独立补齐来源、
-认证、request/response、分页、fixture 与 UNKNOWN，不得沿用 Android 调用直接实施。
+P1 是已有范围的库存，不自动批准新 endpoint。阶段 16B 的 Profile
+已在 `Specs/API_EVIDENCE.md` 形成精确条目；收藏/关注只读等若未来
+排期，仍必须独立补齐来源、认证、request/response、fixture 与 UNKNOWN。
 
 ## 未排期候选
 

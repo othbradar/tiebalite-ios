@@ -5,9 +5,29 @@ import UIKit
 struct ThreadReaderView: View {
     @Bindable var store: ThreadReaderStore
     let imageLoader: any ImageLoading
+    let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
+    let onDisplayed: (ThreadReaderSnapshot) async -> Void
 
     @State private var retryGeneration: UInt64 = 0
+    @State private var recordedThreadID: Int64?
+
+    init(
+        store: ThreadReaderStore,
+        imageLoader: any ImageLoading,
+        readingTextSize: ReadingTextSizePreference = .standard,
+        onOpenMedia: @escaping (ThreadMediaIntent) -> Void,
+        onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in },
+        onDisplayed: @escaping (ThreadReaderSnapshot) async -> Void = { _ in }
+    ) {
+        self.store = store
+        self.imageLoader = imageLoader
+        self.readingTextSize = readingTextSize
+        self.onOpenMedia = onOpenMedia
+        self.onOpenUser = onOpenUser
+        self.onDisplayed = onDisplayed
+    }
 
     var body: some View {
         ZStack {
@@ -23,6 +43,14 @@ struct ThreadReaderView: View {
         )
         .task(id: loadTaskID) {
             await store.loadIfNeeded()
+        }
+        .task(id: displayedThreadID) {
+            guard let snapshot = store.state.snapshot,
+                  recordedThreadID != snapshot.threadID else {
+                return
+            }
+            recordedThreadID = snapshot.threadID
+            await onDisplayed(snapshot)
         }
         .onDisappear {
             store.cancel()
@@ -54,7 +82,12 @@ struct ThreadReaderView: View {
     private func reader(_ snapshot: ThreadReaderSnapshot) -> some View {
         if let presentation = store.listPresentation {
             VirtualizedList(
-                items: presentation.rows,
+                items: presentation.rows.map {
+                    ThreadReaderConfiguredRow(
+                        row: $0,
+                        readingTextSize: readingTextSize
+                    )
+                },
                 backgroundColor: .systemBackground,
                 accessibilityIdentifier:
                     ThreadReaderAccessibilityID.scroll(snapshot.threadID),
@@ -68,11 +101,13 @@ struct ThreadReaderView: View {
                     requestNextPage()
                 },
                 onScrollSettled: store.setReadAnchor,
-                rowContent: { row in
+                rowContent: { configuredRow in
                     ThreadReaderRowView(
-                        row: row,
+                        row: configuredRow.row,
                         imageLoader: imageLoader,
+                        readingTextSize: configuredRow.readingTextSize,
                         onOpenMedia: onOpenMedia,
+                        onOpenUser: onOpenUser,
                         requestNextPage: requestNextPage
                     )
                 }
@@ -95,6 +130,10 @@ struct ThreadReaderView: View {
         )
     }
 
+    private var displayedThreadID: Int64? {
+        store.state.snapshot?.threadID
+    }
+
     private func requestRetry() {
         store.prepareRetry()
         retryGeneration &+= 1
@@ -107,6 +146,15 @@ struct ThreadReaderView: View {
     }
 }
 
+private struct ThreadReaderConfiguredRow: Identifiable, Equatable, Sendable {
+    let row: ThreadReaderRowModel
+    let readingTextSize: ReadingTextSizePreference
+
+    var id: ThreadReaderRowID {
+        row.id
+    }
+}
+
 private struct ThreadReaderLoadTaskID: Hashable {
     let threadID: Int64
     let retryGeneration: UInt64
@@ -116,20 +164,26 @@ private struct ThreadReaderLoadTaskID: Hashable {
 private struct ThreadReaderRowView: View {
     let row: ThreadReaderRowModel
     let imageLoader: any ImageLoading
+    let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
     let requestNextPage: () -> Void
 
     @ViewBuilder
     var body: some View {
         switch row.content {
         case let .header(header):
-            ThreadReaderHeaderView(header: header)
+            ThreadReaderHeaderView(
+                header: header,
+                onOpenUser: onOpenUser
+            )
                 .padding(.top, Spacing.medium)
                 .padding(.bottom, Spacing.small)
         case let .post(post):
             ThreadReaderPostView(
                 post: post,
                 imageLoader: imageLoader,
+                readingTextSize: readingTextSize,
                 onOpenMedia: onOpenMedia
             )
             .padding(.vertical, Spacing.small)
@@ -146,6 +200,7 @@ private struct ThreadReaderRowView: View {
 @MainActor
 private struct ThreadReaderHeaderView: View {
     let header: ThreadReaderHeaderRowModel
+    let onOpenUser: (UserProfileRoute) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.small) {
@@ -154,7 +209,24 @@ private struct ThreadReaderHeaderView: View {
                 .foregroundStyle(SemanticColor.primaryText)
                 .textSelection(.enabled)
             Label(header.forumName, systemImage: "rectangle.stack")
-            Label(header.authorName, systemImage: "person")
+            if let route = UserProfileRoute(
+                userID: header.author.rawUserID,
+                fallbackDisplayName: header.author.displayName
+            ) {
+                Button {
+                    onOpenUser(route)
+                } label: {
+                    Label(header.authorName, systemImage: "person")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(SemanticColor.accent)
+                .accessibilityHint("打开用户资料")
+                .accessibilityIdentifier(
+                    "thread-reader.author.\(header.author.rawUserID)"
+                )
+            } else {
+                Label(header.authorName, systemImage: "person")
+            }
             Label("\(header.replyCount) 条回复", systemImage: "bubble.left")
         }
         .font(Typography.font(.subheadline))
@@ -164,7 +236,7 @@ private struct ThreadReaderHeaderView: View {
         .background(SemanticColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
         .padding(.horizontal, Spacing.medium)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(
             ThreadReaderAccessibilityID.header(header.threadID)
         )
@@ -175,6 +247,7 @@ private struct ThreadReaderHeaderView: View {
 private struct ThreadReaderPostView: View {
     let post: ThreadReaderPostRowModel
     let imageLoader: any ImageLoading
+    let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -196,6 +269,7 @@ private struct ThreadReaderPostView: View {
             ThreadContentRenderer(
                 document: post.document,
                 imageLoader: imageLoader,
+                readingTextSize: readingTextSize,
                 onOpenMedia: onOpenMedia
             )
 
@@ -205,6 +279,7 @@ private struct ThreadReaderPostView: View {
                         ThreadReaderSubpostView(
                             subpost: subpost,
                             imageLoader: imageLoader,
+                            readingTextSize: readingTextSize,
                             onOpenMedia: onOpenMedia
                         )
                     }
@@ -238,6 +313,7 @@ private struct ThreadReaderPostView: View {
 private struct ThreadReaderSubpostView: View {
     let subpost: ThreadReaderSubpostRowModel
     let imageLoader: any ImageLoading
+    let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
@@ -265,6 +341,7 @@ private struct ThreadReaderSubpostView: View {
                 ThreadContentRenderer(
                     document: subpost.document,
                     imageLoader: imageLoader,
+                    readingTextSize: readingTextSize,
                     onOpenMedia: onOpenMedia
                 )
             }

@@ -26,4 +26,19 @@ extension ForumHomeState {
             nil
         }
     }
+
+    var displayedForum: ForumSummary? {
+        switch self {
+        case let .empty(forum):
+            forum
+        case let .loaded(snapshot),
+             let .loadingNextPage(snapshot),
+             let .nextPageFailure(snapshot, _),
+             let .refreshFailure(snapshot, _),
+             let .refreshing(snapshot):
+            snapshot.forum
+        case .initialFailure, .initialLoading:
+            nil
+        }
+    }
 }

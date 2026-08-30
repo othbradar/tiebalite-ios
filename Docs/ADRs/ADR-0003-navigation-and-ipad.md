@@ -82,11 +82,25 @@ push/pop；NavigationStack 与系统 back/边缘返回保持系统实现。若�
 提供可关闭 reselect-pop 的公开 API，可移除 selector 并恢复系统 Tab bar，
 canonical route/state 不变。
 
-`RouteIdentity` 只允许：
+### 阶段 16B Settings 投影补充
 
-- `forum(validatedForumName)`
+ADR-0021 以受控的 `SettingsRoute` 替代了阶段 05 的静态
+Settings 占位。`settingsPath` 现可包含 history/about/licenses，以及
+由 history 打开的已有 Forum/Thread/UserProfile content route；语法仍由
+`SettingsRouteGrammar` 白名单约束，不改变两个业务 root 的 canonical
+`routesByRoot`。iPhone 继续使用 Settings 自身的系统
+`NavigationStack`；iPad 将 Settings root 放在 content 列，将
+`settingsPath` 投影到 detail 列。该扩展不纳入导航恢复快照，不保存
+凭证或内容数据；阶段 05 对“静态占位/最多一个 Debug route”的
+陈述仅作为历史决策背景保留。
+
+当前 `RouteIdentity` 允许：
+
+- `forum(validatedForumID?, validatedForumName)`
+- `search`
 - `thread(threadID)`
 - `subposts(threadID, postID)`
+- `userProfile(userID)`
 
 thread 的 anchor、author filter、sort、可选 forum context，以及 subposts 的
 targetSubpostID/forum context 是 `NavigationIntent`。它们不参与 Hashable
@@ -103,7 +117,8 @@ Store 自身持久化。
 ### iPhone 投影
 
 - 两个 root 各自一个系统 NavigationStack。
-- settings 占位拥有独立系统 NavigationStack，但不进入 `routesByRoot`。
+- Settings Feature 拥有独立系统 NavigationStack，但不进入 `routesByRoot`；
+  其 history/about/licenses/content 使用受控 `settingsPath`。
 - Tab 切换只改 selectedTab，不改另一 root 的 routes/Store/anchor。
 - 重选当前 Tab 在 P0 是 no-op：不 pop、不滚顶、不刷新。任何改变需后续产品
   决策和测试，不沿用 Android 全局刷新。
@@ -112,10 +127,10 @@ Store 自身持久化。
 
 regular width 使用三列 NavigationSplitView：
 
-- sidebar：selectedTab；两个 P0 root 与静态 settings 占位的 shell selector；
-- content：当前 root 的推荐/关注吧列表；
-- detail：当前 root 的首 route，余下 routes 投影到 detail 内的
-  NavigationStack。
+- sidebar：selectedTab；两个 P0 root 与真实 Settings Feature 的 shell selector；
+- content：当前业务 root 的推荐/关注吧列表，或 Settings root；
+- detail：当前业务 root 的首 route及 tail，或 Settings 的受控 detail path，
+  均投影到系统 NavigationStack。
 
 compact width 把同一 selectedTab/routes 投影为 Tab + 完整 Stack。size
 class、旋转或 split resize 不能写回、截断或重排 canonical routes。

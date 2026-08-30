@@ -134,7 +134,7 @@ final class IPadAppShellSmokeTests: XCTestCase {
         UITestHarness.scrollToHittable(
             .recommendationsLastPageRow,
             inside: .recommendationsList,
-            gestureAnchor: .recommendationsSelectedRow,
+            gestureAnchor: .recommendationsFirstRow,
             in: app
         )
         UITestHarness.tap(.recommendationsLastPageRow, in: app)

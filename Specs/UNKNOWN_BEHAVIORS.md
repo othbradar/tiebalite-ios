@@ -53,12 +53,12 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-21 | SwiftProtobuf 对 selected schema 的生成 API | `CLOSED_FOR_CURRENT_SIX_ROOT_LOCAL`：1.38.1 runtime/generator、Personalized/PBPage/ForumGuide/FRS 六 root、156-file manifest/hash、两次生成与 strict build 已验证；其他 P0 closure 仍 open |
+| U-21 | SwiftProtobuf 对 selected schema 的生成 API | `CLOSED_FOR_CURRENT_EIGHT_ROOT_LOCAL`：1.38.1 runtime/generator、Personalized/PBPage/ForumGuide/FRS/Profile 八 root、207-file manifest/hash、两次生成与 strict build 已验证；其他 closure 仍 open |
 | U-22 | proto3 optional absent 与显式 0/空字符串 | `LOCAL_WIRE_VERIFIED`：AppPos optional false 与 absent bytes/presence 已测；服务端差异仍属 U-07 |
 | U-23 | 未知 tag 是否解码后可 round-trip 保留 | `LOCAL_WIRE_VERIFIED`：Personalized 顶层 field 2047 decode/re-encode/decode 保留；live server 行为不在结论内 |
 | U-24 | 裸 int 状态/排序/type 完整值域 | 累积多 fixture，领域类型始终保留 `.unknown(raw)` |
-| U-25 | 321 个 schema 中 P0 真正最小闭包 | `CLOSED_FOR_PERSONALIZED_PBPAGE_FORUMGUIDE_AND_FRS_LOCAL`：Personalized 51、PBPage 125、ForumGuide 58、FRS 74，当前六-root union 156；ThreadList/PBFloor 等仍 open |
-| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011/0013/0015/0016 允许本地、个人、非商业 exact pinned 生成当前 156-file union；公开分发/App Store/商业仍 `BLOCKED` |
+| U-25 | 321 个 schema 中已选 endpoint 真正最小闭包 | `CLOSED_FOR_CURRENT_SELECTED_ROOTS_LOCAL`：Personalized 51、PBPage 125、ForumGuide 58、FRS 74、Profile request/response union 105，当前八-root union 207；ThreadList/PBFloor 等仍 open |
+| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011/0013/0015/0016/0021 允许本地、个人、非商业 exact pinned 生成当前 207-file union；公开分发/App Store/商业仍 `BLOCKED` |
 
 阶段 07 local closure record：
 
@@ -218,6 +218,16 @@ scenario：无凭证 Debug-only Probe，首屏 has_more 为真时单次请求
 | U-47 | 搜索建议慢响应顺序 | SearchSug 未进入 16A；已实现的显式 submit 搜索以 Controlled Repository 反向完成测试锁定 latest-cancel/generation |
 | U-48 | forum/user 搜索是否分页 | forum response 已观察 `pn/has_more`，但 Android Forum ViewModel 无下一页请求，阶段 16A 仅首屏；user 未实现，两者分页仍 OPEN |
 | U-49 | 搜索 thread 重复率与 sort 值域 | `PARTIAL_CLOSED_BETA`：第二页已证 `pn=2/has_more/current_page`、20 个映射结果均为新 ID；Fixture 锁定重叠页 first-wins；`st` 其他值域仍 OPEN |
+
+## 历史 / 设置 / 用户资料 / P1
+
+| ID | UNKNOWN | 安全验证方法 |
+|---|---|---|
+| U-51 | `PARTIAL_CLOSED_BETA`：Profile endpoint 匿名接受性、屏幕字段必要性和长期稳定性 | 2026-08-30 单 Simulator Debug-only 公开作者 Probe 已 HTTP 200/decode=true/display fields=11；屏幕字段服务端必要性与长期稳定性仍 OPEN，不增加设备伪造值 |
+| U-52 | self-profile 的 `uid/is_guest=0`、私密/删除用户与完整错误 taxonomy | 后续独立账户资料任务；不复用当前 anonymous 他人资料 descriptor 猜测 |
+| U-53 | History schema 升级、多账号分区、云同步和跨设备 | 当前只是 schemaVersion=1 本地 JSON；未知版本 fail closed 并可清空恢复。需产品/隐私决策后才设计迁移 |
+| U-54 | 用户 portrait 图片候选、cache/downsample 和失败语义 | 阶段 16B 统一占位；等现有 production image loader 有独立证据后复用，不建第二图片管线 |
+| U-55 | Settings 更多跨平台项、迁移和 iCloud 同步 | 当前只保存已真实生效的外观/阅读字号；新项需实际行为和迁移测试，不加假开关 |
 
 ## Media / 交互验证
 

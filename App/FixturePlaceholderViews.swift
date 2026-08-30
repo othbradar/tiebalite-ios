@@ -141,6 +141,8 @@ struct FixtureRouteView: View {
                     EmptyView()
                 case .search:
                     EmptyView()
+                case .userProfile:
+                    EmptyView()
                 }
             }
             .frame(maxWidth: .infinity)
@@ -218,6 +220,8 @@ private extension RouteIdentity {
             "帖子占位：\(threadID.rawValue)"
         case let .subposts(_, postID):
             "楼中楼占位：\(postID.rawValue)"
+        case let .userProfile(route):
+            "用户占位：\(route.fallbackDisplayName)"
         }
     }
 
@@ -235,6 +239,8 @@ private extension RouteIdentity {
             "doc.text"
         case .subposts:
             "text.bubble"
+        case .userProfile:
+            "person.crop.circle"
         }
     }
 
@@ -248,6 +254,8 @@ private extension RouteIdentity {
             AppAccessibilityID.routeThread
         case .subposts:
             AppAccessibilityID.routeSubposts
+        case .userProfile:
+            "route.user-profile"
         }
     }
 }

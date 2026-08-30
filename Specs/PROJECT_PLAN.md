@@ -153,8 +153,11 @@ Search、History/Settings、UserProfile 均为 P1，不是 P0 稳定出口前置
 阶段 16A 已在单独授权下实现 Hybrid JSON 搜吧/搜帖、搜帖证据范围内的
 顺序分页和到现有 Forum/Thread route 的导航；因真实搜帖结果的最终
 ThreadReader 人工点击尚未完成，状态保持 `RUNTIME_EVIDENCE_PARTIAL`。
-搜索联想、用户搜索、历史、设置和用户资料仍保持 deferred；
-`PHASE_16B_HISTORY_SETTINGS_PROFILE = NOT_STARTED`。
+阶段 16B 已在单独授权下实现本地 thread/forum/user 历史、真实生效的
+外观/阅读设置、ThreadReader 作者到基础用户资料的 route、Fixture 及
+Profile Proto request/mapper。`PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`。
+搜索联想、用户搜索、用户帖子/关注/粉丝列表、云历史和阶段 16C
+仍保持 deferred；阶段 17 为 `NOT_STARTED`。
 
 ## 阶段 17：iPadOS 适配强化
 

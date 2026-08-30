@@ -1,9 +1,13 @@
 # TASK_STATE
 
-- 当前阶段：16A（贴吧和帖子搜索）
+- 当前阶段：16B（浏览历史、设置和基础用户资料）
 - 状态：`PHASE_16A_SEARCH = RUNTIME_EVIDENCE_PARTIAL`
 - `PHASE_16 = IN_PROGRESS`
-- `PHASE_16B_HISTORY_SETTINGS_PROFILE = NOT_STARTED`
+- `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
+- `PHASE_17 = NOT_STARTED`
+- `BROWSING_HISTORY = LOCAL_JSON_BETA_READY`
+- `APP_SETTINGS = USERDEFAULTS_RUNTIME_UI_VERIFIED`
+- `USER_PROFILE = ANONYMOUS_LIVE_PROTOCOL_RUNTIME_VERIFIED`
 - `LIVE_FORUM_SEARCH = ANONYMOUS_FIRST_PAGE_RUNTIME_VERIFIED`
 - `LIVE_THREAD_SEARCH = ANONYMOUS_SECOND_PAGE_RUNTIME_VERIFIED`
 - 状态：`PHASE_15_LIVE_PAGINATION = COMPLETE`
@@ -74,7 +78,67 @@
 - 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`；
   `PHASE_15_LIVE_PAGINATION = COMPLETE`
 - 阶段 16：`IN_PROGRESS`；`PHASE_16A_SEARCH = RUNTIME_EVIDENCE_PARTIAL`；
-  `PHASE_16B_HISTORY_SETTINGS_PROFILE = NOT_STARTED`
+  `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
+- 阶段 17：`NOT_STARTED`
+
+## 阶段 16B 当前结果与停止点
+
+阶段 16B 从提交 `95152b62bcc3f3083f954ec86d125221d845301a`
+开始，只实现浏览历史、真实设置、基础用户资料与必要导航，
+没有进入阶段 17：
+
+- Production 历史为 actor 隔离的 Codable JSON，写到
+  Application Support/TiebaLite，原子替换，默认上限 500。
+- 成功 record/delete/clear 会推进 generation 并取消旧 load；确定性回归证明
+  迟到的初始读取不能覆盖已发布的新历史。
+  threadID/forumID/userID 去重，重访移到最前；只保存路由最小
+  信息，不保存正文、URL、Cookie、credential 或完整响应。
+- 只在 ForumHome/ThreadReader/UserProfile 成功展示后记录。记录/删除/
+  清空失败可观察且保留旧数据；损坏 JSON 可先清空再重建。
+  Fixture/UI Testing 使用独立内存 Repository。
+- Settings 实现跟随系统/浅色/深色和小/标准/大正文，使用命名
+  UserDefaults key 重启恢复。颜色方案由 AppSceneRoot 统一投影，正文
+  通过 DesignSystem 令牌进入现有 Renderer；没有覆盖 Dynamic Type/
+  Reduce Motion。设置也提供历史数量/系统确认清空、现有账户、
+  版本/许可，运行模式只在 Debug 显示。
+- 用户资料 route 仅以正 userID 作 identity，ThreadReader 作者是首个入口。
+  Store 以一个 Task + generation 拒绝迟到用户，具备 loading/loaded/
+  empty/failed/retry；Fixture 显示占位头像、名称、简介和统计。
+- Android 证据锁定
+  `POST https://tiebac.baidu.com/c/u/user/profile?cmd=303012&format=protobuf`
+  的 `ProfileRequest/ProfileResponse`。iOS 匿名 multipart request 不读 Session/
+  Keychain，mapper 仅白名单映射请求 identity 匹配的公开字段，
+  显式排除 schema 中 BDUSS/passwd/IP 类字段。
+- Profile request/response 使唯一 generated Proto 闭包由 156 增到 207
+  文件；两次 clean generation 确定性一致。新 binary fixture 为合成数据，
+  不是 live capture。
+- `SettingsRoute` 新增 history/about/licenses 和 history content chain，
+  仍使用现有 iPhone Tab/System NavigationStack 与 iPad SplitView。
+  没有新根 Tab、fullScreenCover、自定义返回或动画。
+- iPhone Fixture 的帖子 → 历史 → 重开/清空、深色+大正文、作者 →
+  资料均有已执行的绿色 smoke。iPad 的 profile → Settings → history
+  在同一 Fixture 会话中覆盖；横屏 regular-width 三列投影连续
+  执行 3 次通过，不改生产导航。
+- 2026-08-30 Debug-only anonymous UserProfile Probe 返回 HTTP 200、
+  `application/octet-stream`、4475 bytes、Proto decode=true、
+  display fields=11、typed error=none。Probe 不读 Keychain，不记录
+  userID/名称/正文/完整响应。
+- 最终质量证据：Unit 337/337、iPhone smoke 25/25、iPhone interaction
+  15/15、iPad smoke 9/9、iPad interaction 2/2；`make quality-fast` 与
+  完整 `make quality` 均通过。首轮 smoke 的屏外手势锚点和一次 601 行
+  lint 失败均已在审计中保留，并以最小测试代码调整后重新全量验证。
+
+### 阶段 16B Known Limitations
+
+1. UserProfile 匿名 transport/decode/mapper 已在单一 iOS 26.5
+   Simulator 受控验证；长期服务可用性、删除/私密用户和完整
+   错误 taxonomy 仍未验证。
+2. 用户头像仍是统一占位；用户帖子/关注/粉丝列表、写操作、云同步、
+   搜索词历史和多账号历史分区未实现。
+3. 阶段 16A 的真实结果最终 UI 点击因 macOS 仍处于锁屏未执行，
+   继续保持 `RUNTIME_EVIDENCE_PARTIAL`；不阻塞已完成的 16B。
+4. 没有修改 `VirtualizedList`、ForumHome/ThreadReader UITableView 承载、
+   Pager、MediaViewer 或 Renderer 核心节点结构。
 
 ## 阶段 16A 当前结果与停止点
 
@@ -118,8 +182,8 @@
 
 1. 搜吧下一页、搜帖 page 3+、rate limit、完整服务错误 taxonomy
    和 endpoint 长期稳定性仍为 `UNKNOWN`。
-2. 用户搜索、输入联想、搜索历史、吧内搜帖与阶段 16B
-   都未实现。
+2. 阶段 16A 提交时，用户搜索、输入联想、搜索历史、吧内搜帖与阶段 16B
+   均未实现；当前阶段 16B 已完成浏览历史、设置与基础资料。
 3. Live 证据是单 iOS 26.5 Simulator 的开源 Beta smoke，
    不是真机、多地区或发布级稳定性矩阵。
 4. Production 图片 loader 仍 disabled。本阶段没有修改
@@ -128,7 +192,8 @@
 5. 真实 thread 搜索结果的最终 UI 点击因 macOS 锁屏导致 Computer Use
    超时而未完成人工复核；Live page 1/2 Probe 和同一 ThreadID route 的
    Fixture iPhone 点击/返回均已通过。阶段 16A 因而保持
-   `RUNTIME_EVIDENCE_PARTIAL`，阶段 16B 仍为 `NOT_STARTED`。
+   `RUNTIME_EVIDENCE_PARTIAL`；这条是阶段 16A 的运行停止点，不代表当前
+   阶段 16B 状态。
 
 ## 阶段 15.6 当前结果与停止点
 

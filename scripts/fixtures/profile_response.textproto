@@ -1,0 +1,19 @@
+error {
+  error_code: 0
+}
+data {
+  user {
+    id: 160801
+    name: "fixture_profile"
+    nameShow: "Fixture 资料用户"
+    portrait: "fixture://profile/avatar"
+    fans_num: 321
+    concern_num: 45
+    sex: 2
+    intro: "本地合成的公开用户简介"
+    post_num: 987
+    thread_num: 65
+    total_agree_num: 4321
+    tieba_uid: "fixture-tieba-id"
+  }
+}

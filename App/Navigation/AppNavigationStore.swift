@@ -56,6 +56,26 @@ final class AppNavigationStore {
         state.replaceSettingsPath([route])
     }
 
+    @discardableResult
+    func pushSettingsRoute(_ route: SettingsRoute) -> Bool {
+        var candidate = state.settingsPath
+        if let existingIndex = candidate.firstIndex(of: route) {
+            candidate = Array(candidate.prefix(through: existingIndex))
+        } else {
+            candidate.append(route)
+        }
+        let canonical = SettingsRouteGrammar.canonical(candidate)
+        guard canonical == candidate else {
+            return false
+        }
+        state.replaceSettingsPath(candidate)
+        return true
+    }
+
+    func pushSettingsContent(_ route: RouteIdentity) {
+        pushSettingsRoute(.content(route))
+    }
+
     func replaceSettingsPathFromSystem(_ path: [SettingsRoute]) {
         state.replaceSettingsPath(path)
     }

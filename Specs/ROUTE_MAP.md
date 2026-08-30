@@ -3,9 +3,9 @@
 状态：`APPROVED_WITH_RUNTIME_UNKNOWNS`
 
 本文件是阶段 02 的实现 route 契约，并精确记录阶段 16A
-在不改根容器前提下加入的普通 Search route。阶段 01 的
+的普通 Search route 和阶段 16B 的 UserProfile/Settings history route。阶段 01 的
 Android/产品证据仍见 `Specs/NAVIGATION_MAP.md`。决策来源为
-ADR-0003 与 ADR-0020。
+ADR-0003、ADR-0020 与 ADR-0021。
 
 ## Canonical 模型
 
@@ -20,6 +20,10 @@ RouteIdentity =
   | forum(validatedForumID?, validatedForumName)
   | thread(threadID)
   | subposts(threadID, postID)
+  | userProfile(userID)
+
+SettingsRoute =
+  history | about | licenses | content(RouteIdentity) | debug-only routes
 
 NavigationIntent =
   forum(initialTabID?, sort?, classify?)
@@ -27,11 +31,11 @@ NavigationIntent =
   | subposts(targetSubpostID?, forumContext?)
 ```
 
-`selectedTab` 是 Shell 选择的唯一真相。`settings` 仅为阶段 05 静态 P1
-占位，不能转换为 `RootID`，不拥有 P0 route chain、Feature Store 或恢复
-数据；`routesByRoot` 的 key 始终且仅为两个 `RootID`。阶段 05 允许
-`settingsPath=[componentGallery]` 这一条仅 Debug 可达的 Shell 路径，用于
-跨容器测试；它不属于业务 route，不持久化，Release 没有入口。
+`selectedTab` 是 Shell 选择的唯一真相。`settings` 不能转换为
+`RootID`，不进入两个业务 root 的 `routesByRoot`；阶段 16B 使其成为
+真实 Settings Feature，并使用独立、强类型且不持久化的 `settingsPath`。
+Release 可达 history/about/licenses 和历史内容 route；component gallery/
+interaction/renderer lab 入口仍仅 Debug 可达。
 
 本文用 `activeRoot = selectedTab.rootID` 表示当前业务 root；选择 settings
 时 `activeRoot=nil`，不得另存一份可写 `selectedRoot`。
@@ -51,11 +55,17 @@ root 打开是两个 Store；同 root 的同一 identity 加新 intent 复用 St
 | recommendations root | RootID | 无 | public；live 匿名 UNKNOWN | root + safe list snapshot ref | Tab 内 root list | content list |
 | followedForums root | RootID | session capability | required | root；不持 membership/sessionID | Tab 内 root list/login state | content list/login state |
 | search（P1/16A） | 无参数 `RouteIdentity.search` | 关键词/结果/滚动锚由 scene 级 SearchStore 持有 | forum/thread Hybrid 匿名已验证 | identity only；不把 query 放入 route | recommendations stack push | recommendations detail root |
+| user profile（P1/16B） | 正 userID；名称/portrait 仅降级显示 | 无 | anonymous Profile transport/decode/mapper 已运行验证 | identity only | Thread 后 push | detail tail |
 | forum | 可选正 forumID + 非空且通过边界校验的 forumName | initial tab/sort/classify | public；FRS 匿名首屏+一页下一页已验证 | identity + approved safe filter | push | detail root |
 | thread | 正 Int64 threadID | anchor/filter/sort/forum context | public；live 匿名 UNKNOWN | identity + approved safe read state | push | detail root/tail |
 | subposts | 正 threadID + postID | targetSubpostID/forum context | inherit thread | identity；target 是否保留由 safe snapshot | push | detail tail |
 | MediaViewer presentation | source root/route/item + ordered descriptors + initial media ID | boundary context | inherit source | 否 | 唯一 full-screen presentation | 同一唯一 presentation |
 | Authentication presentation | attemptID + 平台容器输入 | continuation 在 coordinator | 不适用 | 否 | 受控 sheet/full-screen | 受控 presentation |
+
+Settings 使用独立 grammar：`[history]`、`[history,content(forum|thread|user)]`、
+`[history,content(forum),content(thread)]`、以及合法 thread 后的 subposts/user；
+`[about]` 或 `[about,licenses]`。孤立 `content`、以 search/subposts 开头或不匹配
+threadID 的 chain 确定性拒绝。
 
 关注吧和其他已证业务入口同时携带正 forumID 与 forumName；只含吧名的外部
 deep link 使用 `forumID=nil`，不得猜造 ID。forumName 只做单次 percent decode、
@@ -69,7 +79,8 @@ Unicode normalization 已确定，NFC/NFKC 与服务端等价性继续由 U-43 �
 ### iPhone
 
 - 两个 root 各自拥有系统 NavigationStack。
-- settings 静态占位使用独立系统 NavigationStack，但不进入 P0 route map。
+- settings Feature 使用独立系统 NavigationStack 和强类型 settingsPath，
+  但不进入两个业务 root 的 routesByRoot。
 - selectedTab 切换只改变可见 stack。
 - 当前 Tab 重选为 no-op；不 pop、不滚顶、不 refresh。
 - 系统 back/pop 完成后再释放被移除 route Store。
@@ -96,6 +107,7 @@ Unicode normalization 已确定，NFC/NFKC 与服务端等价性继续由 U-43 �
   `[thread,subposts]`、`[forum,thread,subposts]`，以及 `[search]`、
   `[search,forum]`、`[search,thread]`、`[search,forum,thread]`、
   `[search,thread,subposts]`、`[search,forum,thread,subposts]`；
+- 上述任一合法 thread 位置可以 userProfile 替代 subposts 作为唯一后继；
 - followedForums：`[]`、`[forum]`、`[forum,thread]`、
   `[forum,thread,subposts]`；
 - subposts 的 threadID 必须等于紧邻前置 thread 的 threadID；

@@ -21,8 +21,12 @@ struct ThreadReaderHeaderRowModel: Equatable, Sendable {
     let threadID: Int64
     let title: String
     let forumName: String
-    let authorName: String
+    let author: ThreadReaderAuthor
     let replyCount: Int32
+
+    var authorName: String {
+        author.displayName
+    }
 }
 
 struct ThreadReaderSubpostRowModel: Identifiable, Equatable, Sendable {
@@ -179,7 +183,7 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
                 threadID: snapshot.threadID,
                 title: snapshot.title,
                 forumName: snapshot.forumName,
-                authorName: snapshot.author.displayName,
+                author: snapshot.author,
                 replyCount: snapshot.replyCount
             ))
         )

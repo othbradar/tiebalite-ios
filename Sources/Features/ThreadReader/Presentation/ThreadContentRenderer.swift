@@ -9,17 +9,20 @@ private enum ThreadContentLayout {
 struct ThreadContentRenderer: View {
     let document: ThreadContentDocument
     let imageLoader: any ImageLoading
+    let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
 
     init(
         document: ThreadContentDocument,
         imageLoader: any ImageLoading,
+        readingTextSize: ReadingTextSizePreference = .standard,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void = { _ in },
         onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in }
     ) {
         self.document = document
         self.imageLoader = imageLoader
+        self.readingTextSize = readingTextSize
         self.onOpenMedia = onOpenMedia
         self.onOpenExternalLink = onOpenExternalLink
     }
@@ -48,6 +51,7 @@ struct ThreadContentRenderer: View {
                     node: node,
                     document: document,
                     imageLoader: imageLoader,
+                    readingTextSize: readingTextSize,
                     onOpenMedia: onOpenMedia,
                     onOpenExternalLink: onOpenExternalLink
                 )
@@ -64,6 +68,7 @@ private struct ThreadContentNodeView: View {
     let node: ThreadContentNode
     let document: ThreadContentDocument
     let imageLoader: any ImageLoading
+    let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
 
@@ -109,7 +114,7 @@ private struct ThreadContentNodeView: View {
                 )
             }
         }
-        .font(Typography.font(.body))
+        .font(Typography.threadContentFont(readingTextSize))
         .foregroundStyle(SemanticColor.primaryText)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)

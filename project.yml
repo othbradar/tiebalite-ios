@@ -75,6 +75,9 @@ targets:
       - path: Sources/Features/FollowedForums
       - path: Sources/Features/Forum
       - path: Sources/Features/Search
+      - path: Sources/Features/History
+      - path: Sources/Features/Settings
+      - path: Sources/Features/UserProfile
       - path: Sources/InteractionKit
         excludes:
           - AGENTS.md

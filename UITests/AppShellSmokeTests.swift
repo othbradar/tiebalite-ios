@@ -408,7 +408,7 @@ extension AppShellSmokeTests {
         UITestHarness.scrollToHittable(
             .recommendationsLastPageRow,
             inside: .recommendationsList,
-            gestureAnchor: .recommendationsSelectedRow,
+            gestureAnchor: .recommendationsFirstRow,
             in: app
         )
         let before = UITestHarness.element(

@@ -28,3 +28,7 @@ Live 脱敏证据、retained failure/generation 回归与未知项见
 阶段 16A 的 Hybrid JSON 搜吧/搜帖协议、稳定 ID、搜帖第二页、
 普通 route、Fixture UI 和脱敏 Live 证据见
 `PHASE16A_SEARCH.md`。
+
+阶段 16B 的 actor/JSON 浏览历史、UserDefaults 设置、全局主题/
+阅读字号投影、UserProfile Proto/Fixture/route 与 iPhone/iPad 证据见
+`PHASE16B_HISTORY_SETTINGS_PROFILE.md`。

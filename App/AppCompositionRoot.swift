@@ -6,15 +6,21 @@ final class AppCompositionRoot {
     let loginWebSession: LoginWebSession
     private let followedForumsRepository: any FollowedForumsRepository
     private let forumHomeRepository: any ForumHomeRepository
+    private let browsingHistoryRepository: any BrowsingHistoryRepository
+    private let appSettingsRepository: any AppSettingsRepository
     private let recommendationRepository: any RecommendationRepository
     private let searchRepository: any SearchRepository
     private let threadReaderRepository: any ThreadReaderRepository
+    private let userProfileRepository: any UserProfileRepository
 
     init(
         environment: AppEnvironment,
         authContextProvider: SessionAuthContextProvider? = nil,
         sessionStore: SessionStore? = nil,
-        loginWebSession: LoginWebSession? = nil
+        loginWebSession: LoginWebSession? = nil,
+        browsingHistoryRepository: (any BrowsingHistoryRepository)? = nil,
+        appSettingsRepository: (any AppSettingsRepository)? = nil,
+        userProfileRepository: (any UserProfileRepository)? = nil
     ) {
         self.environment = environment
         let resolvedAuthContextProvider =
@@ -29,12 +35,24 @@ final class AppCompositionRoot {
         )
         switch environment.readingDataSourceMode {
         case .fixture:
+            self.browsingHistoryRepository =
+                browsingHistoryRepository
+                ?? InMemoryBrowsingHistoryRepository()
+            self.appSettingsRepository =
+                appSettingsRepository ?? InMemoryAppSettingsRepository()
             followedForumsRepository = FixtureFollowedForumsRepository()
             forumHomeRepository = FixtureForumHomeRepository()
             recommendationRepository = FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
             threadReaderRepository = FixtureThreadReaderRepository()
+            self.userProfileRepository =
+                userProfileRepository ?? FixtureUserProfileRepository()
         case .live:
+            self.browsingHistoryRepository =
+                browsingHistoryRepository
+                ?? JSONBrowsingHistoryRepository.production()
+            self.appSettingsRepository =
+                appSettingsRepository ?? UserDefaultsAppSettingsRepository()
             followedForumsRepository =
                 LiveFollowedForumsRepository(
                     client: environment.httpClient,
@@ -54,7 +72,22 @@ final class AppCompositionRoot {
             threadReaderRepository = LiveThreadReaderRepository(
                 client: environment.httpClient
             )
+            self.userProfileRepository =
+                userProfileRepository ?? LiveUserProfileRepository(
+                    client: environment.httpClient
+                )
         }
+    }
+
+    func makeBrowsingHistoryStore() -> BrowsingHistoryStore {
+        BrowsingHistoryStore(
+            repository: browsingHistoryRepository,
+            clock: environment.clock
+        )
+    }
+
+    func makeSettingsStore() -> SettingsStore {
+        SettingsStore(repository: appSettingsRepository)
     }
 
     func makeRecommendationsStore() -> RecommendationsStore {
@@ -84,6 +117,10 @@ final class AppCompositionRoot {
             threadID: threadID,
             repository: threadReaderRepository
         )
+    }
+
+    func makeUserProfileStore(route: UserProfileRoute) -> UserProfileStore {
+        UserProfileStore(route: route, repository: userProfileRepository)
     }
 
     static func production() -> AppCompositionRoot {

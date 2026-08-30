@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`STAGE16A_HYBRID_JSON_SEARCH_NO_PROTO_DELTA_AND_156_FILE_CLOSURE_VERIFIED`
+状态：`STAGE16B_PROFILE_AND_207_FILE_CLOSURE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -22,9 +22,9 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - canonical package lock：`Config/SwiftPM/Package.resolved`；生成工程 lock
   由脚本单向 materialize 并逐字节比较。
 - schema manifest：历史文件名
-  `Config/Protobuf/Personalized.inputs.tsv` 现锁定六个 root 的 156 个输入，
+  `Config/Protobuf/Personalized.inputs.tsv` 现锁定八个 root 的 207 个输入，
   均有 relative path、SHA-256、relationship 和 direct imports。
-- generated output：`Generated/Protobuf` 的 156 个 `.pb.swift`、生成 metadata
+- generated output：`Generated/Protobuf` 的 207 个 `.pb.swift`、生成 metadata
   与逐文件 SHA-256；两次 clean generation 与 tracked output 一致。
 - `GeneratedProtobuf` 是独立静态 target；UI/Feature import 被静态门禁拒绝。
 - 首个 binary fixture 是 250-byte `CROSS_LANGUAGE_GENERATED` JVM fixture，
@@ -38,11 +38,15 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
   扩展为 136。
 - 阶段 14 依据 ADR-0016 增加唯一 FRS 首屏 root
   `FrsPage/FrsPage.proto`。FRS closure 为 74，与原集合重叠 54，新增 20，
-  当前唯一联合闭包为 156；未提前加入阶段 15 的 ThreadList root。
+  阶段 14 当时的唯一联合闭包为 156；未提前加入阶段 15 的 ThreadList root。
 - 阶段 16A 搜吧与搜帖来自 Android Hybrid HTTPS JSON endpoint，分别映射
   `SearchForumBean` 与 `SearchThreadBean`，不使用 Protobuf。Android
   `SearchSug` Proto 只服务未实现的输入联想，因此本阶段没有修改 root、
-  manifest、生成产物或 156-file 闭包。
+  manifest、生成产物或当时的 156-file 闭包。
+- 阶段 16B 依据 ADR-0021 增加 `Profile/ProfileRequest.proto` 和
+  `Profile/ProfileResponse.proto`。request closure 为 3、response closure 为
+  102、Profile union 为 105；与历史 156-file 闭包重叠 54，
+  新增 51，当前唯一联合 closure/generated output 为 207。
 
 当前 local/personal/noncommercial schema 路径由 ADR-0011 批准；公开分发、
 App Store 和商业使用继续 `BLOCKED`。
@@ -60,7 +64,7 @@ App Store 和商业使用继续 `BLOCKED`。
   `NOT_APPLICABLE_NO_ENUM_IN_PINNED_SCHEMA`，以 raw `threadTypes=999` 保留测试
   代替，不能虚构 enum。
 
-### PBPage 与当前联合闭包
+### PBPage、Profile 与当前联合闭包
 
 - roots：`PbPage/PbPageRequest.proto`、
   `PbPage/PbPageResponse.proto`（2）
@@ -76,10 +80,13 @@ App Store 和商业使用继续 `BLOCKED`。
 - 阶段 14 增加 FRS Page root；closure 为 74，与阶段 13 集合重叠 54，
   当前六-root union / generated output 为 156
 - 阶段 14 新增 generated files：20
+- 阶段 16B 增加 Profile request/response 两个 root；其 union 为
+  105，与阶段 14 集合重叠 54，新增 51，当前八-root union /
+  generated output 为 207
 - `FrsPage/AdParam.proto` 与已有 `PbPage/AdParam.proto` 会生成相同 basename；
   生成器确定性地只将前者输出重命名为 `FrsPage/FRSAdParam.pb.swift`，Proto
   message/module identity 不变，避免 Xcode target 输入冲突
-- generated `@unchecked Sendable` 精确 allowlist：23 个文件 / 24 处声明；
+- generated `@unchecked Sendable` 精确 allowlist：28 个文件 / 29 处声明；
   手写代码仍为 0
 
 ## 生成层次
@@ -122,6 +129,7 @@ Wire/SwiftProtobuf 实际会按 import graph 解析；下列顺序是可审查�
 | PB Page | `PbPageRequestData` | `PbPageResponseData` | `ThreadSnapshot + PostPage` |
 | PB Floor | `PbFloorRequestData` | `PbFloorResponseData` | `SubpostPage` |
 | Forum Guide | `ForumGuideRequestData` | `ForumGuideResponseData` | `FollowedForum` 列表 |
+| User Profile | `ProfileRequestData` | `ProfileResponseData` | `UserProfile` |
 
 ### Layer 3：外层 wrapper
 
@@ -134,10 +142,12 @@ Wire/SwiftProtobuf 实际会按 import graph 解析；下列顺序是可审查�
 | PB Page | `PbPageRequest` | `PbPageResponse` | `Error` |
 | PB Floor | `PbFloorRequest` | `PbFloorResponse` | `Error` |
 | Forum Guide | `ForumGuideRequest` | `ForumGuideResponse` | `Error` |
+| User Profile | `ProfileRequest` | `ProfileResponse` | `Error` |
 
 PBPage 两个 root 的递归 closure 已由阶段 11 脚本锁定为 125，并与
 Personalized 合并为 126；阶段 13 再与 ForumGuide request/response
-closure 合并为 136；阶段 14 加入 FRS Page 后为当前 156 个文件。
+closure 合并为 136；阶段 14 加入 FRS Page 后当时为 156 个文件。
+阶段 16B 加入 Profile request/response 后为当前 207 个文件。
 PB Floor 与 ThreadList 仍未进入当前生成集合，
 不能从旧的约数推断其闭包。
 
@@ -225,6 +235,27 @@ client no-progress failure，不伪装成 terminal。`new_total_page` 优先于
 `SubPostList` 没有独立可靠的 reply-to 字段。iOS 只在正文出现已知 type-4
 mention 时显示回复对象，不把 `title` 猜成关系。当前只映射 PBPage 内联预览，
 不声明 PB Floor 或全部楼中楼完成。
+
+### User Profile
+
+来源：`Profile/ProfileRequestData.proto`、
+`Profile/ProfileResponseData.proto` 和 `User.proto`。
+
+| Wire 字段 | 领域语义 | 证据 |
+|---|---|---|
+| request `friend_uid` | 他人资料稳定 userID | call-site `CODE_EVIDENCE` |
+| `is_guest/has_plist/is_from_usercenter/need_post_count` | Android 他人资料请求开关 | 值为 `CODE_EVIDENCE`；服务端最小集 `UNKNOWN` |
+| `page/pn/q_type/rn` | 首页及候选列表参数 | call-site `CODE_EVIDENCE`；阶段 16B 不分页 |
+| response `user.id` | 必须与 requested route 匹配 | 阶段 16B 领域契约/测试 |
+| `nameShow/name/portrait/intro/sex` | 公开展示资料 | schema + Android UI `CODE_EVIDENCE` |
+| `concern_num/fans_num/post_num/thread_num/total_agree_num` | 非负统计 | schema `CODE_EVIDENCE`；合成 fixture 测试 |
+| `tieba_uid` | 可选公开 Tieba ID | schema/UI 白名单 |
+| `BDUSS/passwd/ip/ip_address` | 禁止进入领域/UI/日志 | 安全边界 |
+
+iOS 仅实现匿名他人资料路径：不传 `uid`，`is_guest=1`，
+不复制 Android 的屏幕宽/高/密度。这些零值是显式未知，不是
+已证服务端最小请求。mapper 遇到 identity mismatch 必须失败，
+不能显示另一用户或沿用陈旧资料。
 
 ### PB Floor
 
@@ -329,15 +360,21 @@ response fixture。第三页及更后页的 live 运行、ThreadList、PB Floor 
 普通楼层折叠/删除常态仍为 `NOT_CREATED/NOT_TESTED`；不得用 FRS
 synthetic fixture 或 10 页性能 Fixture 替代这些运行证据。
 
+Profile 已有 1 份完全合成 binary fixture，覆盖公开字段白名单、
+空头像回退与 identity mismatch；request golden 另证明无 credential/
+屏幕值。该 fixture 不是 live response，anonymous 接受性仅能依脱敏
+Debug Probe 标记。
+
 ## 来源与复制边界
 
 Android reference 根目录含 GPL version 3 许可证文本，README 另有非商业
 声明；逐文件授权、上游权利链及两者关系仍为 `UNKNOWN`。ADR-0011 仅在项目
 负责人明确的本地/个人/非商业范围允许从 exact pinned submodule 生成历史
 51-file Personalized closure；ADR-0013 在同一边界内批准历史 126-file
-Personalized + PBPage union；ADR-0015 以相同边界批准当前五个 root、
-136-file union；ADR-0016 在同一边界增加 FRS root，形成当前六-root、
-156-file union。不把 `.proto` 复制进 iOS 树，也不使用
+Personalized + PBPage union；ADR-0015 以相同边界批准历史五个 root、
+136-file union；ADR-0016 在同一边界增加 FRS root，形成历史六-root、
+156-file union；ADR-0021 在同一边界加入 Profile 两个 root，形成当前
+八-root、207-file union。不把 `.proto` 复制进 iOS 树，也不使用
 `n0099`。公开分发、
 App Store、商业使用及 notice/源码义务仍 `BLOCKED`；扩大范围前必须按
 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 新建权利决策，必要时切换到

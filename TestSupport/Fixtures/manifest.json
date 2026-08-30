@@ -64,6 +64,15 @@
       "source": "synthetic"
     },
     {
+      "format": "protobuf",
+      "id": "user-profile.profile.synthetic",
+      "path": "API/UserProfile/profile_synthetic.pb",
+      "purpose": "Profile decode, public-field mapper, repository, and fixture UI contract",
+      "sanitized": true,
+      "sha256": "64dd17342c4e6f488c57b505e27b8966856716f03e6a5fec876798525562097f",
+      "source": "synthetic"
+    },
+    {
       "format": "json",
       "id": "json.success",
       "path": "JSON/success.json",

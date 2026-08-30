@@ -96,10 +96,15 @@ enum RouteIdentity: Codable, Hashable, Sendable {
     case search
     case subposts(threadID: ThreadID, postID: PostID)
     case thread(ThreadID)
+    case userProfile(UserProfileRoute)
 }
 
 enum SettingsRoute: Codable, Hashable, Sendable {
+    case about
     case componentGallery
+    case content(RouteIdentity)
+    case history
+    case licenses
 #if DEBUG
     case interactionLab
     case threadContentRendererLab
@@ -133,7 +138,7 @@ struct AppNavigationState: Equatable, Sendable {
         settingsPath: [SettingsRoute] = []
     ) {
         self.selectedTab = selectedTab
-        self.settingsPath = Array(settingsPath.prefix(1))
+        self.settingsPath = SettingsRouteGrammar.canonical(settingsPath)
         self.routesByRoot = Dictionary(
             uniqueKeysWithValues: RootID.allCases.map { root in
                 let candidate = routesByRoot[root] ?? []
@@ -190,7 +195,7 @@ struct AppNavigationState: Equatable, Sendable {
     }
 
     mutating func replaceSettingsPath(_ path: [SettingsRoute]) {
-        settingsPath = Array(path.prefix(1))
+        settingsPath = SettingsRouteGrammar.canonical(path)
     }
 }
 
@@ -228,19 +233,27 @@ enum RouteGrammar {
                 return true
             }
             return matchingThreadAndSubposts(routes[0], routes[1])
+                || matchingThreadAndProfile(routes[0], routes[1])
         case 3:
             if isSearch(routes[0]) {
                 if isForum(routes[1]), threadID(from: routes[2]) != nil {
                     return true
                 }
                 return matchingThreadAndSubposts(routes[1], routes[2])
+                    || matchingThreadAndProfile(routes[1], routes[2])
             }
             return isForum(routes[0])
-                && matchingThreadAndSubposts(routes[1], routes[2])
+                && (
+                    matchingThreadAndSubposts(routes[1], routes[2])
+                    || matchingThreadAndProfile(routes[1], routes[2])
+                )
         case 4:
             return isSearch(routes[0])
                 && isForum(routes[1])
-                && matchingThreadAndSubposts(routes[2], routes[3])
+                && (
+                    matchingThreadAndSubposts(routes[2], routes[3])
+                    || matchingThreadAndProfile(routes[2], routes[3])
+                )
         default:
             return false
         }
@@ -256,7 +269,10 @@ enum RouteGrammar {
             return isForum(routes[0]) && threadID(from: routes[1]) != nil
         case 3:
             return isForum(routes[0])
-                && matchingThreadAndSubposts(routes[1], routes[2])
+                && (
+                    matchingThreadAndSubposts(routes[1], routes[2])
+                    || matchingThreadAndProfile(routes[1], routes[2])
+                )
         default:
             return false
         }
@@ -272,9 +288,16 @@ enum RouteGrammar {
         switch subpostsRoute {
         case let .subposts(childThreadID, _):
             return threadID == childThreadID
-        case .forum, .search, .thread:
+        case .forum, .search, .thread, .userProfile:
             return false
         }
+    }
+
+    private static func matchingThreadAndProfile(
+        _ threadRoute: RouteIdentity,
+        _ profileRoute: RouteIdentity
+    ) -> Bool {
+        threadID(from: threadRoute) != nil && isUserProfile(profileRoute)
     }
 
     private static func isSearch(_ route: RouteIdentity) -> Bool {
@@ -296,5 +319,84 @@ enum RouteGrammar {
             return threadID
         }
         return nil
+    }
+
+    private static func isUserProfile(_ route: RouteIdentity) -> Bool {
+        if case .userProfile = route {
+            return true
+        }
+        return false
+    }
+}
+
+enum SettingsRouteGrammar {
+    static func canonical(_ routes: [SettingsRoute]) -> [SettingsRoute] {
+        guard routes.count <= 4 else {
+            return []
+        }
+        guard let first = routes.first else {
+            return routes
+        }
+        switch first {
+        case .history:
+            let contentRoutes = routes.dropFirst().compactMap { route -> RouteIdentity? in
+                guard case let .content(content) = route else {
+                    return nil
+                }
+                return content
+            }
+            guard contentRoutes.count == routes.count - 1,
+                  isValidHistoryContentChain(contentRoutes) else {
+                return []
+            }
+        case .about:
+            guard routes.count == 1
+                    || (routes.count == 2 && routes[1] == .licenses) else {
+                return []
+            }
+        case .componentGallery, .licenses:
+            guard routes.count == 1 else {
+                return []
+            }
+#if DEBUG
+        case .interactionLab, .threadContentRendererLab:
+            guard routes.count == 1 else {
+                return []
+            }
+#endif
+        case .content:
+            return []
+        }
+        return routes
+    }
+
+    private static func isValidHistoryContentChain(
+        _ routes: [RouteIdentity]
+    ) -> Bool {
+        guard routes.count <= 3 else {
+            return false
+        }
+        guard let first = routes.first else {
+            return true
+        }
+        switch first {
+        case .forum, .thread, .userProfile:
+            break
+        case .search, .subposts:
+            return false
+        }
+        for (parent, child) in zip(routes, routes.dropFirst()) {
+            switch (parent, child) {
+            case (.forum, .thread), (.thread, .userProfile):
+                continue
+            case let (.thread(threadID), .subposts(childThreadID, _)):
+                guard threadID == childThreadID else {
+                    return false
+                }
+            default:
+                return false
+            }
+        }
+        return true
     }
 }

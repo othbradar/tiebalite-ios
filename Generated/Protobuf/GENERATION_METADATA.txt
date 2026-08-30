@@ -1,7 +1,7 @@
-endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide,forum.frsPage
-roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto,FrsPage/FrsPage.proto
+endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide,forum.frsPage,user.profile
+roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto,FrsPage/FrsPage.proto,Profile/ProfileRequest.proto,Profile/ProfileResponse.proto
 reference_commit=5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
-input_count=156
+input_count=207
 protoc=35.1
 protoc_gen_swift=1.38.1
 swiftprotobuf_runtime=1.38.1

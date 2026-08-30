@@ -1,5 +1,10 @@
 import SwiftUI
 
+enum AppFeatureScope: Hashable, Sendable {
+    case root(RootID)
+    case settings
+}
+
 @MainActor
 struct AppRouteDependencies {
     let featureStores: AppFeatureStoreRegistry
@@ -65,41 +70,48 @@ enum AppRouter {
         navigation: AppNavigationStore,
         dependencies: AppRouteDependencies
     ) -> some View {
+        destination(
+            for: route,
+            scope: .root(root),
+            openRoute: { navigation.push($0, in: root) },
+            dependencies: dependencies
+        )
+    }
+
+    @ViewBuilder
+    static func destination(
+        for route: RouteIdentity,
+        scope: AppFeatureScope,
+        openRoute: @escaping (RouteIdentity) -> Void,
+        dependencies: AppRouteDependencies
+    ) -> some View {
         switch route {
         case .search:
-            SearchView(
-                store: dependencies.featureStores.searchStore,
-                onOpenForum: { result in
-                    guard let route = forumRoute(for: result) else {
-                        return
-                    }
-                    navigation.push(route, in: root)
-                },
-                onOpenThread: { result in
-                    guard let route = threadRoute(for: result),
-                          case let .thread(threadID) = route else {
-                        return
-                    }
-                    _ = dependencies.featureStores.threadReaderStore(
-                        for: root,
-                        threadID: threadID
-                    )
-                    navigation.push(route, in: root)
-                }
+            searchDestination(
+                scope: scope,
+                openRoute: openRoute,
+                dependencies: dependencies
             )
         case let .thread(threadID):
             ThreadReaderView(
                 store: dependencies.featureStores.threadReaderStore(
-                    for: root,
+                    for: scope,
                     threadID: threadID
                 ),
                 imageLoader: dependencies.imageLoader,
-                onOpenMedia: dependencies.onOpenMedia
+                readingTextSize:
+                    dependencies.featureStores.settingsStore.readingTextSize,
+                onOpenMedia: dependencies.onOpenMedia,
+                onOpenUser: { openRoute(.userProfile($0)) },
+                onDisplayed: {
+                    await dependencies.featureStores.browsingHistoryStore
+                        .recordThread($0)
+                }
             )
         case let .forum(forum):
             ForumHomeView(
                 store: dependencies.featureStores.forumHomeStore(
-                    for: root,
+                    for: scope,
                     route: forum
                 ),
                 route: forum,
@@ -107,7 +119,22 @@ enum AppRouter {
                     guard let route = threadRoute(for: thread) else {
                         return
                     }
-                    navigation.push(route, in: root)
+                    openRoute(route)
+                },
+                onDisplayed: {
+                    await dependencies.featureStores.browsingHistoryStore
+                        .recordForum(route: forum, forum: $0)
+                }
+            )
+        case let .userProfile(profileRoute):
+            UserProfileView(
+                store: dependencies.featureStores.userProfileStore(
+                    for: scope,
+                    route: profileRoute
+                ),
+                onDisplayed: {
+                    await dependencies.featureStores.browsingHistoryStore
+                        .recordUser($0)
                 }
             )
         case .subposts:
@@ -118,12 +145,38 @@ enum AppRouter {
                     guard let postID = PostID(2_001) else {
                         return
                     }
-                    navigation.push(
-                        .subposts(threadID: threadID, postID: postID),
-                        in: root
+                    openRoute(
+                        .subposts(threadID: threadID, postID: postID)
                     )
                 }
             )
         }
+    }
+
+    private static func searchDestination(
+        scope: AppFeatureScope,
+        openRoute: @escaping (RouteIdentity) -> Void,
+        dependencies: AppRouteDependencies
+    ) -> some View {
+        SearchView(
+            store: dependencies.featureStores.searchStore,
+            onOpenForum: { result in
+                guard let route = forumRoute(for: result) else {
+                    return
+                }
+                openRoute(route)
+            },
+            onOpenThread: { result in
+                guard let route = threadRoute(for: result),
+                      case let .thread(threadID) = route else {
+                    return
+                }
+                _ = dependencies.featureStores.threadReaderStore(
+                    for: scope,
+                    threadID: threadID
+                )
+                openRoute(route)
+            }
+        )
     }
 }

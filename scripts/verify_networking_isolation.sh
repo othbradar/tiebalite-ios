@@ -68,7 +68,7 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ThreadContentProtoMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
@@ -79,6 +79,7 @@ for proto_adapter in \
   Sources/Core/TiebaAPI/ForumGuideProtocol.swift \
   Sources/Core/TiebaAPI/PBPageProtocol.swift \
   Sources/Core/TiebaAPI/PersonalizedProtocol.swift \
+  Sources/Core/TiebaAPI/ProfileProtocol.swift \
   Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift
 do
   proto_imports="$(
@@ -151,6 +152,18 @@ reject_swift_matches \
   search-interaction-leak \
   '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
   Sources/Features/Search
+reject_swift_matches \
+  user-profile-network-access \
+  '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
+  Sources/Features/UserProfile
+reject_swift_matches \
+  user-profile-credential-access \
+  '\b(SessionAuthorization|SessionCredential|Keychain)\b|BDUSS|STOKEN|Cookie' \
+  Sources/Features/UserProfile
+reject_swift_matches \
+  user-profile-interaction-leak \
+  '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
+  Sources/Features/UserProfile
 reject_swift_matches \
   thread-reader-network-access \
   '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
@@ -228,12 +241,17 @@ if ! rg -q \
   App/AppCompositionRoot.swift; then
   fail production-search-live-after-runtime-evidence
 fi
+if ! rg -q \
+  'LiveUserProfileRepository\(' \
+  App/AppCompositionRoot.swift; then
+  fail production-user-profile-live-after-runtime-evidence
+fi
 if ! rg -q 'readingDataSourceMode: \.fixture' \
   TestSupport/LaunchScenarios/LaunchScenarioFactory.swift; then
   fail ui-scenario-fixture-mode
 fi
 scenario_live_usage="$(
-  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveSearchRepository|LiveThreadReaderRepository|tiebac\.baidu\.com|tieba\.baidu\.com' \
+  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveSearchRepository|LiveThreadReaderRepository|LiveUserProfileRepository|tiebac\.baidu\.com|tieba\.baidu\.com' \
     TestSupport/LaunchScenarios 2>/dev/null || true
 )"
 if [[ -n "$scenario_live_usage" ]]; then
@@ -309,7 +327,7 @@ if [[ -n "$generated_outside_allowlist" ]]; then
   fail generated-protobuf-location "$generated_outside_allowlist"
 fi
 generated_count="$(find Generated/Protobuf -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-if [[ "$generated_count" -ne 156 ]]; then
+if [[ "$generated_count" -ne 207 ]]; then
   fail generated-protobuf-count "$generated_count"
 fi
 
@@ -345,7 +363,9 @@ expected_unchecked_files="$(
   printf '%s\n' \
     'Generated/Protobuf/AlaLiveInfo.pb.swift' \
     'Generated/Protobuf/AlaUserInfo.pb.swift' \
+    'Generated/Protobuf/AnchorInfo.pb.swift' \
     'Generated/Protobuf/App.pb.swift' \
+    'Generated/Protobuf/BookInfo.pb.swift' \
     'Generated/Protobuf/CommonReq.pb.swift' \
     'Generated/Protobuf/CommonRequest.pb.swift' \
     'Generated/Protobuf/ForumGuide/LikeForum.pb.swift' \
@@ -361,6 +381,9 @@ expected_unchecked_files="$(
     'Generated/Protobuf/PbPage/PbPageResponseData.pb.swift' \
     'Generated/Protobuf/Personalized.pb.swift' \
     'Generated/Protobuf/Post.pb.swift' \
+    'Generated/Protobuf/PostInfoList.pb.swift' \
+    'Generated/Protobuf/Profile/ProfileRequestData.pb.swift' \
+    'Generated/Protobuf/Profile/ProfileResponseData.pb.swift' \
     'Generated/Protobuf/SubPostList.pb.swift' \
     'Generated/Protobuf/TPointPost.pb.swift' \
     'Generated/Protobuf/ThreadInfo.pb.swift' \
@@ -374,7 +397,7 @@ unchecked_count="$(
   rg -n '@unchecked[[:space:]]+Sendable' Generated/Protobuf | wc -l | tr -d ' '
 )"
 if [[ "$actual_unchecked_files" != "$expected_unchecked_files" ||
-      "$unchecked_count" -ne 24 ]]; then
+      "$unchecked_count" -ne 29 ]]; then
   fail generated-unchecked-sendable-allowlist "$actual_unchecked_files"
 fi
 
@@ -469,6 +492,7 @@ assert_pattern_detects \
 for output_script in \
   scripts/generate_protos.sh \
   scripts/generate_personalized_fixture.sh \
+  scripts/generate_profile_fixture.sh \
   scripts/generate_thread_content_fixture.sh
 do
   if ! rg -q 'source "\$repo/scripts/path_safety\.sh"' "$output_script" ||

@@ -70,6 +70,25 @@ enum Typography {
             .caption
         }
     }
+
+    static func threadContentRole(
+        for preference: ReadingTextSizePreference
+    ) -> TypographyRole {
+        switch preference {
+        case .small:
+            .subheadline
+        case .standard:
+            .body
+        case .large:
+            .title
+        }
+    }
+
+    static func threadContentFont(
+        _ preference: ReadingTextSizePreference
+    ) -> Font {
+        font(threadContentRole(for: preference))
+    }
 }
 
 enum Spacing {

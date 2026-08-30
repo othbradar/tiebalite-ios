@@ -127,6 +127,7 @@ enum UITestElementID: String, CaseIterable {
     case openForum = "app.fixture.root.open-forum"
     case openSubposts = "app.fixture.thread.open-subposts"
     case openThread = "app.fixture.forum.open-thread"
+    case recommendationsFirstRow = "recommendations.row.t100001"
     case recommendationsList = "recommendations.list"
     case recommendationsLastPageRow = "recommendations.row.t100012"
     case recommendationsLastPageThreadScreen = "thread-reader.screen.t100012"
@@ -260,7 +261,6 @@ enum UITestHarness {
             )
         }
     }
-
     @MainActor
     static func requireAbsent(
         _ identifier: UITestElementID,

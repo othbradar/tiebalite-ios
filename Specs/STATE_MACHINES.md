@@ -1,6 +1,6 @@
 # P0 状态机
 
-状态：`IMPLEMENTED_PHASE_16A_SEARCH_RUNTIME_EVIDENCE_PARTIAL_WITH_UNKNOWNS`
+状态：`IMPLEMENTED_PHASE_16B_HISTORY_SETTINGS_PROFILE_WITH_RUNTIME_UNKNOWNS`
 
 本文件定义 iOS 可测试的领域状态。Android reducer 是 `CODE_EVIDENCE`，但其中缺少的错误、取消和过期响应状态由根规则补齐，不复制 Android 的 Toast-only 或布尔堆叠实现。
 
@@ -320,6 +320,53 @@ SearchSnapshot =
    不因普通 View 更新重发请求。
 6. UI Testing 只使用 Fixture Repository，无 Live 网络/真实 Session。
 
+## 浏览历史、设置与用户资料 / 阶段 16B
+
+```text
+BrowsingHistoryState = idle | loading | loaded(entries, including empty) | failed
+BrowsingHistoryPersistenceIssue = record | delete | clear
+
+UserProfileState = idle | loading | loaded(profile) | empty | failed
+
+AppSettingsSnapshot = appearance(system|light|dark)
+                    + readingTextSize(small|standard|large)
+```
+
+历史事件：
+
+- `displayed(thread|forum|user)` 只在对应页面已进入有效领域展示状态后
+  构造最小 entry；失败/取消不发送。
+- `record` 按 kind + 稳定 ID 删旧插首，重访计数 +1，截断到 500。
+- `delete/clear` 只在 Repository 写入成功后发布新列表。非取消失败
+  保留已显示 entries 并发布可观察 issue；CancellationError 不误报。
+- 初始 JSON 损坏进入 failed，但 `clear` 不依赖成功 decode，可原子
+  覆盖为空 schema-1 envelope 并恢复。
+- record/delete/clear 成功后先推进 generation 并取消旧 load；迟到的初始
+  读取不得覆盖 mutation 已发布的列表。
+
+设置事件：
+
+- launch 只在 `SettingsStore.loadIfNeeded` 完成后显示 Shell，避免默认主题
+  先闪现再替换。
+- 用户选择立即更新可观察 snapshot，并进入单一串行 save loop。
+  保存期间的更新合并为 pending newest snapshot，旧写入不能覆盖新选择。
+- 外观只投影为 `preferredColorScheme`；阅读大小只投影为
+  DesignSystem 的 ThreadContent 字体令牌。
+
+资料事件：
+
+| 事件 | 事务 | 成功 | 失败/取消 |
+|---|---|---|---|
+| `load(route)` | 取消旧 Task，generation+1 | identity 匹配且有数据→loaded；无 user→empty | typed failure→failed；取消不显示普通错误 |
+| `replaceRoute(newUser)` | 更新 route 并开始新 generation | 只接受新 userID 响应 | 旧 generation 不能写状态/历史 |
+| `retry` | 同 route 新 generation | loaded/empty | failed |
+| `deactivate` | 取消 Task | 保留已完成资料 | 取消不改普通 failure |
+
+不变量：Profile response `User.id` 必须等于 route userID；不得用返回
+的其他用户、旧 route 姓名或随机 ID 修补 identity。Fixture/UI Testing 使用
+独立 history/settings/profile Repository，不读 production 文件、UserDefaults、
+Keychain 或 Live 网络。
+
 ## MediaViewer
 
 Android 静态证据（`CODE_EVIDENCE`）：
@@ -602,8 +649,9 @@ expired 重新认证的“清理后启动”使用另一张进程内表
 
 ```text
 AppNavigationState {
-  selectedRoot
+  selectedTab
   routesByRoot
+  settingsPath
   presentedMedia?
   presentedAuthentication?
   pendingDeepLink?
@@ -613,7 +661,7 @@ AppNavigationState {
 }
 ```
 
-- Tab 切换只改 `selectedRoot`。
+- Tab 切换只改 `selectedTab`；settingsPath 与两个 root route 互相隔离。
 - 当前 Tab 重选为 no-op，不 pop、不滚顶、不 refresh。
 - route identity 只含 stable ID/name；anchor/filter/sort/target 是一次性
   NavigationIntent，不参与 Hashable/Store key，也不放生成 Proto。

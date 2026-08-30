@@ -1,6 +1,6 @@
 # 模块与依赖地图
 
-状态：`IMPLEMENTED_PHASE_16A_SEARCH_RUNTIME_EVIDENCE_PARTIAL`
+状态：`IMPLEMENTED_PHASE_16B_HISTORY_SETTINGS_PROFILE`
 
 本文件把根目录结构解释为逻辑模块和 owner；它不表示阶段 02 已创建 Swift
 target。工程生成决策见 `Docs/ADRs/ADR-0001-project-generation.md`。
@@ -12,7 +12,7 @@ target。工程生成决策见 `Docs/ADRs/ADR-0001-project-generation.md`。
 | 编译 target | 内容 | 可依赖 |
 |---|---|---|
 | `TiebaLite` | App、Core、DesignSystem、ThreadReader Renderer、MediaViewer、InteractionKit；仅 UITesting 配置加入 `TestSupport/LaunchScenarios/**` | Apple SDK；已批准且实际引入的 production package |
-| `GeneratedProtobuf` | 锁定只读 endpoint 的 156-file closure 所生成的 tracked Swift；静态库 | SwiftProtobuf 1.38.1 only |
+| `GeneratedProtobuf` | 锁定只读 endpoint 的 207-file closure 所生成的 tracked Swift；静态库 | SwiftProtobuf 1.38.1 only |
 | `TiebaLiteTests` | State/mapper/repository/integration tests；单独编译所需 TestSupport 源 | `TiebaLite`、test-only helper |
 | `TiebaLiteUITests` | XCUITest flows，只向 App 传 scenario ID | App 的 UITesting build；不可链接 production secret/live fixture |
 
@@ -32,7 +32,7 @@ endpoint 再拆重复 generated target。
 | `Sources/Core/Networking/` | HTTPClient、HTTPRequest/Response、redirect/TLS/error | Sendable transport 协议 | Feature 语义、隐式 auth |
 | `Sources/Core/TiebaAPI/` | typed Endpoint、wire adapter、DTO/Proto mapper、Repository concrete | Feature-facing Repository 协议实现 | View、全局账户 |
 | `Sources/Core/Session/` | SessionController、auth context、capability/lease、ProtectedDataCleaner 协议 | 脱敏 snapshot、SessionClient | raw secret 暴露给 Feature、Images concrete |
-| `Sources/Core/Persistence/` | Keychain vault、journal/ledger、公开/受保护 namespace | 小型 storage 协议 | UI、业务导航 |
+| `Sources/Core/Persistence/` | Keychain vault、journal/ledger、公开/受保护 namespace；阶段 16B actor JSON history 与 UserDefaults settings concrete | 小型 storage 协议 | UI、业务导航 |
 | `Sources/Core/Images/` | 唯一 ImageRepository、请求合并/cache policy | ImageRequest/Result/lease | 第二网络栈、raw URL 日志 |
 | `Sources/Core/Logging/` | DiagnosticsClient、Signposter、安全事件 | 白名单 event API | raw Error/request/payload |
 | `Sources/DesignSystem/` | 颜色、排版、Motion、Loading/Empty/Error 组件 | 语义 token/component | Feature、网络、route |
@@ -43,6 +43,9 @@ endpoint 再拆重复 generated target。
 | `Sources/Features/ThreadReader/` | Thread/Subposts/Content renderer 与预计算 RowModel | thread/post route、ContentNode、稳定 ThreadReaderRowID | MediaViewer 内部状态、第二列表容器、Proto/UI 映射 |
 | `Sources/Features/MediaViewer/` | 唯一 Viewer presentation/load state/page composition | MediaPresentation | 精确 zoom owner、自制 Pager、父列表复制 |
 | `Sources/Features/Search/` | 显式 submit 搜吧/搜帖 Store、预计算 RowModel 与 View | `SearchRepository`、稳定 forum/thread 领域结果、Search route callback | HTTP/JSON DTO/Session，用户搜索/历史，第二列表承载 |
+| `Sources/Features/History/` | thread/forum/user 历史 Store 与 View | 最小 `BrowsingHistoryEntry`、Route callback | 正文/Cookie/HTTP/Proto，Cell 文件写入 |
+| `Sources/Features/Settings/` | 外观/阅读选项、历史/账户/关于入口 | `AppSettingsSnapshot`、Settings route callback | 第二主题系统、无效开关、Keychain/HTTP |
+| `Sources/Features/UserProfile/` | 基础公开资料 Store/View | `UserProfileRoute`、`UserProfileRepository` | Proto/HTTP/credential、用户帖子列表、写操作 |
 | `Generated/Protobuf/` | 机器生成 wire Message | 仅供 Core/TiebaAPI mapper | UI/Feature/domain 行为 |
 | `Resources/` | asset/localization/config resources | typed resource access | secret/live response |
 | `TestSupport/` | fixture loader、fake、clock；LaunchScenarios 子树 | Unit target；LaunchScenarios 另编入 App 的 UITesting 配置 | 普通 App Debug/Release 可达路径 |
@@ -116,6 +119,13 @@ posts 预计算为稳定 RowModel，生产 View 只有这一个列表容器。�
 `Sources/Features/Search` 只持 Store/presentation/View，复用未修改的
 `VirtualizedList` 和 `ContentSummaryCard`。SearchStore 由 scene 级
 `AppFeatureStoreRegistry` 持有，不建全局 singleton，不读 Session。
+
+阶段 16B 的具体边界：Core/Models 拥有 history/settings/profile 领域值与
+Repository 协议；Core/Persistence 只实现 JSON/UserDefaults concrete；
+Core/TiebaAPI 的 `ProfileProtocol`/`LiveUserProfileRepository` 是唯一 Proto/
+HTTP adapter。三个 Feature 不 import GeneratedProtobuf/Networking/Persistence concrete。
+App composition 将 Production 与 Fixture Repository 分开，并在 scene 级 registry
+保持 history/settings 及每 route profile Store。
 
 登录验证/续期同样不允许 Session 直接构造 transport。Core/Session 拥有无
 HTTP/DTO 的 `SessionValidationClient`/`CredentialRefreshClient` 协议，

@@ -15,8 +15,7 @@ AppShell
 ├── RecommendationsStack
 └── FollowedForumsStack
 
-P1 可选入口：
-└── SettingsStack
+└── SettingsStack（history/about/licenses/content）
 
 iPad:
 NavigationSplitView
@@ -28,7 +27,8 @@ NavigationSplitView
 └── MediaViewer（唯一实例）
 ```
 
-- P0 主入口固定为推荐和关注吧；设置和历史仍属 P1/deferred。
+- P0 主入口固定为推荐和关注吧；阶段 16B 已实现独立 P1
+  Settings/History 路径，但没有将它们变成第三个业务 RootID。
   阶段 16A 的搜索是 recommendations root 下的普通 P1 route，
   没有改变任何 P0 root/Tab identity。
 - 每个主入口拥有独立导航路径、列表状态和滚动状态。
@@ -43,15 +43,15 @@ NavigationSplitView
 |---|---|---|---|---|---|
 | `recommendationsRoot` | `PersonalizedPage` / Explore personalized | 无 | route id | 列表、cursor/page、滚动、错误尾状态 | `CODE_EVIDENCE` + 产品范围 |
 | `followedForumsRoot` | `HomePage` 的关注吧区域 | 无 | route id + session ref | 同一 session 的列表、加载/错误状态、滚动；不含 P1 置顶/历史 | `CODE_EVIDENCE` + 产品范围 |
-| `settingsRoot` | `UserPage` → `SettingsPage` | 无 | route id | P1 设置页层级与按规格允许的未提交 UI 状态 | Android 页面为 `CODE_EVIDENCE`；独立 iOS root 为 `INFERENCE`；P1 |
+| `settingsRoot` | `UserPage` → `SettingsPage` | 无 | 不进业务 root snapshot | 外观/阅读设置由 Repository 持久；settingsPath 不持久 | Android 页面 `CODE_EVIDENCE`；阶段 16B iPhone/iPad Fixture `RUNTIME_EVIDENCE` |
 | `forum` | `ForumPageDestination` | `forumName: String` 必需；已知业务入口另携可选正 `forumID`；`initialTab/sort` 仅本地状态 | 单次 decode/trim 后非空；外部 deep link 的 forumID 为 nil，不猜造；Unicode normalization 仍为 U-43 | 吧摘要、首屏帖子、当前 tab/sort/classify、各 tab 列表与滚动 | `CODE_EVIDENCE` + 阶段 14 决策 |
 | `thread` | `ThreadPageDestination` | identity 仅 `threadID: Int64`；`forumID/anchorPostID/authorFilter/sort` 是一次性 NavigationIntent；Android `from/scrollToReply` 不进入稳定 route | threadID | 已加载楼层、前后 cursor、sort/filter、阅读锚、滚动 | Android 参数为 `CODE_EVIDENCE`；identity/intent 拆分为阶段 02 决策 |
 | `subposts` | `SubPostsPage/SheetDestination` | identity 为 `threadID + postID`；`forumID/targetSubpostID` 是一次性 NavigationIntent；Android `loadFromSubPost` 不进入 route identity | threadID + postID | 楼中楼列表、页码、目标 subpost | Android 参数为 `CODE_EVIDENCE`；identity/intent 拆分为阶段 02 决策 |
 | `mediaViewer`（非持久 overlay） | `PhotoViewActivity` | 进程内 `sourceRouteIdentity/sourceItemID`、有序 `MediaDescriptor`、initial media id、可选边界上下文 | 不单独做进程恢复；恢复父 route 后关闭 overlay | 来源 route、来源滚动；当前进程内按 media id 定位 | Android输入模型为 `CODE_EVIDENCE`；非持久 overlay 与 descriptor 契约为 `INFERENCE` |
 | `authentication`（非持久 presentation） | `LoginPageDestination` | completion destination 由导航 coordinator 按 attemptID 持有；不传 token | 不单独恢复；恢复父 route 后关闭 presentation | 原页面状态；成功后最多显式重试受保护任务一次 | Android入口为 `CODE_EVIDENCE`；非持久 presentation 为阶段 02 决策 |
 | `search` | `SearchPageDestination` / `tblite://search` | route identity 无参数；query 是 SearchStore 状态，不进 route | route id | normalized query、forum/thread 结果、thread page 与滚动锚 | Android 页面/Hybrid endpoint 为 `CODE_EVIDENCE`；阶段 16A Fixture 与匿名 Live `RUNTIME_EVIDENCE` |
-| `userProfile` | `UserProfilePageDestination` | `userID: Int64` | userID | 来源列表位置 | `CODE_EVIDENCE`; P1 |
-| `history` | `HistoryPageDestination` | Android route 无初始类型；iOS P1 可选初始类型 | route id + type | 吧/帖子分页和滚动 | 页面为 `CODE_EVIDENCE`；参数为 `INFERENCE`；P1 |
+| `userProfile` | `UserProfilePageDestination` | 正 `userID: Int64`；name/portrait 仅降级显示 | userID | 来源 Thread 与已加载内容 | Android/Proto `CODE_EVIDENCE`；阶段 16B Fixture route `RUNTIME_EVIDENCE` |
+| `history` | `HistoryPageDestination` | 无 | 不进导航 snapshot；历史 Repository 独立持久 | 列表、大致滚动、返回后原记录 | Android 行为线索 + 阶段 16B iOS 契约/Fixture `RUNTIME_EVIDENCE` |
 | `threadStore` | `ThreadStorePageDestination` | 无 | route id + session ref | 列表/页码 | `CODE_EVIDENCE`; P1 只读 |
 | `forumDetail` | `ForumDetailPageDestination` | `forumID: Int64` 必需 | forumID | 来源 Forum 状态 | `CODE_EVIDENCE`; P1/按需 |
 
@@ -76,7 +76,9 @@ NavigationSplitView
 | Thread/PbContent | 点作者或 mention | `userProfile` | P1；非法 uid 不导航 |
 | Thread/PbContent | 点链接 | 系统外链流程 | P1；校验 scheme |
 | 受保护入口 | 未登录 | `authentication` presentation | continuation 原子注册后才展示；登录成功后回原 route 并最多显式重试一次 |
-| Settings/User | 历史 | `history` | P1 |
+| Settings/User | 历史 | `history` | 阶段 16B；使用 settingsPath |
+| History | 点 thread/forum/user 记录 | 现有 `thread/forum/userProfile` | 仅安全最小 route 值，保留 History Store |
+| About | 开源许可 | `licenses` | 现有 Settings stack 子 route |
 | Settings/User | 收藏 | `threadStore` | P1，只读 |
 
 ## Deep Link

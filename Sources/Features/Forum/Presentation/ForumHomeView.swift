@@ -6,6 +6,21 @@ struct ForumHomeView: View {
     @Bindable var store: ForumHomeStore
     let route: ForumRoute
     let onOpenThread: (ForumThreadSummary) -> Void
+    let onDisplayed: (ForumSummary) async -> Void
+
+    @State private var recordedForumID: Int64?
+
+    init(
+        store: ForumHomeStore,
+        route: ForumRoute,
+        onOpenThread: @escaping (ForumThreadSummary) -> Void,
+        onDisplayed: @escaping (ForumSummary) async -> Void = { _ in }
+    ) {
+        self.store = store
+        self.route = route
+        self.onOpenThread = onOpenThread
+        self.onDisplayed = onDisplayed
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,6 +33,15 @@ struct ForumHomeView: View {
         .accessibilityIdentifier(AppAccessibilityID.routeForum)
         .task(id: route) {
             await store.synchronize(with: route)
+        }
+        .task(id: displayedForumID) {
+            guard let forum = store.state.displayedForum,
+                  let forumID = forum.forumID,
+                  recordedForumID != forumID else {
+                return
+            }
+            recordedForumID = forumID
+            await onDisplayed(forum)
         }
         .onDisappear {
             store.cancel()
@@ -100,6 +124,10 @@ struct ForumHomeView: View {
         Task { @MainActor in
             await store.loadNextPage()
         }
+    }
+
+    private var displayedForumID: Int64? {
+        store.state.displayedForum?.forumID
     }
 }
 

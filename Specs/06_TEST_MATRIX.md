@@ -59,6 +59,26 @@
 前两页；forum 下一页因 Android 当前 ViewModel 没有调用证据而保持
 `UNKNOWN`，没有猜测实现。
 
+## 浏览历史、设置与用户资料
+
+- threadID/forumID/userID 重复访问后单条、移到最前并更新访问次数。
+- 自定义上限和默认 500 条驱逐最旧；单条删除/清空。
+- JSON 重建恢复；损坏/未知 schema 初始失败后可清空重建并再记录。
+- record/delete/clear 失败可观察且保留已加载列表；CancellationError
+  不显示普通错误。
+- Fixture/UI Testing composition 每次使用独立内存历史/设置和
+  Fixture Profile，不读生产文件/UserDefaults/Keychain、不访问 Live。
+- 外观设置持久化重建；快速多次更改串行保存后 newest snapshot 胜出。
+- 阅读字号令牌 small/standard/large 有序；UI 中切换后 ThreadContent
+  真实文字 frame 变大，不修改节点 identity/布局结构。
+- Profile request golden 检查 endpoint/query/已证字段及无 credential/屏幕值；
+  合成 Proto mapper 检查全部白名单字段、identity mismatch 和空头像回退。
+- Profile Store 覆盖 route 替换、迟到响应、取消、empty、retry 和 Fixture。
+- iPhone Fixture：帖子 → 返回 → 历史 → 再打开/清空；深色+大正文；
+  帖子作者 → 资料。
+- iPad Fixture：帖子 → 作者资料 → 系统 Sidebar → Settings → History，
+  同一会话内 thread/user 记录都可见。
+
 ## 关注的吧
 
 - 未登录引导。

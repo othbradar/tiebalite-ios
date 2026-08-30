@@ -34,7 +34,8 @@ struct AppSceneRoot: View {
 
     var body: some View {
         Group {
-            if sessionStore.isLaunchRestoreResolved {
+            if sessionStore.isLaunchRestoreResolved,
+               featureStores.settingsStore.isLoaded {
                 AppShellView(
                     navigation: navigationStore,
                     harnessLabel: harnessLabel,
@@ -78,6 +79,12 @@ struct AppSceneRoot: View {
         .task {
             await sessionStore.restoreIfNeeded()
         }
+        .task {
+            await featureStores.settingsStore.loadIfNeeded()
+        }
+        .preferredColorScheme(
+            featureStores.settingsStore.appearance.colorScheme
+        )
         .onOpenURL { url in
             navigationStore.handleExternalURL(url)
         }
