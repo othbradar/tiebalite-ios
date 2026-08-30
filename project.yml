@@ -74,6 +74,7 @@ targets:
       - path: Sources/Features/Session
       - path: Sources/Features/FollowedForums
       - path: Sources/Features/Forum
+      - path: Sources/Features/Search
       - path: Sources/InteractionKit
         excludes:
           - AGENTS.md

@@ -1,0 +1,58 @@
+{
+  "no": 0,
+  "error": "",
+  "data": {
+    "has_more": 0,
+    "pn": 1,
+    "exactMatch": {
+      "forum_id": 16001,
+      "forum_name": "fixture_dev",
+      "forum_name_show": "Fixture 开发",
+      "avatar": "",
+      "post_num": "321",
+      "concern_num": "123",
+      "has_concerned": 0,
+      "intro": "用于测试搜索映射的虚构贴吧。",
+      "slogan": "固定、脱敏、可复现",
+      "is_jiucuo": 0
+    },
+    "fuzzyMatch": [
+      {
+        "forum_id": 16001,
+        "forum_name": "fixture_dev_duplicate",
+        "forum_name_show": "不应覆盖精确匹配",
+        "avatar": "",
+        "post_num": "999",
+        "concern_num": "999",
+        "has_concerned": 0,
+        "intro": "重复项",
+        "slogan": "",
+        "is_jiucuo": 0
+      },
+      {
+        "forum_id": 16002,
+        "forum_name": "fixture_photo",
+        "forum_name_show": "Fixture 摄影",
+        "avatar": "",
+        "post_num": "42",
+        "concern_num": 12,
+        "has_concerned": 0,
+        "intro": "第二个虚构贴吧。",
+        "slogan": "",
+        "is_jiucuo": 0
+      },
+      {
+        "forum_id": -1,
+        "forum_name": "invalid",
+        "forum_name_show": "无效身份",
+        "avatar": "",
+        "post_num": "0",
+        "concern_num": "0",
+        "has_concerned": 0,
+        "intro": "",
+        "slogan": "",
+        "is_jiucuo": 0
+      }
+    ]
+  }
+}

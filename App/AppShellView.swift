@@ -269,6 +269,14 @@ private struct IPhoneAppShellView: View {
                     navigation.push(route, in: root)
                 }
             )
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("搜索", systemImage: "magnifyingglass") {
+                        navigation.push(.search, in: root)
+                    }
+                    .accessibilityIdentifier(AppAccessibilityID.openSearch)
+                }
+            }
         case .followedForums:
             FollowedForumsAppRootView(
                 store: featureStores.followedForumsStore,
@@ -456,6 +464,16 @@ private struct IPadAppShellView: View {
                         navigation.replaceRootDetail(route, in: root)
                     }
                 )
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("搜索", systemImage: "magnifyingglass") {
+                            navigation.replaceRootDetail(.search, in: root)
+                        }
+                        .accessibilityIdentifier(
+                            AppAccessibilityID.openSearch
+                        )
+                    }
+                }
             case .followedForums:
                 FollowedForumsAppRootView(
                     store: featureStores.followedForumsStore,

@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`FRS_NEXT_PAGE_PBPAGE_CONTINUOUS_THREE_PAGE_RUNTIME_AND_156_FILE_CLOSURE_VERIFIED`
+状态：`STAGE16A_HYBRID_JSON_SEARCH_NO_PROTO_DELTA_AND_156_FILE_CLOSURE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -39,6 +39,10 @@ Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - 阶段 14 依据 ADR-0016 增加唯一 FRS 首屏 root
   `FrsPage/FrsPage.proto`。FRS closure 为 74，与原集合重叠 54，新增 20，
   当前唯一联合闭包为 156；未提前加入阶段 15 的 ThreadList root。
+- 阶段 16A 搜吧与搜帖来自 Android Hybrid HTTPS JSON endpoint，分别映射
+  `SearchForumBean` 与 `SearchThreadBean`，不使用 Protobuf。Android
+  `SearchSug` Proto 只服务未实现的输入联想，因此本阶段没有修改 root、
+  manifest、生成产物或 156-file 闭包。
 
 当前 local/personal/noncommercial schema 路径由 ADR-0011 批准；公开分发、
 App Store 和商业使用继续 `BLOCKED`。

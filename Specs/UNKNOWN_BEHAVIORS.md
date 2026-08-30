@@ -214,10 +214,10 @@ scenario：无凭证 Debug-only Probe，首屏 has_more 为真时单次请求
 
 | ID | UNKNOWN | 安全验证方法 |
 |---|---|---|
-| U-46 | Hybrid search endpoint 稳定性与 Cookie 必要性 | 匿名/测试 session 对照；只保存脱敏 public result |
-| U-47 | 搜索建议慢响应顺序 | 本地 stub 反向延迟 query，验证 latest-cancel |
-| U-48 | forum/user 搜索是否分页 | 检查真实 response 的 pn/has_more，并用第二页验证 |
-| U-49 | 搜索 thread 重复率与 sort 值域 | 多页 id 序列 fixture；未知 sort 保留 raw |
+| U-46 | `PARTIAL_CLOSED_BETA`：Hybrid forum/thread 的 Cookie 必要性 | iOS 26.5 Simulator 的匿名 forum page 1 与 thread page 1/2 均 HTTP 200/JSON decode 成功，证明本路径不需 Cookie；长期稳定性仍 OPEN |
+| U-47 | 搜索建议慢响应顺序 | SearchSug 未进入 16A；已实现的显式 submit 搜索以 Controlled Repository 反向完成测试锁定 latest-cancel/generation |
+| U-48 | forum/user 搜索是否分页 | forum response 已观察 `pn/has_more`，但 Android Forum ViewModel 无下一页请求，阶段 16A 仅首屏；user 未实现，两者分页仍 OPEN |
+| U-49 | 搜索 thread 重复率与 sort 值域 | `PARTIAL_CLOSED_BETA`：第二页已证 `pn=2/has_more/current_page`、20 个映射结果均为新 ID；Fixture 锁定重叠页 first-wins；`st` 其他值域仍 OPEN |
 
 ## Media / 交互验证
 

@@ -28,10 +28,31 @@ enum AppRouter {
         return .forum(forum)
     }
 
+    static func forumRoute(
+        for result: ForumSearchResult
+    ) -> RouteIdentity? {
+        guard let forum = ForumRoute(
+            forumID: result.forumID,
+            forumName: result.name
+        ) else {
+            return nil
+        }
+        return .forum(forum)
+    }
+
     static func threadRoute(
         for thread: ForumThreadSummary
     ) -> RouteIdentity? {
         guard let threadID = ThreadID(thread.threadID) else {
+            return nil
+        }
+        return .thread(threadID)
+    }
+
+    static func threadRoute(
+        for result: ThreadSearchResult
+    ) -> RouteIdentity? {
+        guard let threadID = ThreadID(result.threadID) else {
             return nil
         }
         return .thread(threadID)
@@ -45,6 +66,27 @@ enum AppRouter {
         dependencies: AppRouteDependencies
     ) -> some View {
         switch route {
+        case .search:
+            SearchView(
+                store: dependencies.featureStores.searchStore,
+                onOpenForum: { result in
+                    guard let route = forumRoute(for: result) else {
+                        return
+                    }
+                    navigation.push(route, in: root)
+                },
+                onOpenThread: { result in
+                    guard let route = threadRoute(for: result),
+                          case let .thread(threadID) = route else {
+                        return
+                    }
+                    _ = dependencies.featureStores.threadReaderStore(
+                        for: root,
+                        threadID: threadID
+                    )
+                    navigation.push(route, in: root)
+                }
+            )
         case let .thread(threadID):
             ThreadReaderView(
                 store: dependencies.featureStores.threadReaderStore(

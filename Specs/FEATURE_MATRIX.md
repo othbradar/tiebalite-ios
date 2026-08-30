@@ -1,6 +1,6 @@
 # 功能矩阵
 
-状态：`IMPLEMENTED_THROUGH_PHASE_15_6_CORE_LIVE_PAGINATION`
+状态：`IMPLEMENTED_PHASE_16A_SEARCH_RUNTIME_EVIDENCE_PARTIAL`
 
 本矩阵把 Android `4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2` 的静态证据转换为 iOS 验收范围。它不授权真实接口接入；endpoint 必须先满足 `Specs/API_EVIDENCE.md` 的 fixture 和运行证据门槛。
 
@@ -34,7 +34,7 @@
 
 | 功能 | Android 证据 | iOS 边界 | 状态 |
 |---|---|---|---|
-| 搜索吧/主题/用户 | `SearchPage` 及三个结果 ViewModel；SearchSug Proto + Hybrid JSON | 吧/主题为首选；用户页可后置。输入使用 latest-cancel，结果分页有尾部失败；不复制共享 GlobalEvent | `CODE_EVIDENCE`; endpoint 运行态 `UNKNOWN` |
+| 搜索吧/主题/用户 | `SearchPage`、`SearchForumViewModel`、`SearchThreadViewModel`；Hybrid JSON；SearchSug Proto 是未实现的联想路径 | 阶段 16A 实现吧/主题：用户显式 submit，latest-cancel/generation，稳定 ID 去重，thread `pn/has_more/current_page` 顺序分页与 retained failure；forum 首屏；结果进现有 ForumHome/ThreadReader。用户搜索延期 | 吧首屏与帖子第二页 `ANONYMOUS_RUNTIME_VERIFIED`；Fixture/UI `BETA_READY`；用户/联想 `NOT_IMPLEMENTED` |
 | 浏览历史 | `HistoryDao`、`HistoryUtil`、`HistoryPage` | 按吧/帖子分类、最近访问、阅读锚；无痕模式不写；畸形旧记录安全跳过 | `CODE_EVIDENCE` + `INFERENCE` |
 | 用户资料只读 | `UserProfilePage/ViewModel`、GetUserInfo/Profile Proto | 只展示已证公开字段；不提供关注、私信、编辑等写操作 | `CODE_EVIDENCE` |
 | 设置 | `SettingsPage`、`DataStore.kt`、`AppPreferencesUtils` | 只保留主题、字号、图片策略、阅读偏好等跨平台项；迁移和默认值可测试 | `CODE_EVIDENCE` + `INFERENCE` |

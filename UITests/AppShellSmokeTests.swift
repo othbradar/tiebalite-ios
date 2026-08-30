@@ -374,6 +374,34 @@ final class AppShellSmokeTests: XCTestCase {
 
 extension AppShellSmokeTests {
     @MainActor
+    func testFixtureForumSearchNavigatesAndPreservesResultsOnReturn() {
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+
+        submitFixtureSearch(in: app)
+        UITestHarness.tap(.searchForumResult, in: app)
+        UITestHarness.requirePresent(.forumHomeHeader, in: app)
+        UITestHarness.tapSystemBack(in: app, returningTo: .searchRoot)
+        requireFixtureSearchPreserved(in: app)
+    }
+
+    @MainActor
+    func testFixtureThreadSearchNavigatesAndPreservesResultsOnReturn() {
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+
+        submitFixtureSearch(in: app)
+        UITestHarness.scrollToHittable(
+            .searchThreadResult,
+            inside: .searchList,
+            gestureAnchor: .searchForumResult,
+            in: app
+        )
+        UITestHarness.tap(.searchThreadResult, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.tapSystemBack(in: app, returningTo: .searchRoot)
+        requireFixtureSearchPreserved(in: app)
+    }
+
+    @MainActor
     func testFixtureRecommendationsLoadThreePagesAndPreservePosition() {
         let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
@@ -452,6 +480,29 @@ extension AppShellSmokeTests {
         )
         UITestHarness.tap(.recommendationsSelectedRow, in: app)
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
+    }
+
+    @MainActor
+    private func submitFixtureSearch(in app: XCUIApplication) {
+        UITestHarness.tap(.searchOpen, in: app)
+        UITestHarness.requirePresent(.searchRoot, in: app)
+        let field = UITestHarness.element(.searchField, in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("Swift")
+        UITestHarness.tap(.searchSubmit, in: app)
+        UITestHarness.requirePresent(.searchList, in: app)
+        UITestHarness.requirePresent(.searchForumResult, in: app)
+        UITestHarness.requirePresent(.searchThreadResult, in: app)
+    }
+
+    @MainActor
+    private func requireFixtureSearchPreserved(in app: XCUIApplication) {
+        let field = UITestHarness.element(.searchField, in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "Swift")
+        UITestHarness.requirePresent(.searchForumResult, in: app)
+        UITestHarness.requirePresent(.searchThreadResult, in: app)
     }
 
     @MainActor

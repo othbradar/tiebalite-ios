@@ -27,6 +27,9 @@ struct TiebaLiteApp: App {
         .isRequested(arguments: ProcessInfo.processInfo.arguments)
     private let runsStage15LongThreadLab = DebugStage15LongThreadLabLaunch
         .isRequested(arguments: ProcessInfo.processInfo.arguments)
+    private let runsStage16SearchProbe = DebugSearchProbeLaunch.isRequested(
+        arguments: ProcessInfo.processInfo.arguments
+    )
 #endif
 #endif
 
@@ -53,6 +56,10 @@ struct TiebaLiteApp: App {
 #if DEBUG && !UITESTING
             if runsStage14PLongForumLab {
                 DebugStage14PLongForumLabView()
+            } else if runsStage16SearchProbe {
+                DebugSearchProbeView(
+                    client: compositionRoot.environment.httpClient
+                )
             } else if runsStage15LongThreadLab {
                 DebugStage15LongThreadLabView()
             } else if runsStage15ThreadProbe {

@@ -7,6 +7,7 @@ final class AppCompositionRoot {
     private let followedForumsRepository: any FollowedForumsRepository
     private let forumHomeRepository: any ForumHomeRepository
     private let recommendationRepository: any RecommendationRepository
+    private let searchRepository: any SearchRepository
     private let threadReaderRepository: any ThreadReaderRepository
 
     init(
@@ -31,6 +32,7 @@ final class AppCompositionRoot {
             followedForumsRepository = FixtureFollowedForumsRepository()
             forumHomeRepository = FixtureForumHomeRepository()
             recommendationRepository = FixtureRecommendationRepository()
+            searchRepository = FixtureSearchRepository()
             threadReaderRepository = FixtureThreadReaderRepository()
         case .live:
             followedForumsRepository =
@@ -46,6 +48,9 @@ final class AppCompositionRoot {
                     client: environment.httpClient,
                     authContextProvider: resolvedAuthContextProvider
                 )
+            searchRepository = LiveSearchRepository(
+                client: environment.httpClient
+            )
             threadReaderRepository = LiveThreadReaderRepository(
                 client: environment.httpClient
             )
@@ -64,6 +69,10 @@ final class AppCompositionRoot {
                 await sessionStore.markExpired(context: context)
             }
         )
+    }
+
+    func makeSearchStore() -> SearchStore {
+        SearchStore(repository: searchRepository)
     }
 
     func makeForumHomeStore(route: ForumRoute) -> ForumHomeStore {

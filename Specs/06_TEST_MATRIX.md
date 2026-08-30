@@ -42,6 +42,23 @@
 与返回锚点。Live 只有 active-session 第二页单 Simulator 运行证据；
 服务端终止信号仍为 `UNKNOWN`。
 
+## 搜索
+
+- 空白关键词不请求；只在按钮或键盘提交时搜索。
+- 新关键词取消旧 Task，旧 generation 不得覆盖新结果。
+- 贴吧按 forumID、帖子按 threadID 首出现去重并保持服务端顺序。
+- 搜帖下一页单飞；下一页失败保留已有结果并允许重试。
+- 新关键词与旧关键词分页隔离，相同页不得重复请求。
+- UI Testing 只使用 Fixture/Mock，不访问 Live 网络或真实 Keychain。
+- iPhone 覆盖搜吧进入 ForumHome、搜帖进入 ThreadReader 及返回状态保持。
+- iPad 在现有 split 容器覆盖 SearchView 和两类 Fixture 结果。
+
+阶段 16A 的 Beta 子集使用三份合成 JSON Fixture，覆盖 forum 统计和 thread
+`post_num/forum_id` 的混合 string/integer、稳定业务 ID、首出现去重、`pn=1/2`、精确
+`current_page` 与 `has_more`。匿名 Live Probe 只验证 forum 首屏和 thread
+前两页；forum 下一页因 Android 当前 ViewModel 没有调用证据而保持
+`UNKNOWN`，没有猜测实现。
+
 ## 关注的吧
 
 - 未登录引导。

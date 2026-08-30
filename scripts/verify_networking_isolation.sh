@@ -140,6 +140,18 @@ reject_swift_matches \
   '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
   Sources/Features/Forum
 reject_swift_matches \
+  search-network-access \
+  '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
+  Sources/Features/Search
+reject_swift_matches \
+  search-credential-access \
+  '\b(SessionAuthorization|SessionCredential|Keychain)\b|BDUSS|STOKEN|Cookie' \
+  Sources/Features/Search
+reject_swift_matches \
+  search-interaction-leak \
+  '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
+  Sources/Features/Search
+reject_swift_matches \
   thread-reader-network-access \
   '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
   Sources/Features/ThreadReader
@@ -211,12 +223,17 @@ if rg -q \
   App/AppCompositionRoot.swift; then
   fail production-forum-home-evidence-regression
 fi
+if ! rg -q \
+  'searchRepository = LiveSearchRepository' \
+  App/AppCompositionRoot.swift; then
+  fail production-search-live-after-runtime-evidence
+fi
 if ! rg -q 'readingDataSourceMode: \.fixture' \
   TestSupport/LaunchScenarios/LaunchScenarioFactory.swift; then
   fail ui-scenario-fixture-mode
 fi
 scenario_live_usage="$(
-  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveThreadReaderRepository|tiebac\.baidu\.com' \
+  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveSearchRepository|LiveThreadReaderRepository|tiebac\.baidu\.com|tieba\.baidu\.com' \
     TestSupport/LaunchScenarios 2>/dev/null || true
 )"
 if [[ -n "$scenario_live_usage" ]]; then

@@ -6,6 +6,22 @@ final class IPadAppShellSmokeTests: XCTestCase {
     }
 
     @MainActor
+    func testFixtureSearchPageLoadsOnIPad() {
+        let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
+
+        UITestHarness.tap(.searchOpen, in: app)
+        UITestHarness.requirePresent(.searchRoot, in: app)
+        let field = UITestHarness.element(.searchField, in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("Swift")
+        UITestHarness.tap(.searchSubmit, in: app)
+        UITestHarness.requirePresent(.searchList, in: app)
+        UITestHarness.requirePresent(.searchForumResult, in: app)
+        UITestHarness.requirePresent(.searchThreadResult, in: app)
+    }
+
+    @MainActor
     func testRegularSplitRouteSurvivesOrientationAndRootSwitch() {
         let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
         let device = XCUIDevice.shared

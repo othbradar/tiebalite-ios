@@ -149,8 +149,12 @@
 
 ## P1 阶段 16A/16B/16C
 
-Search、History/Settings、UserProfile 均为 P1，不是 P0 稳定出口前置。除非
-P0 核心链和质量门禁已绿色且用户单独授权，否则保持 deferred。
+Search、History/Settings、UserProfile 均为 P1，不是 P0 稳定出口前置。
+阶段 16A 已在单独授权下实现 Hybrid JSON 搜吧/搜帖、搜帖证据范围内的
+顺序分页和到现有 Forum/Thread route 的导航；因真实搜帖结果的最终
+ThreadReader 人工点击尚未完成，状态保持 `RUNTIME_EVIDENCE_PARTIAL`。
+搜索联想、用户搜索、历史、设置和用户资料仍保持 deferred；
+`PHASE_16B_HISTORY_SETTINGS_PROFILE = NOT_STARTED`。
 
 ## 阶段 17：iPadOS 适配强化
 

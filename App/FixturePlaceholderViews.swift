@@ -139,6 +139,8 @@ struct FixtureRouteView: View {
                     .accessibilityIdentifier(AppAccessibilityID.openSubposts)
                 case .subposts:
                     EmptyView()
+                case .search:
+                    EmptyView()
                 }
             }
             .frame(maxWidth: .infinity)
@@ -210,6 +212,8 @@ private extension RouteIdentity {
         switch self {
         case let .forum(route):
             "吧占位：\(route.forumName.rawValue)"
+        case .search:
+            "搜索"
         case let .thread(threadID):
             "帖子占位：\(threadID.rawValue)"
         case let .subposts(_, postID):
@@ -225,6 +229,8 @@ private extension RouteIdentity {
         switch self {
         case .forum:
             "rectangle.stack"
+        case .search:
+            "magnifyingglass"
         case .thread:
             "doc.text"
         case .subposts:
@@ -236,6 +242,8 @@ private extension RouteIdentity {
         switch self {
         case .forum:
             AppAccessibilityID.routeForum
+        case .search:
+            AppAccessibilityID.routeSearch
         case .thread:
             AppAccessibilityID.routeThread
         case .subposts:

@@ -24,3 +24,7 @@ UITableView 虚拟化和 1000 楼 Fixture 见
 阶段 15.6 PBPage 连续分页、Personalized 推荐分页、三页/第二页
 Live 脱敏证据、retained failure/generation 回归与未知项见
 `PHASE15_6_LIVE_PAGINATION.md`。
+
+阶段 16A 的 Hybrid JSON 搜吧/搜帖协议、稳定 ID、搜帖第二页、
+普通 route、Fixture UI 和脱敏 Live 证据见
+`PHASE16A_SEARCH.md`。

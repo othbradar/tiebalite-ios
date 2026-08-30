@@ -1,6 +1,6 @@
 # P0 状态机
 
-状态：`IMPLEMENTED_THROUGH_PHASE_15_THREAD_READING_WITH_UNKNOWNS`
+状态：`IMPLEMENTED_PHASE_16A_SEARCH_RUNTIME_EVIDENCE_PARTIAL_WITH_UNKNOWNS`
 
 本文件定义 iOS 可测试的领域状态。Android reducer 是 `CODE_EVIDENCE`，但其中缺少的错误、取消和过期响应状态由根规则补齐，不复制 Android 的 Toast-only 或布尔堆叠实现。
 
@@ -283,6 +283,42 @@ SubpostsCursor(page, totalPage?)
 - author/content 缺失按内容节点矩阵降级。
 - 成功 payload 中任何 session/write metadata 不进入只读 View。
 - 父 Thread 保持原位置。
+
+## 搜索 / 阶段 16A
+
+搜索只由用户显式 submit 触发，不对每个输入字符发请求：
+
+```text
+SearchState =
+  idle
+  | searching(keyword)
+  | loaded(snapshot)
+  | empty(keyword)
+  | failed(keyword,error,retainedSnapshot?)
+  | loadingMore(snapshot)
+
+SearchSnapshot =
+  keyword + forums + threads + currentThreadPage + hasMoreThreads
+```
+
+| 事件 | 前置 | 事务 | 成功 | 失败/取消 |
+|---|---|---|---|---|
+| `submit` | trim 后关键词非空，且不是同一已完成查询 | 取消旧 Task，generation+1，并发 forum page 1 + thread page 1 | 两类均空→empty；否则 loaded | 首屏→failed(nil)；取消恢复取消前状态 |
+| `submitBlank` | 空白 | 不发 HTTP，取消当前任务 | idle | 不展示错误 |
+| `reachThreadTail` | loaded，`hasMoreThreads=true`，当前无 Task | 请求精确 `currentPage+1` | 按 threadID first-wins 增量追加；空/duplicate-only 以 client no-progress 停止 | retained failed；重试同页；取消恢复 previous |
+| `newKeyword` | 任何在途状态 | 取消旧 Task，新 generation | 只提交新关键词的结果 | 旧响应不改变任何状态 |
+| `deactivate` | Search route 离开 | 取消在途 Task | 保留已完成的 query/result/scroll anchor | 取消不变普通 failure |
+
+不变量：
+
+1. 同时只有一个 Search Store Task；分页与新关键词互相隔离。
+2. 响应提交必须同时匹配 generation 和 normalized keyword。
+3. forumID/threadID 为稳定正业务 ID；跨页 first-wins 去重且保持首次顺序。
+4. thread response `current_page` 必须精确匹配请求，只信任
+   `has_more == 1` 作为继续信号。forum 分页未证，只做首屏。
+5. 搜索返回时 scene 级 Store 保留 keyword、snapshot 和 scroll anchor；
+   不因普通 View 更新重发请求。
+6. UI Testing 只使用 Fixture Repository，无 Live 网络/真实 Session。
 
 ## MediaViewer
 

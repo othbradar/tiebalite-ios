@@ -1,0 +1,36 @@
+{
+  "no": 0,
+  "error": "",
+  "data": {
+    "has_more": 0,
+    "current_page": 2,
+    "post_list": [
+      {
+        "tid": "26002",
+        "title": "跨页重复项",
+        "content": "不应再次追加。",
+        "post_num": 7,
+        "forum_id": 16002,
+        "forum_name": "Fixture 摄影",
+        "user": {
+          "user_id": 36002,
+          "user_name": "fixture_author_2",
+          "show_nickname": "Fixture 作者二"
+        }
+      },
+      {
+        "tid": "26003",
+        "title": "Fixture 搜索帖子三",
+        "content": "第二页新增的固定结果。",
+        "post_num": 3,
+        "forum_id": 16001,
+        "forum_name": "Fixture 开发",
+        "user": {
+          "user_id": 36003,
+          "user_name": "fixture_author_3",
+          "show_nickname": "Fixture 作者三"
+        }
+      }
+    ]
+  }
+}

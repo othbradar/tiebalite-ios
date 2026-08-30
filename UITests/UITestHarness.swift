@@ -9,8 +9,7 @@ enum UITestElementID: String, CaseIterable {
     case componentInlineLoading = "design-system.inline-loading"
     case componentPagination = "design-system.pagination-footer"
     case debugOpenGallery = "app.debug.open-component-gallery"
-    case debugOpenThreadContentRenderer =
-        "app.debug.open-thread-content-renderer-lab"
+    case debugOpenThreadContentRenderer = "app.debug.open-thread-content-renderer-lab"
     case followedForumsRoot = "app.root.followed-forums"
     case followedForumsFirstRow = "followed-forums.row.f13001"
     case followedForumsLogin = "followed-forums.session.login"
@@ -26,27 +25,21 @@ enum UITestElementID: String, CaseIterable {
     case interactionMediaClose = "interaction.media.close"
     case interactionMediaCurrent = "interaction.media.current-id"
     case interactionMediaOwner = "interaction.media.gesture-owner"
-    case interactionMediaAccessibilityNext =
-        "interaction.media.accessibility.next"
-    case interactionMediaAccessibilityPrevious =
-        "interaction.media.accessibility.previous"
+    case interactionMediaAccessibilityNext = "interaction.media.accessibility.next"
+    case interactionMediaAccessibilityPrevious = "interaction.media.accessibility.previous"
     case interactionMediaFailure = "interaction.media.error.failure"
     case interactionMediaLoading = "interaction.media.loading.delayed"
     case interactionMediaOpenMultiple = "interaction.media.open.multiple"
     case interactionMediaOpenSingle = "interaction.media.open.single"
     case interactionMediaOverlayState = "interaction.media.overlay-state"
-    case interactionMediaReleaseDelayed =
-        "interaction.media.release-delayed"
+    case interactionMediaReleaseDelayed = "interaction.media.release-delayed"
     case interactionMediaRetryFailure = "interaction.media.retry.failure"
     case interactionMediaSource = "interaction.media.source-anchor"
     case interactionMediaViewer = "interaction.media.viewer"
     case interactionMediaZoom = "interaction.media.zoom-state"
-    case interactionPagerArmDelete =
-        "interaction.pager.action.arm-delete"
-    case interactionPagerArmInsert =
-        "interaction.pager.action.arm-insert"
-    case interactionPagerArmRefresh =
-        "interaction.pager.action.arm-refresh"
+    case interactionPagerArmDelete = "interaction.pager.action.arm-delete"
+    case interactionPagerArmInsert = "interaction.pager.action.arm-insert"
+    case interactionPagerArmRefresh = "interaction.pager.action.arm-refresh"
     case interactionPagerArmReorder =
         "interaction.pager.action.arm-reorder"
     case interactionPagerAccessibilityNext =
@@ -140,6 +133,13 @@ enum UITestElementID: String, CaseIterable {
     case recommendationsSelectedRow = "recommendations.row.t100003"
     case recommendationsRoot = "app.root.recommendations"
     case routeForum = "app.route.forum"
+    case searchField = "search.field"
+    case searchForumResult = "search.forum.13001"
+    case searchList = "search.list"
+    case searchOpen = "app.open-search"
+    case searchRoot = "search.root"
+    case searchSubmit = "search.submit"
+    case searchThreadResult = "search.thread.100003"
     case routeSubposts = "app.route.subposts"
     case routeThread = "app.route.thread"
     case settingsRoot = "app.root.settings"

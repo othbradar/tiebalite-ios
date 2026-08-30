@@ -590,24 +590,55 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 
 ### `search.webResults`
 
-- 用户任务：搜索吧、主题、用户、吧内帖子。
-- HTTP method / URL family：GET `https://tieba.baidu.com/mo/q/search/forum|thread|user`；吧内帖子复用 thread query。
-- Android 来源文件：`AppHybridTiebaApi.kt`、`SearchForumViewModel.kt`、`SearchThreadViewModel.kt`、`SearchUserViewModel.kt`、`ForumSearchPostViewModel.kt`。
-- Android symbol：`searchForumFlow/searchThreadFlow/searchUserFlow/searchPostFlow`。
-- 请求构建来源：Retrofit query + 动态 `Referer`；thread 使用 `word/pn/st/tt/rn/fname/ct/is_use_zonghe/cv`。
-- 认证要求：接口的 `NO_COMMON_PARAMS` 明确排除 BDUSS/STOKEN query，但 `HYBRID_TIEBA_API` 的 common header / `AddWebCookieInterceptor` 会从当前账户构造 Web Cookie；归为 `optional-in-request`，匿名能力 `UNKNOWN`。
-- 请求编码：HTTPS GET query + JSON DTO。
-- 请求/响应类型：无 Protobuf；`SearchForumBean/SearchThreadBean/SearchUserBean/SearchPostBean`。
-- 分页字段：thread 使用请求 `pn` 与响应 `current_page/has_more`；forum/user UI 当前只取一次。
-- 服务端错误字段：DTO 的 `error_code/error` 或 `error_code/error_msg`；类型在不同 DTO 中不一致。
-- 关键 headers：动态 `Referer` 含查询词；Hybrid client 加 User-Agent、XHR/fetch headers 和可能含 BDUSS/STOKEN 的 Cookie。`NO_ST_PARAMS/NO_COMMON_PARAMS` 仅为内部控制 header，发送前移除。
-- 设备/版本参数：thread query 固定 `cv=99.9.101`；其他自动添加项及最小集合 `UNKNOWN`。
-- 敏感字段：查询词、Referer、可选 Cookie/session、搜索结果中的用户内容。
-- iOS domain mapper：分别映射 SearchForum/Thread/User item；字符串 ID 必须安全解析，未知/缺失分页字段降级。
-- Fixture 路径：`TestSupport/Fixtures/API/Search/Results/`（`NOT_CREATED`）。
-- Fixture 获取/生成方式：构造三类成功/空/错误/畸形 DTO 和 thread 重叠页；真实样本仅用白名单公开查询并去身份化。
-- 已验证行为：Android 搜索 ViewModel 静态调用 Hybrid HTTPS interface。
-- UNKNOWN：Web endpoint 稳定性、cookie 必要性、forum/user 下一页、rate limit、错误 taxonomy、Referer 与 `cv` 是否必需。
+- 用户任务：阶段 16A 只接入搜吧和搜主题；用户、吧内帖子和联想延期。
+- HTTP method / URL family：
+  - forum：GET `https://tieba.baidu.com/mo/q/search/forum?word=...`；
+  - thread：GET `https://tieba.baidu.com/mo/q/search/thread`，query 为
+    `word,pn,st=5,tt=1,ct=1,is_use_zonghe=1,cv=99.9.101`。
+- Android 来源文件：`AppHybridTiebaApi.kt`、`SearchForumBean.kt`、
+  `SearchThreadBean.kt`、`ForumFuzzyMatchAdapter.kt`、
+  `ExactMatchAdapter.kt`、`SearchForumViewModel.kt`、
+  `SearchThreadViewModel.kt`。
+- Android symbol：`searchForumFlow` 和 `searchThreadFlow`；thread
+  `LoadMore` 以 `pn + 1` 请求且在 `has_more == 1` 时继续。
+- 认证要求：阶段 16A Debug-only Probe 已证匿名三次请求
+  HTTP 200/解码成功。iOS descriptor 固定 `anonymous`，不读
+  Session/Keychain，不发 Cookie/BDUSS/STOKEN。Android 可选 Web Cookie
+  路径不是匿名成功的必要条件。
+- 请求编码：HTTPS GET query，无 body；response 为
+  `application/json`。不放宽 TLS、redirect 或全 MIME。
+- 请求/响应类型：无 Protobuf；本阶段仅
+  `SearchForumBean` / `SearchThreadBean` 对应的 Swift JSON DTO。
+- 分页字段：thread 请求 `pn` 从 1 起，响应必须精确
+  `current_page` 且 `has_more == 1` 才继续。forum response 有
+  `pn/has_more`，但 Android Forum ViewModel 没有下一页调用，因此
+  iOS 只做首屏。
+- 服务端错误字段：已观察两类响应的顶层 `no/error`；
+  非零 `no` 映射为 typed wire server error。完整 taxonomy 仍未知。
+- 关键 headers：iOS 仅发锁定 Hybrid 证据的固定
+  `User-Agent`、`Accept-Language`、no-cache 和
+  `X-Requested-With`。匿名 Probe 无 Referer 成功；
+  `NO_ST_PARAMS/NO_COMMON_PARAMS` 是 Android 内部控制 header，
+  iOS 不发它们。
+- 敏感字段：查询词和搜索结果内容。Probe 只保留 status、
+  MIME、body size、decode、count 和 typed error；不保留查询词、
+  请求/响应原文、ID 值或结果内容。
+- iOS domain mapper：forum 以正 `forum_id`，thread 将 `tid`
+  安全解析为正 Int64；first-wins 去重保序。实际 forum
+  `concern_num` 有 string/integer 混合，根据 Android
+  `getNonNullString` 仅对 `post_num/concern_num` 做相同窄化投影。
+  Android `SearchThreadBean.ThreadInfoBean` 将 `post_num/forum_id`
+  声明为 String，而当前 Live 样本为 number；iOS 仅对这两个整数业务字段
+  接受 numeric string 或 integer，并由合成 mixed-type 回归锁定。
+- Fixture 路径：`TestSupport/Fixtures/API/Search/`；三个
+  `SYNTHETIC_JSON` 且 manifest hash 锁定，不含真实响应或查询历史。
+- 运行证据：forum 200/`application/json`/36555 bytes/
+  decode=true/mapped=48；thread page 1 为 200/59907 bytes/
+  decode=true/mapped=20；page 2 为 200/66555 bytes/
+  decode=true/mapped=20/new=20。
+- UNKNOWN：endpoint 长期稳定性、forum 分页、thread page 3+、
+  rate limit、完整错误 taxonomy、固定 header/query 最小集、用户/
+  吧内帖子搜索和 SearchSug 匿名能力。
 
 ## Alternate / legacy 记录
 

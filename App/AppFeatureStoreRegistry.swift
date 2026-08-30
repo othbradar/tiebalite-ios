@@ -2,6 +2,7 @@
 final class AppFeatureStoreRegistry {
     let followedForumsStore: FollowedForumsStore
     let recommendationsStore: RecommendationsStore
+    let searchStore: SearchStore
 
     private let makeThreadReaderStore: @MainActor (Int64) -> ThreadReaderStore
     private let makeForumHomeStore: @MainActor (ForumRoute) -> ForumHomeStore
@@ -11,6 +12,9 @@ final class AppFeatureStoreRegistry {
     init(
         followedForumsStore: FollowedForumsStore,
         recommendationsStore: RecommendationsStore,
+        searchStore: SearchStore = SearchStore(
+            repository: FixtureSearchRepository()
+        ),
         makeThreadReaderStore: @escaping @MainActor (Int64) -> ThreadReaderStore,
         makeForumHomeStore: @escaping @MainActor (ForumRoute) -> ForumHomeStore = {
             ForumHomeStore(
@@ -21,6 +25,7 @@ final class AppFeatureStoreRegistry {
     ) {
         self.followedForumsStore = followedForumsStore
         self.recommendationsStore = recommendationsStore
+        self.searchStore = searchStore
         self.makeThreadReaderStore = makeThreadReaderStore
         self.makeForumHomeStore = makeForumHomeStore
     }
@@ -29,6 +34,7 @@ final class AppFeatureStoreRegistry {
         self.init(
             followedForumsStore: compositionRoot.makeFollowedForumsStore(),
             recommendationsStore: compositionRoot.makeRecommendationsStore(),
+            searchStore: compositionRoot.makeSearchStore(),
             makeThreadReaderStore: compositionRoot.makeThreadReaderStore,
             makeForumHomeStore: compositionRoot.makeForumHomeStore
         )

@@ -93,6 +93,7 @@ struct PostID: Codable, Hashable, Sendable {
 
 enum RouteIdentity: Codable, Hashable, Sendable {
     case forum(ForumRoute)
+    case search
     case subposts(threadID: ThreadID, postID: PostID)
     case thread(ThreadID)
 }
@@ -195,7 +196,7 @@ struct AppNavigationState: Equatable, Sendable {
 
 enum RouteGrammar {
     static func isValid(_ routes: [RouteIdentity], for root: RootID) -> Bool {
-        guard routes.count <= 3, Set(routes).count == routes.count else {
+        guard routes.count <= 4, Set(routes).count == routes.count else {
             return false
         }
 
@@ -216,15 +217,30 @@ enum RouteGrammar {
     ) -> Bool {
         switch routes.count {
         case 1:
-            return isForum(routes[0]) || threadID(from: routes[0]) != nil
+            return isSearch(routes[0])
+                || isForum(routes[0])
+                || threadID(from: routes[0]) != nil
         case 2:
+            if isSearch(routes[0]) {
+                return isForum(routes[1]) || threadID(from: routes[1]) != nil
+            }
             if isForum(routes[0]), threadID(from: routes[1]) != nil {
                 return true
             }
             return matchingThreadAndSubposts(routes[0], routes[1])
         case 3:
+            if isSearch(routes[0]) {
+                if isForum(routes[1]), threadID(from: routes[2]) != nil {
+                    return true
+                }
+                return matchingThreadAndSubposts(routes[1], routes[2])
+            }
             return isForum(routes[0])
                 && matchingThreadAndSubposts(routes[1], routes[2])
+        case 4:
+            return isSearch(routes[0])
+                && isForum(routes[1])
+                && matchingThreadAndSubposts(routes[2], routes[3])
         default:
             return false
         }
@@ -256,9 +272,16 @@ enum RouteGrammar {
         switch subpostsRoute {
         case let .subposts(childThreadID, _):
             return threadID == childThreadID
-        case .forum, .thread:
+        case .forum, .search, .thread:
             return false
         }
+    }
+
+    private static func isSearch(_ route: RouteIdentity) -> Bool {
+        if case .search = route {
+            return true
+        }
+        return false
     }
 
     private static func isForum(_ route: RouteIdentity) -> Bool {

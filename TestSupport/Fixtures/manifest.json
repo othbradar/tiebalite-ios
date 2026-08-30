@@ -38,6 +38,33 @@
     },
     {
       "format": "json",
+      "id": "search.forum.synthetic",
+      "path": "API/Search/search_forum_synthetic.json",
+      "purpose": "Hybrid forum search JSON decode and first-wins mapping contract",
+      "sanitized": true,
+      "sha256": "a27955b20b75dcf1ecd676c377753983878fc7778979f7a09b657555af990b30",
+      "source": "synthetic"
+    },
+    {
+      "format": "json",
+      "id": "search.thread.page1.synthetic",
+      "path": "API/Search/search_thread_page1_synthetic.json",
+      "purpose": "Hybrid thread search first-page JSON and pagination contract",
+      "sanitized": true,
+      "sha256": "128efea43582be135289f61fcaea6451d93236a49b25781543d4fea832657ed8",
+      "source": "synthetic"
+    },
+    {
+      "format": "json",
+      "id": "search.thread.page2.synthetic",
+      "path": "API/Search/search_thread_page2_synthetic.json",
+      "purpose": "Hybrid thread search next-page dedupe and terminal contract",
+      "sanitized": true,
+      "sha256": "63b03a5b52082855243370439c927e697c7171c5e7861ee0bb398089cac99e95",
+      "source": "synthetic"
+    },
+    {
+      "format": "json",
       "id": "json.success",
       "path": "JSON/success.json",
       "purpose": "valid JSON decoding",

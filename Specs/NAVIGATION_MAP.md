@@ -28,7 +28,9 @@ NavigationSplitView
 └── MediaViewer（唯一实例）
 ```
 
-- P0 主入口固定为推荐和关注吧；设置、搜索、历史属于 P1/deferred，加入时不能改变既有 P0 route 身份。
+- P0 主入口固定为推荐和关注吧；设置和历史仍属 P1/deferred。
+  阶段 16A 的搜索是 recommendations root 下的普通 P1 route，
+  没有改变任何 P0 root/Tab identity。
 - 每个主入口拥有独立导航路径、列表状态和滚动状态。
 - 主入口切换只切可见树，不重建其他入口。
 - iPhone 使用系统 `NavigationStack`；iPad 使用系统 `NavigationSplitView`。
@@ -47,7 +49,7 @@ NavigationSplitView
 | `subposts` | `SubPostsPage/SheetDestination` | identity 为 `threadID + postID`；`forumID/targetSubpostID` 是一次性 NavigationIntent；Android `loadFromSubPost` 不进入 route identity | threadID + postID | 楼中楼列表、页码、目标 subpost | Android 参数为 `CODE_EVIDENCE`；identity/intent 拆分为阶段 02 决策 |
 | `mediaViewer`（非持久 overlay） | `PhotoViewActivity` | 进程内 `sourceRouteIdentity/sourceItemID`、有序 `MediaDescriptor`、initial media id、可选边界上下文 | 不单独做进程恢复；恢复父 route 后关闭 overlay | 来源 route、来源滚动；当前进程内按 media id 定位 | Android输入模型为 `CODE_EVIDENCE`；非持久 overlay 与 descriptor 契约为 `INFERENCE` |
 | `authentication`（非持久 presentation） | `LoginPageDestination` | completion destination 由导航 coordinator 按 attemptID 持有；不传 token | 不单独恢复；恢复父 route 后关闭 presentation | 原页面状态；成功后最多显式重试受保护任务一次 | Android入口为 `CODE_EVIDENCE`；非持久 presentation 为阶段 02 决策 |
-| `search` | `SearchPageDestination` / `tblite://search` | Android route 无参数；iOS P1 可选 query/category/sort | query 可为空 | query、category、sort、各结果列表/滚动 | 页面为 `CODE_EVIDENCE`；参数为 `INFERENCE`；P1 |
+| `search` | `SearchPageDestination` / `tblite://search` | route identity 无参数；query 是 SearchStore 状态，不进 route | route id | normalized query、forum/thread 结果、thread page 与滚动锚 | Android 页面/Hybrid endpoint 为 `CODE_EVIDENCE`；阶段 16A Fixture 与匿名 Live `RUNTIME_EVIDENCE` |
 | `userProfile` | `UserProfilePageDestination` | `userID: Int64` | userID | 来源列表位置 | `CODE_EVIDENCE`; P1 |
 | `history` | `HistoryPageDestination` | Android route 无初始类型；iOS P1 可选初始类型 | route id + type | 吧/帖子分页和滚动 | 页面为 `CODE_EVIDENCE`；参数为 `INFERENCE`；P1 |
 | `threadStore` | `ThreadStorePageDestination` | 无 | route id + session ref | 列表/页码 | `CODE_EVIDENCE`; P1 只读 |
@@ -59,6 +61,9 @@ NavigationSplitView
 
 | 来源 | 动作 | 目标 | 条件 |
 |---|---|---|---|
+| 推荐页 toolbar | 搜索 | `search` | 普通 route；iPhone push，iPad replace detail |
+| 搜索吧结果 | 点吧 | `forum` | 正 forumID + 非空 forumName |
+| 搜索帖子结果 | 点帖子 | `thread` | threadID 必须安全解析为正 Int64 |
 | 推荐列表 | 点主题/回复数 | `thread` | threadID 必须可解析；forumID 可选 |
 | 推荐列表 | 点吧名 | `forum` | forumName 非空 |
 | 推荐列表 | 点作者 | `userProfile` | P1；userID 合法 |

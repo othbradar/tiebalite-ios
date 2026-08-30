@@ -1,6 +1,6 @@
 # 模块与依赖地图
 
-状态：`IMPLEMENTED_THROUGH_PHASE_15_THREAD_READING`
+状态：`IMPLEMENTED_PHASE_16A_SEARCH_RUNTIME_EVIDENCE_PARTIAL`
 
 本文件把根目录结构解释为逻辑模块和 owner；它不表示阶段 02 已创建 Swift
 target。工程生成决策见 `Docs/ADRs/ADR-0001-project-generation.md`。
@@ -42,6 +42,7 @@ endpoint 再拆重复 generated target。
 | `Sources/Features/Forum/` | 吧信息/tab/主题 timeline | forumName route、领域 state/action | PB internals |
 | `Sources/Features/ThreadReader/` | Thread/Subposts/Content renderer 与预计算 RowModel | thread/post route、ContentNode、稳定 ThreadReaderRowID | MediaViewer 内部状态、第二列表容器、Proto/UI 映射 |
 | `Sources/Features/MediaViewer/` | 唯一 Viewer presentation/load state/page composition | MediaPresentation | 精确 zoom owner、自制 Pager、父列表复制 |
+| `Sources/Features/Search/` | 显式 submit 搜吧/搜帖 Store、预计算 RowModel 与 View | `SearchRepository`、稳定 forum/thread 领域结果、Search route callback | HTTP/JSON DTO/Session，用户搜索/历史，第二列表承载 |
 | `Generated/Protobuf/` | 机器生成 wire Message | 仅供 Core/TiebaAPI mapper | UI/Feature/domain 行为 |
 | `Resources/` | asset/localization/config resources | typed resource access | secret/live response |
 | `TestSupport/` | fixture loader、fake、clock；LaunchScenarios 子树 | Unit target；LaunchScenarios 另编入 App 的 UITesting 配置 | 普通 App Debug/Release 可达路径 |
@@ -108,6 +109,13 @@ section UITableView/diffable/UIHostingConfiguration adapter；它不 import
 ThreadReader/Forum domain。`ThreadReaderListPresentation` 在 Feature 内把领域
 posts 预计算为稳定 RowModel，生产 View 只有这一个列表容器。阶段 14 生产代码
 尚未使用该 adapter；后续 14P 只能复用其当前最薄接口，不能反向加入 FRS 语义。
+
+阶段 16A 的具体边界：`Sources/Core/Models/Search.swift` 拥有
+`SearchRepository` 和稳定搜索领域值；`Sources/Core/TiebaAPI/SearchWebProtocol.swift`
+只负责 Hybrid JSON descriptor/DTO/mapper，不向 Feature 泄漏 wire。
+`Sources/Features/Search` 只持 Store/presentation/View，复用未修改的
+`VirtualizedList` 和 `ContentSummaryCard`。SearchStore 由 scene 级
+`AppFeatureStoreRegistry` 持有，不建全局 singleton，不读 Session。
 
 登录验证/续期同样不允许 Session 直接构造 transport。Core/Session 拥有无
 HTTP/DTO 的 `SessionValidationClient`/`CredentialRefreshClient` 协议，

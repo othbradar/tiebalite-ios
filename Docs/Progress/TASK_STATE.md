@@ -1,6 +1,11 @@
 # TASK_STATE
 
-- 当前阶段：15.6（核心 Live 分页收口）
+- 当前阶段：16A（贴吧和帖子搜索）
+- 状态：`PHASE_16A_SEARCH = RUNTIME_EVIDENCE_PARTIAL`
+- `PHASE_16 = IN_PROGRESS`
+- `PHASE_16B_HISTORY_SETTINGS_PROFILE = NOT_STARTED`
+- `LIVE_FORUM_SEARCH = ANONYMOUS_FIRST_PAGE_RUNTIME_VERIFIED`
+- `LIVE_THREAD_SEARCH = ANONYMOUS_SECOND_PAGE_RUNTIME_VERIFIED`
 - 状态：`PHASE_15_LIVE_PAGINATION = COMPLETE`
 - `PHASE_15_5_CORE_LIVE_INTEGRATION = COMPLETE`
 - `PHASE_11 = COMPLETE`
@@ -26,7 +31,6 @@
 - `THREAD_READER_CONTAINER = VIRTUALIZED_UITABLEVIEW_BETA`
 - `THREAD_READER_LARGE_FIXTURE = LOCAL_5_PAGE_1000_FLOOR_BOUND_VERIFIED`
 - `THREAD_READER_SWIFTUI_AB = ONE_DEBUG_OBSERVATION`
-- `PHASE_16 = NOT_STARTED`
 - `PHASE_14_FORUM_HOME = COMPLETE`
 - `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
 - `FORUM_HOME_LIST = VIRTUALIZED_UITABLEVIEW_BETA`
@@ -69,7 +73,62 @@
   `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
 - 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`；
   `PHASE_15_LIVE_PAGINATION = COMPLETE`
-- 阶段 16：`NOT_STARTED`
+- 阶段 16：`IN_PROGRESS`；`PHASE_16A_SEARCH = RUNTIME_EVIDENCE_PARTIAL`；
+  `PHASE_16B_HISTORY_SETTINGS_PROFILE = NOT_STARTED`
+
+## 阶段 16A 当前结果与停止点
+
+阶段 16A 从提交 `3612c7b015a3c613319f739f15bf14a813f21bc4`
+开始，只实现搜吧、搜帖、Fixture/Live Repository、结果导航与
+证据明确的搜帖顺序分页，没有进入阶段 16B：
+
+- 锁定 Android Hybrid 证据为匿名 HTTPS GET JSON：搜吧
+  `/mo/q/search/forum?word=...`；搜帖
+  `/mo/q/search/thread?word=...&pn=N&st=5&tt=1&ct=1&is_use_zonghe=1&cv=99.9.101`。
+  两者都不是 Proto，`SearchSug` 联想没有实现，156-file Proto
+  闭包不变；
+- `SearchStore` 使用一个 Task + generation，新关键词取消旧请求，
+  迟到结果不覆盖，空白关键词零请求，分页失败保留已有
+  结果。forumID/threadID 首出现去重保序，没有随机 identity；
+- thread 从 `pn=1` 起始，`has_more == 1` 时请求
+  `pn+1`，响应必须精确匹配 `current_page`。forum 只做首屏，
+  因 Android ViewModel 没有下一页调用而不猜参数；
+- Debug-only 脱敏 Probe 观察到 forum HTTP 200/
+  `application/json`/36555 bytes/decode=true/mapped=48；thread page 1
+  为 200/59907 bytes/decode=true/mapped=20；page 2 为
+  200/66555 bytes/decode=true/mapped=20/new=20，typed error 均为 none；
+- 首次 in-app forum Probe 稳定暴露 `concern_num` 同时有
+  JSON string/integer。依实际类型和 Android
+  `ForumFuzzyMatchAdapter.getNonNullString` 仅放宽统计字段解码，
+  并加入合成 mixed-type 回归；
+- `RouteIdentity.search` 位于 recommendations root 的现有系统导航中。
+  iPhone 搜吧→ForumHome→返回和搜帖→ThreadReader→返回
+  Fixture 2/2 通过，iPad SearchView 与两类结果 1/1 通过；
+  返回后关键词和结果保留；
+- 真实 forum 搜索结果已进入现有 ForumHome。真实 thread
+  首页与第二页已证明解码、映射与新增 ID；自动化的结果
+  导航使用 Fixture/Mock，不访问 Live 网络。
+- 阶段 16A 定向 Unit 9/9、全量 Unit 311/311、iPhone UI 2/2、
+  iPad UI 1/1 通过；`make instructions`、`make secret-scan`、修正后
+  `make lint`、`make quality-fast` 和 `git diff --check` 均通过。
+  本轮没有新增根级 Tab/Sidebar 或修改 AppSceneRoot，按任务约束未运行
+  完整 `make quality` / Pager/Media interaction。
+
+### 阶段 16A Known Limitations
+
+1. 搜吧下一页、搜帖 page 3+、rate limit、完整服务错误 taxonomy
+   和 endpoint 长期稳定性仍为 `UNKNOWN`。
+2. 用户搜索、输入联想、搜索历史、吧内搜帖与阶段 16B
+   都未实现。
+3. Live 证据是单 iOS 26.5 Simulator 的开源 Beta smoke，
+   不是真机、多地区或发布级稳定性矩阵。
+4. Production 图片 loader 仍 disabled。本阶段没有修改
+   `VirtualizedList`、ForumHome/ThreadReader 列表、Pager、MediaViewer、
+   Renderer、Session/Keychain 或已验证的推荐/FRS/PBPage 协议。
+5. 真实 thread 搜索结果的最终 UI 点击因 macOS 锁屏导致 Computer Use
+   超时而未完成人工复核；Live page 1/2 Probe 和同一 ThreadID route 的
+   Fixture iPhone 点击/返回均已通过。阶段 16A 因而保持
+   `RUNTIME_EVIDENCE_PARTIAL`，阶段 16B 仍为 `NOT_STARTED`。
 
 ## 阶段 15.6 当前结果与停止点
 
