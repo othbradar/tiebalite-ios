@@ -156,9 +156,13 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
     @MainActor
     func testFixtureForumThreadShowsSubpostsPaginationAndMediaOnIPad() {
-        let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
         let device = XCUIDevice.shared
         device.orientation = .landscapeLeft
+        let app = UITestHarness.launchIsolated(
+            scenario: .sessionSignedInFixture
+        )
+        UITestHarness.requirePresent(.shellRoot, in: app)
+        UITestHarness.requirePresent(.layoutRegular, in: app)
 
         pushForumRoute(in: app)
         UITestHarness.scrollToHittable(
@@ -178,7 +182,7 @@ final class IPadAppShellSmokeTests: XCTestCase {
             inside: .forumThreadReaderScroll,
             in: app
         )
-        UITestHarness.scrollBackToHittable(
+        UITestHarness.scrollBackToStableFrame(
             .forumThreadImageAction,
             inside: .forumThreadReaderScroll,
             in: app
@@ -188,7 +192,13 @@ final class IPadAppShellSmokeTests: XCTestCase {
             equals: "已加载",
             in: app
         )
-        UITestHarness.tap(.forumThreadImageAction, in: app)
+        UITestHarness.requireAbsent(.mediaViewerRoot, in: app)
+        XCTAssertEqual(app.sheets.count, 0)
+        UITestHarness.tapStableTarget(
+            .forumThreadImageAction,
+            inside: .forumThreadReaderScroll,
+            in: app
+        )
         UITestHarness.requirePresent(.mediaViewerRoot, in: app)
         MediaViewerProductionAssertions.requirePosition("1 / 1", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)

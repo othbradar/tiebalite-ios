@@ -9,6 +9,7 @@ final class UserProfileStore {
     private let repository: any UserProfileRepository
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var generation: UInt64 = 0
+    @ObservationIgnored private var displayedUserID: UserID?
 
     init(
         route: UserProfileRoute,
@@ -34,6 +35,9 @@ final class UserProfileStore {
         loadTask?.cancel()
         generation &+= 1
         let operationGeneration = generation
+        if route.userID != newRoute.userID {
+            displayedUserID = nil
+        }
         route = newRoute
         state = .loading(newRoute)
         let repository = repository
@@ -90,6 +94,15 @@ final class UserProfileStore {
         if case .loading = state {
             state = .idle(route)
         }
+    }
+
+    func claimDisplayedUser(_ userID: UserID) -> Bool {
+        guard userID == route.userID,
+              displayedUserID != userID else {
+            return false
+        }
+        displayedUserID = userID
+        return true
     }
 
     private func finish(

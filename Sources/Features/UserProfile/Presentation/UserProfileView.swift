@@ -5,8 +5,6 @@ struct UserProfileView: View {
     @Bindable var store: UserProfileStore
     let onDisplayed: (UserProfile) async -> Void
 
-    @State private var recordedUserID: UserID?
-
     var body: some View {
         Group {
             switch store.state {
@@ -27,11 +25,7 @@ struct UserProfileView: View {
             case let .loaded(profile):
                 profileContent(profile)
                     .task(id: profile.userID) {
-                        guard recordedUserID != profile.userID else {
-                            return
-                        }
-                        recordedUserID = profile.userID
-                        await onDisplayed(profile)
+                        await recordDisplayedUserAcrossProjection(profile)
                     }
             }
         }
@@ -45,9 +39,18 @@ struct UserProfileView: View {
         .task(id: store.route.userID) {
             await store.loadIfNeeded()
         }
-        .onDisappear {
-            store.cancel()
+    }
+
+    private func recordDisplayedUserAcrossProjection(
+        _ profile: UserProfile
+    ) async {
+        let operation = Task { @MainActor in
+            guard store.claimDisplayedUser(profile.userID) else {
+                return
+            }
+            await onDisplayed(profile)
         }
+        await operation.value
     }
 
     private func profileContent(_ profile: UserProfile) -> some View {

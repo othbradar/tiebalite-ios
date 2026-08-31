@@ -36,6 +36,7 @@ final class ThreadReaderStore {
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var activeGeneration: UInt64?
     @ObservationIgnored private var nextGeneration: UInt64 = 0
+    @ObservationIgnored private var hasClaimedDisplayedThread = false
 
     init(
         threadID: Int64,
@@ -103,6 +104,15 @@ final class ThreadReaderStore {
             return
         }
         readAnchor = stablePostID
+    }
+
+    func claimDisplayedThread(_ displayedThreadID: Int64) -> Bool {
+        guard displayedThreadID == threadID,
+              !hasClaimedDisplayedThread else {
+            return false
+        }
+        hasClaimedDisplayedThread = true
+        return true
     }
 
     func cancel() {

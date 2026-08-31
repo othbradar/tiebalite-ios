@@ -8,8 +8,6 @@ struct ForumHomeView: View {
     let onOpenThread: (ForumThreadSummary) -> Void
     let onDisplayed: (ForumSummary) async -> Void
 
-    @State private var recordedForumID: Int64?
-
     init(
         store: ForumHomeStore,
         route: ForumRoute,
@@ -32,19 +30,10 @@ struct ForumHomeView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AppAccessibilityID.routeForum)
         .task(id: route) {
-            await store.synchronize(with: route)
+            await synchronizeStoreAcrossProjection()
         }
         .task(id: displayedForumID) {
-            guard let forum = store.state.displayedForum,
-                  let forumID = forum.forumID,
-                  recordedForumID != forumID else {
-                return
-            }
-            recordedForumID = forumID
-            await onDisplayed(forum)
-        }
-        .onDisappear {
-            store.cancel()
+            await recordDisplayedForumAcrossProjection()
         }
         .toolbar {
             if store.state.canReload {
@@ -124,6 +113,25 @@ struct ForumHomeView: View {
         Task { @MainActor in
             await store.loadNextPage()
         }
+    }
+
+    private func synchronizeStoreAcrossProjection() async {
+        let operation = Task { @MainActor in
+            await store.synchronize(with: route)
+        }
+        await operation.value
+    }
+
+    private func recordDisplayedForumAcrossProjection() async {
+        let operation = Task { @MainActor in
+            guard let forum = store.state.displayedForum,
+                  let forumID = forum.forumID,
+                  store.claimDisplayedForum(forumID) else {
+                return
+            }
+            await onDisplayed(forum)
+        }
+        await operation.value
     }
 
     private var displayedForumID: Int64? {

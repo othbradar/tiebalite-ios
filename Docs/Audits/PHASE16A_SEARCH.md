@@ -4,8 +4,9 @@
 - 基线：`3612c7b015a3c613319f739f15bf14a813f21bc4`
 - Android reference：`5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`
 - 决策：`ADR-0020-hybrid-search-and-navigation-beta.md`
-- 状态：`PHASE_16A_SEARCH = RUNTIME_EVIDENCE_PARTIAL`
-- 后续阶段：`PHASE_16B_HISTORY_SETTINGS_PROFILE = NOT_STARTED`
+- 状态：`PHASE_16A_SEARCH = COMPLETE`
+- 后续状态：`PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`；
+  `PHASE_17_IPADOS_ADAPTIVE_LAYOUT = IN_PROGRESS`
 
 ## 目标与边界
 
@@ -69,9 +70,11 @@ Fixture 现同时覆盖两种形态；生产修复前协议回归稳定为 1/2 �
 `.decode`，窄化 string-or-integer 解码后同套件 2/2 通过。
 
 真实 forum 结果已人工进入现有 ForumHome，吧摘要与帖子列表
-正常出现。真实 thread 页在 macOS 锁屏前已证明首页/第二页
-解码、映射与新增 ID；其结果到 ThreadReader 的导航使用与 Fixture
-完全相同的稳定 `ThreadID` route，Fixture iPhone 已完成点击/返回。
+正常出现。真实 thread 页已证明首页/第二页解码、映射与新增 ID。
+2026-08-31 阶段 17 又在保留原 Keychain 会话的生产构建中完成可见补验：
+Live forum 结果进入正确 ForumHome 并返回；Live thread 结果进入正确
+ThreadReader 并返回，关键词和结果保持。补验没有修改搜索代码、执行 logout、
+打印查询响应或读取凭证，因此本阶段提升为 `COMPLETE`。
 
 Probe 与文档不记录公开查询词、吧名、threadID、标题、正文、
 用户内容、完整请求/响应或凭据。
@@ -116,7 +119,3 @@ Probe 与文档不记录公开查询词、吧名、threadID、标题、正文、
 3. Live smoke 是单 iOS 26.5 Simulator 的开源 Beta 证据，不是真机、
    多地区或多系统发布矩阵。
 4. Production 图片 loader 仍 disabled；搜索本身不建图片 cache/downsample。
-5. 真实 forum 结果已人工进入 ForumHome；真实 thread 结果的最终 UI 点击
-   因 macOS 锁屏导致 Computer Use 两次超时而未完成。Live thread page 1/2
-   in-app Probe 与同一路由的 Fixture iPhone 点击/返回均已通过；因此阶段
-   16A 保持 `RUNTIME_EVIDENCE_PARTIAL`，不得宣称完整人工 Live 验收。

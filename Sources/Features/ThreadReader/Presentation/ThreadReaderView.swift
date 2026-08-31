@@ -11,7 +11,6 @@ struct ThreadReaderView: View {
     let onDisplayed: (ThreadReaderSnapshot) async -> Void
 
     @State private var retryGeneration: UInt64 = 0
-    @State private var recordedThreadID: Int64?
 
     init(
         store: ThreadReaderStore,
@@ -42,18 +41,10 @@ struct ThreadReaderView: View {
             ThreadReaderAccessibilityID.screen(store.threadID)
         )
         .task(id: loadTaskID) {
-            await store.loadIfNeeded()
+            await loadStoreAcrossProjection()
         }
         .task(id: displayedThreadID) {
-            guard let snapshot = store.state.snapshot,
-                  recordedThreadID != snapshot.threadID else {
-                return
-            }
-            recordedThreadID = snapshot.threadID
-            await onDisplayed(snapshot)
-        }
-        .onDisappear {
-            store.cancel()
+            await recordDisplayedThreadAcrossProjection()
         }
     }
 
@@ -143,6 +134,24 @@ struct ThreadReaderView: View {
         Task { @MainActor in
             await store.loadNextPage()
         }
+    }
+
+    private func loadStoreAcrossProjection() async {
+        let operation = Task { @MainActor in
+            await store.loadIfNeeded()
+        }
+        await operation.value
+    }
+
+    private func recordDisplayedThreadAcrossProjection() async {
+        let operation = Task { @MainActor in
+            guard let snapshot = store.state.snapshot,
+                  store.claimDisplayedThread(snapshot.threadID) else {
+                return
+            }
+            await onDisplayed(snapshot)
+        }
+        await operation.value
     }
 }
 

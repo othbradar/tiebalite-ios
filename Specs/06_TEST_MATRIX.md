@@ -230,6 +230,29 @@ Live smoke 连续取得三页、45 个唯一楼层。
 
 ## 可访问性与视觉稳定
 
+### 阶段 17 自适应布局出口
+
+- Unit 锁定 compact/regular 投影不改变 canonical route 或 Store identity，
+  View 子树 rehost 不重复推荐、关注吧、ForumHome、ThreadReader 请求，
+  展示历史 claim 不重复。
+- `VirtualizedList` 相同 ID/值的 resize 不重复 apply diffable snapshot；
+  retained 值变化仍 reconfigure，增删/重排仍使用原增量 snapshot；
+  dismantle 记录当前顶部稳定业务 ID。
+- iPhone Fixture 覆盖 ForumHome → ThreadReader → 中部楼层 → 横竖屏 →
+  返回原帖子行；iPad 覆盖 full → 320–390pt narrow → full、同一帖子/楼层、
+  Settings split route、MediaViewer 旋转关闭回同一线程与图片节点。
+- 窄宽自动化使用 UITESTING-only 宿主按父容器实际宽度裁出代表性 viewport；
+  未自动拖动真实 Split View divider，也未验证真机 Stage Manager、iOS 18.x
+  和真机 VoiceOver，这些为阶段 18/发布前限制。
+- 定向 Stage 17 iPhone 1/1、iPad 3/3 通过。默认 iPad smoke
+  曾在长帖图片回滚用例报 XCTest `Activation point invalid`；
+  同 Simulator 手工点击、MediaViewer 往返正常，无 overlay 或稳定
+  生产复现，定性为 suite-state/hit-testing isolation flake。
+  测试仅增加 fresh launch/方向、滚动后重查、完整 frame 几何校验
+  与合法中心 coordinate 回退；没有修改生产 UI。最终目标用例
+  独立 5/5、前序组合 3/3、iPad smoke 12/12、interaction 2/2，
+  Release isolation 与 `quality-fast` 通过，阶段 17 为 `COMPLETE`。
+
 - VoiceOver 元素顺序。
 - 大字体标题/正文不裁切。
 - 深色模式占位、错误、媒体背景正确。

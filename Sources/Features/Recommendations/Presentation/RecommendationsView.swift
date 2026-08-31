@@ -28,7 +28,7 @@ struct RecommendationsView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(RecommendationsAccessibilityID.root)
         .task(id: retryGeneration) {
-            await store.loadIfNeeded()
+            await loadStoreAcrossProjection()
         }
     }
 
@@ -123,6 +123,13 @@ struct RecommendationsView: View {
         Task { @MainActor in
             await store.loadNextPage()
         }
+    }
+
+    private func loadStoreAcrossProjection() async {
+        let operation = Task { @MainActor in
+            await store.loadIfNeeded()
+        }
+        await operation.value
     }
 
     private var paginationFooterState: PaginationFooterState {

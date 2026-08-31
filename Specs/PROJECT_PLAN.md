@@ -151,15 +151,22 @@
 
 Search、History/Settings、UserProfile 均为 P1，不是 P0 稳定出口前置。
 阶段 16A 已在单独授权下实现 Hybrid JSON 搜吧/搜帖、搜帖证据范围内的
-顺序分页和到现有 Forum/Thread route 的导航；因真实搜帖结果的最终
-ThreadReader 人工点击尚未完成，状态保持 `RUNTIME_EVIDENCE_PARTIAL`。
+顺序分页和到现有 Forum/Thread route 的导航；阶段 17 已在保留原会话的
+生产构建中补验 Live ForumHome/ThreadReader 点击、返回和搜索状态保持，
+状态为 `COMPLETE`。
 阶段 16B 已在单独授权下实现本地 thread/forum/user 历史、真实生效的
 外观/阅读设置、ThreadReader 作者到基础用户资料的 route、Fixture 及
 Profile Proto request/mapper。`PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`。
 搜索联想、用户搜索、用户帖子/关注/粉丝列表、云历史和阶段 16C
-仍保持 deferred；阶段 17 为 `NOT_STARTED`。
+仍保持 deferred；阶段 16 为 `COMPLETE`。
 
 ## 阶段 17：iPadOS 适配强化
+
+状态：`PHASE_17_IPADOS_ADAPTIVE_LAYOUT = COMPLETE`；
+XCUITest 部分裁切控件的 hit-point 问题已定性为测试套件状态/
+hit-testing isolation flake，以测试专用 fresh launch、重查和合法 frame
+中心回退收口，没有修改生产 UI；
+后续阶段：`PHASE_18 = NOT_STARTED`。
 
 - 输入：全部 P0 fixture slice。
 - 原子输出：regular/compact 投影、旋转/分屏恢复、选中与滚动保持。

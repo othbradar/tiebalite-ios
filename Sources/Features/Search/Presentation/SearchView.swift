@@ -36,9 +36,6 @@ struct SearchView: View {
         .navigationTitle("搜索")
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(SearchAccessibilityID.root)
-        .onDisappear {
-            store.cancel()
-        }
     }
 
     private var searchForm: some View {

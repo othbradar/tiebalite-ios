@@ -24,6 +24,7 @@ struct VirtualListSnapshotPlan<ID: Hashable> {
 
 struct VirtualListDiagnostics: Equatable, Sendable {
     fileprivate(set) var itemCount = 0
+    fileprivate(set) var snapshotApplyCount = 0
     fileprivate(set) var createdCellCount = 0
     fileprivate(set) var reuseCount = 0
     fileprivate(set) var peakVisibleCellCount = 0
@@ -97,6 +98,7 @@ where Item: Identifiable & Equatable & Sendable,
         var appliedItemsByID: [Item.ID: Item] = [:]
         var pendingItems: [Item]?
         var isApplyingSnapshot = false
+        var hasAppliedSnapshot = false
         var hasRestoredAnchor = false
         private var activeHostedCellIDs: Set<ObjectIdentifier> = []
         private let hostedCells = NSHashTable<VirtualListHostingCell>
@@ -177,6 +179,7 @@ where Item: Identifiable & Equatable & Sendable,
             guard let tableView else {
                 return
             }
+            emitCurrentAnchorIfAvailable()
             for cell in hostedCells.allObjects {
                 cell.contentConfiguration = nil
                 cell.onPrepareForReuse = nil
@@ -277,17 +280,35 @@ where Item: Identifiable & Equatable & Sendable,
 
             itemsByID = uniqueItemsByID
             tableView.virtualListDiagnostics.itemCount = incomingIDs.count
-            var snapshot = NSDiffableDataSourceSnapshot<
+            if hasAppliedSnapshot,
+               currentIDs == incomingIDs,
+               changedRetainedIDs.isEmpty {
+                appliedItemsByID = uniqueItemsByID
+                restoreAnchorIfNeeded(in: tableView)
+                return
+            }
+
+            var snapshot: NSDiffableDataSourceSnapshot<
                 VirtualListSection,
                 Item.ID
-            >()
-            snapshot.appendSections([.content])
-            snapshot.appendItems(incomingIDs, toSection: .content)
+            >
+            if currentIDs == incomingIDs,
+               dataSource.snapshot().sectionIdentifiers == [.content] {
+                snapshot = dataSource.snapshot()
+            } else {
+                snapshot = NSDiffableDataSourceSnapshot<
+                    VirtualListSection,
+                    Item.ID
+                >()
+                snapshot.appendSections([.content])
+                snapshot.appendItems(incomingIDs, toSection: .content)
+            }
             if !changedRetainedIDs.isEmpty {
                 snapshot.reconfigureItems(changedRetainedIDs)
             }
 
             isApplyingSnapshot = true
+            tableView.virtualListDiagnostics.snapshotApplyCount += 1
             dataSource.apply(
                 snapshot,
                 animatingDifferences: false
@@ -297,6 +318,7 @@ where Item: Identifiable & Equatable & Sendable,
                         return
                     }
                     self.appliedItemsByID = uniqueItemsByID
+                    self.hasAppliedSnapshot = true
                     self.isApplyingSnapshot = false
                     if let tableView {
                         self.restoreAnchorIfNeeded(in: tableView)
@@ -334,6 +356,19 @@ where Item: Identifiable & Equatable & Sendable,
             parent.onScrollSettled(
                 topVisible.flatMap { dataSource.itemIdentifier(for: $0) }
             )
+        }
+
+        private func emitCurrentAnchorIfAvailable() {
+            guard let tableView,
+                  let dataSource,
+                  let topVisible = tableView.indexPathsForVisibleRows?
+                    .sorted()
+                    .first,
+                  let itemID = dataSource.itemIdentifier(for: topVisible)
+            else {
+                return
+            }
+            parent.onScrollSettled(itemID)
         }
 
         private func markHostedContentStarted(for cell: UITableViewCell) {

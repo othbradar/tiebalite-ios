@@ -32,3 +32,7 @@ Live 脱敏证据、retained failure/generation 回归与未知项见
 阶段 16B 的 actor/JSON 浏览历史、UserDefaults 设置、全局主题/
 阅读字号投影、UserProfile Proto/Fixture/route 与 iPhone/iPad 证据见
 `PHASE16B_HISTORY_SETTINGS_PROFILE.md`。
+
+阶段 17 的 compact/regular 单状态投影、Store 生命周期、虚拟列表 resize、
+iPhone/iPad 旋转与窄宽证据及 Beta 限制见
+`PHASE17_ADAPTIVE_LAYOUT.md`。

@@ -170,6 +170,13 @@ final class AppFeatureStoreRegistry {
             }
             return true
         }
+
+        let keepsSearch = RootID.allCases.contains { root in
+            navigationState.routes(for: root).contains(.search)
+        }
+        if !keepsSearch {
+            searchStore.cancel()
+        }
     }
 
     func retainThreadStores(in navigationState: AppNavigationState) {

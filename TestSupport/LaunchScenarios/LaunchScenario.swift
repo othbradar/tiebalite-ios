@@ -182,6 +182,7 @@ struct LaunchShellLayoutHarness<Content: View>: View {
     @Environment(\.horizontalSizeClass)
     private var inheritedHorizontalSizeClass
     @State private var sizeClassOverride: UserInterfaceSizeClass?
+    @State private var viewport = LaunchTestViewport.full
 
     private let content: Content
 
@@ -194,22 +195,44 @@ struct LaunchShellLayoutHarness<Content: View>: View {
             HStack(spacing: Spacing.small) {
                 Button("测试紧凑布局") {
                     sizeClassOverride = .compact
+                    viewport = .half
                 }
                 .accessibilityIdentifier("app.harness.layout.compact")
 
+                Button("测试窄窗口") {
+                    sizeClassOverride = .compact
+                    viewport = .narrow
+                }
+                .accessibilityIdentifier("app.harness.layout.narrow")
+
                 Button("测试常规布局") {
                     sizeClassOverride = .regular
+                    viewport = .full
                 }
                 .accessibilityIdentifier("app.harness.layout.regular")
+
+                Text(viewport.label)
+                    .accessibilityIdentifier(viewport.accessibilityIdentifier)
             }
             .font(Typography.font(.caption))
             .frame(maxWidth: .infinity)
             .padding(.vertical, Spacing.xSmall)
             .background(SemanticColor.surface)
 
-            layoutContent
+            GeometryReader { geometry in
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    layoutContent
+                        .frame(width: viewport.width(in: geometry.size.width))
+                        .frame(maxHeight: .infinity)
+                        .background(SemanticColor.background)
+                    Spacer(minLength: 0)
+                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(SemanticColor.background)
+            }
         }
+        .background(SemanticColor.background)
     }
 
     private var layoutContent: some View {
@@ -217,6 +240,45 @@ struct LaunchShellLayoutHarness<Content: View>: View {
             \.horizontalSizeClass,
             sizeClassOverride ?? inheritedHorizontalSizeClass
         )
+    }
+}
+
+private enum LaunchTestViewport {
+    case full
+    case half
+    case narrow
+
+    var label: String {
+        switch self {
+        case .full:
+            "Viewport: Full"
+        case .half:
+            "Viewport: Half"
+        case .narrow:
+            "Viewport: Narrow"
+        }
+    }
+
+    var accessibilityIdentifier: String {
+        switch self {
+        case .full:
+            "app.harness.viewport.full"
+        case .half:
+            "app.harness.viewport.half"
+        case .narrow:
+            "app.harness.viewport.narrow"
+        }
+    }
+
+    func width(in availableWidth: CGFloat) -> CGFloat {
+        switch self {
+        case .full:
+            availableWidth
+        case .half:
+            min(availableWidth, max(320, availableWidth * 0.55))
+        case .narrow:
+            min(availableWidth, min(390, max(320, availableWidth * 0.32)))
+        }
     }
 }
 #endif

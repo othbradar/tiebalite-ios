@@ -15,10 +15,7 @@ struct FollowedForumsView: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(FollowedForumsAccessibilityID.root)
             .task(id: sessionAccess) {
-                await store.synchronize(with: sessionAccess)
-            }
-            .onDisappear {
-                store.cancel()
+                await synchronizeStoreAcrossProjection()
             }
             .toolbar {
                 if store.state.canReload {
@@ -155,6 +152,13 @@ struct FollowedForumsView: View {
         Task {
             await store.reload()
         }
+    }
+
+    private func synchronizeStoreAcrossProjection() async {
+        let operation = Task { @MainActor in
+            await store.synchronize(with: sessionAccess)
+        }
+        await operation.value
     }
 }
 

@@ -1,10 +1,12 @@
 # TASK_STATE
 
-- 当前阶段：16B（浏览历史、设置和基础用户资料）
-- 状态：`PHASE_16A_SEARCH = RUNTIME_EVIDENCE_PARTIAL`
-- `PHASE_16 = IN_PROGRESS`
+- 当前阶段：17（iPadOS 自适应布局、旋转与窗口 resize，已完成）
+- 状态：`PHASE_16A_SEARCH = COMPLETE`
+- `PHASE_16 = COMPLETE`
 - `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
-- `PHASE_17 = NOT_STARTED`
+- `PHASE_17_IPADOS_ADAPTIVE_LAYOUT = COMPLETE`
+- `PHASE_17_QUALITY_GATE = PASSED_STAGE_17F_REQUIRED_GATES`
+- `PHASE_18 = NOT_STARTED`
 - `BROWSING_HISTORY = LOCAL_JSON_BETA_READY`
 - `APP_SETTINGS = USERDEFAULTS_RUNTIME_UI_VERIFIED`
 - `USER_PROFILE = ANONYMOUS_LIVE_PROTOCOL_RUNTIME_VERIFIED`
@@ -77,9 +79,76 @@
   `PHASE_14_FORUM_HOME_PERFORMANCE = COMPLETE`
 - 阶段 15：`PHASE_15_THREAD_READING = COMPLETE`；
   `PHASE_15_LIVE_PAGINATION = COMPLETE`
-- 阶段 16：`IN_PROGRESS`；`PHASE_16A_SEARCH = RUNTIME_EVIDENCE_PARTIAL`；
+- 阶段 16：`COMPLETE`；`PHASE_16A_SEARCH = COMPLETE`；
   `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
-- 阶段 17：`NOT_STARTED`
+- 阶段 17：`PHASE_17_IPADOS_ADAPTIVE_LAYOUT = COMPLETE`；
+  `PHASE_17_QUALITY_GATE = PASSED_STAGE_17F_REQUIRED_GATES`
+- 阶段 18：`NOT_STARTED`
+
+## 阶段 17 当前结果与停止点
+
+阶段 17 从提交 `6e95bc8b17d0f9b5c788a34d6758145115b79620`
+开始，只加固既有 iPhone/iPad 导航投影、虚拟列表 resize 与状态生命周期，
+没有新增业务功能，也没有进入阶段 18：
+
+- compact `TabView + NavigationStack` 与 regular 三列
+  `NavigationSplitView` 继续共享一个 `AppNavigationStore`、route 集合和
+  Feature Store registry；测试锁定 regular → compact → regular 后当前 Tab、
+  Forum、Thread、Profile 与 Settings route 不变。
+- SwiftUI 因 size-class/窗口投影替换 View 子树时，不再通过 View
+  `onDisappear` 误取消 Store-owned 请求；只有 canonical route 真正移除时，
+  registry 才取消并释放 Forum/Thread/Profile/Search Store。推荐、关注吧、
+  ForumHome、ThreadReader 的确定性 rehost 回归均证明请求数保持 1。
+- Forum/Thread/UserProfile 的历史展示 claim 归稳定 route Store 所有，避免
+  resize 重新挂载时重复记录；正常新 route 仍开始新生命周期。
+- `VirtualizedList` 对完全相同的稳定 ID/值不再重复 apply diffable snapshot；
+  retained 值变化仍用 `reconfigureItems`，增删/重排仍走原增量 snapshot。
+  dismantle 前记录当前顶部稳定业务 ID，用于 compact/regular 重建后的附近恢复；
+  没有 `reloadData`，没有改变 threadID/postID identity 或分页。
+- UITESTING-only 宿主以实际父容器宽度提供 full、约半宽和 320–390pt
+  narrow 三个代表性 viewport；生产代码没有 `UIScreen`、设备型号或固定
+  sidebar/detail 宽度分支。
+- Stage 17 定向 Unit 9 个行为用例通过；全量 Unit 为 346 个逻辑测试、
+  365 次执行、0 失败。iPhone 旋转/返回 1/1，iPad full → narrow → full、
+  Settings split、MediaViewer 旋转关闭返回 3/3 均通过。
+- 2026-08-31 在原 iPhone 17 Pro / iOS 26.5 Simulator 上覆装生产构建，
+  保留并恢复原 Keychain 会话。Live 搜吧结果进入正确 ForumHome 并返回；
+  Live 搜帖结果进入正确 ThreadReader，返回后关键词与结果仍保留。
+  没有修改搜索代码、执行 logout 或读取/记录凭证，因此阶段 16A/16
+  从运行证据 partial 提升为 complete。
+- 原完整 `make quality` 的唯一失败是长帖图片按钮的
+  XCUITest `Activation point invalid`。同一 iPad Simulator 上手工点击该图片、
+  打开 MediaViewer、关闭并返回原帖全部正常；按钮 accessibility
+  frame 非空且与 window 相交，无透明 overlay、sheet 或残留
+  `fullScreenCover`。因此根因定性为 XCUITest suite-state/hit-testing
+  isolation flake，不是稳定可复现的生产故障。
+- 最终只修改 UI test/helper：每例终止并以固定 Fixture 重启 App、
+  明确设置方向、等待根 sentinel，每次滚动后重新 query 按钮；
+  只在重查后的按钮 frame 四边完整位于 container、window 和 app
+  交集内、身份/尺寸稳定且无 overlay 时，才允许以该合法
+  frame 中心 coordinate 作为 `isHittable` 假阴性回退。
+- 最终证据：失败用例独立 5/5；与前序 regular/compact
+  projection 用例组合 3/3（6 次执行）；iPad smoke 12/12；
+  iPad interaction 2/2；`make release-isolation`、`make quality-fast`、
+  `git diff --check` 和 Android submodule clean 检查全部通过。
+  `quality-fast` 中全量 Unit 为 346 个逻辑测试、365 次执行、0 失败。
+  按 17F 授权没有重复从头运行已在同一工作树通过的 iPhone
+  smoke/interaction 或完整 `make quality`。本阶段现为 `COMPLETE`，
+  仍未进入阶段 18。
+
+### 阶段 17 Known Limitations
+
+1. 未穷举全部 iPad 型号、全部精确 Split View 比例、iOS 18.x 或真机矩阵。
+2. 测试宿主模拟了实际容器窄宽，但未自动拖动真实 Split View divider；真机
+   Stage Manager/多窗口 resize 仍为发布前人工验证项。
+3. MediaViewer 用例证明旋转、关闭与父 route/图片节点返回；
+   `fullScreenCover` 按系统语义覆盖 UIWindow，不把子内容窄宽冒充真实
+   Stage Manager presentation。
+4. 真机 VoiceOver 保留到阶段 18；本阶段没有修改 Pager ownership、
+   MediaViewer 手势或 ThreadContentRenderer 节点结构。
+5. 17F 按用户授权只重跑受影响的 iPad smoke/interaction、
+   Release isolation 和 `quality-fast`，没有重复从头执行已绿的
+   iPhone 26 项 smoke、15 项 interaction 或完整 `make quality`。
 
 ## 阶段 16B 当前结果与停止点
 
@@ -135,8 +204,8 @@
    错误 taxonomy 仍未验证。
 2. 用户头像仍是统一占位；用户帖子/关注/粉丝列表、写操作、云同步、
    搜索词历史和多账号历史分区未实现。
-3. 阶段 16A 的真实结果最终 UI 点击因 macOS 仍处于锁屏未执行，
-   继续保持 `RUNTIME_EVIDENCE_PARTIAL`；不阻塞已完成的 16B。
+3. 阶段 16A 的原锁屏缺口已在阶段 17 用原登录 Simulator 补验，
+   搜吧/搜帖结果导航与返回状态均通过，现为 `COMPLETE`。
 4. 没有修改 `VirtualizedList`、ForumHome/ThreadReader UITableView 承载、
    Pager、MediaViewer 或 Renderer 核心节点结构。
 
@@ -170,8 +239,9 @@
   Fixture 2/2 通过，iPad SearchView 与两类结果 1/1 通过；
   返回后关键词和结果保留；
 - 真实 forum 搜索结果已进入现有 ForumHome。真实 thread
-  首页与第二页已证明解码、映射与新增 ID；自动化的结果
-  导航使用 Fixture/Mock，不访问 Live 网络。
+  首页与第二页已证明解码、映射与新增 ID；阶段 17 又在生产 App 中点击
+  Live thread 结果进入现有 ThreadReader 并返回，关键词和结果保持。
+  自动化的结果导航仍使用 Fixture/Mock，不访问 Live 网络。
 - 阶段 16A 定向 Unit 9/9、全量 Unit 311/311、iPhone UI 2/2、
   iPad UI 1/1 通过；`make instructions`、`make secret-scan`、修正后
   `make lint`、`make quality-fast` 和 `git diff --check` 均通过。
@@ -189,11 +259,6 @@
 4. Production 图片 loader 仍 disabled。本阶段没有修改
    `VirtualizedList`、ForumHome/ThreadReader 列表、Pager、MediaViewer、
    Renderer、Session/Keychain 或已验证的推荐/FRS/PBPage 协议。
-5. 真实 thread 搜索结果的最终 UI 点击因 macOS 锁屏导致 Computer Use
-   超时而未完成人工复核；Live page 1/2 Probe 和同一 ThreadID route 的
-   Fixture iPhone 点击/返回均已通过。阶段 16A 因而保持
-   `RUNTIME_EVIDENCE_PARTIAL`；这条是阶段 16A 的运行停止点，不代表当前
-   阶段 16B 状态。
 
 ## 阶段 15.6 当前结果与停止点
 

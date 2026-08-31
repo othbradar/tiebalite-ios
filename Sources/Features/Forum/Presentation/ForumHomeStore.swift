@@ -17,6 +17,7 @@ final class ForumHomeStore {
         .initialLoading
     @ObservationIgnored private var cancellationPresentation:
         ForumHomeListPresentation?
+    @ObservationIgnored private var displayedForumID: Int64?
 
     init(
         route: ForumRoute,
@@ -33,6 +34,7 @@ final class ForumHomeStore {
             state = .initialLoading
             listPresentation = nil
             scrollAnchor = nil
+            displayedForumID = nil
             hasCompletedLoad = false
         }
 
@@ -82,6 +84,15 @@ final class ForumHomeStore {
             return
         }
         scrollAnchor = threadID
+    }
+
+    func claimDisplayedForum(_ forumID: Int64) -> Bool {
+        guard forumID > 0,
+              displayedForumID != forumID else {
+            return false
+        }
+        displayedForumID = forumID
+        return true
     }
 
     private func replaceInitialLoad(previous: ForumHomeSnapshot?) async {

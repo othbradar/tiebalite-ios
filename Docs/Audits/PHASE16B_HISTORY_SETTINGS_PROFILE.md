@@ -5,7 +5,8 @@
 - Android reference：`5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`
 - 决策：`ADR-0021-history-settings-user-profile.md`
 - 状态：`PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
-- 下一阶段：`PHASE_17 = NOT_STARTED`
+- 后续状态：`PHASE_17_IPADOS_ADAPTIVE_LAYOUT = IN_PROGRESS`；
+  `PHASE_18 = NOT_STARTED`
 
 ## 目标与边界
 
@@ -94,8 +95,8 @@ Profile request/response 两个 root 使联合 generated closure 由 156 增到 
    Beta smoke 保证。
 2. 头像暂使用统一占位；未实现用户帖子/关注/粉丝列表、写操作、
    云历史或搜索词历史。
-3. 阶段 16A 真实结果最终点击因 macOS 锁屏未完成，保持
-   `RUNTIME_EVIDENCE_PARTIAL`，不阻塞 16B。
+3. 阶段 16A 的原锁屏缺口已在阶段 17 用生产 App 补验，Live forum/thread
+   结果导航与返回状态均通过，现为 `COMPLETE`。
 4. 自动化不读真实 Keychain、不访问 Live 网络。Live Profile 证据只是
    单 Simulator 的开源 Beta smoke，不是真机/多系统/发布级矩阵。
 
