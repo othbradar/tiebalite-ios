@@ -176,6 +176,28 @@ struct Stage16BHistoryTests {
 
 struct Stage16BSettingsTests {
     @Test
+    func unknownPersistedValuesFallBackToSafeDefaults() async {
+        let suiteName = "Stage18SettingsTests.UnknownValues"
+        let defaults = UserDefaults(suiteName: suiteName)
+        defaults?.removePersistentDomain(forName: suiteName)
+        defer { defaults?.removePersistentDomain(forName: suiteName) }
+        defaults?.set(
+            "future-appearance",
+            forKey: "dev.tiebalite.settings.appearance"
+        )
+        defaults?.set(
+            "future-reading-size",
+            forKey: "dev.tiebalite.settings.reading-text-size"
+        )
+
+        let repository = UserDefaultsAppSettingsRepository(
+            suiteName: suiteName
+        )
+
+        #expect(await repository.load() == .defaults)
+    }
+
+    @Test
     func preferencesSurviveRepositoryReconstruction() async throws {
         let suiteName = "Stage16BSettingsTests.Persistence"
         UserDefaults(suiteName: suiteName)?.removePersistentDomain(

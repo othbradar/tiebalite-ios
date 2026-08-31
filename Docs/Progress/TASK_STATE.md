@@ -1,12 +1,15 @@
 # TASK_STATE
 
-- 当前阶段：17（iPadOS 自适应布局、旋转与窗口 resize，已完成）
+- 当前阶段：18（无障碍、性能、内存与故障韧性，已完成）
 - 状态：`PHASE_16A_SEARCH = COMPLETE`
 - `PHASE_16 = COMPLETE`
 - `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
 - `PHASE_17_IPADOS_ADAPTIVE_LAYOUT = COMPLETE`
 - `PHASE_17_QUALITY_GATE = PASSED_STAGE_17F_REQUIRED_GATES`
-- `PHASE_18 = NOT_STARTED`
+- `PHASE_18 = COMPLETE`
+- `PHASE_18_ACCESSIBILITY_PERFORMANCE_RESILIENCE = COMPLETE`
+- `PHASE_18_QUALITY_GATE = PASSED_FULL_QUALITY`
+- `PHASE_19 = NOT_STARTED`
 - `BROWSING_HISTORY = LOCAL_JSON_BETA_READY`
 - `APP_SETTINGS = USERDEFAULTS_RUNTIME_UI_VERIFIED`
 - `USER_PROFILE = ANONYMOUS_LIVE_PROTOCOL_RUNTIME_VERIFIED`
@@ -83,7 +86,54 @@
   `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
 - 阶段 17：`PHASE_17_IPADOS_ADAPTIVE_LAYOUT = COMPLETE`；
   `PHASE_17_QUALITY_GATE = PASSED_STAGE_17F_REQUIRED_GATES`
-- 阶段 18：`NOT_STARTED`
+- 阶段 18：`PHASE_18_ACCESSIBILITY_PERFORMANCE_RESILIENCE = COMPLETE`；
+  `PHASE_18_QUALITY_GATE = PASSED_FULL_QUALITY`
+- 阶段 19：`NOT_STARTED`
+
+## 阶段 18 当前结果与停止点
+
+阶段 18 从提交 `9d4d4427c1e0f5e6854886762fcc16fd23d26a37`
+开始，只收口已有只读主链路的无障碍、长列表、图片资源、
+故障韧性、存储恢复与 Release 隔离，没有新增业务功能或进入阶段 19：
+
+- ThreadReader/MediaViewer 图片现按稳定 MediaIntent 顺序读出
+  “第 N 张，共 M 张”，打开提示为“打开图片查看器”。
+  Viewer 装饰背景和可见页码不再与 Pager 暴露重复焦点；
+  关闭/上一张/下一张仍为明确操作。
+- Profile 装饰占位头像从无障碍树隐藏，用户名增加 heading；
+  ForumHome 回复数读为“N 条回复”。
+- `network.offline` 现在以 UITESTING-only fail-once Repository
+  确定性展示首屏失败并在重试后恢复 Fixture；Mock HTTP 事件为空，
+  Production 默认 Repository 选择不变。
+- 新增设置未知值安全回退、MediaViewer 取消后迟到图片丢弃、
+  以及真实 UITableView cell A→B 复用后旧异步结果不污染新行的回归。
+- iPhone 17 Pro / iOS 26.5 Simulator 快速滚动 1000 帖 Fixture
+  并跨过 page 1→2；快速滚动 1000 楼 Fixture 到约 302 楼并跨过
+  200 楼分页边界，均无稳定卡死、白块、重复行或身份错乱。
+  Unit 完整验证 10 页/1000 帖和 5 页/1000 楼的有界虚拟化。
+- 三图 Viewer 切换、双击 2.50× 缩放、切图重置、连续开关 10 次、
+  iPhone 横竖屏/前后台与 iPad Settings/Thread/Viewer/full→narrow→full
+  简单检查均无明显残留、空白或重复呈现。
+- 阶段 18 定向 Unit 29 个逻辑测试/30 次执行，直接 cell reuse
+  1/1，定向 UI 2/2；最终全量 Unit 351 个逻辑测试/
+  370 次执行，0 失败。
+- 完整 `make quality` 通过：iPhone smoke 28/28、interaction 15/15；
+  iPad smoke 12/12、interaction 2/2；Release isolation、`quality-fast`、
+  secret scan、lint、diff check 与 Android clean 全部通过。
+- 没有修改 `VirtualizedList`、Pager、Media zoom/gesture ownership、
+  Session/Keychain、Live Endpoint 或分页协议；MediaViewer/Renderer 只修改
+  无障碍投影。没有新增动画、手势、overlay、依赖或图片缓存。
+
+### 阶段 18 Known Limitations
+
+1. Simulator 无法可靠操作 VoiceOver；真机完整 VoiceOver、iOS 18.x、
+   所有 iPad 型号和真实 Stage Manager 仍为发布前人工项。
+2. 本阶段性能证据是 Beta 级快速滚动+确定性虚拟化测试，
+   不是精确 FPS、能耗或 Time Profiler 认证。
+3. Production 图片 loader 仍 fail-closed 且没有内存图片缓存；
+   极端全尺寸图片压力和内存警告下的未来 cache 清理保留到相关功能存在后。
+4. 真实 logout、全部服务端错误码、App Store entitlement 和公开分发许可
+   仍是发布前项目，不阻塞阶段 18。
 
 ## 阶段 17 当前结果与停止点
 

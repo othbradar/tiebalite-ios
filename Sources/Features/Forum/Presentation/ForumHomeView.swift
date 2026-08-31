@@ -249,7 +249,8 @@ private struct ForumThreadCard: View {
                     Spacer(minLength: Spacing.xSmall)
                     metadata(
                         "\(row.replyCount)",
-                        systemImage: "bubble.left"
+                        systemImage: "bubble.left",
+                        accessibilityLabel: "\(row.replyCount) 条回复"
                     )
                 }
                 VStack(alignment: .leading, spacing: Spacing.xSmall) {
@@ -306,11 +307,16 @@ private struct ForumThreadCard: View {
         }
     }
 
-    private func metadata(_ value: String, systemImage: String) -> some View {
+    private func metadata(
+        _ value: String,
+        systemImage: String,
+        accessibilityLabel: String? = nil
+    ) -> some View {
         Label(value, systemImage: systemImage)
             .font(Typography.font(.caption))
             .foregroundStyle(SemanticColor.secondaryText)
             .lineLimit(2)
+            .accessibilityLabel(accessibilityLabel ?? value)
     }
 }
 

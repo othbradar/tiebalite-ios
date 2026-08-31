@@ -22,7 +22,7 @@ enum MediaViewerProductionAssertions {
             in: app
         )
         UITestHarness.tap(.mediaViewerOpenSingle, in: app)
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
         requirePosition("1 / 1", in: app)
         _ = requireImage(at: 0, in: app)
     }
@@ -33,14 +33,14 @@ enum MediaViewerProductionAssertions {
             in: app
         )
         UITestHarness.tap(.mediaViewerOpenMultiple, in: app)
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
         requirePosition("1 / 6", in: app)
         _ = requireImage(at: 0, in: app)
     }
 
     static func close(in app: XCUIApplication) {
         UITestHarness.tap(.mediaViewerClose, in: app)
-        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)
         UITestHarness.requirePresent(.threadContentLabRoot, in: app)
     }
 
@@ -50,10 +50,22 @@ enum MediaViewerProductionAssertions {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        UITestHarness.requireLabel(
-            .mediaViewerPosition,
-            equals: expected,
-            in: app,
+        let pager = UITestHarness.element(.mediaViewerPager, in: app)
+        guard pager.waitForExistence(timeout: 5) else {
+            XCTFail("Missing production MediaViewer pager", file: file, line: line)
+            return
+        }
+        let predicate = NSPredicate(
+            format: "value BEGINSWITH %@",
+            expected
+        )
+        let expectation = XCTNSPredicateExpectation(
+            predicate: predicate,
+            object: pager
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: 5),
+            .completed,
             file: file,
             line: line
         )

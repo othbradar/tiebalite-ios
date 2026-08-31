@@ -181,7 +181,7 @@ private struct ThreadContentImageView: View {
                     stableImageFrame
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(content.alternativeText)
+                .accessibilityLabel(imageAccessibilityLabel)
                 .accessibilityHint(ThreadContentImageCopy.openMediaHint)
                 .accessibilityValue(
                     currentRenderState.phase.accessibilityValue
@@ -191,7 +191,7 @@ private struct ThreadContentImageView: View {
                 )
             } else {
                 stableImageFrame
-                    .accessibilityLabel(content.alternativeText)
+                    .accessibilityLabel(imageAccessibilityLabel)
             }
         }
         .accessibilityElement(children: .contain)
@@ -228,6 +228,13 @@ private struct ThreadContentImageView: View {
         renderState.projected(for: content.request)
     }
 
+    private var imageAccessibilityLabel: String {
+        ThreadContentImagePresentation.accessibilityLabel(
+            alternativeText: content.alternativeText,
+            mediaIntent: mediaIntent
+        )
+    }
+
     private var stableImageFrame: some View {
         Color.clear
         .aspectRatio(
@@ -255,7 +262,7 @@ private struct ThreadContentImageView: View {
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(content.alternativeText)
+        .accessibilityLabel(imageAccessibilityLabel)
         .accessibilityValue(currentRenderState.phase.accessibilityValue)
         .accessibilityIdentifier(
             ThreadContentAccessibilityID.imageState(content.mediaID)

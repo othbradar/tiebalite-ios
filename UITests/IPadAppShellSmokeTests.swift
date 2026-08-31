@@ -96,10 +96,10 @@ final class IPadAppShellSmokeTests: XCTestCase {
         ).frame
 
         UITestHarness.tap(.threadReaderImageSecondAction, in: app)
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
         MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)
-        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)
 
         let returnedImage = UITestHarness.element(
             .threadReaderImageSecondAction,
@@ -192,17 +192,17 @@ final class IPadAppShellSmokeTests: XCTestCase {
             equals: "已加载",
             in: app
         )
-        UITestHarness.requireAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.requireAbsent(.mediaViewerPager, in: app)
         XCTAssertEqual(app.sheets.count, 0)
         UITestHarness.tapStableTarget(
             .forumThreadImageAction,
             inside: .forumThreadReaderScroll,
             in: app
         )
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
         MediaViewerProductionAssertions.requirePosition("1 / 1", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)
-        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)
 
         device.orientation = .portrait
     }
@@ -307,7 +307,7 @@ final class IPadAppShellSmokeTests: XCTestCase {
         MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
 
         device.orientation = .landscapeLeft
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
         UITestHarness.requirePresent(.mediaViewerChrome, in: app)
         MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
         _ = MediaViewerProductionAssertions.requireImage(at: 2, in: app)

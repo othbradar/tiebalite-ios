@@ -62,11 +62,12 @@ struct UserProfileView: View {
                         .scaledToFit()
                         .frame(width: 72, height: 72)
                         .foregroundStyle(SemanticColor.secondaryText)
-                        .accessibilityLabel("用户头像占位")
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: Spacing.xSmall) {
                         Text(profile.displayName)
                             .font(Typography.font(.title))
                             .foregroundStyle(SemanticColor.primaryText)
+                            .accessibilityAddTraits(.isHeader)
                     }
                 }
 

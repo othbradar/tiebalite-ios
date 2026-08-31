@@ -33,7 +33,7 @@ enum ThreadContentImageCopy {
     static let idleMessage = "图片等待加载"
     static let loadingAccessibilityValue = "正在加载"
     static let loadingMessage = "图片加载中"
-    static let openMediaHint = "生成媒体浏览意图"
+    static let openMediaHint = "打开图片查看器"
     static let renderedAccessibilityValue = "已加载"
 }
 
@@ -139,6 +139,27 @@ enum ThreadContentImagePresentation {
         return min(
             maximumLayoutAspectRatio,
             max(minimumLayoutAspectRatio, dimensions.layoutAspectRatio)
+        )
+    }
+
+    static func accessibilityLabel(
+        alternativeText: String,
+        mediaIntent: ThreadMediaIntent?
+    ) -> String {
+        guard let mediaIntent,
+              let index = mediaIntent.items.firstIndex(where: {
+                  $0.mediaID == mediaIntent.initialMediaID
+              }) else {
+            return MediaAccessibilityCopy.imageLabel(
+                alternativeText: alternativeText,
+                position: 0,
+                total: 0
+            )
+        }
+        return MediaAccessibilityCopy.imageLabel(
+            alternativeText: alternativeText,
+            position: index + 1,
+            total: mediaIntent.items.count
         )
     }
 }

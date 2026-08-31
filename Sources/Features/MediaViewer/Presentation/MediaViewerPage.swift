@@ -47,6 +47,7 @@ struct MediaViewerPage: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(SemanticColor.mediaBackground)
             .accessibilityElement(children: .combine)
+            .accessibilityLabel(item.accessibilityLabel)
             .accessibilityValue(MediaViewerCopy.loading)
             .accessibilityIdentifier(
                 MediaViewerAccessibilityID.state(item.id, phase: .loading)
@@ -61,7 +62,7 @@ struct MediaViewerPage: View {
                     ownershipController: ownershipController,
                     surfaceAccessibilityIdentifier:
                         MediaViewerAccessibilityID.image(item.id),
-                    surfaceAccessibilityLabel: item.alternativeText,
+                    surfaceAccessibilityLabel: item.accessibilityLabel,
                     surfaceAccessibilityValue:
                         MediaViewerCopy.zoomAccessibilityValue(zoomScale),
                     surfaceAccessibilityHint: MediaViewerCopy.zoomHint,
@@ -115,7 +116,7 @@ struct MediaViewerPage: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(SemanticColor.mediaBackground)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(item.alternativeText)
+        .accessibilityLabel(item.accessibilityLabel)
         .accessibilityValue(message)
         .accessibilityIdentifier(
             MediaViewerAccessibilityID.state(item.id, phase: phase)
@@ -182,9 +183,7 @@ enum MediaViewerAccessibilityID {
     static let close = "media-viewer.close"
     static let next = "media-viewer.next"
     static let pager = "media-viewer.pager"
-    static let position = "media-viewer.position"
     static let previous = "media-viewer.previous"
-    static let root = "media-viewer.root"
 
     static func image(_ mediaID: String) -> String {
         "media-viewer.image.\(mediaID)"

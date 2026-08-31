@@ -149,14 +149,14 @@ extension IPadAppShellSmokeTests {
             in: app
         )
         UITestHarness.tap(.threadReaderImageSecondAction, in: app)
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
         MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
 
         device.orientation = .portrait
         UITestHarness.requirePresent(.mediaViewerChrome, in: app)
         MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)
-        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)
 
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
         UITestHarness.requirePresent(.threadReaderImageSecondAction, in: app)

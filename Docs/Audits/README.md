@@ -36,3 +36,7 @@ Live 脱敏证据、retained failure/generation 回归与未知项见
 阶段 17 的 compact/regular 单状态投影、Store 生命周期、虚拟列表 resize、
 iPhone/iPad 旋转与窄宽证据及 Beta 限制见
 `PHASE17_ADAPTIVE_LAYOUT.md`。
+
+阶段 18 的主链路无障碍语义、1000 帖/1000 楼虚拟化、
+MediaViewer 资源、无网络重试、存储恢复与完整质量证据见
+`PHASE18_ACCESSIBILITY_PERFORMANCE_RESILIENCE.md`。

@@ -6,6 +6,21 @@ import Testing
 @MainActor
 struct ThreadImageRenderStateTests {
     @Test
+    func imageAccessibilityLabelUsesStableIntentOrderAndSafeFallback() {
+        let intent = fixtureMediaIntent(itemCount: 3, selectedIndex: 1)
+
+        #expect(ThreadContentImagePresentation.accessibilityLabel(
+            alternativeText: "图片",
+            mediaIntent: intent
+        ) == "图片，第 2 张，共 3 张")
+        #expect(ThreadContentImagePresentation.accessibilityLabel(
+            alternativeText: "   ",
+            mediaIntent: nil
+        ) == "图片")
+        #expect(ThreadContentImageCopy.openMediaHint == "打开图片查看器")
+    }
+
+    @Test
     func successfulFetchWithUndecodableBytesDoesNotReportLoaded() async throws {
         let renderState = try await ThreadContentImageLoad.resolve(
             fixtureImageRequest(
@@ -201,6 +216,36 @@ struct ThreadImageRenderStateTests {
                 dimensions: .known(width: 640, height: 480),
                 alternativeText: "合成图片"
             )]
+        )
+    }
+
+    private func fixtureMediaIntent(
+        itemCount: Int,
+        selectedIndex: Int
+    ) -> ThreadMediaIntent {
+        let source = ThreadContentSource(
+            threadID: 91_001,
+            postID: 92_001,
+            scope: .firstPost
+        )
+        let items = (0..<itemCount).map { ordinal in
+            let nodeID = ThreadContentNodeID(
+                source: source,
+                ordinal: ordinal
+            )
+            return ThreadMediaItem(
+                mediaID: ThreadMediaID(sourceNodeID: nodeID),
+                sourceNodeID: nodeID,
+                request: fixtureImageRequest(
+                    resourceID: "fixture.image.\(ordinal)"
+                ),
+                dimensions: .known(width: 640, height: 480),
+                alternativeText: "图片"
+            )
+        }
+        return ThreadMediaIntent(
+            initialMediaID: items[selectedIndex].mediaID,
+            items: items
         )
     }
 }

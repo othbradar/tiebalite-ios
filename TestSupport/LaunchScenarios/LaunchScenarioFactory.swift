@@ -85,7 +85,10 @@ enum LaunchScenarioFactory {
                 environment: environment,
                 authContextProvider: sessionDependencies.authContextProvider,
                 sessionStore: sessionDependencies.store,
-                loginWebSession: sessionDependencies.loginWebSession
+                loginWebSession: sessionDependencies.loginWebSession,
+                recommendationRepository: recommendationRepository(
+                    for: scenario
+                )
             ),
             isolationCanary: LaunchScenarioRegistry.isolationCanary,
             displayProfile: displayProfile
@@ -154,6 +157,33 @@ enum LaunchScenarioFactory {
             cache: HarnessInMemoryDataCache(),
             diagnostics: HarnessRecordingDiagnosticsClient()
         )
+    }
+
+    private static func recommendationRepository(
+        for scenario: LaunchScenarioID
+    ) -> (any RecommendationRepository)? {
+        scenario == .networkOffline
+            ? HarnessRecoveringRecommendations()
+            : nil
+    }
+}
+
+private actor HarnessRecoveringRecommendations: RecommendationRepository {
+    private var requestCount = 0
+    private let fixture = FixtureRecommendationRepository()
+
+    func loadRecommendations() async throws -> [RecommendationSummary] {
+        try await loadPage(.initial).items
+    }
+
+    func loadPage(
+        _ request: RecommendationPageRequest
+    ) async throws -> RecommendationRepositoryPage {
+        requestCount += 1
+        guard requestCount > 1 else {
+            throw HTTPClientError.offline
+        }
+        return try await fixture.loadPage(request)
     }
 }
 

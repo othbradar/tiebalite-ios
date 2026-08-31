@@ -23,6 +23,11 @@ struct MediaViewerPresentationTests {
         #expect(presentation.id.orderedMediaIDs == items.map {
             $0.mediaID.stableKey
         })
+        #expect(presentation.items.map(\.accessibilityLabel) == [
+            "Fixture image 0，第 1 张，共 3 张",
+            "Fixture image 1，第 2 张，共 3 张",
+            "Fixture image 2，第 3 张，共 3 张"
+        ])
     }
 
     @Test
@@ -114,6 +119,25 @@ struct MediaViewerImageLoadTests {
         }
     }
 
+    @Test
+    func cancellationDropsALateSuccessfulImagePayload() async throws {
+        let loader = MediaViewerLateSuccessImageLoader()
+        let task = Task { @MainActor in
+            try await MediaViewerImageLoad.resolve(
+                request: ImageRequest(resourceID: "late-success"),
+                using: loader
+            )
+        }
+        try await loader.waitUntilStarted()
+
+        task.cancel()
+        loader.succeed(with: Self.pixelPNG)
+
+        await #expect(throws: CancellationError.self) {
+            _ = try await task.value
+        }
+    }
+
     private static let pixelPNG = Data([
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
         0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
@@ -125,6 +149,25 @@ struct MediaViewerImageLoadTests {
         0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44,
         0xAE, 0x42, 0x60, 0x82
     ])
+}
+
+private actor MediaViewerLateSuccessImageLoader: ImageLoading {
+    private let started = HarnessContinuationGate<Void>()
+    private let response = HarnessContinuationGate<ImagePayload>()
+
+    func load(_ request: ImageRequest) async throws -> ImagePayload {
+        _ = request
+        started.succeed(())
+        return try await response.wait()
+    }
+
+    func waitUntilStarted() async throws {
+        try await started.wait()
+    }
+
+    nonisolated func succeed(with data: Data) {
+        response.succeed(ImagePayload(data: data, mediaType: "image/png"))
+    }
 }
 
 struct MediaViewerTestImageLoader: ImageLoading {

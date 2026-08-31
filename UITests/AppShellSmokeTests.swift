@@ -142,6 +142,11 @@ final class AppShellSmokeTests: XCTestCase {
             equals: "已加载",
             in: app
         )
+        UITestHarness.requireLabel(
+            .threadContentImageSuccessAction,
+            equals: "合成图片，第 1 张，共 5 张",
+            in: app
+        )
         let successFrame = UITestHarness.element(
             .threadContentImageSuccessAction,
             in: app
@@ -158,14 +163,10 @@ final class AppShellSmokeTests: XCTestCase {
             to: "Media intent: none",
             in: app
         )
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
-        UITestHarness.requireLabel(
-            .mediaViewerPosition,
-            equals: "1 / 5",
-            in: app
-        )
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
+        MediaViewerProductionAssertions.requirePosition("1 / 5", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)
-        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)
         UITestHarness.requirePresent(.threadContentLabRoot, in: app)
 
         UITestHarness.scrollToHittable(.threadContentUnknown, in: app)
@@ -325,21 +326,21 @@ final class AppShellSmokeTests: XCTestCase {
             requireNonRenderedImageState(
                 state: .threadContentImageLoadingState,
                 action: .threadContentImageLoadingAction,
-                label: "合成图片",
+                label: "合成图片，第 2 张，共 5 张",
                 value: "正在加载",
                 in: app
             ),
             requireNonRenderedImageState(
                 state: .threadContentImageFailureState,
                 action: .threadContentImageFailureAction,
-                label: "合成图片",
+                label: "合成图片，第 3 张，共 5 张",
                 value: "加载失败",
                 in: app
             ),
             requireNonRenderedImageState(
                 state: .threadContentImageDecodeFailureState,
                 action: .threadContentImageDecodeFailureAction,
-                label: "不可解码图片",
+                label: "不可解码图片，第 4 张，共 5 张",
                 value: "加载失败",
                 in: app
             )
@@ -537,14 +538,14 @@ extension AppShellSmokeTests {
         ).frame
 
         UITestHarness.tap(.threadReaderImageSecondAction, in: app)
-        UITestHarness.requirePresent(.mediaViewerRoot, in: app)
+        UITestHarness.requirePresent(.mediaViewerPager, in: app)
         MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
         UITestHarness.tap(.mediaViewerNext, in: app)
         MediaViewerProductionAssertions.requirePosition("3 / 3", in: app)
         UITestHarness.tap(.mediaViewerPrevious, in: app)
         MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)
-        UITestHarness.waitUntilAbsent(.mediaViewerRoot, in: app)
+        UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)
 
         let returnedThreadImage = UITestHarness.element(
             .threadReaderImageSecondAction,

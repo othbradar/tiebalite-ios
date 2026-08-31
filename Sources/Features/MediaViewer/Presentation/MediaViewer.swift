@@ -37,11 +37,7 @@ struct MediaViewer: View {
             SemanticColor.mediaBackground
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("图片查看器")
-                .accessibilityValue("\(positionText)，\(zoomText)")
-                .accessibilityIdentifier(MediaViewerAccessibilityID.root)
-                .accessibilityAction(.escape, closeViewer)
+                .accessibilityHidden(true)
 
             PagerContainer(
                 pageIDs: presentation.items.map(\.id),
@@ -102,9 +98,7 @@ private extension MediaViewer {
 
                 Text(positionText)
                     .font(Typography.font(.headline))
-                    .accessibilityIdentifier(
-                        MediaViewerAccessibilityID.position
-                    )
+                    .accessibilityHidden(true)
 
                 Spacer(minLength: Spacing.small)
 

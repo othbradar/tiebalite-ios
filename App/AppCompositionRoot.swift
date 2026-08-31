@@ -20,6 +20,7 @@ final class AppCompositionRoot {
         loginWebSession: LoginWebSession? = nil,
         browsingHistoryRepository: (any BrowsingHistoryRepository)? = nil,
         appSettingsRepository: (any AppSettingsRepository)? = nil,
+        recommendationRepository: (any RecommendationRepository)? = nil,
         userProfileRepository: (any UserProfileRepository)? = nil
     ) {
         self.environment = environment
@@ -42,7 +43,8 @@ final class AppCompositionRoot {
                 appSettingsRepository ?? InMemoryAppSettingsRepository()
             followedForumsRepository = FixtureFollowedForumsRepository()
             forumHomeRepository = FixtureForumHomeRepository()
-            recommendationRepository = FixtureRecommendationRepository()
+            self.recommendationRepository =
+                recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
             threadReaderRepository = FixtureThreadReaderRepository()
             self.userProfileRepository =
@@ -61,8 +63,8 @@ final class AppCompositionRoot {
             forumHomeRepository = LiveForumHomeRepository(
                 client: environment.httpClient
             )
-            recommendationRepository =
-                LiveRecommendationRepository(
+            self.recommendationRepository =
+                recommendationRepository ?? LiveRecommendationRepository(
                     client: environment.httpClient,
                     authContextProvider: resolvedAuthContextProvider
                 )

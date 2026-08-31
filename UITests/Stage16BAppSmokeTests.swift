@@ -111,6 +111,7 @@ extension AppShellSmokeTests {
             Stage16BUITestID.userProfile,
             in: app
         )
+        XCTAssertFalse(app.images["用户头像占位"].exists)
     }
 
     @MainActor

@@ -126,4 +126,28 @@ struct LaunchScenarioTests {
             #expect(code == "invalid-scenario")
         }
     }
+
+    @Test
+    @MainActor
+    func offlineScenarioFailsOnceThenRetriesWithFixtureData() async {
+        let descriptor = LaunchScenarioFactory.make(
+            scenario: .networkOffline
+        )
+        let store = descriptor.compositionRoot.makeRecommendationsStore()
+
+        await store.loadIfNeeded()
+        #expect(store.state == .initialFailure(.unavailable))
+
+        store.prepareRetry()
+        await store.loadIfNeeded()
+        #expect(store.state.items?.map(\.threadID) == [
+            100_001,
+            100_002,
+            100_003,
+            100_004
+        ])
+        let client = descriptor.compositionRoot.environment.httpClient
+            as? HarnessMockHTTPClient
+        #expect(await client?.events().isEmpty == true)
+    }
 }

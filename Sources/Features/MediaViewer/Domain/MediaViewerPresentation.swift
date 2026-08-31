@@ -11,7 +11,17 @@ struct MediaViewerPresentation: Equatable, Identifiable, Sendable {
     let initialMediaID: String
 
     init?(intent: ThreadMediaIntent) {
-        let items = intent.items.map(MediaViewerItem.init)
+        let total = intent.items.count
+        let items = intent.items.enumerated().map { index, item in
+            MediaViewerItem(
+                item,
+                accessibilityLabel: MediaAccessibilityCopy.imageLabel(
+                    alternativeText: item.alternativeText,
+                    position: index + 1,
+                    total: total
+                )
+            )
+        }
         let orderedIDs = items.map(\.id)
         let initialID = intent.initialMediaID.stableKey
         guard !items.isEmpty,
@@ -34,12 +44,14 @@ struct MediaViewerItem: Equatable, Identifiable, Sendable {
     let request: ThreadImageRequestDescriptor
     let dimensions: ThreadMediaDimensions
     let alternativeText: String
+    let accessibilityLabel: String
 
-    init(_ item: ThreadMediaItem) {
+    init(_ item: ThreadMediaItem, accessibilityLabel: String) {
         id = item.mediaID.stableKey
         mediaID = item.mediaID
         request = item.request
         dimensions = item.dimensions
         alternativeText = item.alternativeText
+        self.accessibilityLabel = accessibilityLabel
     }
 }
