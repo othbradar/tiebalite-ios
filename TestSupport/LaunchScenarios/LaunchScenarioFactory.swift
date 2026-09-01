@@ -72,6 +72,7 @@ enum LaunchScenarioFactory {
             status: sessionStatus
         )
         let environment = makeEnvironment(
+            scenario: scenario,
             httpBehavior: httpBehavior,
             session: sessionDependencies.authContextProvider,
             imageLoader: imageLoader
@@ -141,6 +142,7 @@ enum LaunchScenarioFactory {
     }
 
     private static func makeEnvironment(
+        scenario: LaunchScenarioID,
         httpBehavior: HarnessHTTPDefaultBehavior,
         session: any SessionProviding,
         imageLoader: any ImageLoading
@@ -155,7 +157,10 @@ enum LaunchScenarioFactory {
             session: session,
             imageLoader: imageLoader,
             cache: HarnessInMemoryDataCache(),
-            diagnostics: HarnessRecordingDiagnosticsClient()
+            diagnostics: HarnessRecordingDiagnosticsClient(),
+            recommendationsAccessPolicy: scenario == .sessionSignedOut
+                ? .activeSessionRequired
+                : nil
         )
     }
 

@@ -138,19 +138,8 @@ enum AppRouter {
                         .recordUser($0)
                 }
             )
-        case .subposts:
-            FixtureRouteView(
-                route: route,
-                openThread: {},
-                openSubposts: { threadID in
-                    guard let postID = PostID(2_001) else {
-                        return
-                    }
-                    openRoute(
-                        .subposts(threadID: threadID, postID: postID)
-                    )
-                }
-            )
+        case let .subposts(threadID, postID):
+            SubpostsUnavailableView(threadID: threadID, postID: postID)
         }
     }
 

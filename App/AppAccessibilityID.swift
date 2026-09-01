@@ -17,10 +17,14 @@ enum AppAccessibilityID {
         "thread-reader.renderer-lab.open-media-multiple"
     static let mediaViewerOpenSingle =
         "thread-reader.renderer-lab.open-media-single"
+#if DEBUG
     static let openForum = "app.fixture.root.open-forum"
+#endif
     static let openSearch = "app.open-search"
+#if DEBUG
     static let openSubposts = "app.fixture.thread.open-subposts"
     static let openThread = "app.fixture.forum.open-thread"
+#endif
     static let recommendationsRoot = "app.root.recommendations"
     static let routeForum = "app.route.forum"
     static let routeSearch = "search.root"

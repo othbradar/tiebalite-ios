@@ -23,7 +23,7 @@ protocol RequestAuthorizing: Sendable {
     ) async throws -> [String: String]
 }
 
-struct FixtureOnlyRequestAuthorizer: RequestAuthorizing {
+struct AnonymousRequestAuthorizer: RequestAuthorizing {
     func headers(
         for context: AuthContext,
         endpoint: EndpointDescriptor

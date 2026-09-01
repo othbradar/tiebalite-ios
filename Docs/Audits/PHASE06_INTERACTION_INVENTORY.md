@@ -1,6 +1,6 @@
 # Interaction inventory
 
-Repository: /Users/othbradar/PycharmProjects/tiebalite重构
+Repository: <repo-root>
 Original Phase 06 commit: 4005387738f8c7425e93fde82b042cb589c98699
 Phase 06B baseline: b205af6d0bd91d51cb7bc83b6e70f6da7fe93fbe
 

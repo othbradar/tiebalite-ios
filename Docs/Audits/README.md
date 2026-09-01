@@ -44,3 +44,7 @@ MediaViewer 资源、无网络重试、存储恢复与完整质量证据见
 阶段 19A 的图片候选证据、匿名 Production loader、ImageIO 下采样、
 Recommendation/Forum/Thread/Viewer 接线、Cell 复用和 Live 运行证据见
 `PHASE19A_PRODUCTION_IMAGE_PIPELINE.md`。
+
+阶段 19B 的功能一致性、未登录首页 P1、Release 隔离、干净 checkout、
+许可/来源和本地 Beta RC 最终证据见
+`PHASE19B_BETA_RELEASE_CANDIDATE.md`。

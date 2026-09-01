@@ -251,6 +251,7 @@ struct Stage15ThreadReadingTests {
     func removingThreadRouteCancelsItsPendingNextPage() async throws {
         let repository = Stage15ControlledNextRepository()
         let registry = AppFeatureStoreRegistry(
+            fixtureDefaults: (),
             followedForumsStore: FollowedForumsStore(
                 repository: FixtureFollowedForumsRepository()
             ),

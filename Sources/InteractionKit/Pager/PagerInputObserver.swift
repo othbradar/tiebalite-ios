@@ -85,6 +85,7 @@ extension PagerContainer.Coordinator {
               let sourceID = state.committedID else {
             return
         }
+#if DEBUG
         if parent.inputDiagnosticsEnabled {
             parent.onInputDiagnostic(
                 PagerInputDiagnostic(
@@ -103,6 +104,7 @@ extension PagerContainer.Coordinator {
                 )
             )
         }
+#endif
         clearResolvedInputTrace()
     }
 
@@ -118,6 +120,7 @@ extension PagerContainer.Coordinator {
         ) * inputDirectionSign / width
     }
 
+#if DEBUG
     var lastGestureTrace: PagerGestureTrace? {
         get {
             lastTerminalGestureRecord?.trace
@@ -176,6 +179,7 @@ extension PagerContainer.Coordinator {
             )
         )
     }
+#endif
 
     func clearResolvedInputTrace() {
         activeInputSequence = nil
@@ -213,6 +217,7 @@ extension PagerContainer.Coordinator {
         clearResolvedInputTrace()
     }
 
+#if DEBUG
     func installPagerContentOffsetObserver(_ scrollView: UIScrollView) {
         guard observedPagerScrollView !== scrollView else {
             return
@@ -239,4 +244,5 @@ extension PagerContainer.Coordinator {
         pagerContentOffsetObservation = nil
         observedPagerScrollView = nil
     }
+#endif
 }

@@ -30,7 +30,7 @@ struct LiveForumHomeRepository: ForumHomeRepository {
         let executor = EndpointExecutor(
             client: client,
             requestBuilder: EndpointRequestBuilder(
-                authorizer: FixtureOnlyRequestAuthorizer()
+                authorizer: AnonymousRequestAuthorizer()
             )
         )
         let snapshot = try await executor.execute(

@@ -5,6 +5,17 @@
 
 本文件记录阶段 01 可证实的来源和边界，不构成法律意见。任何分发、上架、商业使用或文件级复用决定都需要项目负责人单独批准。
 
+## 阶段 19B 根仓库许可状态
+
+- iOS 根仓库此前没有项目级 `LICENSE`；阶段 19B 增加的根 `LICENSE` 明确
+  记录当前没有授予使用、复制、修改或分发许可，并未擅自选择 MIT、GPL、
+  Apache 等许可证。
+- Android submodule 的 GPL-3.0 文本只属于该 reference，不应误写为 iOS
+  根仓库许可证。
+- 当前结论仅为本地 Beta RC。源代码可见不等于获得开源许可；公开、App Store、
+  商标和商业分发继续阻塞于独立权利确认。
+- 当前第三方/生成物清单汇总于根 `THIRD_PARTY_NOTICES.md`。
+
 ## 阶段 07 本地项目决策
 
 - 重新核对 Android reference 仍锁定且 clean 于
@@ -106,11 +117,12 @@
   公开分发、App Store、商业使用、notice/源码义务和文件级 provenance
   结论保持不变。
 
-## 仓库级许可与声明
+## Android reference 仓库级许可与声明
 
 `CODE_EVIDENCE`：
 
-- 根 `LICENSE` 是 GNU General Public License version 3 文本。
+- Android reference 根 `LICENSE` 是 GNU General Public License version 3
+  文本；这不是 iOS 根仓库的许可证。
 - README 明确把 Tieba Lite 描述为非官方客户端。
 - README 明确写有“本软件及源码仅供学习交流使用，严禁用于商业用途”。
 - README 友情链接包含 `n0099/tbclient.protobuf`，但 reference 的 `.proto` 文件没有统一文件头说明每个 schema 的具体来源。

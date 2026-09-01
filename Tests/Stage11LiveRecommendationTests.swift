@@ -323,6 +323,100 @@ struct Stage11LiveRecommendationTests {
     }
 }
 
+@MainActor
+struct Stage19BSessionIsolationTests {
+    @Test
+    func replacementSessionNeverReusesPreviousAccountRecommendations()
+        async throws {
+        let repository = ControlledRecommendationRepository()
+        let store = RecommendationsStore(repository: repository)
+        let firstLease = ProtectedDataLease(
+            sessionID: SessionID(rawValue: 1),
+            generation: 1
+        )
+        let secondLease = ProtectedDataLease(
+            sessionID: SessionID(rawValue: 2),
+            generation: 2
+        )
+        let firstItems = [Self.recommendation(threadID: 401)]
+        let secondItems = [Self.recommendation(threadID: 402)]
+
+        let firstLoad = Task {
+            await store.synchronize(with: .active(firstLease))
+        }
+        try await repository.waitForCallCount(1)
+        try await repository.succeed(call: 1, items: firstItems)
+        await firstLoad.value
+        store.setScrollAnchor(401)
+        #expect(store.state == .loaded(firstItems))
+
+        await store.synchronize(with: .unavailable)
+        #expect(store.state == .initialLoading)
+        #expect(store.currentPage == nil)
+        #expect(store.nextPage == nil)
+        #expect(store.scrollAnchor == nil)
+
+        let secondLoad = Task {
+            await store.synchronize(with: .active(secondLease))
+        }
+        try await repository.waitForCallCount(2)
+        #expect(store.state == .initialLoading)
+        try await repository.succeed(call: 2, items: secondItems)
+        await secondLoad.value
+
+        #expect(store.state == .loaded(secondItems))
+    }
+
+    @Test
+    func revokedSessionCancelsLateRecommendationBeforeReplacementLoads()
+        async throws {
+        let repository = ControlledRecommendationRepository()
+        let store = RecommendationsStore(repository: repository)
+        let firstLease = ProtectedDataLease(
+            sessionID: SessionID(rawValue: 11),
+            generation: 11
+        )
+        let secondLease = ProtectedDataLease(
+            sessionID: SessionID(rawValue: 12),
+            generation: 12
+        )
+        let stale = [Self.recommendation(threadID: 411)]
+        let latest = [Self.recommendation(threadID: 412)]
+
+        let firstLoad = Task {
+            await store.synchronize(with: .active(firstLease))
+        }
+        try await repository.waitForCallCount(1)
+
+        await store.synchronize(with: .unavailable)
+        let secondLoad = Task {
+            await store.synchronize(with: .active(secondLease))
+        }
+        try await repository.waitForCallCount(2)
+        try await repository.succeed(call: 2, items: latest)
+        await secondLoad.value
+
+        try await repository.succeed(call: 1, items: stale)
+        await firstLoad.value
+
+        #expect(store.state == .loaded(latest))
+        #expect(await repository.cancelledCalls() == [1])
+    }
+
+    private static func recommendation(
+        threadID: Int64
+    ) -> RecommendationSummary {
+        RecommendationSummary(
+            threadID: threadID,
+            title: "Thread \(threadID)",
+            forumName: "Forum",
+            authorName: "Author",
+            replyCount: 1,
+            thumbnail: nil
+        )
+    }
+}
+
 private actor ControlledRecommendationRepository: RecommendationRepository {
     private struct PendingCall {
         let gate: HarnessContinuationGate<[RecommendationSummary]>

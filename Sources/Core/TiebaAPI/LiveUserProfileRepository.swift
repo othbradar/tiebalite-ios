@@ -15,7 +15,7 @@ struct LiveUserProfileRepository: UserProfileRepository {
         let executor = EndpointExecutor(
             client: client,
             requestBuilder: EndpointRequestBuilder(
-                authorizer: FixtureOnlyRequestAuthorizer()
+                authorizer: AnonymousRequestAuthorizer()
             )
         )
         let result = try await executor.execute(

@@ -17,30 +17,13 @@ final class AppFeatureStoreRegistry {
     init(
         followedForumsStore: FollowedForumsStore,
         recommendationsStore: RecommendationsStore,
-        browsingHistoryStore: BrowsingHistoryStore = BrowsingHistoryStore(
-            repository: InMemoryBrowsingHistoryRepository(),
-            clock: SystemAppClock()
-        ),
-        settingsStore: SettingsStore = SettingsStore(
-            repository: InMemoryAppSettingsRepository()
-        ),
-        searchStore: SearchStore = SearchStore(
-            repository: FixtureSearchRepository()
-        ),
+        browsingHistoryStore: BrowsingHistoryStore,
+        settingsStore: SettingsStore,
+        searchStore: SearchStore,
         makeThreadReaderStore: @escaping @MainActor (Int64) -> ThreadReaderStore,
-        makeForumHomeStore: @escaping @MainActor (ForumRoute) -> ForumHomeStore = {
-            ForumHomeStore(
-                route: $0,
-                repository: FixtureForumHomeRepository()
-            )
-        },
+        makeForumHomeStore: @escaping @MainActor (ForumRoute) -> ForumHomeStore,
         makeUserProfileStore: @escaping @MainActor (UserProfileRoute) ->
-            UserProfileStore = {
-                UserProfileStore(
-                    route: $0,
-                    repository: FixtureUserProfileRepository()
-                )
-            }
+            UserProfileStore
     ) {
         self.browsingHistoryStore = browsingHistoryStore
         self.followedForumsStore = followedForumsStore

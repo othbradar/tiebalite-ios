@@ -35,6 +35,7 @@ final class AppCompositionRoot {
             websiteDataCleaner: resolvedLoginWebSession
         )
         switch environment.readingDataSourceMode {
+#if DEBUG
         case .fixture:
             self.browsingHistoryRepository =
                 browsingHistoryRepository
@@ -49,6 +50,7 @@ final class AppCompositionRoot {
             threadReaderRepository = FixtureThreadReaderRepository()
             self.userProfileRepository =
                 userProfileRepository ?? FixtureUserProfileRepository()
+#endif
         case .live:
             self.browsingHistoryRepository =
                 browsingHistoryRepository

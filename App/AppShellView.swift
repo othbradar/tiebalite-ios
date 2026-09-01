@@ -11,9 +11,9 @@ struct AppShellView: View {
     let authContextProvider: SessionAuthContextProvider
     let onOpenLogin: () -> Void
     let onOpenMedia: (ThreadMediaIntent) -> Void
-
     var body: some View {
         shellContent
+#if UITESTING
         .safeAreaInset(edge: .top, spacing: 0) {
             if let harnessLabel {
                 HStack(spacing: Spacing.small) {
@@ -41,9 +41,9 @@ struct AppShellView: View {
                     .background(SemanticColor.surface)
             }
         }
+#endif
         .background(SemanticColor.background)
     }
-
     @ViewBuilder
     private var shellContent: some View {
 #if DEBUG
@@ -66,7 +66,6 @@ struct AppShellView: View {
         adaptiveShellContent
 #endif
     }
-
     @ViewBuilder
     private var adaptiveShellContent: some View {
             if horizontalSizeClass == .regular {
@@ -99,7 +98,6 @@ struct AppShellView: View {
 @MainActor
 private struct StableInteractionLabShell: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
     @Bindable var navigation: AppNavigationStore
     let imageLoader: any ImageLoading
     let environment: AppEnvironment
@@ -108,7 +106,6 @@ private struct StableInteractionLabShell: View {
     let authContextProvider: SessionAuthContextProvider
     let onOpenLogin: () -> Void
     let onOpenMedia: (ThreadMediaIntent) -> Void
-
     var body: some View {
         NavigationStack(path: settingsPathBinding) {
             AppSettingsRootView(
@@ -166,21 +163,18 @@ private struct IPhoneAppShellView: View {
     let authContextProvider: SessionAuthContextProvider
     let onOpenLogin: () -> Void
     let onOpenMedia: (ThreadMediaIntent) -> Void
-
     var body: some View {
         TabView(selection: selectedTabBinding) {
             rootStack(for: .recommendations)
                 .tag(AppTab.recommendations)
-
             rootStack(for: .followedForums)
                 .tag(AppTab.followedForums)
-
             NavigationStack(path: settingsPathBinding) {
                 AppSettingsRootView(
                     settingsStore: featureStores.settingsStore,
                     historyStore: featureStores.browsingHistoryStore,
                     openDebugGallery: {
-                        navigation.openSettingsRoute(.componentGallery)
+                        openComponentGalleryIfAvailable(using: navigation)
                     },
                     openInteractionLab: {
 #if DEBUG
@@ -219,7 +213,6 @@ private struct IPhoneAppShellView: View {
         }
         .tint(SemanticColor.accent)
     }
-
     private var selectedTabBinding: Binding<AppTab> {
         Binding(
             get: { navigation.state.selectedTab },
@@ -267,9 +260,13 @@ private struct IPhoneAppShellView: View {
     private func rootContent(for root: RootID) -> some View {
         switch root {
         case .recommendations:
-            RecommendationsView(
+            RecommendationsAppRootView(
                 store: featureStores.recommendationsStore,
+                sessionStore: sessionStore,
+                authContextProvider: authContextProvider,
+                accessPolicy: environment.recommendationsAccessPolicy,
                 imageLoader: imageLoader,
+                openLogin: onOpenLogin,
                 onOpenThread: { recommendation in
                     guard let route = AppRouter.threadRoute(
                         for: recommendation
@@ -410,7 +407,7 @@ private struct IPadAppShellView: View {
                     settingsStore: featureStores.settingsStore,
                     historyStore: featureStores.browsingHistoryStore,
                     openDebugGallery: {
-                        navigation.openSettingsRoute(.componentGallery)
+                        openComponentGalleryIfAvailable(using: navigation)
                     },
                     openInteractionLab: {
 #if DEBUG
@@ -490,9 +487,13 @@ private struct IPadAppShellView: View {
         NavigationStack {
             switch root {
             case .recommendations:
-                RecommendationsView(
+                RecommendationsAppRootView(
                     store: featureStores.recommendationsStore,
+                    sessionStore: sessionStore,
+                    authContextProvider: authContextProvider,
+                    accessPolicy: environment.recommendationsAccessPolicy,
                     imageLoader: imageLoader,
+                    openLogin: onOpenLogin,
                     onOpenThread: { recommendation in
                         guard let route = AppRouter.threadRoute(
                             for: recommendation

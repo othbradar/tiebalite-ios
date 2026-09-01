@@ -22,7 +22,21 @@ final class LaunchSmokeTests: XCTestCase {
 
     @MainActor
     func testSignedOutScenario() {
-        assertPlaceholder(for: .sessionSignedOut)
+        let app = UITestHarness.launch(scenario: .sessionSignedOut)
+
+        UITestHarness.requirePresent(.shellRoot, in: app)
+        UITestHarness.requirePresent(.recommendationsRoot, in: app)
+        UITestHarness.requireTabPresent(.recommendations, in: app)
+        UITestHarness.requireTabPresent(.followedForums, in: app)
+        UITestHarness.requireTabPresent(.settings, in: app)
+        UITestHarness.requirePresent(
+            .shellScenario,
+            in: app,
+            expectedLabel: UITestLaunchScenario.sessionSignedOut.safeLabel
+        )
+        UITestHarness.requirePresent(.recommendationsSessionSignedOut, in: app)
+        UITestHarness.requirePresent(.recommendationsSessionLogin, in: app)
+        UITestHarness.requireAbsent(.invalidScenario, in: app)
     }
 
     @MainActor
@@ -48,7 +62,10 @@ final class LaunchSmokeTests: XCTestCase {
     }
 
     @MainActor
-    private func assertPlaceholder(for scenario: UITestLaunchScenario) {
+    @discardableResult
+    private func assertPlaceholder(
+        for scenario: UITestLaunchScenario
+    ) -> XCUIApplication {
         let app = UITestHarness.launch(scenario: scenario)
 
         UITestHarness.requirePresent(.shellRoot, in: app)
@@ -63,5 +80,6 @@ final class LaunchSmokeTests: XCTestCase {
             expectedLabel: scenario.safeLabel
         )
         UITestHarness.requireAbsent(.invalidScenario, in: app)
+        return app
     }
 }

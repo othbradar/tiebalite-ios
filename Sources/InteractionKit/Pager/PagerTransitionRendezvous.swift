@@ -24,14 +24,6 @@ private struct PagerResolvedOutcome {
     let reason: PagerTransitionRendezvousReason
 }
 
-private struct PagerResolvedInputDiagnostic<PageID>
-where PageID: Hashable & Sendable {
-    let context: PagerTransitionCallbackContext<PageID>
-    let trace: PagerGestureTrace?
-    let resolution: PagerCallbackResolution
-    let evidence: PagerTransitionCallbackEvidence<PageID>
-}
-
 extension PagerContainer.Coordinator {
     func beginTransitionRendezvous(
         transition: PagerTransition<PageID>,
@@ -77,7 +69,9 @@ extension PagerContainer.Coordinator {
             pagerTerminal: terminal,
             ownershipEvidence: ownershipEvidence
         )
+#if DEBUG
         lastIgnoredCallbackReason = nil
+#endif
         return true
     }
 
@@ -410,7 +404,9 @@ extension PagerContainer.Coordinator {
         rendezvous.reason = reason
         rendezvous.didPublish = false
         activeRendezvous = nil
+#if DEBUG
         lastResolvedRendezvous = rendezvous
+#endif
         clearResolvedInputTrace()
     }
 
@@ -434,28 +430,9 @@ extension PagerContainer.Coordinator {
         }
         rendezvous.didPublish = true
         activeRendezvous = nil
+#if DEBUG
         lastResolvedRendezvous = rendezvous
-        let diagnostic = PagerResolvedInputDiagnostic(
-            context: rendezvous.context,
-            trace: rendezvous.pagerTerminal?.trace,
-            resolution: join.resolution,
-            evidence: join.evidence
-        )
-        finishResolvedPresentation(
-            rendezvous: rendezvous,
-            completed: completed,
-            in: pageViewController,
-            diagnostic: diagnostic
-        )
-        return true
-    }
-
-    private func finishResolvedPresentation(
-        rendezvous: PagerTransitionRendezvous<PageID>,
-        completed: Bool,
-        in pageViewController: UIPageViewController,
-        diagnostic: PagerResolvedInputDiagnostic<PageID>?
-    ) {
+#endif
         invalidateDeferredSelectionCommit()
         if parent.selection != state.committedID {
             parent.selection = state.committedID
@@ -466,19 +443,21 @@ extension PagerContainer.Coordinator {
         )
         refreshCachedContent()
         trimControllerCache()
+#if DEBUG
         if parent.inputDiagnosticsEnabled,
-           let diagnostic,
-           let trace = diagnostic.trace {
+           let trace = rendezvous.pagerTerminal?.trace {
             emitInputDiagnostic(
-                context: diagnostic.context,
+                context: rendezvous.context,
                 trace: trace,
-                resolution: diagnostic.resolution,
-                evidence: diagnostic.evidence,
+                resolution: join.resolution,
+                evidence: join.evidence,
                 finalVisibleID: (pageViewController.viewControllers?.first
                     as? PagerHostingController<PageID, PageContent>)?.pageID
             )
         }
+#endif
         clearResolvedInputTrace()
+#if DEBUG
         parent.onEvent(
             .resolved(
                 snapshot: snapshot(),
@@ -486,5 +465,9 @@ extension PagerContainer.Coordinator {
             )
         )
         scheduleSettledSnapshot()
+#else
+        parent.onEvent(.resolved(completed: completed))
+#endif
+        return true
     }
 }

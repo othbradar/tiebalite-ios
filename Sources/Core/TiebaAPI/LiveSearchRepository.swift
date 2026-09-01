@@ -64,7 +64,7 @@ struct LiveSearchRepository: SearchRepository {
         EndpointExecutor(
             client: client,
             requestBuilder: EndpointRequestBuilder(
-                authorizer: FixtureOnlyRequestAuthorizer()
+                authorizer: AnonymousRequestAuthorizer()
             )
         )
     }

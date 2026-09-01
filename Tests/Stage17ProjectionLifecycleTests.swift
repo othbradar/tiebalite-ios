@@ -37,6 +37,56 @@ struct Stage17ProjectionLifecycleTests {
     }
 
     @Test
+    func scopedRecommendationRehostKeepsOneRequest() async throws {
+        let repository = Stage17ControlledRecRepository()
+        let store = RecommendationsStore(repository: repository)
+        let authContextProvider = SessionAuthContextProvider()
+        let credential = try #require(
+            SessionCredential(
+                bduss: "fx-stage19b-b",
+                stoken: "fx-stage19b-s"
+            )
+        )
+        authContextProvider.install(credential)
+        let sessionStore = SessionStore(
+            credentialStore: FakeSessionCredentialStore(
+                initialCredential: credential
+            ),
+            authContextProvider: authContextProvider,
+            websiteDataCleaner: LoginWebSession(loginURL: nil),
+            initialState: .signedIn,
+            restoresOnLaunch: false
+        )
+        let visibility = Stage17Visibility()
+        let host = UIHostingController(
+            rootView: Stage19BScopedRecommendationHarness(
+                visibility: visibility,
+                store: store,
+                sessionStore: sessionStore,
+                authContextProvider: authContextProvider
+            )
+        )
+        let window = Stage17ProjectionSupport.makeWindow(host: host)
+        try await repository.waitForCallCount(1)
+
+        visibility.isPresented = false
+        window.layoutIfNeeded()
+        await Stage17ProjectionSupport.settleChanges()
+        visibility.isPresented = true
+        window.layoutIfNeeded()
+        await Stage17ProjectionSupport.settleChanges()
+
+        #expect(await repository.callCount() == 1)
+        try await repository.succeedLatest()
+        await Stage17ProjectionSupport.waitUntil {
+            store.state.items != nil
+        }
+        #expect(store.state.items?.isEmpty == false)
+        visibility.isPresented = false
+        window.rootViewController = nil
+    }
+
+    @Test
     func followedProjectionReplacementKeepsOneRequest() async throws {
         let repository = Stage17ControlledFollowedRepository()
         let store = FollowedForumsStore(repository: repository)

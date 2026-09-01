@@ -123,7 +123,7 @@ struct EndpointRequestBuilderTests {
             ]
         )
         let builder = EndpointRequestBuilder(
-            authorizer: FixtureOnlyRequestAuthorizer()
+            authorizer: AnonymousRequestAuthorizer()
         )
 
         let request = try await builder.makeRequest(
@@ -157,7 +157,7 @@ struct EndpointRequestBuilderTests {
             allowedMIMETypes: ["application/x-protobuf"]
         )
         let builder = EndpointRequestBuilder(
-            authorizer: FixtureOnlyRequestAuthorizer()
+            authorizer: AnonymousRequestAuthorizer()
         )
         let body = EndpointRequestBody.multipartBinary(
             boundary: "Phase07-Boundary",
@@ -228,7 +228,7 @@ struct EndpointRequestBuilderTests {
         let activeDescriptor = try makeDescriptor(authentication: .active)
         let candidateDescriptor = try makeDescriptor(authentication: .candidate)
         let builder = EndpointRequestBuilder(
-            authorizer: FixtureOnlyRequestAuthorizer()
+            authorizer: AnonymousRequestAuthorizer()
         )
         let active = AuthContext.active(
             ProtectedDataLease(
@@ -485,7 +485,7 @@ struct EndpointPipelineTests {
         let executor = EndpointExecutor(
             client: client,
             requestBuilder: EndpointRequestBuilder(
-                authorizer: FixtureOnlyRequestAuthorizer()
+                authorizer: AnonymousRequestAuthorizer()
             )
         )
         let pipeline = EndpointPipeline<Data, Int>(
@@ -545,7 +545,7 @@ struct EndpointPipelineTests {
         let transportExecutor = EndpointExecutor(
             client: transportClient,
             requestBuilder: EndpointRequestBuilder(
-                authorizer: FixtureOnlyRequestAuthorizer()
+                authorizer: AnonymousRequestAuthorizer()
             )
         )
         await #expect(

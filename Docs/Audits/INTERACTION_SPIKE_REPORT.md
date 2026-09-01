@@ -30,10 +30,8 @@ Simulator 的 iPhone/iPad 自动化、完整质量门禁和已修复的可复现
 - macOS 26.6；Xcode 26.6（17F113）；Swift 6.3.3；Git 2.50.1。
 - XcodeGen 2.45.4；SwiftLint 0.65.0；xcbeautify 3.2.1。
 - 可用 runtime：iOS 26.5 Simulator。
-- iPhone：iPhone 17 Pro，
-  `70D93841-1FEB-445A-8FAD-B1C29B981D5D`。
-- iPad：
-  `EE89FBE1-9DCA-49DC-8432-8A9C856A28FF`。
+- iPhone：iPhone 17 Pro Simulator。
+- iPad：iPad Pro 13-inch (M5) Simulator。
 - Android reference 始终只读、clean，锁定
   `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 - 阶段开始前完整 `make quality` 通过：
@@ -347,8 +345,7 @@ iOS 18/VoiceOver/真实 split 等明确阻塞而保持 Partial；该标准后来
 | iOS 18.x | 0 | runtime 不存在，不得声称验证 |
 
 `xcrun simctl list runtimes -j` 只返回 iOS 26.5（23F77）。固定设备是
-iPhone 17 Pro `70D93841-1FEB-445A-8FAD-B1C29B981D5D` 与 iPad Pro
-13-inch (M5) `EE89FBE1-9DCA-49DC-8432-8A9C856A28FF`。Computer Use
+iPhone 17 Pro 与 iPad Pro 13-inch (M5) Simulator。Computer Use
 失败截图：
 `Artifacts/TestResults/phase06b-media-rotation-chrome-clipped.png`。
 
@@ -415,9 +412,7 @@ iPhone 17 Pro `70D93841-1FEB-445A-8FAD-B1C29B981D5D` 与 iPad Pro
 
 ### 修复前复现与可观测性边界
 
-- 设备：iPhone 17 Pro
-  `70D93841-1FEB-445A-8FAD-B1C29B981D5D`，iOS 26.5（23F77）
-  Simulator。
+- 设备：iPhone 17 Pro、iOS 26.5（23F77）Simulator。
 - 固定步骤：打开 multiple fixture，在 `large` 页双击到 2.50，水平
   pan，再执行竖→横旋转。修复前截图确认 `Current: large`、
   `Position: 2/4`、`Zoom: 2.50`、`Boundary: interior`；旧 owner 文本

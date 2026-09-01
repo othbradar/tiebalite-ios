@@ -39,7 +39,7 @@ struct Stage11PBPageProtocolTests {
             host: "fixture.invalid"
         )
         let request = try await EndpointRequestBuilder(
-            authorizer: FixtureOnlyRequestAuthorizer()
+            authorizer: AnonymousRequestAuthorizer()
         ).makeRequest(
             endpoint: descriptor,
             authentication: .anonymous,

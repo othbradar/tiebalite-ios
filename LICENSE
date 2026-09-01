@@ -1,0 +1,15 @@
+TiebaLite iOS — No License Grant
+
+No project-wide license has been selected or granted for the original TiebaLite
+iOS source code in this repository. Source availability does not by itself grant
+permission to use, copy, modify, publish, sublicense, or distribute that code.
+
+Third-party dependencies, the Android reference submodule, generated Protocol
+Buffer sources, and other referenced materials remain subject to their own
+licenses, notices, provenance, service terms, and distribution restrictions.
+See THIRD_PARTY_NOTICES.md and Docs/Audits/SOURCE_AND_LICENSE_NOTES.md.
+
+This repository is currently evaluated only as a local Beta Release Candidate.
+App Store, trademark, public distribution, and commercial distribution rights
+have not been confirmed. A project owner must select an appropriate license and
+resolve the recorded third-party provenance before any public distribution.

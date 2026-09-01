@@ -33,6 +33,7 @@ struct Stage17AdaptiveLayoutTests {
         )
         let navigation = AppNavigationStore(initialState: state)
         let registry = AppFeatureStoreRegistry(
+            fixtureDefaults: (),
             followedForumsStore: FollowedForumsStore(
                 repository: FixtureFollowedForumsRepository()
             ),

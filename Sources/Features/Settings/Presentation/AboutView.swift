@@ -11,7 +11,7 @@ struct AboutView: View {
                     message: "版本 \(AppVersionInfo.displayVersion)",
                     systemImage: "app"
                 )
-                Button("查看开源许可", systemImage: "doc.text") {
+                Button("查看许可与来源", systemImage: "doc.text") {
                     openLicenses()
                 }
                 .buttonStyle(.bordered)
@@ -31,7 +31,10 @@ struct OpenSourceLicensesView: View {
         List {
             Section("Swift Protobuf") {
                 Text("版本 1.38.1")
-                Text("Apache License 2.0")
+                Text("Apache License 2.0 + Runtime Library Exception")
+            }
+            Section("本项目") {
+                Text("本地 Beta RC；公开、App Store 与商业分发权利尚未确认。")
             }
             Section("参考项目") {
                 Text("TiebaLite Android reference")
@@ -41,7 +44,7 @@ struct OpenSourceLicensesView: View {
         }
         .scrollContentBackground(.hidden)
         .background(SemanticColor.background)
-        .navigationTitle("开源许可")
+        .navigationTitle("许可与来源")
         .accessibilityIdentifier("settings.licenses")
     }
 }

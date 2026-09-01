@@ -132,6 +132,8 @@ enum UITestElementID: String, CaseIterable {
     case recommendationsLastPageThreadScreen = "thread-reader.screen.t100012"
     case recommendationsSelectedRow = "recommendations.row.t100003"
     case recommendationsRoot = "app.root.recommendations"
+    case recommendationsSessionLogin = "recommendations.session.login"
+    case recommendationsSessionSignedOut = "recommendations.session.signed-out"
     case routeForum = "app.route.forum"
     case searchField = "search.field"
     case searchForumResult = "search.forum.13001"
@@ -575,7 +577,6 @@ extension UITestHarness {
             activity.add(summary)
         }
     }
-
     @MainActor
     private static func safeHierarchySummary(
         app: XCUIApplication,

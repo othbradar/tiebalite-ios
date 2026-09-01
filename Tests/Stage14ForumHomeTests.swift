@@ -130,7 +130,7 @@ struct Stage14ForumHomeTests {
         #expect(wire.data.scrW == 0)
 
         let request = try await EndpointRequestBuilder(
-            authorizer: FixtureOnlyRequestAuthorizer()
+            authorizer: AnonymousRequestAuthorizer()
         ).makeRequest(
             endpoint: endpoint,
             authentication: .anonymous,

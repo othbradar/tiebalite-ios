@@ -12,8 +12,8 @@ derived_data_path="${DERIVED_DATA_PATH:-.build/DerivedData}"
 release_intermediates="$derived_data_path/Build/Intermediates.noindex/TiebaLite.build/Release-iphonesimulator/TiebaLite.build"
 release_app="$derived_data_path/Build/Products/Release-iphonesimulator/TiebaLite.app"
 release_binary="$release_app/TiebaLite"
-forbidden_pattern='/(TestSupport|Tests|UITests)/|/App/Debug|/Sources/InteractionKit/InteractionLab/|LaunchScenario|Harness|FixtureLoader'
-symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY|INTERACTION_LAB|THREAD_CONTENT_RENDERER_LAB)_CANARY|app\.empty-shell|network\.offline|renderer\.thread-content|settings\.debug\.runtime-mode|LaunchScenario|Debug(ComponentGallery|InteractionLab|ProfileProbe|SwiftUITabPager|ZoomImage|ThreadContentRenderer)|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation|Renderer)'
+forbidden_pattern='/(TestSupport|Tests|UITests)/|/App/Debug|/Sources/InteractionKit/InteractionLab/|LaunchScenario|Harness|FixtureLoader|/(FixturePlaceholderViews|FixtureFollowedForumsRepository|FixtureForumHomeRepository|FixtureReadingImageLoader|FixtureReadingRepositories|FixtureSearchRepository|FixtureThreadReaderPages)\.swift$'
+symbol_pattern='TIEBALITE_(TEST_SUPPORT|DEBUG_GALLERY|INTERACTION_LAB|THREAD_CONTENT_RENDERER_LAB)_CANARY|app\.(empty-shell|fixture\.)|network\.offline|renderer\.thread-content|settings\.debug\.runtime-mode|stage(14p-long-forum|15-long-thread)-lab|LaunchScenario|Fixture(RouteView|FollowedForumsRepository|ForumHomeRepository|RecommendationRepository|SearchRepository|ThreadReaderRepository|UserProfileRepository|ReadingImageLoader|ReadingCatalog)|Debug(ComponentGallery|InteractionLab|ProfileProbe|SwiftUITabPager|ZoomImage|ThreadContentRenderer|PagerControllerSequenceKey)|debugPagerControllerSequence|Pager(Geometry|Container|Input|ResolvedInput)(Snapshot|Diagnostic)|diagnosticSnapshot|geometrySnapshot|orphanChildControllerCount|on(Settled|Transition)Snapshot|Harness(Mock|Controlled|Fixture|Recording|Sequence|InMemory|Latest|Continuation|Renderer)'
 failures=0
 file_list_count=0
 
@@ -98,6 +98,9 @@ else
   if rg -n "$symbol_pattern" "$strings_output" >/dev/null; then
     fail "Release binary contains a test-support string or symbol canary."
   fi
+  if rg -n '/Users/|/private/var/folders/' "$strings_output" >/dev/null; then
+    fail "Release binary contains a local absolute path."
+  fi
   if ! rg -F 'AppCompositionRoot' "$strings_output" >/dev/null; then
     fail "Release binary lacks the Stage 04 production-composition positive control."
   fi
@@ -128,6 +131,12 @@ if [[ -d "$release_app" ]]; then
   fi
   if [[ -d "$release_app/PlugIns" ]]; then
     fail "Release application bundle unexpectedly contains test plug-ins."
+  fi
+  if [[ ! -f "$release_app/Assets.car" ]]; then
+    fail "Release application bundle is missing compiled assets."
+  fi
+  if [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName' "$release_app/Info.plist" 2>/dev/null || true)" != "AppIcon" ]]; then
+    fail "Release application bundle is missing the AppIcon declaration."
   fi
 else
   fail "Release application bundle is missing."

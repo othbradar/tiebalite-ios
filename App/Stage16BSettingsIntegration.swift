@@ -130,17 +130,9 @@ struct SettingsRouteDestinationView: View {
                 openRoute: navigation.pushSettingsContent,
                 dependencies: routeDependencies
             )
+#if DEBUG
         case .componentGallery:
-#if DEBUG
             DebugComponentGalleryView()
-#else
-            EmptyStateView(
-                title: "设置与账户",
-                message: "调试组件库仅在 Debug 构建中可用。",
-                systemImage: "gearshape"
-            )
-#endif
-#if DEBUG
         case .interactionLab:
             DebugInteractionLabView()
         case .threadContentRendererLab:

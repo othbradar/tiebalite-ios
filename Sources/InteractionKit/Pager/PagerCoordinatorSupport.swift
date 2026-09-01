@@ -1,6 +1,7 @@
 import UIKit
 
 extension PagerContainer.Coordinator {
+#if DEBUG
     var cachedControllerCount: Int {
         controllers.count
     }
@@ -8,6 +9,7 @@ extension PagerContainer.Coordinator {
     var isInstalled: Bool {
         installedController != nil
     }
+#endif
 
     func adjacentController(
         to viewController: UIViewController,
@@ -46,7 +48,9 @@ extension PagerContainer.Coordinator {
         let instanceSequence = PagerHostSequenceSource.next()
         let generation = parent.contentGeneration?(pageID) ?? 0
         let pageContent = parent.content(pageID)
+#if DEBUG
         contentBuildCount += 1
+#endif
         let controller = PagerHostingController(
             pageID: pageID,
             instanceSequence: instanceSequence,
@@ -58,7 +62,9 @@ extension PagerContainer.Coordinator {
         )
         controller.view.backgroundColor = parent.backgroundColor
         controllers[pageID] = controller
+#if DEBUG
         createdControllerCount += 1
+#endif
         return controller
     }
 
@@ -73,7 +79,9 @@ extension PagerContainer.Coordinator {
                 continue
             }
             let pageContent = parent.content(pageID)
+#if DEBUG
             contentBuildCount += 1
+#endif
             controller.update(
                 content: pageContent,
                 generation: generation ?? controller.contentGeneration
@@ -125,9 +133,13 @@ extension PagerContainer.Coordinator {
 
     func trimControllerCache() {
         let liveIDs = admittedControllerIDs()
+#if DEBUG
         let previousCount = controllers.count
+#endif
         controllers = controllers.filter { liveIDs.contains($0.key) }
+#if DEBUG
         evictedControllerCount += previousCount - controllers.count
+#endif
     }
 
     func install(on controller: UIPageViewController) {
@@ -136,9 +148,13 @@ extension PagerContainer.Coordinator {
             invalidateActiveRendezvousWithoutPublishing(
                 reason: .transitionInvalidated
             )
+#if DEBUG
             invalidateSettledSnapshot()
+#endif
             detach(from: installedController, clearChildren: true)
+#if DEBUG
             lastEmittedSettledSnapshot = nil
+#endif
         }
         if installedController !== controller {
             controllerInstallationGeneration &+= 1
@@ -169,11 +185,15 @@ extension PagerContainer.Coordinator {
         _ = recordExternalSelectionChangeIfNeeded()
 
         guard state.transition == nil else {
+#if DEBUG
             emitTransitionSnapshotIfChanged()
+#endif
             return
         }
 
+#if DEBUG
         lastEmittedTransitionSnapshot = nil
+#endif
 
         if parent.selection != state.committedID,
            parent.selection.map(parent.pageIDs.contains) == true {
@@ -189,9 +209,12 @@ extension PagerContainer.Coordinator {
             animated: !parent.reduceMotion
         )
         trimControllerCache()
+#if DEBUG
         scheduleSettledSnapshot()
+#endif
     }
 
+#if DEBUG
     func emitTransitionSnapshotIfChanged() {
         guard let onTransitionSnapshot = parent.onTransitionSnapshot else {
             return
@@ -203,19 +226,24 @@ extension PagerContainer.Coordinator {
         lastEmittedTransitionSnapshot = transitionSnapshot
         onTransitionSnapshot(transitionSnapshot)
     }
+#endif
 
     func dismantle(_ controller: UIPageViewController) {
         guard controller === installedController else {
             return
         }
         invalidateDeferredSelectionCommit()
+#if DEBUG
         invalidateSettledSnapshot()
+#endif
         invalidateActiveRendezvousWithoutPublishing(
             reason: .transitionInvalidated
         )
         detach(from: controller, clearChildren: true)
         controllers.removeAll(keepingCapacity: false)
+#if DEBUG
         lastEmittedTransitionSnapshot = nil
+#endif
         installedController = nil
     }
 
@@ -224,7 +252,9 @@ extension PagerContainer.Coordinator {
         clearChildren: Bool
     ) {
         uninstallPagerPanObserver()
+#if DEBUG
         uninstallPagerContentOffsetObserver()
+#endif
         stopObservingMediaOwnership()
         installedMediaGestureOwnership?.uninstall(from: controller.view)
         installedMediaGestureOwnership = nil
@@ -280,6 +310,7 @@ extension PagerContainer.Coordinator {
         selectionCommitTask = nil
     }
 
+#if DEBUG
     func scheduleSettledSnapshot() {
         guard parent.onSettledSnapshot != nil,
               let expectedController = installedController else {
@@ -318,6 +349,7 @@ extension PagerContainer.Coordinator {
         settledSnapshotTask?.cancel()
         settledSnapshotTask = nil
     }
+#endif
 
     func configureInternalScrollViews(
         in controller: UIPageViewController
@@ -335,7 +367,9 @@ extension PagerContainer.Coordinator {
             scrollView.backgroundColor = parent.backgroundColor
             scrollView.isScrollEnabled = parent.pagingEnabled
             installPagerPanObserver(scrollView.panGestureRecognizer)
+#if DEBUG
             installPagerContentOffsetObserver(scrollView)
+#endif
             parent.mediaGestureOwnership?.install(
                 on: controller.view,
                 pagerPanRecognizer: scrollView.panGestureRecognizer,

@@ -1,6 +1,7 @@
 # TASK_STATE
 
-- 当前阶段：19A（Production 图片加载链路，已完成，停止于 19B 前）
+- 当前阶段：19B（本地 Beta Release Candidate 已完成，停止）
+- `PROJECT_STATUS = BETA_RELEASE_CANDIDATE`
 - 状态：`PHASE_16A_SEARCH = COMPLETE`
 - `PHASE_16 = COMPLETE`
 - `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
@@ -9,9 +10,10 @@
 - `PHASE_18 = COMPLETE`
 - `PHASE_18_ACCESSIBILITY_PERFORMANCE_RESILIENCE = COMPLETE`
 - `PHASE_18_QUALITY_GATE = PASSED_FULL_QUALITY`
-- `PHASE_19 = IN_PROGRESS`
+- `PHASE_19 = COMPLETE`
 - `PHASE_19A_PRODUCTION_IMAGE_PIPELINE = COMPLETE`
-- `PHASE_19B_RELEASE_CANDIDATE = NOT_STARTED`
+- `PHASE_19B_RELEASE_CANDIDATE = COMPLETE`
+- `PHASE_19B_QUALITY_GATE = PASSED_BETA_WITH_ISOLATED_XCUITEST_TRANSIENT`
 - `BROWSING_HISTORY = LOCAL_JSON_BETA_READY`
 - `APP_SETTINGS = USERDEFAULTS_RUNTIME_UI_VERIFIED`
 - `USER_PROFILE = ANONYMOUS_LIVE_PROTOCOL_RUNTIME_VERIFIED`
@@ -51,9 +53,10 @@
 - `PHASE_15 = COMPLETE`
 - `PHASE_14 = COMPLETE`
 - `SESSION_SIGNED_IN_SEMANTICS = WEB_COMPLETION_CANDIDATE`
-- `RESTORE_VALIDATION = STRUCTURAL_KEYCHAIN_ONLY`
-- `RESTORE_VALIDATION` 仅描述服务器端有效性仍未验证，不否定本阶段已复验的
-  Keychain envelope → active lease 本地恢复链。
+- `RESTORE_VALIDATION = STRUCTURAL_KEYCHAIN_ENVELOPE_VALIDATED`
+- `RESTORED_SESSION_SERVER_ACCEPTANCE = RUNTIME_REVERIFIED_STAGE_15_5_AND_19B`
+- 恢复时的本地判定只验证 Keychain envelope 结构；恢复出 active lease 后，
+  阶段 15.5/19B 又以服务器成功响应独立复验了该会话的当时可用性。
 - 当前分支：`main`
 - 阶段 07 提交：
   `4b80ed455051b4a7f57aceb3d740d8952cdc371b`
@@ -90,9 +93,64 @@
   `PHASE_17_QUALITY_GATE = PASSED_STAGE_17F_REQUIRED_GATES`
 - 阶段 18：`PHASE_18_ACCESSIBILITY_PERFORMANCE_RESILIENCE = COMPLETE`；
   `PHASE_18_QUALITY_GATE = PASSED_FULL_QUALITY`
-- 阶段 19：`IN_PROGRESS`；
+- 阶段 19：`COMPLETE`；
   `PHASE_19A_PRODUCTION_IMAGE_PIPELINE = COMPLETE`；
-  `PHASE_19B_RELEASE_CANDIDATE = NOT_STARTED`
+  `PHASE_19B_RELEASE_CANDIDATE = COMPLETE`
+
+## 阶段 19B 完成结果与停止点
+
+阶段 19B 从提交 `55baab43dae829ef7e0000f929ab4b804403ac52`
+开始，只做最终功能一致性、Release 隔离、分发权利边界说明和可重建性收尾：
+
+- iPhone 保留现有 Keychain 会话的 Live 主链路通过：推荐非空、
+  关注吧 18 个、真实吧首页/分页、长帖至少 55 楼、三张不同 Live
+  图片 Viewer/缩放/旋转/返回、搜索失败后重试、历史/设置/资料和前后台。
+  未执行 logout，未读取或记录凭据。
+- iPad 确定性 Fixture/UI 覆盖推荐、吧首页、帖子、MediaViewer、搜索、
+  历史/设置/资料和 regular/compact/旋转；本轮没有向 iPad Simulator
+  复制真实 Keychain，因此不声称 iPad Live 账号链路。
+- 阶段 18 同一生产承载上的 1000 帖/1000 楼和 Viewer 连续开关 10 次
+  运行证据继续有效；本阶段 Unit 重验 1000/1000 稳定 ID、增量 snapshot、
+  有界 cell 与复用污染隔离，最终 UI interaction 重验 Viewer 循环。
+- 干净临时 checkout 未复制缓存、Keychain 或私有 `project.env`，通过
+  doctor、generate、Debug build、Unit、Release build 和 release-isolation。公网
+  GitHub submodule 首次初始化因 empty reply/超时失败，改用同一锁定
+  SHA 的本地 clean Git 源完成；全新机器的首次依赖下载仍取决于外部网络。
+- Release 默认仍为 Live Repository + URLSession + Keychain +
+  `ProductionImageLoader`；已排除 Debug Probe/Lab、LaunchScenario/Harness/
+  FakeSession/Mock HTTP、纯 Fixture Repository、1000 项实验入口、测试插件和
+  Artifacts，并包含 AppIcon。
+- 干净安装未登录首页的稳定 P1 已以红灯 UI 回归复现，根因为
+  生产推荐需求 active AuthContext 但 App 组合边界未投影会话状态。
+  修复后 UI 回归和网络隔离均通过，没有放宽 fail-closed。
+- 会话 A →退出/过期 →会话 B 会复用旧推荐的稳定 P1 已关闭：
+  Store 现按 active lease/Fixture/unavailable 作用域取消、递增 generation 并清理
+  内容/分页/锚点，两条直接回归通过。
+- Release 中 Pager 快照类型、debug environment key、观察者/计数器和
+  input diagnostic 和 snapshot callback 的 P1 已关闭；生产手势/
+  rendezvous/页面身份策略未改。
+- 同一 active lease 下 iPad 投影重挂会误取消推荐请求的 P1 已以
+  真实 App 包装层回归复现并关闭；重挂保持单请求，lease 替换仍主动
+  取消旧 generation。
+- 同一会话返回推荐列表的稳定跳位 P1 已关闭：两条用例在修复前
+  分别独立 3/3 失败，根因是同 scope 重现时短暂销毁列表；删除该次
+  多余置空后分别 3/3 通过，真正会话替换仍清理旧数据和 generation。
+- 最终 Unit 为 379 个逻辑测试/403 次执行；iPhone smoke 28/28、
+  interaction 15/15；iPad smoke 12/12、interaction 2/2；Release isolation
+  通过。最终 `make quality` 聚合运行在 iPad smoke 的第二次
+  `swipeUp` 遇到一次 XCTest `Synthesize event` 超时而非 0 退出；
+  原用例随后独立 3/3、人工 full → narrow → full 正常、完整
+  iPad smoke 12/12，其他套件全绿。按阶段 19B 明确的非稳定
+  XCUITest 例外记为 `PASSED_BETA_WITH_ISOLATED_XCUITEST_TRANSIENT`，
+  没有为此修改产品 UI，也不声称聚合命令输出了
+  `Quality gate completed.`。
+- 未发现剩余稳定可复现 P0/P1。`PROJECT_STATUS` 仅为
+  `BETA_RELEASE_CANDIDATE`，不声称 `APP_STORE_READY`、
+  `PRODUCTION_CERTIFIED` 或 `COMMERCIAL_DISTRIBUTION_CLEARED`；本任务后停止，
+  没有开始新阶段。
+
+完整证据与 Known Limitations 见
+`Docs/Audits/PHASE19B_BETA_RELEASE_CANDIDATE.md`。
 
 ## 阶段 19A 完成结果与停止点
 

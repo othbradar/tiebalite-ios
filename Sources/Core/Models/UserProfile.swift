@@ -93,6 +93,7 @@ enum UserProfileRepositoryError: Error, Equatable, Sendable {
     case empty
 }
 
+#if DEBUG
 struct FixtureUserProfileRepository: UserProfileRepository {
     func loadProfile(route: UserProfileRoute) async throws -> UserProfile {
         try Task.checkCancellation()
@@ -111,3 +112,4 @@ struct FixtureUserProfileRepository: UserProfileRepository {
         )
     }
 }
+#endif

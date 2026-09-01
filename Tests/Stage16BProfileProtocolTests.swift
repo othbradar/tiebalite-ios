@@ -61,7 +61,7 @@ struct Stage16BProfileProtocolTests {
         #expect(!request.data.common.hasStoken)
 
         let httpRequest = try await EndpointRequestBuilder(
-            authorizer: FixtureOnlyRequestAuthorizer()
+            authorizer: AnonymousRequestAuthorizer()
         ).makeRequest(
             endpoint: descriptor,
             authentication: .anonymous,

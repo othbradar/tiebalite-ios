@@ -4,10 +4,28 @@ import UIKit
 enum PagerContainerEvent<PageID>: Equatable, Sendable
 where PageID: Hashable & Sendable {
     case began(PagerTransition<PageID>)
+#if DEBUG
     case resolved(
         snapshot: PagerContainerSnapshot<PageID>,
         completed: Bool
     )
+#else
+    case resolved(completed: Bool)
+#endif
+
+    var completedResolution: Bool? {
+        switch self {
+        case .began:
+            nil
+#if DEBUG
+        case let .resolved(_, completed):
+            completed
+#else
+        case let .resolved(completed):
+            completed
+#endif
+        }
+    }
 }
 
 @MainActor
@@ -21,13 +39,18 @@ where PageID: Hashable & Sendable, PageContent: View {
     let mediaGestureOwnership: MediaGestureOwnershipController<PageID>?
     @Binding var externalSelectionGeneration: UInt64
     let contentGeneration: ((PageID) -> UInt64)?
+#if DEBUG
     let inputDiagnosticsEnabled: Bool
+#endif
     let onEvent: (PagerContainerEvent<PageID>) -> Void
+#if DEBUG
     let onSettledSnapshot: ((PagerContainerSnapshot<PageID>) -> Void)?
     let onTransitionSnapshot: ((PagerContainerSnapshot<PageID>) -> Void)?
     let onInputDiagnostic: (PagerInputDiagnostic<PageID>) -> Void
+#endif
     @ViewBuilder let content: (PageID) -> PageContent
 
+#if DEBUG
     init(
         pageIDs: [PageID],
         selection: Binding<PageID?>,
@@ -65,6 +88,31 @@ where PageID: Hashable & Sendable, PageContent: View {
         self.onInputDiagnostic = onInputDiagnostic
         self.content = content
     }
+#else
+    init(
+        pageIDs: [PageID],
+        selection: Binding<PageID?>,
+        backgroundColor: UIColor,
+        reduceMotion: Bool,
+        pagingEnabled: Bool = true,
+        mediaGestureOwnership: MediaGestureOwnershipController<PageID>? = nil,
+        externalSelectionGeneration: Binding<UInt64> = .constant(0),
+        contentGeneration: ((PageID) -> UInt64)? = nil,
+        onEvent: @escaping (PagerContainerEvent<PageID>) -> Void = { _ in },
+        @ViewBuilder content: @escaping (PageID) -> PageContent
+    ) {
+        self.pageIDs = pageIDs
+        _selection = selection
+        self.backgroundColor = backgroundColor
+        self.reduceMotion = reduceMotion
+        self.pagingEnabled = pagingEnabled
+        self.mediaGestureOwnership = mediaGestureOwnership
+        _externalSelectionGeneration = externalSelectionGeneration
+        self.contentGeneration = contentGeneration
+        self.onEvent = onEvent
+        self.content = content
+    }
+#endif
 
     @MainActor
     final class Coordinator:
@@ -81,19 +129,25 @@ where PageID: Hashable & Sendable, PageContent: View {
         weak var installedMediaGestureOwnership:
             MediaGestureOwnershipController<PageID>?
         weak var observedPagerPanRecognizer: UIPanGestureRecognizer?
+#if DEBUG
         weak var observedPagerScrollView: UIScrollView?
         var pagerContentOffsetObservation: NSKeyValueObservation?
+#endif
         var selectionCommitTask: Task<Void, Never>?
         var selectionCommitGeneration: UInt64 = 0
+#if DEBUG
         var settledSnapshotTask: Task<Void, Never>?
         var settledSnapshotGeneration: UInt64 = 0
         var lastEmittedSettledSnapshot: PagerContainerSnapshot<PageID>?
         var lastEmittedTransitionSnapshot: PagerContainerSnapshot<PageID>?
+#endif
         var mediaOwnershipObserver:
             MediaGestureOwnershipRendezvousObserver<PageID>?
         var activeRendezvous: PagerTransitionRendezvous<PageID>?
+#if DEBUG
         var lastResolvedRendezvous: PagerTransitionRendezvous<PageID>?
         var lastIgnoredCallbackReason: PagerCallbackIgnoredReason?
+#endif
         var controllerInstallationGeneration: UInt64 = 0
         var nextInputSequence: UInt64 = 1
         var activeInputSequence: UInt64?
@@ -109,11 +163,13 @@ where PageID: Hashable & Sendable, PageContent: View {
             activeRendezvous?.delegateEvidence
         }
         var inputDirectionSign = 0.0
+#if DEBUG
         var rejectedOverlappingTransitionCount = 0
         var maximumActiveCallbackDepth = 0
         var createdControllerCount = 0
         var contentBuildCount = 0
         var evictedControllerCount = 0
+#endif
         let coordinatorSequence: UInt64
 
         init(parent: PagerContainer) {
@@ -181,7 +237,9 @@ where PageID: Hashable & Sendable, PageContent: View {
             }
             guard pendingCallbackContext == nil,
                   state.transition == nil else {
+#if DEBUG
                 rejectedOverlappingTransitionCount += 1
+#endif
                 return
             }
             guard let source = pageViewController.viewControllers?.first
@@ -195,7 +253,9 @@ where PageID: Hashable & Sendable, PageContent: View {
                   transition.token == token else {
                 return
             }
+#if DEBUG
             invalidateSettledSnapshot()
+#endif
             beginInputTraceIfNeeded()
             guard let inputSequence = activeInputSequence else {
                 _ = state.resolveTransition(
@@ -219,14 +279,18 @@ where PageID: Hashable & Sendable, PageContent: View {
                 clearResolvedInputTrace()
                 return
             }
+#if DEBUG
             maximumActiveCallbackDepth = max(
                 maximumActiveCallbackDepth,
                 pendingCallbackContext == nil ? 0 : 1
             )
             lastEmittedTransitionSnapshot = snapshot()
+#endif
             parent.onEvent(.began(transition))
             refreshCachedContent()
+#if DEBUG
             emitTransitionSnapshotIfChanged()
+#endif
         }
 
         func pageViewController(

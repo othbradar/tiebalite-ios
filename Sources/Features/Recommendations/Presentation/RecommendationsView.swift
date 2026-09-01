@@ -298,6 +298,10 @@ enum RecommendationsAccessibilityID {
     static let initialLoading = "recommendations.state.initial-loading"
     static let list = "recommendations.list"
     static let root = "app.root.recommendations"
+    static let sessionExpired = "recommendations.session.expired"
+    static let sessionLogin = "recommendations.session.login"
+    static let sessionSignedOut = "recommendations.session.signed-out"
+    static let sessionSigningIn = "recommendations.session.signing-in"
     static let shellTitle = "app.shell.title"
 
     static func row(_ threadID: Int64) -> String {

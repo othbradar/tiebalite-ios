@@ -3,8 +3,8 @@
 - 审计时间：2026-07-31 09:11 CST（UTC+08:00）
 - 审计阶段：00
 - 总体状态：`PASS`
-- 工作目录：`/Users/othbradar/PycharmProjects/tiebalite重构`
-- 仓库根目录：`/Users/othbradar/PycharmProjects/tiebalite重构`
+- 工作目录：`<repo-root>`
+- 仓库根目录：`<repo-root>`
 - 基线分支：`main`
 - 基线 commit：`c9e2dd91de1ccd1bd51d468645e98af6dc24ea0d`
 - 基线 `git status --short`：空
@@ -88,26 +88,26 @@ iOS 26.5 (26.5 - 23F77) - com.apple.CoreSimulator.SimRuntime.iOS-26-5
 
 可用 iPhone Simulator（均为 iOS 26.5、`Shutdown`）：
 
-| 设备 | UDID |
+| 设备 | 状态 |
 |---|---|
-| iPhone 17 Pro | `70D93841-1FEB-445A-8FAD-B1C29B981D5D` |
-| iPhone 17 Pro Max | `88E155ED-2CC4-4266-8137-148FD7FBB757` |
-| iPhone 17e | `68A3F19E-7BB3-4609-8ADB-67D273529771` |
-| iPhone Air | `E6CCB4EE-B33C-40C5-81F6-F713615B2D27` |
-| iPhone 17 | `F7916DA8-4242-40CE-AC07-1D550C75066B` |
+| iPhone 17 Pro | Available |
+| iPhone 17 Pro Max | Available |
+| iPhone 17e | Available |
+| iPhone Air | Available |
+| iPhone 17 | Available |
 
-另有自定义设备 `Tieba-Perf-Test`（`B3D00504-B3C8-4EC6-8C12-C55DF8B2C562`）；`simctl` 列表未直接标明其 device family，因此不将它用于 iPhone 验收结论。
+另有自定义设备 `Tieba-Perf-Test`；`simctl` 列表未直接标明其 device family，因此不将它用于 iPhone 验收结论。
 
 可用 iPad Simulator（均为 iOS 26.5、`Shutdown`）：
 
-| 设备 | UDID |
+| 设备 | 状态 |
 |---|---|
-| iPad Pro 13-inch (M5) | `EE89FBE1-9DCA-49DC-8432-8A9C856A28FF` |
-| iPad Pro 11-inch (M5) | `467D92A6-2187-48A6-BF24-9824B48313B1` |
-| iPad mini (A17 Pro) | `242F696F-7337-4F78-9431-7331C9353206` |
-| iPad Air 13-inch (M4) | `917DEE7A-AD05-4028-9570-5516D5E4CC25` |
-| iPad Air 11-inch (M4) | `3C5D003D-822E-4C4F-9755-F5C429488EF5` |
-| iPad (A16) | `677B6193-1CF8-4ECD-9142-2D93AB263F1B` |
+| iPad Pro 13-inch (M5) | Available |
+| iPad Pro 11-inch (M5) | Available |
+| iPad mini (A17 Pro) | Available |
+| iPad Air 13-inch (M4) | Available |
+| iPad Air 11-inch (M4) | Available |
+| iPad (A16) | Available |
 
 结论：至少一个 iPhone 与一个 iPad Simulator 可识别。仅验证了枚举，未启动设备、构建或运行 App。当前只安装 iOS 26.5 runtime，未验证 iOS 18.x runtime。
 
@@ -117,10 +117,10 @@ iOS 26.5 (26.5 - 23F77) - com.apple.CoreSimulator.SimRuntime.iOS-26-5
 
 ```text
 $ pwd
-/Users/othbradar/PycharmProjects/tiebalite重构
+<repo-root>
 
 $ git rev-parse --show-toplevel
-/Users/othbradar/PycharmProjects/tiebalite重构
+<repo-root>
 
 $ git status --short
 # 阶段开始时无输出

@@ -336,6 +336,7 @@ where PageID: Hashable & Sendable {
     }
 }
 
+#if DEBUG
 struct PagerInputDiagnostic<PageID>: Equatable, Sendable
 where PageID: Hashable & Sendable {
     let inputSequence: UInt64
@@ -351,3 +352,4 @@ where PageID: Hashable & Sendable {
     let visibleID: PageID?
     let committedID: PageID?
 }
+#endif

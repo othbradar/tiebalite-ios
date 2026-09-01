@@ -93,11 +93,19 @@ struct LaunchScenarioTests {
         for scenario in LaunchScenarioID.allCases {
             let descriptor = LaunchScenarioFactory.make(scenario: scenario)
             let snapshot = await descriptor.compositionRoot.environment.session.snapshot()
+            let expectedAccessPolicy: RecommendationsAccessPolicy =
+                scenario == .sessionSignedOut
+                    ? .activeSessionRequired
+                    : .unrestrictedFixture
 
             #expect(descriptor.safeLabel.hasPrefix("Harness:"))
             #expect(
                 descriptor.compositionRoot.environment.readingDataSourceMode
                     == .fixture
+            )
+            #expect(
+                descriptor.compositionRoot.environment
+                    .recommendationsAccessPolicy == expectedAccessPolicy
             )
             switch scenario {
             case .sessionSignedInFixture:

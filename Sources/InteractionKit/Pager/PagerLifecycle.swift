@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 
+#if DEBUG
 struct PagerGeometrySnapshot<PageID>: Equatable, Sendable
 where PageID: Hashable & Sendable {
     let pageID: PageID
@@ -29,7 +30,9 @@ where PageID: Hashable & Sendable {
         return lhs.rootFrame == rhs.rootFrame
     }
 }
+#endif
 
+#if DEBUG
 struct PagerContainerSnapshot<PageID>: Equatable, Sendable
 where PageID: Hashable & Sendable {
     let committedID: PageID?
@@ -92,16 +95,6 @@ extension PagerContainer.Coordinator {
         )
     }
 
-    func admittedControllerIDs() -> Set<PageID> {
-        Set(
-            PagerCachePolicy.liveIDs(
-                pageIDs: state.displayedOrder,
-                committedID: state.committedID,
-                transition: state.transition
-            )
-        )
-    }
-
     private func orphanChildControllerCount() -> Int {
         guard let installedController else {
             return 0
@@ -151,6 +144,19 @@ extension PagerContainer.Coordinator {
         )
     }
 }
+#endif
+
+extension PagerContainer.Coordinator {
+    func admittedControllerIDs() -> Set<PageID> {
+        Set(
+            PagerCachePolicy.liveIDs(
+                pageIDs: state.displayedOrder,
+                committedID: state.committedID,
+                transition: state.transition
+            )
+        )
+    }
+}
 
 @MainActor
 enum PagerCoordinatorSequenceSource {
@@ -175,6 +181,7 @@ enum PagerHostSequenceSource {
 @MainActor
 final class PagerTeardownViewController: UIViewController {}
 
+#if DEBUG
 private struct DebugPagerControllerSequenceKey: EnvironmentKey {
     static let defaultValue: UInt64 = 0
 }
@@ -185,16 +192,22 @@ extension EnvironmentValues {
         set { self[DebugPagerControllerSequenceKey.self] = newValue }
     }
 }
+#endif
 
 struct PagerHostedPage<Content: View>: View {
     let controllerSequence: UInt64
     let content: Content
 
+    @ViewBuilder
     var body: some View {
+#if DEBUG
         content.environment(
             \.debugPagerControllerSequence,
             controllerSequence
         )
+#else
+        content
+#endif
     }
 }
 

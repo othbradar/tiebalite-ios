@@ -239,11 +239,15 @@ extension PagerContainer.Coordinator {
         rendezvous.delegateEvidence = nil
         rendezvous.reason = .ignoredCallback(reason)
         activeRendezvous = rendezvous
+#if DEBUG
         lastIgnoredCallbackReason = reason
+#endif
     }
 
     func recordIgnoredCallback(_ reason: PagerCallbackIgnoredReason) {
+#if DEBUG
         lastIgnoredCallbackReason = reason
+#endif
         guard var rendezvous = activeRendezvous,
               rendezvous.result == .pending else {
             return

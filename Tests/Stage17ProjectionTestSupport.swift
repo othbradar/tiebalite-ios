@@ -121,6 +121,30 @@ struct Stage17RecommendationProjectionHarness: View {
 }
 
 @MainActor
+struct Stage19BScopedRecommendationHarness: View {
+    @Bindable var visibility: Stage17Visibility
+    let store: RecommendationsStore
+    let sessionStore: SessionStore
+    let authContextProvider: SessionAuthContextProvider
+
+    var body: some View {
+        if visibility.isPresented {
+            RecommendationsAppRootView(
+                store: store,
+                sessionStore: sessionStore,
+                authContextProvider: authContextProvider,
+                accessPolicy: .activeSessionRequired,
+                imageLoader: DisabledImageLoader(),
+                openLogin: {},
+                onOpenThread: { _ in }
+            )
+        } else {
+            Color.clear
+        }
+    }
+}
+
+@MainActor
 struct Stage17FollowedProjectionHarness: View {
     @Bindable var visibility: Stage17Visibility
     let store: FollowedForumsStore

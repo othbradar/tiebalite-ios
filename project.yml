@@ -83,11 +83,14 @@ targets:
           - AGENTS.md
       - path: TestSupport/LaunchScenarios
         group: TestSupport
+      - path: Resources/Assets.xcassets
+        buildPhase: resources
     dependencies:
       - target: GeneratedProtobuf
       - package: SwiftProtobuf
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: TiebaLite
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
@@ -99,7 +102,7 @@ targets:
         Debug:
           EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift"
         Release:
-          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Debug*.swift InteractionLab*.swift Harness*.swift LaunchScenario*.swift"
+          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Debug*.swift InteractionLab*.swift Harness*.swift LaunchScenario*.swift FixturePlaceholderViews.swift FixtureFollowedForumsRepository.swift FixtureForumHomeRepository.swift FixtureReadingImageLoader.swift FixtureReadingRepositories.swift FixtureSearchRepository.swift FixtureThreadReaderPages.swift"
         UITesting:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG UITESTING"
 

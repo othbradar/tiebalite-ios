@@ -227,18 +227,17 @@ private extension MediaViewer {
     }
 
     func handlePagerEvent(_ event: PagerContainerEvent<String>) {
-        switch event {
-        case let .began(transition):
+        if case let .began(transition) = event {
             transitionSourceID = transition.sourceID
-        case let .resolved(_, completed):
-            guard completed,
-                  let transitionSourceID else {
-                self.transitionSourceID = nil
-                return
-            }
-            resetTransform(for: transitionSourceID)
-            self.transitionSourceID = nil
+            return
         }
+        guard event.completedResolution == true,
+              let transitionSourceID else {
+            self.transitionSourceID = nil
+            return
+        }
+        resetTransform(for: transitionSourceID)
+        self.transitionSourceID = nil
     }
 
     func resetTransform(for mediaID: String) {

@@ -101,7 +101,9 @@ enum RouteIdentity: Codable, Hashable, Sendable {
 
 enum SettingsRoute: Codable, Hashable, Sendable {
     case about
+#if DEBUG
     case componentGallery
+#endif
     case content(RouteIdentity)
     case history
     case licenses
@@ -354,12 +356,12 @@ enum SettingsRouteGrammar {
                     || (routes.count == 2 && routes[1] == .licenses) else {
                 return []
             }
-        case .componentGallery, .licenses:
+        case .licenses:
             guard routes.count == 1 else {
                 return []
             }
 #if DEBUG
-        case .interactionLab, .threadContentRendererLab:
+        case .componentGallery, .interactionLab, .threadContentRendererLab:
             guard routes.count == 1 else {
                 return []
             }

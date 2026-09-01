@@ -4,6 +4,16 @@ enum RecommendationsLoadFailure: Error, Equatable, Sendable {
     case unavailable
 }
 
+enum RecommendationsAccessScope: Equatable, Sendable {
+    case active(ProtectedDataLease)
+    case fixture
+    case unavailable
+
+    var allowsLoading: Bool {
+        self != .unavailable
+    }
+}
+
 enum RecommendationsState: Equatable, Sendable {
     case empty
     case initialFailure(RecommendationsLoadFailure)
@@ -38,12 +48,23 @@ final class RecommendationsStore {
 
     private let repository: any RecommendationRepository
     @ObservationIgnored private var hasCompletedInitialLoad = false
+    @ObservationIgnored private var accessScope: RecommendationsAccessScope?
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var activeGeneration: UInt64?
     @ObservationIgnored private var nextGeneration: UInt64 = 0
 
     init(repository: any RecommendationRepository) {
         self.repository = repository
+    }
+
+    func synchronize(with scope: RecommendationsAccessScope) async {
+        if accessScope != scope {
+            reset(for: scope)
+        }
+        guard scope.allowsLoading else {
+            return
+        }
+        await loadIfNeeded()
     }
 
     func loadIfNeeded() async {
@@ -114,6 +135,19 @@ final class RecommendationsStore {
             return false
         }
         return items.suffix(4).contains { $0.threadID == threadID }
+    }
+
+    private func reset(for scope: RecommendationsAccessScope) {
+        loadTask?.cancel()
+        nextGeneration &+= 1
+        activeGeneration = nil
+        loadTask = nil
+        hasCompletedInitialLoad = false
+        accessScope = scope
+        scrollAnchor = nil
+        currentPage = nil
+        nextPage = nil
+        state = .initialLoading
     }
 
     private func replaceLoad(
