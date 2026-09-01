@@ -52,6 +52,10 @@ else
       "$file_list" >/dev/null; then
       fail "Release source proof is missing URLSessionHTTPClient.swift: $file_list"
     fi
+    if ! rg -F '/Sources/Core/Images/ProductionImageLoader.swift' \
+      "$file_list" >/dev/null; then
+      fail "Release source proof is missing ProductionImageLoader.swift: $file_list"
+    fi
     if ! rg -F '/Sources/Core/TiebaAPI/LiveRecommendationRepository.swift' \
       "$file_list" >/dev/null; then
       fail "Release source proof is missing LiveRecommendationRepository.swift: $file_list"
@@ -102,6 +106,9 @@ else
   fi
   if ! rg -F 'MediaViewer' "$strings_output" >/dev/null; then
     fail "Release binary lacks the Stage 09 MediaViewer positive control."
+  fi
+  if ! rg -F 'ProductionImageLoader' "$strings_output" >/dev/null; then
+    fail "Release binary lacks the Stage 19A image loader positive control."
   fi
 
   if nm "$release_binary" > "$symbols_output" 2>/dev/null; then

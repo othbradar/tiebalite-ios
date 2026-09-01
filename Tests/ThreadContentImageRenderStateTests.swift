@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import TiebaLite
+import UIKit
 
 @Suite("Thread content image render state regressions")
 @MainActor
@@ -45,6 +46,74 @@ struct ThreadImageRenderStateTests {
 
         #expect(renderState.phase == .rendered)
         #expect(renderState.phase.accessibilityValue == "已加载")
+    }
+
+    @Test
+    func predecodedPayloadRendersAndCarriesPurposeCandidatesAndTarget() async throws {
+        let request = fixtureImageRequest(resourceID: "predecoded")
+        let bytes = try TestImageFixtureFactory.png(width: 16, height: 8)
+        let image = try #require(UIImage(data: bytes))
+        let loader = HarnessCapturingImageLoader(
+            payload: ImagePayload(
+                decodedImage: image,
+                mediaType: "image/png",
+                pixelSize: ImageTargetPixelSize(width: 16, height: 8)
+            )
+        )
+        let target = ImageTargetPixelSize(width: 640, height: 960)
+
+        let state = try await ThreadContentImageLoad.resolve(
+            request,
+            using: loader,
+            targetPixelSize: target
+        )
+        let sent = try #require(await loader.recordedRequests().first)
+
+        #expect(state.phase == .rendered)
+        #expect(sent.purpose == .threadContent)
+        #expect(sent.targetPixelSize == target)
+        #expect(sent.candidateURLs == request.candidates.map {
+            $0.destination.absoluteString
+        })
+    }
+
+    @Test(arguments: [
+        ImageLoadingError.decodingFailed,
+        .sourceDimensionsTooLarge
+    ])
+    func loaderDecodeFailuresRemainDecodeFailures(
+        error: ImageLoadingError
+    ) async throws {
+        let state = try await ThreadContentImageLoad.resolve(
+            fixtureImageRequest(),
+            using: HarnessFailingImageLoader(error: error)
+        )
+
+        #expect(state.phase == .failedToDecode)
+        #expect(state.mediaIntent(from: fixtureMediaIntent()) == nil)
+    }
+
+    @Test(arguments: [
+        ImageLoadingError.decodingFailed,
+        .sourceDimensionsTooLarge
+    ])
+    func cancellationWinsOverALateTypedDecodeFailure(
+        error: ImageLoadingError
+    ) async throws {
+        let loader = HarnessCancellationAsImageFailureLoader(error: error)
+        let task = Task {
+            try await ThreadContentImageLoad.resolve(
+                fixtureImageRequest(),
+                using: loader
+            )
+        }
+        try await loader.waitUntilStarted()
+
+        task.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            _ = try await task.value
+        }
     }
 
     @Test

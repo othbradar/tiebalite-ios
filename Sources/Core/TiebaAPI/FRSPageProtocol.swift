@@ -216,6 +216,18 @@ enum FRSPageProtocol {
                 viewCount: max(0, thread.viewNum),
                 isPinned: thread.isTop == 1,
                 mediaCount: thread.media.count,
+                thumbnailResources: Array(
+                    thread.media.enumerated().lazy.compactMap { index, media in
+                        ThreadListImageResourceMapper.map(
+                            bigPicture: media.bigPic,
+                            dynamicPicture: media.dynamicPic,
+                            sourcePicture: media.srcPic,
+                            originalPicture: media.originPic,
+                            ownerResourceID:
+                                "forum.t\(thread.threadID).media.\(index + 1)"
+                        )
+                    }.prefix(3)
+                ),
                 hasVideo: thread.hasVideoInfo
             )
         }

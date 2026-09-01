@@ -168,6 +168,7 @@ private struct RecommendationRow: View {
         ) {
             if let thumbnail = item.thumbnail {
                 RecommendationThumbnailView(
+                    threadID: item.threadID,
                     thumbnail: thumbnail,
                     imageLoader: imageLoader
                 )
@@ -184,11 +185,14 @@ private struct RecommendationThumbnailView: View {
         case rendered
     }
 
+    let threadID: Int64
     let thumbnail: RecommendationThumbnail
     let imageLoader: any ImageLoading
 
+    @Environment(\.displayScale) private var displayScale
     @State private var phase = Phase.loading
     @State private var image: UIImage?
+    @State private var targetPixelSize: ImageTargetPixelSize?
 
     var body: some View {
         ZStack {
@@ -216,21 +220,47 @@ private struct RecommendationThumbnailView: View {
         .clipShape(RoundedRectangle(cornerRadius: CornerRadius.small))
         .accessibilityLabel(thumbnail.alternativeText)
         .accessibilityValue(phase.accessibilityValue)
-        .task(id: thumbnail.resourceID) {
+        .accessibilityIdentifier(
+            RecommendationsAccessibilityID.thumbnail(threadID)
+        )
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            targetPixelSize = ImageTargetPixelSize.normalized(
+                pointWidth: size.width,
+                pointHeight: size.height,
+                displayScale: displayScale,
+                purpose: .listThumbnail
+            )
+        }
+        .task(id: RecommendationThumbnailTaskID(
+            resource: thumbnail.resource,
+            targetPixelSize: targetPixelSize
+        )) {
             await load()
+        }
+        .onDisappear {
+            image = nil
         }
     }
 
     private func load() async {
         phase = .loading
         image = nil
+        guard let targetPixelSize else {
+            return
+        }
         do {
             let payload = try await imageLoader.load(
-                ImageRequest(resourceID: thumbnail.resourceID)
+                ImageRequest(
+                    resource: thumbnail.resource,
+                    targetPixelSize: targetPixelSize,
+                    purpose: .listThumbnail,
+                    resizeMode: .fill
+                )
             )
             try Task.checkCancellation()
-            guard let decoded = UIImage(data: payload.data)?
-                .preparingForDisplay() else {
+            guard let decoded = payload.displayImage() else {
                 phase = .failed
                 return
             }
@@ -242,6 +272,11 @@ private struct RecommendationThumbnailView: View {
             phase = .failed
         }
     }
+}
+
+private struct RecommendationThumbnailTaskID: Hashable {
+    let resource: ImageResourceDescriptor
+    let targetPixelSize: ImageTargetPixelSize?
 }
 
 private extension RecommendationThumbnailView.Phase {
@@ -267,5 +302,9 @@ enum RecommendationsAccessibilityID {
 
     static func row(_ threadID: Int64) -> String {
         "recommendations.row.t\(threadID)"
+    }
+
+    static func thumbnail(_ threadID: Int64) -> String {
+        "recommendations.thumbnail.t\(threadID)"
     }
 }

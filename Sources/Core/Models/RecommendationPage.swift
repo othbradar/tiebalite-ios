@@ -20,6 +20,7 @@ struct RecommendationItem: Equatable, Sendable {
     let isDeletedRaw: Int32
     let hasVideo: Bool
     let hasLive: Bool
+    let thumbnailResource: ImageResourceDescriptor?
 }
 
 enum RecommendationTerminalState: Equatable, Sendable {

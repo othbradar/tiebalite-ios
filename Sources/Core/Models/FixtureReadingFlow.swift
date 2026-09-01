@@ -1,6 +1,27 @@
 struct RecommendationThumbnail: Equatable, Sendable {
-    let resourceID: String
+    let resource: ImageResourceDescriptor
     let alternativeText: String
+
+    init(
+        resourceID: String,
+        alternativeText: String,
+        candidateURLs: [String] = []
+    ) {
+        resource = ImageResourceDescriptor(
+            resourceID: resourceID,
+            candidateURLs: candidateURLs
+        )
+        self.alternativeText = alternativeText
+    }
+
+    init(resource: ImageResourceDescriptor, alternativeText: String) {
+        self.resource = resource
+        self.alternativeText = alternativeText
+    }
+
+    var resourceID: String {
+        resource.resourceID
+    }
 }
 
 struct RecommendationSummary: Identifiable, Equatable, Sendable {

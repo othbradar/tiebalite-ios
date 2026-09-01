@@ -195,7 +195,7 @@ production_block="$(
 for production_requirement in \
   'readingDataSourceMode: \.live' \
   'URLSessionHTTPClient\.production\(\)' \
-  'imageLoader: DisabledImageLoader\(\)'
+  'imageLoader: ProductionImageLoader\.production\(\)'
 do
   if ! printf '%s\n' "$production_block" |
     rg -q "$production_requirement"; then
@@ -203,7 +203,7 @@ do
   fi
 done
 if printf '%s\n' "$production_block" |
-  rg -q 'DisabledHTTPClient|FixtureFollowedForumsRepository|FixtureRecommendationRepository|FixtureThreadReaderRepository|FixtureReadingImageLoader'; then
+  rg -q 'DisabledHTTPClient|DisabledImageLoader|FixtureFollowedForumsRepository|FixtureRecommendationRepository|FixtureThreadReaderRepository|FixtureReadingImageLoader'; then
   fail production-live-composition-leak "$production_block"
 fi
 if ! rg -q \
@@ -251,7 +251,7 @@ if ! rg -q 'readingDataSourceMode: \.fixture' \
   fail ui-scenario-fixture-mode
 fi
 scenario_live_usage="$(
-  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveSearchRepository|LiveThreadReaderRepository|LiveUserProfileRepository|tiebac\.baidu\.com|tieba\.baidu\.com' \
+  rg -n '\.live\b|URLSessionHTTPClient|ProductionImageLoader|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveSearchRepository|LiveThreadReaderRepository|LiveUserProfileRepository|tiebac\.baidu\.com|tieba\.baidu\.com' \
     TestSupport/LaunchScenarios 2>/dev/null || true
 )"
 if [[ -n "$scenario_live_usage" ]]; then

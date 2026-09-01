@@ -24,8 +24,7 @@ enum MediaViewerImageLoad {
         do {
             let payload = try await imageLoader.load(request)
             try Task.checkCancellation()
-            guard let image = UIImage(data: payload.data)?
-                .preparingForDisplay() else {
+            guard let image = payload.displayImage() else {
                 return MediaViewerImageLoadOutcome(
                     phase: .failedToDecode,
                     image: nil
@@ -37,6 +36,18 @@ enum MediaViewerImageLoad {
             )
         } catch is CancellationError {
             throw CancellationError()
+        } catch ImageLoadingError.decodingFailed {
+            try Task.checkCancellation()
+            return MediaViewerImageLoadOutcome(
+                phase: .failedToDecode,
+                image: nil
+            )
+        } catch ImageLoadingError.sourceDimensionsTooLarge {
+            try Task.checkCancellation()
+            return MediaViewerImageLoadOutcome(
+                phase: .failedToDecode,
+                image: nil
+            )
         } catch {
             try Task.checkCancellation()
             return MediaViewerImageLoadOutcome(

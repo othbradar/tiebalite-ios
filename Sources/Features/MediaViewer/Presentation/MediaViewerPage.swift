@@ -11,10 +11,12 @@ struct MediaViewerPage: View {
     let onSingleTap: () -> Void
     let onCapabilityChanged: (MediaPageCapability, Double) -> Void
 
+    @Environment(\.displayScale) private var displayScale
     @State private var phase = MediaViewerImagePhase.idle
     @State private var image: UIImage?
     @State private var reloadGeneration: UInt64 = 0
     @State private var requestGeneration: UInt64 = 0
+    @State private var targetPixelSize: ImageTargetPixelSize?
     @State private var zoomScale = 1.0
 
     var body: some View {
@@ -25,7 +27,23 @@ struct MediaViewerPage: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(SemanticColor.mediaBackground)
-        .task(id: reloadGeneration) {
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            let viewportMaximum = max(size.width, size.height)
+            targetPixelSize = ImageTargetPixelSize.normalized(
+                pointWidth: viewportMaximum,
+                pointHeight: viewportMaximum,
+                displayScale: displayScale,
+                purpose: .mediaViewer
+            )
+        }
+        .task(id: MediaViewerImageTaskID(
+            mediaID: item.id,
+            request: item.request,
+            targetPixelSize: targetPixelSize,
+            reloadGeneration: reloadGeneration
+        )) {
             await loadImage()
         }
         .onChange(of: resetGeneration) { _, _ in
@@ -134,9 +152,16 @@ struct MediaViewerPage: View {
             phase = .failedToFetch
             return
         }
+        guard let targetPixelSize else {
+            phase = .idle
+            return
+        }
         do {
             let outcome = try await MediaViewerImageLoad.resolve(
-                request: ImageRequest(resourceID: item.request.resourceID),
+                request: item.request.imageRequest(
+                    purpose: .mediaViewer,
+                    targetPixelSize: targetPixelSize
+                ),
                 using: imageLoader
             )
             guard requestGeneration == generation,
@@ -157,6 +182,13 @@ struct MediaViewerPage: View {
             phase = .failedToFetch
         }
     }
+}
+
+private struct MediaViewerImageTaskID: Hashable {
+    let mediaID: String
+    let request: ThreadImageRequestDescriptor
+    let targetPixelSize: ImageTargetPixelSize?
+    let reloadGeneration: UInt64
 }
 
 enum MediaViewerCopy {

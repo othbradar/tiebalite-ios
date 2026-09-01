@@ -466,7 +466,54 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
   threadID/postID 值、标题或用户内容。
 - UNKNOWN：合法空页、删除/私密的完整语义、`is_post_visible` proto3 零值、
   sort 值域、倒序/跳楼/PBFloor、真实错误 taxonomy、限流与跨主题稳定性。
-  Production 图片 loader 仍 disabled，Live 图片不是本次运行证据。
+  阶段 19A 已补充当前 PBPage 返回图片候选的生产加载运行证据；这不补齐
+  上述 PBPage endpoint 的其他 UNKNOWN。
+
+### `image.resourceFetch`
+
+- 用户任务：加载推荐/FRS 缩略图、PBPage 正文图片和唯一 MediaViewer
+  当前页；它是服务端返回资源 URL 的普通 GET，不是新 Tieba API endpoint。
+- Android 来源文件：`ui/widgets/compose/FeedCard.kt`、
+  `api/models/protos/Extensions.kt`、`ui/utils/PhotoViewUtils.kt`、
+  `ui/widgets/compose/Images.kt`、`ui/page/photoview/PhotoViewActivity.kt`、
+  `App.kt`、`utils/ImageUtil.kt`。
+- Android symbols：`ImmutableHolder<Media>.url`、`PbContent.picUrl`、
+  `getPhotoViewData`、`NetworkImage`、`PreviewImage`、
+  `App.createSketch`、`ImageUtil.getUrl`。
+- 列表候选：`Tieba_Media` 的缩略图参数顺序为
+  `big_pic → dynamic_pic → src_pic`，没有可用缩略图时才回到
+  `origin_pic`。iOS 只保留字段中已有、通过 URL 解析且为 HTTPS 的候选，
+  按该顺序逐个有限降级；不会合成 CDN host 或改写 URL。
+- PB type 3 正文预览：Android `PbContent.picUrl` 将 `origin_src` 作为
+  origin fallback，并按 `big_cdn_src → big_src → dynamic → cdn_src →
+  cdn_src_active → src` 提供缩略候选。iOS 正文沿用该顺序；
+  MediaViewer 优先 `origin_src`，随后只尝试同一组已返回候选。
+- PB type 20：Android 只使用 `src` 作为 preview/origin；iOS 同样不生成
+  额外候选。
+- Android call site 按上述高到低顺序提供 vararg，但 `ImageUtil.getUrl` 会受
+  imageLoadSettings/Wi-Fi 的 `needReverse` 影响而反转后只选择一条。iOS Beta
+  固定使用高到低的有限 fallback，没有复制 Android 的网络/设置反转策略。
+- 认证边界：Android Sketch `DisplayRequest` 接收资源 URL，global HTTP stack
+  只显式设置普通 User-Agent；没有证据要求向资源 host 附加 BDUSS、STOKEN
+  或 Cookie。iOS 因而使用独立 ephemeral `URLSession`，禁用 Cookie storage、
+  credential storage 和 `httpShouldSetCookies`，不读取 AuthContext。
+- 传输边界：Production domain descriptor 只接受 HTTPS；HTTP、credential URL、
+  fragment、非绝对 URL 与超长 URL 均 fail closed。没有添加 ATS 任意加载例外。
+  Loader 本身只识别 HTTP/HTTPS，以便确定性测试错误分类；Production mapper
+  不会把 HTTP 候选交给它。
+- iOS 领域映射：列表使用 `ImageResourceDescriptor`，PB 使用稳定
+  `ThreadImageRequestDescriptor`；cache identity 由稳定业务资源 ID、purpose、
+  resize mode、目标像素尺寸和候选指纹共同组成，不使用 UUID。
+- iOS 运行态：2026-09-01 在保留既有 Keychain 会话的 iPhone Simulator 上，
+  Live 推荐与公开吧首页均显示真实缩略图；一个八图公开帖的正文 8/8
+  进入 rendered，MediaViewer 连续显示第 3、4、5 张、双击缩放并正确关闭返回。
+  没有保存资源 URL、响应 bytes、用户正文、Cookie 或凭据。
+- iOS 客户端策略：单个候选的 2xx/status、MIME、大小和 ImageIO decode
+  均通过后才算成功；失败后只尝试下一条已证候选。这个“有限候选回退”是
+  阶段 19A 的受测 iOS 韧性策略，不应误写成 Android 同时请求全部候选。
+- UNKNOWN：所有资源 host/redirect 的长期稳定性、部分帖子只有 HTTP 候选时的
+  安全替代、动画图片播放、头像 portrait token 的安全 HTTPS 合成规则、
+  全分辨率瓦片和真实断网后的 CDN 错误分布。
 
 ### `thread.pbFloor`
 

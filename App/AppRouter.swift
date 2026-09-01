@@ -115,6 +115,7 @@ enum AppRouter {
                     route: forum
                 ),
                 route: forum,
+                imageLoader: dependencies.imageLoader,
                 onOpenThread: { thread in
                     guard let route = threadRoute(for: thread) else {
                         return

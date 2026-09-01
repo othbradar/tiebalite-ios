@@ -9,11 +9,32 @@ enum ForumThreadRowKind: Equatable, Sendable {
 }
 
 struct ForumThreadThumbnailDescription: Identifiable, Equatable, Sendable {
-    let resourceID: String
+    let id: String
+    let ordinal: Int
+    let resource: ImageResourceDescriptor
     let alternativeText: String
 
-    var id: String {
-        resourceID
+    init(
+        id: String? = nil,
+        ordinal: Int = 1,
+        resource: ImageResourceDescriptor,
+        alternativeText: String
+    ) {
+        self.id = id ?? resource.resourceID
+        self.ordinal = max(1, ordinal)
+        self.resource = resource
+        self.alternativeText = alternativeText
+    }
+
+    init(resourceID: String, alternativeText: String) {
+        id = resourceID
+        ordinal = 1
+        resource = ImageResourceDescriptor(resourceID: resourceID)
+        self.alternativeText = alternativeText
+    }
+
+    var resourceID: String {
+        resource.resourceID
     }
 }
 
@@ -29,6 +50,7 @@ struct ForumThreadRowModel: Identifiable, Equatable, Sendable {
     let viewCount: Int32
     let isPinned: Bool
     let thumbnailDescriptions: [ForumThreadThumbnailDescription]
+    let thumbnailResources: [ImageResourceDescriptor]
     let additionalThumbnailCount: Int
     let rowKind: ForumThreadRowKind
 
@@ -48,10 +70,21 @@ struct ForumThreadRowModel: Identifiable, Equatable, Sendable {
         replyCount = max(0, thread.replyCount)
         viewCount = max(0, thread.viewCount)
         isPinned = thread.isPinned
+        thumbnailResources = thread.thumbnailResources
         let visibleThumbnailCount = min(3, thread.mediaCount)
+        let provided = Array(
+            thread.thumbnailResources.prefix(visibleThumbnailCount)
+        )
         thumbnailDescriptions = (0..<visibleThumbnailCount).map { index in
-            ForumThreadThumbnailDescription(
-                resourceID: "forum.t\(thread.threadID).thumbnail.\(index + 1)",
+            let resource = index < provided.count
+                ? provided[index]
+                : ImageResourceDescriptor(
+                    resourceID: "forum.t\(thread.threadID).thumbnail.\(index + 1)"
+                )
+            return ForumThreadThumbnailDescription(
+                id: "forum.t\(thread.threadID).thumbnail.\(index + 1)",
+                ordinal: index + 1,
+                resource: resource,
                 alternativeText: "帖子图片 \(index + 1)"
             )
         }
@@ -85,6 +118,7 @@ struct ForumThreadRowModel: Identifiable, Equatable, Sendable {
             viewCount: viewCount,
             isPinned: isPinned,
             mediaCount: thumbnailDescriptions.count + additionalThumbnailCount,
+            thumbnailResources: thumbnailResources,
             hasVideo: rowKind == .video
         )
     }

@@ -108,6 +108,7 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
     let viewCount: Int32
     let isPinned: Bool
     let mediaCount: Int
+    let thumbnailResources: [ImageResourceDescriptor]
     let hasVideo: Bool
 
     init(
@@ -121,6 +122,7 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
         viewCount: Int32,
         isPinned: Bool,
         mediaCount: Int = 0,
+        thumbnailResources: [ImageResourceDescriptor] = [],
         hasVideo: Bool = false
     ) {
         self.itemID = itemID
@@ -133,6 +135,7 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
         self.viewCount = viewCount
         self.isPinned = isPinned
         self.mediaCount = max(0, mediaCount)
+        self.thumbnailResources = thumbnailResources
         self.hasVideo = hasVideo
     }
 

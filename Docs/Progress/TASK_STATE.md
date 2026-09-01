@@ -1,6 +1,6 @@
 # TASK_STATE
 
-- 当前阶段：18（无障碍、性能、内存与故障韧性，已完成）
+- 当前阶段：19A（Production 图片加载链路，已完成，停止于 19B 前）
 - 状态：`PHASE_16A_SEARCH = COMPLETE`
 - `PHASE_16 = COMPLETE`
 - `PHASE_16B_HISTORY_SETTINGS_PROFILE = COMPLETE`
@@ -9,7 +9,9 @@
 - `PHASE_18 = COMPLETE`
 - `PHASE_18_ACCESSIBILITY_PERFORMANCE_RESILIENCE = COMPLETE`
 - `PHASE_18_QUALITY_GATE = PASSED_FULL_QUALITY`
-- `PHASE_19 = NOT_STARTED`
+- `PHASE_19 = IN_PROGRESS`
+- `PHASE_19A_PRODUCTION_IMAGE_PIPELINE = COMPLETE`
+- `PHASE_19B_RELEASE_CANDIDATE = NOT_STARTED`
 - `BROWSING_HISTORY = LOCAL_JSON_BETA_READY`
 - `APP_SETTINGS = USERDEFAULTS_RUNTIME_UI_VERIFIED`
 - `USER_PROFILE = ANONYMOUS_LIVE_PROTOCOL_RUNTIME_VERIFIED`
@@ -68,7 +70,7 @@
 - production live：`RECOMMENDATIONS_ACTIVE_SESSION_SECOND_PAGE_RUNTIME_VERIFIED`；
   `FOLLOWED_FORUMS_ACTIVE_LEASE_RUNTIME_VERIFIED`；
   `THREAD_ANONYMOUS_PBPAGE_THREE_PAGE_RUNTIME_VERIFIED`；
-  `LIVE_IMAGES_DISABLED`
+  `LIVE_IMAGES_RECOMMENDATION_FORUM_THREAD_VIEWER_RUNTIME_VERIFIED`
 - 阶段 06：`PHASE_06_INTERACTION_SPIKES = SPIKE_ACCEPTED`
   （`OPEN_SOURCE_BETA` 范围；已由阶段 09 迁移为唯一生产交互基础）
 - 阶段 06C-C：`DEFERRED_POST_BETA`
@@ -88,7 +90,54 @@
   `PHASE_17_QUALITY_GATE = PASSED_STAGE_17F_REQUIRED_GATES`
 - 阶段 18：`PHASE_18_ACCESSIBILITY_PERFORMANCE_RESILIENCE = COMPLETE`；
   `PHASE_18_QUALITY_GATE = PASSED_FULL_QUALITY`
-- 阶段 19：`NOT_STARTED`
+- 阶段 19：`IN_PROGRESS`；
+  `PHASE_19A_PRODUCTION_IMAGE_PIPELINE = COMPLETE`；
+  `PHASE_19B_RELEASE_CANDIDATE = NOT_STARTED`
+
+## 阶段 19A 完成结果与停止点
+
+阶段 19A 从提交 `b1b50cd117ac950bf97678d641df615f4dfaf180`
+开始，只接通已有推荐/FRS/帖子正文/唯一 MediaViewer 的图片路径，
+没有进入阶段 19B：
+
+- Production composition 从 fail-closed loader 切换到唯一
+  `ProductionImageLoader`。独立匿名 URLSession 不读 AuthContext/Cookie，
+  只消费 mapper 已证且通过 HTTPS validation 的有限候选。
+- 列表候选按 `big_pic → dynamic_pic → src_pic → origin_pic`；PB type 3
+  正文按 `big_cdn_src → big_src → dynamic → cdn_src → cdn_src_active →
+  src → origin_src`，Viewer 优先 origin；type 20 只用 src。
+- Loader 使用 24 MiB response 上限、120M source pixel 上限、96 MiB/
+  256 项 decoded NSCache、32 MiB memory-only URLCache。ImageIO 按实际
+  geometry × displayScale 下采样、处理 EXIF；fill 结果中心裁到 target box，
+  极端长图最大解码边 8192。
+- Recommendation/Forum 图片状态只属于 cell-local state，不改稳定 row ID
+  或 diffable snapshot；Thread 继续使用既有六态，只有当前 request rendered
+  才能发 MediaIntent；Viewer 仍复用唯一 Pager/zoom/pan 实现。
+- iPhone Live 已观察推荐/FRS 真实缩略图、单图帖与八图帖正文、Viewer
+  连续三张切换和 2.50× 双击缩放；连续打开关闭 5 次、前后台一次均正常。
+  没有执行 logout、读取/记录凭据、保存资源 URL/响应或真实用户正文。
+- 终审红测试复现并关闭 cancellation/typed-decode rendezvous 与极端长图
+  fill 超 target 两项直接风险；修复后图片定向套件 54/54。
+- 完整 Unit 376 个逻辑测试/400 次执行；iPhone smoke 28/28、
+  interaction 15/15；iPad smoke 最终 12/12、interaction 2/2；
+  Release isolation 和 `make quality-fast` 通过。
+- iPad 首次 smoke 的唯一失败为既有组件画廊入口偶发
+  `not hittable`；该用例独立 3/3，两次后续完整 iPad smoke 均 12/12，
+  定性为 suite-state/hit-testing 波动，没有修改生产 UI。
+- 最终 `make quality` 输出 `Quality gate completed.`；阶段 19A 标记
+  `COMPLETE`，阶段 19 继续 `IN_PROGRESS`，19B 仍 `NOT_STARTED`。
+
+### 阶段 19A 当前 Known Limitations
+
+1. 头像 portrait token 没有已证安全 HTTPS 合成规则，继续使用统一占位。
+2. 动态图片只保证可显示帧；不实现动画、full-resolution lease 或瓦片。
+3. 未修改宿主网络设置做真实断网；确定性 offline Fixture 与 transport/
+   decode/cancellation 回归已覆盖失败和重试，真实 CDN 断网分布保留发布前检查。
+4. iPad Fixture 图片打开/关闭已自动化验证；无凭据 iPad 上未单独完成
+   Live CDN 手工往返，不写成已验证。
+5. memory-warning 清理路径未人工注入；本阶段不做跨 View in-flight
+   请求合并、full-resolution lease 或精确内存曲线。
+6. 所有候选 redirect 当前 fail closed；未来如需放宽必须先补运行证据。
 
 ## 阶段 18 当前结果与停止点
 

@@ -160,6 +160,11 @@ private struct ThreadLinkView: View {
     }
 }
 
+private struct ThreadContentImageTaskID: Hashable {
+    let request: ThreadImageRequestDescriptor
+    let targetPixelSize: ImageTargetPixelSize?
+}
+
 @MainActor
 private struct ThreadContentImageView: View {
     let content: ThreadImageContent
@@ -167,8 +172,10 @@ private struct ThreadContentImageView: View {
     let imageLoader: any ImageLoading
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
+    @Environment(\.displayScale) private var displayScale
     @State private var requestGeneration: UInt64 = 0
     @State private var renderState = ThreadContentImageRenderState.idle
+    @State private var targetPixelSize: ImageTargetPixelSize?
 
     var body: some View {
         Group {
@@ -195,15 +202,32 @@ private struct ThreadContentImageView: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .task(id: content.request) {
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            targetPixelSize = ImageTargetPixelSize.normalized(
+                pointWidth: size.width,
+                pointHeight: size.height,
+                displayScale: displayScale,
+                purpose: .threadContent
+            )
+        }
+        .task(id: ThreadContentImageTaskID(
+            request: content.request,
+            targetPixelSize: targetPixelSize
+        )) {
             let request = content.request
+            guard let targetPixelSize else {
+                return
+            }
             requestGeneration &+= 1
             let generation = requestGeneration
             renderState = .loading(request)
             do {
                 let resolved = try await ThreadContentImageLoad.resolve(
                     request,
-                    using: imageLoader
+                    using: imageLoader,
+                    targetPixelSize: targetPixelSize
                 )
                 guard requestGeneration == generation,
                       !Task.isCancelled else {

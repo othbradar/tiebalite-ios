@@ -195,7 +195,21 @@ enum PersonalizedProtocol {
             throw PersonalizedProtocolError.missingData
         }
         let items = response.data.threadList.map { thread in
-            RecommendationItem(
+            let stableThreadID = thread.threadID > 0
+                ? thread.threadID
+                : thread.id
+            let thumbnailResource = thread.media.enumerated().lazy
+                .compactMap { index, media in
+                    ThreadListImageResourceMapper.map(
+                        bigPicture: media.bigPic,
+                        dynamicPicture: media.dynamicPic,
+                        sourcePicture: media.srcPic,
+                        originalPicture: media.originPic,
+                        ownerResourceID:
+                            "recommendation.t\(stableThreadID).media.\(index + 1)"
+                    )
+                }.first
+            return RecommendationItem(
                 rawFeedID: thread.id,
                 rawThreadID: thread.threadID,
                 title: thread.title,
@@ -209,7 +223,8 @@ enum PersonalizedProtocol {
                 isNoTitleRaw: thread.isNoTitle,
                 isDeletedRaw: thread.isDeleted,
                 hasVideo: thread.hasVideoInfo,
-                hasLive: thread.hasAlaInfo
+                hasLive: thread.hasAlaInfo,
+                thumbnailResource: thumbnailResource
             )
         }
         let (nextPage, overflow) = requestedPage.addingReportingOverflow(1)

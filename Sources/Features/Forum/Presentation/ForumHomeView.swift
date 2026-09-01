@@ -5,17 +5,20 @@ import UIKit
 struct ForumHomeView: View {
     @Bindable var store: ForumHomeStore
     let route: ForumRoute
+    let imageLoader: any ImageLoading
     let onOpenThread: (ForumThreadSummary) -> Void
     let onDisplayed: (ForumSummary) async -> Void
 
     init(
         store: ForumHomeStore,
         route: ForumRoute,
+        imageLoader: any ImageLoading = DisabledImageLoader(),
         onOpenThread: @escaping (ForumThreadSummary) -> Void,
         onDisplayed: @escaping (ForumSummary) async -> Void = { _ in }
     ) {
         self.store = store
         self.route = route
+        self.imageLoader = imageLoader
         self.onOpenThread = onOpenThread
         self.onDisplayed = onDisplayed
     }
@@ -90,6 +93,7 @@ struct ForumHomeView: View {
                 rowContent: { row in
                     ForumHomeRowView(
                         row: row,
+                        imageLoader: imageLoader,
                         onOpenThread: onOpenThread,
                         requestReload: requestReload,
                         requestNextPage: requestNextPage
@@ -142,9 +146,24 @@ struct ForumHomeView: View {
 @MainActor
 struct ForumHomeRowView: View {
     let row: ForumHomeRowModel
+    let imageLoader: any ImageLoading
     let onOpenThread: (ForumThreadSummary) -> Void
     let requestReload: () -> Void
     let requestNextPage: () -> Void
+
+    init(
+        row: ForumHomeRowModel,
+        imageLoader: any ImageLoading = DisabledImageLoader(),
+        onOpenThread: @escaping (ForumThreadSummary) -> Void,
+        requestReload: @escaping () -> Void,
+        requestNextPage: @escaping () -> Void
+    ) {
+        self.row = row
+        self.imageLoader = imageLoader
+        self.onOpenThread = onOpenThread
+        self.requestReload = requestReload
+        self.requestNextPage = requestNextPage
+    }
 
     @ViewBuilder
     var body: some View {
@@ -171,7 +190,7 @@ struct ForumHomeRowView: View {
             Button {
                 onOpenThread(thread.sourceSummary)
             } label: {
-                ForumThreadCard(row: thread)
+                ForumThreadCard(row: thread, imageLoader: imageLoader)
             }
             .buttonStyle(.plain)
             .padding(.horizontal, Spacing.medium)
@@ -215,6 +234,7 @@ struct ForumHomeRowView: View {
 @MainActor
 private struct ForumThreadCard: View {
     let row: ForumThreadRowModel
+    let imageLoader: any ImageLoading
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.small) {
@@ -276,25 +296,16 @@ private struct ForumThreadCard: View {
         if !row.thumbnailDescriptions.isEmpty {
             HStack(spacing: Spacing.xSmall) {
                 ForEach(row.thumbnailDescriptions) { thumbnail in
-                    ZStack {
-                        SemanticColor.background
-                        Image(systemName: "photo")
-                            .foregroundStyle(SemanticColor.secondaryText)
-                            .accessibilityHidden(true)
-                        if thumbnail.id == row.thumbnailDescriptions.last?.id,
-                           row.additionalThumbnailCount > 0 {
-                            Text("+\(row.additionalThumbnailCount)")
-                                .font(Typography.font(.caption))
-                                .foregroundStyle(SemanticColor.primaryText)
-                        }
-                    }
-                    .aspectRatio(1, contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .clipShape(
-                        RoundedRectangle(cornerRadius: CornerRadius.small)
+                    ForumThreadThumbnailView(
+                        threadID: row.threadID,
+                        thumbnail: thumbnail,
+                        additionalCount:
+                            thumbnail.id == row.thumbnailDescriptions.last?.id
+                                ? row.additionalThumbnailCount
+                                : 0,
+                        imageLoader: imageLoader
                     )
-                    .accessibilityLabel(thumbnail.alternativeText)
-                    .accessibilityValue("占位图")
+                    .id(thumbnail.id)
                 }
             }
         } else if row.rowKind == .video {
@@ -318,6 +329,129 @@ private struct ForumThreadCard: View {
             .lineLimit(2)
             .accessibilityLabel(accessibilityLabel ?? value)
     }
+}
+
+@MainActor
+private struct ForumThreadThumbnailView: View {
+    private enum Phase: Equatable {
+        case failed
+        case loading
+        case rendered
+    }
+
+    let threadID: Int64
+    let thumbnail: ForumThreadThumbnailDescription
+    let additionalCount: Int
+    let imageLoader: any ImageLoading
+
+    @Environment(\.displayScale) private var displayScale
+    @State private var image: UIImage?
+    @State private var phase = Phase.loading
+    @State private var targetPixelSize: ImageTargetPixelSize?
+
+    var body: some View {
+        ZStack {
+            SemanticColor.background
+            if phase == .rendered, let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .accessibilityHidden(true)
+            } else if phase == .loading {
+                ProgressView()
+            } else {
+                Image(systemName: "photo")
+                    .foregroundStyle(SemanticColor.secondaryText)
+                    .accessibilityHidden(true)
+            }
+            if additionalCount > 0 {
+                Text("+\(additionalCount)")
+                    .font(Typography.font(.caption))
+                    .foregroundStyle(SemanticColor.primaryText)
+                    .padding(Spacing.xSmall)
+                    .background(SemanticColor.surface.opacity(0.8))
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: CornerRadius.small)
+                    )
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: .infinity)
+        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.small))
+        .accessibilityLabel(thumbnail.alternativeText)
+        .accessibilityValue(accessibilityValue)
+        .accessibilityIdentifier(
+            ForumHomeAccessibilityID.thumbnail(
+                threadID: threadID,
+                ordinal: thumbnail.ordinal
+            )
+        )
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
+            targetPixelSize = ImageTargetPixelSize.normalized(
+                pointWidth: size.width,
+                pointHeight: size.height,
+                displayScale: displayScale,
+                purpose: .listThumbnail
+            )
+        }
+        .task(id: ForumThumbnailTaskID(
+            resource: thumbnail.resource,
+            targetPixelSize: targetPixelSize
+        )) {
+            await load()
+        }
+        .onDisappear {
+            image = nil
+        }
+    }
+
+    private var accessibilityValue: String {
+        switch phase {
+        case .failed:
+            "加载失败"
+        case .loading:
+            "正在加载"
+        case .rendered:
+            "已加载"
+        }
+    }
+
+    private func load() async {
+        phase = .loading
+        image = nil
+        guard let targetPixelSize else {
+            return
+        }
+        do {
+            let payload = try await imageLoader.load(
+                ImageRequest(
+                    resource: thumbnail.resource,
+                    targetPixelSize: targetPixelSize,
+                    purpose: .listThumbnail,
+                    resizeMode: .fill
+                )
+            )
+            try Task.checkCancellation()
+            guard let decoded = payload.displayImage() else {
+                phase = .failed
+                return
+            }
+            image = decoded
+            phase = .rendered
+        } catch is CancellationError {
+            return
+        } catch {
+            phase = .failed
+        }
+    }
+}
+
+private struct ForumThumbnailTaskID: Hashable {
+    let resource: ImageResourceDescriptor
+    let targetPixelSize: ImageTargetPixelSize?
 }
 
 @MainActor
@@ -426,5 +560,9 @@ enum ForumHomeAccessibilityID {
 
     static func row(_ threadID: Int64) -> String {
         "forum-home.row.t\(threadID)"
+    }
+
+    static func thumbnail(threadID: Int64, ordinal: Int) -> String {
+        "forum-home.thumbnail.t\(threadID).i\(ordinal)"
     }
 }

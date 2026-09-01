@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import TiebaLite
+import UIKit
 
 @MainActor
 struct MediaViewerPresentationTests {
@@ -84,6 +85,74 @@ struct MediaViewerImageLoadTests {
 
         #expect(outcome.phase == .rendered)
         #expect(outcome.image != nil)
+    }
+
+    @Test
+    func predecodedPayloadRendersAndPreservesViewerRequest() async throws {
+        let bytes = try TestImageFixtureFactory.png(width: 32, height: 16)
+        let image = try #require(UIImage(data: bytes))
+        let loader = HarnessCapturingImageLoader(
+            payload: ImagePayload(
+                decodedImage: image,
+                mediaType: "image/png",
+                pixelSize: ImageTargetPixelSize(width: 32, height: 16)
+            )
+        )
+        let request = ImageRequest(
+            resourceID: "viewer-predecoded",
+            candidateURLs: ["https://images.fixture.invalid/viewer.png"],
+            targetPixelSize: ImageTargetPixelSize(width: 2_048, height: 2_048),
+            purpose: .mediaViewer,
+            resizeMode: .fit
+        )
+
+        let outcome = try await MediaViewerImageLoad.resolve(
+            request: request,
+            using: loader
+        )
+
+        #expect(outcome.phase == .rendered)
+        #expect(outcome.image != nil)
+        #expect(await loader.recordedRequests() == [request])
+    }
+
+    @Test(arguments: [
+        ImageLoadingError.decodingFailed,
+        .sourceDimensionsTooLarge
+    ])
+    func loaderDecodeFailuresRemainDecodeFailures(
+        error: ImageLoadingError
+    ) async throws {
+        let outcome = try await MediaViewerImageLoad.resolve(
+            request: ImageRequest(resourceID: "decode-error"),
+            using: HarnessFailingImageLoader(error: error)
+        )
+
+        #expect(outcome.phase == .failedToDecode)
+        #expect(outcome.image == nil)
+    }
+
+    @Test(arguments: [
+        ImageLoadingError.decodingFailed,
+        .sourceDimensionsTooLarge
+    ])
+    func cancellationWinsOverALateTypedDecodeFailure(
+        error: ImageLoadingError
+    ) async throws {
+        let loader = HarnessCancellationAsImageFailureLoader(error: error)
+        let task = Task { @MainActor in
+            try await MediaViewerImageLoad.resolve(
+                request: ImageRequest(resourceID: "cancelled-decode"),
+                using: loader
+            )
+        }
+        try await loader.waitUntilStarted()
+
+        task.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            _ = try await task.value
+        }
     }
 
     @Test(arguments: [

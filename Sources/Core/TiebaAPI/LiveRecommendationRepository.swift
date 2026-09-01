@@ -86,13 +86,19 @@ struct LiveRecommendationRepository: RecommendationRepository {
                   seenThreadIDs.insert(threadID).inserted else {
                 return nil
             }
+            let title = nonempty(item.title, fallback: "无标题")
             return RecommendationSummary(
                 threadID: threadID,
-                title: nonempty(item.title, fallback: "无标题"),
+                title: title,
                 forumName: nonempty(item.forumName, fallback: "未知吧"),
                 authorName: authorName(item.author),
                 replyCount: max(0, item.replyCount),
-                thumbnail: nil
+                thumbnail: item.thumbnailResource.map {
+                    RecommendationThumbnail(
+                        resource: $0,
+                        alternativeText: "\(title) 的缩略图"
+                    )
+                }
             )
         }
     }

@@ -117,6 +117,54 @@ struct ThreadImageRequestDescriptor: Hashable, Sendable {
     var isLoadable: Bool {
         !candidates.isEmpty
     }
+
+    func imageRequest(
+        purpose: ImageRequestPurpose,
+        targetPixelSize: ImageTargetPixelSize
+    ) -> ImageRequest {
+        let orderedRoles: [ThreadImageCandidateRole]
+        switch purpose {
+        case .mediaViewer:
+            orderedRoles = [
+                .original, .bigCDN, .big, .dynamic,
+                .cdn, .activeCDN, .source
+            ]
+        case .threadContent:
+            orderedRoles = [
+                .bigCDN, .big, .dynamic, .cdn,
+                .activeCDN, .source, .original
+            ]
+        case .avatar, .fixture, .listThumbnail:
+            orderedRoles = [
+                .original, .bigCDN, .big, .dynamic,
+                .cdn, .activeCDN, .source
+            ]
+        }
+        let rank = Dictionary(
+            uniqueKeysWithValues: orderedRoles.enumerated().map {
+                ($0.element, $0.offset)
+            }
+        )
+        let orderedCandidates = candidates.enumerated().sorted { lhs, rhs in
+            let lhsRank = rank[lhs.element.role] ?? Int.max
+            let rhsRank = rank[rhs.element.role] ?? Int.max
+            return lhsRank == rhsRank
+                ? lhs.offset < rhs.offset
+                : lhsRank < rhsRank
+        }
+        let resource = ImageResourceDescriptor(
+            resourceID: resourceID,
+            candidateURLs: orderedCandidates.map {
+                $0.element.destination.absoluteString
+            }
+        )
+        return ImageRequest(
+            resource: resource,
+            targetPixelSize: targetPixelSize,
+            purpose: purpose,
+            resizeMode: .fit
+        )
+    }
 }
 
 enum ThreadMediaDimensionFallback: Equatable, Sendable {

@@ -10,7 +10,7 @@ struct Stage11LiveCompositionTests {
 
         #expect(environment.readingDataSourceMode == .live)
         #expect(environment.httpClient is URLSessionHTTPClient)
-        #expect(environment.imageLoader is DisabledImageLoader)
+        #expect(environment.imageLoader is ProductionImageLoader)
     }
 
     @MainActor
@@ -43,6 +43,29 @@ struct Stage11LiveCompositionTests {
             return
         }
         #expect(!items.isEmpty)
+        #expect(await client.events().isEmpty)
+    }
+
+    @MainActor
+    @Test
+    func uiTestingFixtureImagesIgnoreNetworkCandidates() async throws {
+        let descriptor = LaunchScenarioFactory.make(
+            scenario: .fixtureReadingFlow
+        )
+        let environment = descriptor.compositionRoot.environment
+        let client = try #require(
+            environment.httpClient as? HarnessMockHTTPClient
+        )
+
+        #expect(environment.imageLoader is FixtureReadingImageLoader)
+        let payload = try await environment.imageLoader.load(ImageRequest(
+            resourceID: FixtureReadingImageResource.blue,
+            candidateURLs: [
+                "https://images.fixture.invalid/must-not-be-requested.png"
+            ]
+        ))
+
+        #expect(!payload.data.isEmpty)
         #expect(await client.events().isEmpty)
     }
 

@@ -37,6 +37,10 @@ struct Stage14PFRSPageTests {
 
         var media = Tieba_Media()
         media.type = 3
+        media.bigPic = "https://images.fixture.invalid/forum-big.jpg"
+        media.dynamicPic = "https://images.fixture.invalid/forum-dynamic.gif"
+        media.srcPic = "http://images.fixture.invalid/forum-insecure.jpg"
+        media.originPic = "https://images.fixture.invalid/forum-origin.jpg"
         threads[2].media = [media]
         var video = Tieba_VideoInfo()
         video.videoMd5 = "fixture-video"
@@ -65,6 +69,16 @@ struct Stage14PFRSPageTests {
         ])
         #expect(snapshot.currentPage == 2)
         #expect(snapshot.hasMore)
+        #expect(snapshot.threads[2].thumbnailResources == [
+            ImageResourceDescriptor(
+                resourceID: "forum.t140003.media.1",
+                candidateURLs: [
+                    "https://images.fixture.invalid/forum-big.jpg",
+                    "https://images.fixture.invalid/forum-dynamic.gif",
+                    "https://images.fixture.invalid/forum-origin.jpg"
+                ]
+            )
+        ])
         #expect(presentation.threadRows[2].rowKind == .singleMedia)
         #expect(presentation.threadRows[3].rowKind == .video)
     }

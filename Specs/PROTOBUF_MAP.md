@@ -1,6 +1,6 @@
 # Protobuf 映射与生成图
 
-状态：`STAGE16B_PROFILE_AND_207_FILE_CLOSURE_VERIFIED`
+状态：`STAGE19A_IMAGE_PROJECTION_AND_207_FILE_CLOSURE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。
 
@@ -172,6 +172,24 @@ cursor；因此 `RecommendationPage.terminal` 仍为 unknown，不得发明服�
 terminal。iOS 以空页或 duplicate-only 页停止自动继续，只是受测的
 client no-progress/terminal policy。跨页身份沿用 Android 实际导航字段
 `ThreadInfo.id`，按服务器首次顺序 first-wins 去重。
+
+### 图片候选投影（阶段 19A）
+
+本阶段没有增加 Proto root 或 generated 文件，只把当前 207-file closure
+中已经生成的图片字段投影到 production image request。映射发生在
+Repository/Mapper 边界，View 不接触 generated 类型。
+
+| Wire carrier | 列表/正文候选顺序 | Viewer 候选顺序 | 稳定身份 |
+|---|---|---|---|
+| `ThreadInfo.media[]::Media` | `big_pic → dynamic_pic → src_pic → origin_pic` | 当前列表图片进入帖子后由 PB MediaIntent 决定，不复用列表 ordinal 冒充 Viewer identity | owner threadID + 原始 media ordinal |
+| `PbContent.type=3` | `big_cdn_src → big_src → dynamic → cdn_src → cdn_src_active → src → origin_src` | `origin_src → big_cdn_src → big_src → dynamic → cdn_src → cdn_src_active → src` | `ThreadContentNodeID.stableKey` |
+| `PbContent.type=20` | `src` | `src` | `ThreadContentNodeID.stableKey` |
+
+所有字符串先经过现有 URL validation，再由 `ImageResourceDescriptor` 施加
+HTTPS-only、无 credential/fragment、去重和长度上限。原始 media ordinal
+在过滤无效候选前取得，避免 compactMap 后重编号导致稳定身份漂移。
+图片 target pixels、content mode、缓存和解码错误不属于 Wire 语义；它们是
+阶段 19A 的本地图片加载策略，不能反推为 Proto 字段含义。
 
 ### FRS Page
 

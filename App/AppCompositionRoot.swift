@@ -141,7 +141,7 @@ final class AppCompositionRoot {
                 idGenerator: MonotonicIDGenerator(),
                 httpClient: httpClient,
                 session: authContextProvider,
-                imageLoader: DisabledImageLoader(),
+                imageLoader: ProductionImageLoader.production(),
                 cache: NoStoreDataCache(),
                 diagnostics: OSDiagnosticsClient()
             ),

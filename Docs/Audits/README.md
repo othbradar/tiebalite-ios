@@ -40,3 +40,7 @@ iPhone/iPad 旋转与窄宽证据及 Beta 限制见
 阶段 18 的主链路无障碍语义、1000 帖/1000 楼虚拟化、
 MediaViewer 资源、无网络重试、存储恢复与完整质量证据见
 `PHASE18_ACCESSIBILITY_PERFORMANCE_RESILIENCE.md`。
+
+阶段 19A 的图片候选证据、匿名 Production loader、ImageIO 下采样、
+Recommendation/Forum/Thread/Viewer 接线、Cell 复用和 Live 运行证据见
+`PHASE19A_PRODUCTION_IMAGE_PIPELINE.md`。

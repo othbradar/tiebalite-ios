@@ -67,7 +67,7 @@ enum ThreadContentImageRenderState {
         _ payload: ImagePayload,
         for request: ThreadImageRequestDescriptor
     ) -> Self {
-        guard let image = UIImage(data: payload.data)?.preparingForDisplay() else {
+        guard let image = payload.displayImage() else {
             return .failedToDecode(request)
         }
         return .rendered(request, image)
@@ -107,19 +107,29 @@ enum ThreadContentImageLoad {
     @MainActor
     static func resolve(
         _ request: ThreadImageRequestDescriptor,
-        using imageLoader: any ImageLoading
+        using imageLoader: any ImageLoading,
+        targetPixelSize: ImageTargetPixelSize = .default(for: .threadContent)
     ) async throws -> ThreadContentImageRenderState {
         guard request.isLoadable else {
             return .failedToFetch(request)
         }
         do {
             let payload = try await imageLoader.load(
-                ImageRequest(resourceID: request.resourceID)
+                request.imageRequest(
+                    purpose: .threadContent,
+                    targetPixelSize: targetPixelSize
+                )
             )
             try Task.checkCancellation()
             return .decoding(payload, for: request)
         } catch is CancellationError {
             throw CancellationError()
+        } catch ImageLoadingError.decodingFailed {
+            try Task.checkCancellation()
+            return .failedToDecode(request)
+        } catch ImageLoadingError.sourceDimensionsTooLarge {
+            try Task.checkCancellation()
+            return .failedToDecode(request)
         } catch {
             try Task.checkCancellation()
             return .failedToFetch(request)

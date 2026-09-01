@@ -20,6 +20,9 @@ struct FixtureForumHomeRepository: ForumHomeRepository {
                 viewCount: Int32(200 + index * 37),
                 isPinned: index < 2,
                 mediaCount: seed.imageResources.count,
+                thumbnailResources: seed.imageResources.map {
+                    ImageResourceDescriptor(resourceID: $0)
+                },
                 hasVideo: false
             )
         }

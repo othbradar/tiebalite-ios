@@ -48,6 +48,54 @@ struct Stage11LiveRecommendationTests {
     }
 
     @Test
+    func liveRepositoryProjectsEvidenceBackedThumbnailResources() async throws {
+        let client = HarnessMockHTTPClient()
+        let provider = try activeProvider()
+        let repository = LiveRecommendationRepository(
+            client: client,
+            authContextProvider: provider,
+            host: "fixture.invalid"
+        )
+        let load = Task {
+            try await repository.loadRecommendations()
+        }
+        try await client.waitForPendingCallCount(1)
+        let call = try #require(await client.pendingCalls().first)
+        var media = Tieba_Media()
+        media.bigPic = "https://images.fixture.invalid/big.jpg"
+        media.srcPic = "https://images.fixture.invalid/source.jpg"
+        var thread = Tieba_ThreadInfo()
+        thread.id = 7_001
+        thread.threadID = 7_001
+        thread.title = "带图帖子"
+        thread.forumName = "Fixture吧"
+        thread.media = [media]
+        var data = Tieba_PersonalizedResponseData()
+        data.threadList = [thread]
+        var response = Tieba_PersonalizedResponse()
+        response.data = data
+
+        try await client.succeed(
+            call.id,
+            with: HTTPResponse(
+                statusCode: 200,
+                headers: [
+                    "content-type": PersonalizedProtocol.liveResponseMIMEType
+                ],
+                body: try response.serializedData()
+            )
+        )
+
+        let summaries = try await load.value
+        let thumbnail = try #require(summaries.first?.thumbnail)
+        #expect(thumbnail.resource.resourceID == "recommendation.t7001.media.1")
+        #expect(thumbnail.resource.candidateURLs == [
+            "https://images.fixture.invalid/big.jpg",
+            "https://images.fixture.invalid/source.jpg"
+        ])
+    }
+
+    @Test
     func liveRepositoryMapsAnExplicitEmptyEnvelopeToEmptyDomain() async throws {
         let client = HarnessMockHTTPClient()
         let provider = try activeProvider()
