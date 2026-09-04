@@ -1,9 +1,9 @@
 # TiebaLite iOS
 
 TiebaLite iOS 是一个非官方、只读的 iOS/iPadOS 贴吧客户端。本仓库当前状态为
-本地 Beta Release Candidate：核心阅读链路已实现并通过 Simulator 自动化与
-人工 smoke，但没有获得百度官方认可，也不代表已经具备 App Store、公开或商业
-分发授权。
+公开源码 Beta Release Candidate：核心阅读链路已实现并通过 Simulator 自动化与
+人工 smoke，但没有获得百度官方认可，也不代表包含第三方或生成 Proto 的 App
+Store/商业二进制分发权利已经清理完成。
 
 ## 已实现
 
@@ -101,15 +101,19 @@ UI smoke、Pager/Media interaction、静态策略、秘密扫描和 Release 隔�
   image lease 或跨 View in-flight 请求合并。
 - 真机完整 VoiceOver、iOS 18.x runtime、完整设备/Stage Manager 矩阵尚未验证。
 - logout 实现有确定性测试，但为保留当前会话，本轮未执行真实 logout。
-- App Store、商标、服务条款、Proto 文件级来源以及公开/商业分发权利尚未完成
+- App Store、商标、服务条款、Proto 文件级来源以及商业二进制分发权利尚未完成
   独立确认。
 
-这些限制不阻塞本地 Beta RC，但阻塞任何“App Store ready”“生产认证”或商业
-分发声明。
+这些限制不阻塞公开源码 Beta RC，但阻塞任何“App Store ready”“生产认证”或
+“商业分发权利已清理完成”的声明。
 
 ## 许可与来源
 
-根 [LICENSE](LICENSE) 当前明确记录“尚未授予项目级使用或分发许可”；源代码
-可见不等于已获得开源许可。第三方依赖、Android reference 与生成 Proto 的精确
-来源和边界见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与
+项目作者有权许可的原创 iOS 源码采用
+[GNU General Public License v3.0 only](LICENSE)。该许可不重新许可第三方依赖、
+Android reference、生成 Proto 或其他权利归属不明的材料；它们继续适用各自的
+许可证和来源边界，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与
 [来源审计](Docs/Audits/SOURCE_AND_LICENSE_NOTES.md)。
+
+此授权自包含该根许可证的版本起适用；`v0.1.0-beta.1` 与
+`v0.1.0-beta.2` 是保留其各自历史 `LICENSE` 的旧快照，不追溯改写。

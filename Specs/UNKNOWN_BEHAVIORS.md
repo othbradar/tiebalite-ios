@@ -58,7 +58,7 @@ Android 静态源码不是服务端或运行时证据。本文件集中记录所
 | U-23 | 未知 tag 是否解码后可 round-trip 保留 | `LOCAL_WIRE_VERIFIED`：Personalized 顶层 field 2047 decode/re-encode/decode 保留；live server 行为不在结论内 |
 | U-24 | 裸 int 状态/排序/type 完整值域 | 累积多 fixture，领域类型始终保留 `.unknown(raw)` |
 | U-25 | 321 个 schema 中已选 endpoint 真正最小闭包 | `CLOSED_FOR_CURRENT_SELECTED_ROOTS_LOCAL`：Personalized 51、PBPage 125、ForumGuide 58、FRS 74、Profile request/response union 105，当前八-root union 207；ThreadList/PBFloor 等仍 open |
-| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_LOCAL_POLICY`：ADR-0011/0013/0015/0016/0021 允许本地、个人、非商业 exact pinned 生成当前 207-file union；公开分发/App Store/商业仍 `BLOCKED` |
+| U-26 | schema 复用的许可证/分发后果 | `PARTIAL_PUBLIC_POLICY`：项目负责人已批准公开当前仓库，并以 `GPL-3.0-only` 许可其有权许可的原创 iOS 代码；207-file union 的文件级 provenance/第三方权利仍 `UNKNOWN`，公开行为不构成权利证据，App Store 与商业二进制分发仍未清权 |
 
 阶段 07 local closure record：
 

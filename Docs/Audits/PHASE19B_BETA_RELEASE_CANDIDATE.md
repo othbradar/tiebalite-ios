@@ -276,8 +276,9 @@ Debug/Release initializer 分支、拆分小型 View 和缩短测试类名修正
 5. logout 实现有确定性测试，但本轮为保留会话没有执行真实 logout。
 6. 完整楼中楼独立页、签到、发帖、回复/发布评论、点赞、删除、私信、离线下载和
    推送不在 Beta 产品范围。
-7. Android reference/Proto 的文件级来源，以及 App Store、商标、服务条款、公开/
-   商业分发权利尚未完成独立确认。
+7. 公开源码仓库及原创 iOS 代码的 `GPL-3.0-only` 授权已由项目负责人批准；
+   Android reference/Proto 的文件级来源，以及 App Store、商标、服务条款和
+   商业二进制分发权利尚未完成独立确认。
 
-上述限制不阻塞本地 Beta RC，但阻塞 `APP_STORE_READY`、
+上述限制不阻塞公开源码 Beta RC，但阻塞 `APP_STORE_READY`、
 `PRODUCTION_CERTIFIED` 或 `COMMERCIAL_DISTRIBUTION_CLEARED` 声明。

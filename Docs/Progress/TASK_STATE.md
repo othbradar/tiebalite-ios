@@ -1,5 +1,10 @@
 # TASK_STATE
 
+- 2026-09-04 公开源码决定：
+  `PUBLIC_SOURCE_REPOSITORY = OWNER_APPROVED`；
+  `ROOT_LICENSE = GPL-3.0-only`，仅覆盖项目作者有权许可的原创 iOS 代码；
+  third-party/Generated Proto provenance、App Store、商标、服务条款和商业
+  二进制分发权利仍为 `UNRESOLVED`。
 - 2026-09-04 滚动锚点热修复打包/推送：
   `SCROLL_ANCHOR_HOTFIX = PUSHED_TO_GITHUB`；
   修复文件为 `Sources/InteractionKit/VirtualList/VirtualizedList.swift`，
@@ -1363,7 +1368,9 @@ Keychain，未修改 Android submodule，未读取或执行阶段 09。
    专项裁切测试。
 6. UI/Unit 使用 iOS 26.5 Simulator；iOS 18.x、真机、VoiceOver
    实操和真实 iPad 分屏未验证。
-7. 公开/App Store/商业分发仍被 ADR-0011 权利边界阻塞。
+7. 此处阶段 08 当时的公开分发阻塞结论，已由 2026-09-04 项目负责人批准
+   公开源码仓库的决定部分取代；Android reference/Proto 文件级 provenance、
+   App Store 和商业二进制分发权利仍未清理。
 8. 阶段 06 已按个人开源 Beta 风险范围接受；发布前矩阵仍保留为 Known
    Limitations，详见本文件末尾与
    `Docs/Audits/INTERACTION_SPIKE_REPORT.md`。

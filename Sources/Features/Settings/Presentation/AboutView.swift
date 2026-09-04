@@ -34,7 +34,10 @@ struct OpenSourceLicensesView: View {
                 Text("Apache License 2.0 + Runtime Library Exception")
             }
             Section("本项目") {
-                Text("本地 Beta RC；公开、App Store 与商业分发权利尚未确认。")
+                Text(
+                    "公开源码 Beta RC；原创 iOS 代码采用 GPL-3.0-only。"
+                        + "第三方/Proto、App Store 与商业二进制分发权利仍待确认。"
+                )
             }
             Section("参考项目") {
                 Text("TiebaLite Android reference")

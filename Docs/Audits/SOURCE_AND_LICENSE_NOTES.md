@@ -1,19 +1,25 @@
 # 来源与许可证记录
 
-状态：`LOCAL_PERSONAL_NONCOMMERCIAL_PROTO_USE_APPROVED`；
-`PUBLIC_APP_STORE_COMMERCIAL_DISTRIBUTION_BLOCKED`
+状态：`PUBLIC_SOURCE_REPOSITORY_APPROVED`；
+`ORIGINAL_IOS_CODE_LICENSED_GPL_3_0_ONLY`；
+`THIRD_PARTY_APP_STORE_COMMERCIAL_RIGHTS_UNRESOLVED`
 
-本文件记录阶段 01 可证实的来源和边界，不构成法律意见。任何分发、上架、商业使用或文件级复用决定都需要项目负责人单独批准。
+本文件记录可证实的来源和边界，不构成法律意见。项目负责人于 2026-09-04
+明确批准将仓库公开，并将其有权许可的原创 iOS 代码按 `GPL-3.0-only` 发布；
+第三方材料、生成物、上架、商业二进制分发或文件级复用仍需分别确认权利。
 
-## 阶段 19B 根仓库许可状态
+## 2026-09-04 根仓库许可更新
 
-- iOS 根仓库此前没有项目级 `LICENSE`；阶段 19B 增加的根 `LICENSE` 明确
-  记录当前没有授予使用、复制、修改或分发许可，并未擅自选择 MIT、GPL、
-  Apache 等许可证。
-- Android submodule 的 GPL-3.0 文本只属于该 reference，不应误写为 iOS
-  根仓库许可证。
-- 当前结论仅为本地 Beta RC。源代码可见不等于获得开源许可；公开、App Store、
-  商标和商业分发继续阻塞于独立权利确认。
+- 根 `LICENSE` 现为完整 GNU GPL version 3 文本；项目作者有权许可的原创 iOS
+  代码采用 `GPL-3.0-only`，不是 `or-later`。
+- 本次授权自包含该根许可证的版本起生效；`v0.1.0-beta.1` 和
+  `v0.1.0-beta.2` 继续保留各自快照中的历史许可文本，不追溯改写。
+- 选择 GPL-3.0-only 是为了与 Android reference 的 GPLv3 证据保持保守兼容，
+  不是对 Android submodule 或生成 Proto 权利链已经清理完成的声明。
+- 根许可不重新许可第三方依赖、submodule、生成 Proto、服务内容或商标；这些
+  材料继续适用各自许可证、来源和服务条款。
+- 公开源码仓库已获项目负责人批准；App Store、商标、服务条款、Proto
+  文件级来源和商业二进制分发权利仍需独立确认。
 - 当前第三方/生成物清单汇总于根 `THIRD_PARTY_NOTICES.md`。
 
 ## 阶段 07 本地项目决策
@@ -162,7 +168,7 @@
 | 观察用户任务和状态语义 | 允许 | 用独立 iOS 设计与代码表达；保留证据路径 |
 | 记录公开 protocol fact（path、field number、wire shape） | 审慎允许用于规格 | 必须有本地源码/脱敏运行证据；不凭字段名猜语义 |
 | 独立实现 mapper/state machine | 允许 | 不逐行翻译；用 fixture/tests 定义行为 |
-| 从 pinned submodule 生成八-root/207-file read-endpoint union | 仅本地/个人/非商业允许 | ADR-0011/0013/0015/0016/0021；exact commit/path/hash/import lock；不复制 `.proto`；公开分发仍阻塞 |
+| 从 pinned submodule 生成八-root/207-file read-endpoint union | `PUBLIC_REPOSITORY_OWNER_APPROVED / THIRD_PARTY_RIGHTS_UNKNOWN` | 项目负责人已批准公开当前仓库；ADR-0011/0013/0015/0016/0021 的 exact commit/path/hash/import lock 继续有效；公开行为本身不证明 schema/生成物权利已清理，也不解除 App Store/商业二进制限制 |
 | 使用 `n0099` 或其他外部 schema 集 | 禁止 | 不作为直接/间接输入；需要独立来源与权利决策 |
 | 复制 Kotlin/Java/Compose | 禁止默认复制 | 需要独立授权和完整 GPL 影响评估 |
 | 复制 UI 资源/图标/品牌 | 禁止 | 产品章程禁止造成官方授权误导 |
@@ -243,9 +249,9 @@ reference Gradle 声明 Wire、Compose Destinations、Room、Retrofit/OkHttp、S
 - 不得绕过 TLS、认证、风控或平台限制。
 - 真实 fixture 只使用公开测试内容或专用测试账号并深度脱敏。
 
-## 发布前阻塞项
+## App Store / 商业二进制发布前阻塞项
 
-以下任一未关闭时，不得声明可公开分发/商业使用：
+以下任一未关闭时，不得声明已完成 App Store 或商业二进制分发清权：
 
 1. submodule fork/upstream 与权利人链不明。
 2. README 非商业声明未解释。

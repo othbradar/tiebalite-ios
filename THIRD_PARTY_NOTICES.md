@@ -1,7 +1,23 @@
 # Third-Party Notices and Provenance
 
 This file records the components and reference material actually used by the
-current local Beta RC. It is an engineering inventory, not a legal conclusion.
+current public-source Beta RC. It is an engineering inventory, not a legal
+conclusion.
+
+## TiebaLite iOS original source
+
+The original iOS source code for which the project owner holds the necessary
+rights is licensed under GNU GPL version 3 only (`GPL-3.0-only`), as recorded in
+the repository root `LICENSE`.
+
+This grant applies from repository versions that contain that GPL root license.
+The historical `v0.1.0-beta.1` and `v0.1.0-beta.2` snapshots retain the license
+text included in those snapshots and are not retroactively relicensed here.
+
+That project-level grant does not relicense third-party dependencies, the
+Android reference submodule, generated Protocol Buffer code, schemas, service
+content, trademarks, or other material the project owner does not own. Those
+materials remain subject to their own licenses, provenance, and service terms.
 
 ## Apple SwiftProtobuf
 
@@ -32,8 +48,9 @@ Compose UI, icons, or image resources.
 The generated Swift Proto closure currently contains eight roots and 207 locked
 inputs read directly from the pinned submodule. Paths, hashes, and import roots
 are recorded in `Config/Protobuf/Personalized.inputs.tsv`. The `.proto` files do
-not have uniform file-level provenance headers, so public/App Store/commercial
-distribution remains blocked pending an independent rights review.
+not have uniform file-level provenance headers. Publishing this source
+repository does not resolve that provenance; App Store and commercial binary
+distribution remain uncleared pending an independent rights review.
 
 ## protobuf-java fixture tool
 
