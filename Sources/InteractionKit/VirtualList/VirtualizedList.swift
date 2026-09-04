@@ -99,13 +99,14 @@ where Item: Identifiable & Equatable & Sendable,
         var pendingItems: [Item]?
         var isApplyingSnapshot = false
         var hasAppliedSnapshot = false
-        var hasRestoredAnchor = false
+        private var pendingRestoredAnchor: Item.ID?
         private var activeHostedCellIDs: Set<ObjectIdentifier> = []
         private let hostedCells = NSHashTable<VirtualListHostingCell>
             .weakObjects()
 
         init(parent: VirtualizedList) {
             self.parent = parent
+            pendingRestoredAnchor = parent.restoredAnchor
         }
 
         func install(on tableView: VirtualizedTableView) {
@@ -329,14 +330,13 @@ where Item: Identifiable & Equatable & Sendable,
         }
 
         private func restoreAnchorIfNeeded(in tableView: UITableView) {
-            guard !hasRestoredAnchor,
-                  let restoredAnchor = parent.restoredAnchor,
+            guard let restoredAnchor = pendingRestoredAnchor,
                   let dataSource,
                   let indexPath = dataSource.indexPath(for: restoredAnchor)
             else {
                 return
             }
-            hasRestoredAnchor = true
+            pendingRestoredAnchor = nil
             tableView.scrollToRow(
                 at: indexPath,
                 at: .top,

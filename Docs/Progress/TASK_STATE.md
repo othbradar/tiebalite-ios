@@ -1,5 +1,14 @@
 # TASK_STATE
 
+- 2026-09-04 滚动锚点热修复打包/推送：
+  `SCROLL_ANCHOR_HOTFIX = READY_TO_PUSH`；
+  修复文件为 `Sources/InteractionKit/VirtualList/VirtualizedList.swift`，
+  回归为 `Tests/Stage17AdaptiveLayoutTests.swift`。
+  已执行 `make quality-fast`、`git diff --check`、secret scan、
+  forbidden/static/networking/lint/build/unit 聚合门禁；新增
+  `Releases/TiebaLite-0.1.0-build1-ios18-arm64-unsigned.ipa`
+  作为未签名 arm64 真机 IPA，SHA-256
+  `18e29c811a000240900b96cdcf15c050b0de32ce362748ec536ad0626a16464b`。
 - 当前阶段：19B（本地 Beta Release Candidate 已完成，停止）
 - `PROJECT_STATUS = BETA_RELEASE_CANDIDATE`
 - 状态：`PHASE_16A_SEARCH = COMPLETE`

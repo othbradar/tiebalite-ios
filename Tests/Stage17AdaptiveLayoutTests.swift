@@ -187,13 +187,93 @@ struct Stage17AdaptiveLayoutTests {
         table.removeFromSuperview()
     }
 
+    @Test
+    func retainedValueUpdateAfterSettledAnchorDoesNotRepositionLiveTable()
+        async throws {
+        let anchor = Stage17TestBox<Int?>(nil)
+        var list = makeList(anchor: anchor)
+        let coordinator = list.makeCoordinator()
+        let window = UIWindow(
+            frame: CGRect(x: 0, y: 0, width: 390, height: 844)
+        )
+        let table = VirtualizedTableView(
+            frame: window.bounds,
+            style: .plain
+        )
+        window.addSubview(table)
+        window.makeKeyAndVisible()
+        coordinator.install(on: table)
+        coordinator.synchronize()
+        await waitForSnapshotApplyCount(1, table: table)
+        await waitForInitialSnapshot(coordinator: coordinator)
+        window.layoutIfNeeded()
+        table.layoutIfNeeded()
+
+        let target = IndexPath(row: 40, section: 0)
+        let targetOffset = table.rectForRow(at: target).minY + 37
+        table.setContentOffset(
+            CGPoint(x: 0, y: targetOffset),
+            animated: false
+        )
+        table.layoutIfNeeded()
+        let settledOffset = table.contentOffset.y
+        #expect(abs(settledOffset - targetOffset) < 0.5)
+
+        coordinator.scrollViewDidEndDecelerating(table)
+        let emittedAnchor = try #require(anchor.value)
+        #expect(emittedAnchor == 40)
+
+        list = makeList(
+            anchor: anchor,
+            restoredAnchor: emittedAnchor,
+            revision: 1
+        )
+        coordinator.parent = list
+        coordinator.synchronize()
+        await waitForSnapshotApplyCount(2, table: table)
+        table.layoutIfNeeded()
+
+        #expect(abs(table.contentOffset.y - settledOffset) < 0.5)
+        coordinator.dismantle()
+        table.removeFromSuperview()
+    }
+
+    @Test
+    func initialAnchorStillRestoresWhenTheTableIsCreated() async throws {
+        let anchor = Stage17TestBox<Int?>(nil)
+        let list = makeList(anchor: anchor, restoredAnchor: 40)
+        let coordinator = list.makeCoordinator()
+        let window = UIWindow(
+            frame: CGRect(x: 0, y: 0, width: 390, height: 844)
+        )
+        let table = VirtualizedTableView(
+            frame: window.bounds,
+            style: .plain
+        )
+        window.addSubview(table)
+        window.makeKeyAndVisible()
+        coordinator.install(on: table)
+        coordinator.synchronize()
+        await waitForSnapshotApplyCount(1, table: table)
+        await waitForInitialSnapshot(coordinator: coordinator)
+        window.layoutIfNeeded()
+        table.layoutIfNeeded()
+
+        #expect(table.indexPathsForVisibleRows?.first?.row == 40)
+        coordinator.dismantle()
+        table.removeFromSuperview()
+    }
+
     private func makeList(
-        anchor: Stage17TestBox<Int?>
+        anchor: Stage17TestBox<Int?>,
+        restoredAnchor: Int? = nil,
+        revision: Int = 0
     ) -> VirtualizedList<Stage17ListItem, Stage17ListRow> {
         VirtualizedList(
-            items: (0..<100).map(Stage17ListItem.init),
+            items: (0..<100).map { Stage17ListItem(id: $0, revision: revision) },
             backgroundColor: .systemBackground,
             accessibilityIdentifier: "stage17.resize-list",
+            restoredAnchor: restoredAnchor,
             onScrollSettled: { anchor.value = $0 },
             rowContent: { item in
                 Stage17ListRow(item: item)
@@ -213,13 +293,26 @@ struct Stage17AdaptiveLayoutTests {
         }
     }
 
+    private func waitForInitialSnapshot<RowContent: View>(
+        coordinator: VirtualizedList<Stage17ListItem, RowContent>.Coordinator
+    ) async {
+        for _ in 0..<100 {
+            if coordinator.hasAppliedSnapshot {
+                return
+            }
+            await Task.yield()
+        }
+    }
+
 }
 
 private struct Stage17ListItem: Identifiable, Equatable, Sendable {
     let id: Int
+    let revision: Int
 
-    init(_ id: Int) {
+    init(id: Int, revision: Int = 0) {
         self.id = id
+        self.revision = revision
     }
 }
 
@@ -229,7 +322,8 @@ private struct Stage17ListRow: View {
     var body: some View {
         Text(
             "Stage 17 row \(item.id): a deterministic long line that "
-                + "must reflow when the available container width changes."
+                + "must reflow when the available container width changes. "
+                + "revision \(item.revision)"
         )
         .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
         .padding()
