@@ -1,0 +1,12 @@
+请执行 `Prompts/ParityRemediation/R00_REFERENCE_LOCK_AND_REVIEW_HARNESS.md`。
+
+必须先读取仓库现有 AGENTS.md 指令链，并显式使用
+`$tiebalite-android-visual-parity`。
+
+这是对已经完成的 TiebaLite iOS 做视觉/功能一致性整改，
+不是重新搭项目。当前只执行 R00，不得修改生产 UI，
+不得进入 R01。
+
+完成构建后把 App 覆盖安装到 Simulator，保留现有 Keychain，
+打开基线页面并保存截图。最后输出
+`READY_FOR_USER_VISUAL_REVIEW` 后停止，不提交。
