@@ -106,10 +106,12 @@ enum AppRouter {
                 onDisplayed: {
                     await dependencies.featureStores.browsingHistoryStore
                         .recordThread($0)
+                },
+                onOpenSubposts: { source in
+                    guard let threadID = ThreadID(source.threadID), let postID = PostID(source.postID) else { return }
+                    openRoute(.subposts(threadID: threadID, postID: postID))
                 }
             )
-            // Extend the scrolling viewport, retaining keyboard and top-bar safe areas.
-            .ignoresSafeArea(.container, edges: .bottom)
         case let .forum(forum):
             ForumHomeDestination(
                 forum: forum, scope: scope, dependencies: dependencies, openRoute: openRoute

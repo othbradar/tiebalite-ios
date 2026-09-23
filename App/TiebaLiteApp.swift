@@ -15,6 +15,7 @@ struct TiebaLiteApp: App {
 #else
     private let compositionRoot = AppCompositionRoot.production()
 #if DEBUG && !UITESTING
+    private let runsR06ThreadLab = ProcessInfo.processInfo.arguments.contains("--r06-thread-parity")
     private let runsStage11LiveProbe = DebugLiveAPIProbeLaunch.isRequested(
         arguments: ProcessInfo.processInfo.arguments
     )
@@ -60,7 +61,9 @@ struct TiebaLiteApp: App {
             }
 #else
 #if DEBUG && !UITESTING
-            if runsStage14PLongForumLab {
+            if runsR06ThreadLab {
+                DebugStage15LongThreadLabView(parity: true)
+            } else if runsStage14PLongForumLab {
                 DebugStage14PLongForumLabView()
             } else if runsStage16BProfileProbe {
                 DebugProfileProbeView()

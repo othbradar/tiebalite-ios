@@ -10,7 +10,7 @@ struct TiebaMediaGridGeometry {
         return max(0, width)
     }
 
-    init(count: Int, width: CGFloat) {
+    init(count: Int, width: CGFloat, aspectRatios: [Double]? = nil) {
         guard count > 0, width.isFinite, width > 0 else {
             rowCounts = []
             frames = []
@@ -24,6 +24,29 @@ struct TiebaMediaGridGeometry {
         let cellWidth = max(0, (width - CGFloat(columns - 1) * gap) / CGFloat(columns))
         let cellHeight = count == 1 ? width / 2 : (count <= 3 ? width / 3 : cellWidth)
         rowCounts = (0..<rows).map { min(columns, count - $0 * columns) }
+        if let aspectRatios, aspectRatios.count >= count {
+            var result: [CGRect] = []
+            var offset = 0
+            var y: CGFloat = 0
+            for rowCount in rowCounts {
+                let ratios = aspectRatios[offset..<(offset + rowCount)].map {
+                    $0.isFinite && $0 > 0 ? CGFloat($0) : 1
+                }
+                let availableWidth = cellWidth * CGFloat(rowCount)
+                let rowHeight = availableWidth / ratios.reduce(0, +)
+                var x: CGFloat = 0
+                for ratio in ratios {
+                    let itemWidth = rowHeight * ratio
+                    result.append(CGRect(x: x, y: y, width: itemWidth, height: rowHeight))
+                    x += itemWidth + gap
+                }
+                y += rowHeight + gap
+                offset += rowCount
+            }
+            frames = result
+            height = max(0, y - gap)
+            return
+        }
         frames = (0..<count).map { index in
             CGRect(
                 x: CGFloat(index % columns) * (cellWidth + gap),
@@ -37,14 +60,16 @@ struct TiebaMediaGridGeometry {
 }
 
 private struct TiebaMediaGridLayout: Layout {
+    var aspectRatios: [Double]?
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = TiebaMediaGridGeometry.proposedWidth(proposal.width)
-        let geometry = TiebaMediaGridGeometry(count: subviews.count, width: width)
+        let geometry = TiebaMediaGridGeometry(count: subviews.count, width: width, aspectRatios: aspectRatios)
         return CGSize(width: width, height: geometry.height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let geometry = TiebaMediaGridGeometry(count: subviews.count, width: bounds.width)
+        let geometry = TiebaMediaGridGeometry(count: subviews.count, width: bounds.width, aspectRatios: aspectRatios)
         for (subview, frame) in zip(subviews, geometry.frames) {
             subview.place(
                 at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
@@ -58,6 +83,13 @@ private struct TiebaMediaGridLayout: Layout {
 struct TiebaMediaGrid: View {
     let resources: [ImageResourceDescriptor]
     let imageLoader: any ImageLoading
+
+    /// Hosts existing image cells without owning their loading or selection lifecycle.
+    static func content<Content: View>(
+        aspectRatios: [Double], @ViewBuilder cells: () -> Content
+    ) -> some View {
+        TiebaMediaGridLayout(aspectRatios: aspectRatios) { cells() }
+    }
 
     var body: some View {
         TiebaMediaGridLayout {

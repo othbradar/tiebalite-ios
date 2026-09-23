@@ -1,5 +1,13 @@
 # TASK_STATE
 
+- 2026-09-23 用户确认“可以这次看起来没问题了，提交R06进入R07”。R06 = USER_VISUALLY_APPROVED，授权提交并开始 R07 官方表情；提交前定向 Unit 22项/5 suites、R06短UI 2/2（51.639s）、make lint/build通过，日志在 Artifacts/VisualReview/R07/r06-approval-*。历史失败与1000楼手工性能未采集项继续保留；未运行完整quality。后续手工交付继续使用保留账号的完整Live应用。
+
+- 2026-09-23 R06用户修订 = READY_FOR_USER_VISUAL_REVIEW：应用日期统一中文（帖子/动态/吧内/历史，保留本地时区），吧chip移到系统返回键右侧固定toolbar，加入真实圆形吧头像并加宽，关闭iOS26叠加玻璃背景。帖子列表只移除原header项，楼层/footer ID和承载不变；Store仅新增一行分页缺图时保留论坛头像，22个共享列表/手势/图片/Session文件hash未变。Unit20项通过，最终短UI iPhone1/1（13.399s）/iPad1/1（14.215s）、lint/build/static/网络/凭据/diff通过；原始失败和修正见R06_ACCEPTANCE.md。两台正常App覆盖安装，无卸载/清Keychain/样本启动参数；iPhone已回到用户截图同一真实QLC帖子，日期“2026年9月20日 12:59”、高通吧头像可见；iPad停Live施德楼吧且旧日期中文可见。证据在Artifacts/VisualReview/R06/ToolbarRevision/。未暂存/提交、不进入R07；既有1000楼手工滚动缺口保留。
+
+- 2026-09-23 用户要求人工验收必须展示保留账号登录态的完整应用，独立Fixture页不足以验收。已取消两台Debug样本启动参数，正常启动完整App；iPhone原关注吧列表已恢复，从高通吧打开真实帖子“低频能效p用没有”，头像/等级/正文/图片/回复条实际显示，停留供用户操作。截图 `Artifacts/VisualReview/R06/iphone-live-review.png`。未触碰凭证、未卸载或清Keychain；本次仅切换入口、记录，无生产代码修改/重跑测试/提交。后续人工交付优先完整Live应用，隔离Fixture仅用于自动化及补充证据。
+
+- 2026-09-23 R05 已按用户授权提交 `50c5cb2`（feat: align forum home tabs and feed with TiebaLite），未推送。R06 = READY_FOR_USER_VISUAL_REVIEW：平面楼层/真实作者字段、连续图片原比例网格、前三条子回复和全部route、只读回复条已实现；保留既有虚拟列表/分页/anchor/图片系统。定向Unit主轮42项、图片补轮19项通过；iPhone Smoke 1/1（36.357s）、iPad 1/1（49.934s，含旋转），最终lint/build/static/网络/凭据/diff通过，23个保护文件hash未变。原1000楼Fixture已打开但CUA未确认连续快速滚动效果，该手工项仍待复核，不宣称性能无回退。两台正常Debug已覆盖安装，无卸载/清Keychain，停在4图+三条预览+查看全部样本，iPhone前台/iPad竖屏。完整失败、修正、截图和限制见 `Docs/VisualParity/R06_ACCEPTANCE.md`。R06未暂存/提交，不进入R07。
+
 - 2026-09-23 用户完整检查后批准 R05，明确授权“提交05R进入06R”。R05 = USER_VISUALLY_APPROVED；提交前 R05/ThreadReader 定向 Unit 37 项/7 suites、lint/build/static/凭据扫描/diff 全通过。此前已记录的 Stage17 基线/连续旋转 XCTest 限制保留，不重跑长矩阵。批准截图在 Artifacts/VisualReview/R05/BottomInset/；后续按独立 R06 提示词实施。
 
 - 2026-09-23 用户回复“我看了修好了”：R05 底部白条修复 = USER_VISUALLY_APPROVED。正常 App 两台覆盖安装且停在高通吧；iPhone 前台、iPad 横屏。停止追加测试/交互，未暂存/提交、未进入 R06。

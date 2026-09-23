@@ -92,6 +92,7 @@ struct BrowsingHistoryView: View {
                             }
                             Spacer(minLength: Spacing.small)
                             Text(entry.visitedAt, style: .relative)
+                                .environment(\.locale, Locale(identifier: "zh_CN"))
                                 .font(Typography.font(.caption))
                                 .foregroundStyle(SemanticColor.secondaryText)
                         }

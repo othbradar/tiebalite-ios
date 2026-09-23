@@ -8,6 +8,7 @@ struct TiebaUserVisuals: Equatable, Sendable {
     let levelID: Int?
     let isBawu: Bool
     let bawuType: String?
+    let ipLocation: String?
 
     init(
         rawUserID: Int64,
@@ -15,7 +16,8 @@ struct TiebaUserVisuals: Equatable, Sendable {
         portrait: String? = nil,
         levelID: Int? = nil,
         isBawu: Bool = false,
-        bawuType: String? = nil
+        bawuType: String? = nil,
+        ipLocation: String? = nil
     ) {
         self.rawUserID = rawUserID
         self.displayName = displayName
@@ -23,6 +25,7 @@ struct TiebaUserVisuals: Equatable, Sendable {
         self.levelID = levelID.flatMap { $0 > 0 ? $0 : nil }
         self.isBawu = isBawu
         self.bawuType = bawuType
+        self.ipLocation = ipLocation.flatMap { $0.isEmpty ? nil : $0 }
     }
 
     var avatarResource: ImageResourceDescriptor? {

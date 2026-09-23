@@ -17,21 +17,10 @@ enum ThreadReaderRowID: Hashable, Sendable {
     }
 }
 
-struct ThreadReaderHeaderRowModel: Equatable, Sendable {
-    let threadID: Int64
-    let title: String
-    let forumName: String
-    let author: ThreadReaderAuthor
-    let replyCount: Int32
-
-    var authorName: String {
-        author.displayName
-    }
-}
-
 struct ThreadReaderSubpostRowModel: Identifiable, Equatable, Sendable {
     let id: ThreadContentSource
     let authorName: String
+    let author: ThreadReaderAuthor
     let replyToDisplayName: String?
     let metadata: String
     let document: ThreadContentDocument
@@ -39,6 +28,7 @@ struct ThreadReaderSubpostRowModel: Identifiable, Equatable, Sendable {
     init(_ subpost: ThreadReaderSubpost) {
         id = subpost.id
         authorName = subpost.author.displayName
+        author = subpost.author
         replyToDisplayName = subpost.replyToDisplayName
         metadata = subpost.metadata
         document = subpost.document
@@ -54,14 +44,24 @@ struct ThreadReaderPostRowModel: Equatable, Sendable {
     let inlineSubposts: [ThreadReaderSubpostRowModel]
     let remainingSubpostCount: Int
     let totalSubpostCount: Int
+    let author: ThreadReaderAuthor
+    let isThreadAuthor: Bool
+    let title: String?
+    let replyCount: Int32?
+    let agreeCount: Int64?
 
-    init(_ post: ThreadReaderPost) {
+    init(_ post: ThreadReaderPost, threadAuthorID: Int64 = 0, title: String? = nil, replyCount: Int32? = nil) {
+        author = post.author
+        isThreadAuthor = post.author.isThreadAuthor(threadAuthorID)
+        self.title = post.floorNumber == 1 ? title : nil
+        self.replyCount = post.floorNumber == 1 ? replyCount : nil
+        agreeCount = post.agreeCount
         source = post.document.source
         floorNumber = post.floorNumber
         authorName = post.author.displayName
         metadata = post.metadata
         document = post.document
-        inlineSubposts = post.subposts.prefix(4).map(
+        inlineSubposts = post.subposts.prefix(3).map(
             ThreadReaderSubpostRowModel.init
         )
         totalSubpostCount = max(post.subpostTotal, inlineSubposts.count)
@@ -86,7 +86,6 @@ struct ThreadReaderPaginationRowModel: Equatable, Sendable {
 
 struct ThreadReaderRowModel: Identifiable, Equatable, Sendable {
     enum Content: Equatable, Sendable {
-        case header(ThreadReaderHeaderRowModel)
         case pagination(ThreadReaderPaginationRowModel)
         case post(ThreadReaderPostRowModel)
     }
@@ -121,9 +120,8 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
         pagination: ThreadReaderPaginationRowState
     ) {
         threadID = snapshot.threadID
-        let postRows = snapshot.posts.map(Self.postRow)
-        rows = [Self.headerRow(snapshot)]
-            + postRows
+        let postRows = snapshot.posts.map { Self.postRow($0, snapshot: snapshot) }
+        rows = postRows
             + [Self.paginationRow(
                 threadID: snapshot.threadID,
                 state: pagination
@@ -142,11 +140,8 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
         newPosts: [ThreadReaderPost],
         pagination: ThreadReaderPaginationRowState
     ) {
-        if rows.first?.id == .header(threadID: threadID) {
-            rows[0] = Self.headerRow(snapshot)
-        }
         removePaginationRow()
-        rows.append(contentsOf: newPosts.map(Self.postRow))
+        rows.append(contentsOf: newPosts.map { Self.postRow($0, snapshot: snapshot) })
         rows.append(Self.paginationRow(
             threadID: threadID,
             state: pagination
@@ -174,23 +169,8 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
         )
     }
 
-    private static func headerRow(
-        _ snapshot: ThreadReaderSnapshot
-    ) -> ThreadReaderRowModel {
-        ThreadReaderRowModel(
-            id: .header(threadID: snapshot.threadID),
-            content: .header(ThreadReaderHeaderRowModel(
-                threadID: snapshot.threadID,
-                title: snapshot.title,
-                forumName: snapshot.forumName,
-                author: snapshot.author,
-                replyCount: snapshot.replyCount
-            ))
-        )
-    }
-
     private static func postRow(
-        _ post: ThreadReaderPost
+        _ post: ThreadReaderPost, snapshot: ThreadReaderSnapshot
     ) -> ThreadReaderRowModel {
         let postID = post.document.source.postID
         let rowID: ThreadReaderRowID = post.floorNumber == 1
@@ -204,7 +184,9 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
             )
         return ThreadReaderRowModel(
             id: rowID,
-            content: .post(ThreadReaderPostRowModel(post))
+            content: .post(ThreadReaderPostRowModel(
+                post, threadAuthorID: snapshot.author.rawUserID, title: snapshot.title, replyCount: snapshot.replyCount
+            ))
         )
     }
 

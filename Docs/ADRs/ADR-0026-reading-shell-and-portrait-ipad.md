@@ -24,3 +24,7 @@ Android 主页面自己的 bottom navigation 不属于 Forum/Thread destination�
 用户指出吧/帖子仍有固定白条，iPad 横竖屏同样存在。短 Fixture 回归量到三次阅读表格底边与窗口底边相差 34pt；这是系统导航内部的阅读目的页将 UIKit 滚动视口限制在 bottom safe area 上方，和已移除的根导航按钮不同。
 
 .ignoresSafeArea 放在 Shell 外层无效；在 AppRouter 的 Forum/Thread 阅读目的页，以及 ForumHomeView 给独立 Pager host 提供的页面内容上使用 `.ignoresSafeArea(.container, edges: .bottom)`，允许滚动视口延伸到 Home indicator 区域。作为用户明确要求的阅读视口例外，顶部/键盘安全区仍保留，非阅读根页面不忽略底部安全区；不修改 UITableView、Pager、Cell、图片/Session 或手势实现。视觉判据改为视口底边与窗口相差不超过 1pt；不以额外色块、负 padding 或固定高度掩盖。
+
+## R06 的实际回复条
+
+R06 提示词明确要求真实 bottom safe-area composer。ThreadReader 从无底部控件改为紧凑回复条时，移除 AppRouter 对该目的页的底部忽略，使用系统 safeAreaInset 保证按钮在 Home indicator 上方；列表紧贴回复条上沿，不能在二者间残留白区。吧页继续延伸到底边。R05 短测试的帖子目标边缘因此改为回复条上沿（<=1pt），吧页仍为屏幕底边；没有放宽容差或修改共享列表。

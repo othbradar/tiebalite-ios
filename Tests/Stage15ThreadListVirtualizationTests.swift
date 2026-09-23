@@ -20,7 +20,6 @@ struct Stage15ThreadListVirtualizationTests {
         let postIDs = snapshot.posts.map(\.document.source.postID)
 
         let expectedRows: [ThreadReaderRowID] = [
-            .header(threadID: snapshot.threadID),
             .firstPost(threadID: snapshot.threadID, postID: postIDs[0])
         ] + postIDs.dropFirst().map { postID in
             .post(threadID: snapshot.threadID, postID: postID)

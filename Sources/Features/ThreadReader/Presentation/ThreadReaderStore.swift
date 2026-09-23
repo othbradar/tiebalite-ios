@@ -257,6 +257,7 @@ final class ThreadReaderStore {
             threadID: retained.threadID,
             title: page.title,
             forumName: page.forumName,
+            forumAvatarResource: page.forumAvatarResource ?? retained.forumAvatarResource,
             author: page.author,
             replyCount: page.replyCount,
             posts: retained.posts + uniquePosts,

@@ -28,7 +28,7 @@ struct ThreadContentRenderer: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.medium) {
+        VStack(alignment: .leading, spacing: Spacing.small) {
             switch document.availability {
             case .available:
                 availableContent
@@ -46,18 +46,52 @@ struct ThreadContentRenderer: View {
         if document.isVisiblyEmpty {
             ThreadEmptyContentView()
         } else {
-            ForEach(document.nodes) { node in
-                ThreadContentNodeView(
-                    node: node,
-                    document: document,
-                    imageLoader: imageLoader,
-                    readingTextSize: readingTextSize,
-                    onOpenMedia: onOpenMedia,
-                    onOpenExternalLink: onOpenExternalLink
-                )
+            ForEach(ThreadContentBlock.make(document.nodes)) { block in
+                switch block {
+                case let .node(node):
+                    ThreadContentNodeView(
+                        node: node, document: document, imageLoader: imageLoader,
+                        readingTextSize: readingTextSize, onOpenMedia: onOpenMedia,
+                        onOpenExternalLink: onOpenExternalLink
+                    )
+                case let .images(nodes):
+                    ThreadContentImageGroup(nodes: nodes, imageLoader: imageLoader, onOpenMedia: onOpenMedia)
+                }
             }
             if let poll = document.poll {
                 ThreadReadOnlyPollView(poll: poll)
+            }
+        }
+    }
+}
+
+@MainActor
+private struct ThreadContentImageGroup: View {
+    let nodes: [ThreadContentNode]
+    let imageLoader: any ImageLoading
+    let onOpenMedia: (ThreadMediaIntent) -> Void
+
+    private var images: [ThreadImageContent] {
+        nodes.compactMap { if case let .image(image) = $0.payload { image } else { nil } }
+    }
+
+    var body: some View {
+        let visible = Array(images.prefix(8))
+        VStack(alignment: .trailing, spacing: 2) {
+            TiebaMediaGrid.content(aspectRatios: visible.map { $0.dimensions.layoutAspectRatio }) {
+                ForEach(visible, id: \.mediaID) { image in
+                    ThreadContentImageView(
+                        content: image,
+                        mediaIntent: ThreadContentBlock.mediaIntent(nodes: nodes, selecting: image.mediaID),
+                        imageLoader: imageLoader, onOpenMedia: onOpenMedia,
+                        aspectRatio: image.dimensions.layoutAspectRatio
+                    )
+                }
+            }
+            if images.count > visible.count {
+                Text("共 \(images.count) 张图片")
+                    .font(Typography.font(.caption))
+                    .foregroundStyle(SemanticColor.secondaryText)
             }
         }
     }
@@ -172,6 +206,8 @@ private struct ThreadContentImageView: View {
     let imageLoader: any ImageLoading
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
+    var aspectRatio: Double?
+
     @Environment(\.displayScale) private var displayScale
     @State private var requestGeneration: UInt64 = 0
     @State private var renderState = ThreadContentImageRenderState.idle
@@ -262,7 +298,7 @@ private struct ThreadContentImageView: View {
     private var stableImageFrame: some View {
         Color.clear
         .aspectRatio(
-            ThreadContentImagePresentation.layoutAspectRatio(
+            aspectRatio ?? ThreadContentImagePresentation.layoutAspectRatio(
                 dimensions: content.dimensions,
                 phase: currentRenderState.phase
             ),
@@ -284,7 +320,7 @@ private struct ThreadContentImageView: View {
         }
         .background(SemanticColor.surface)
         .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(imageAccessibilityLabel)
         .accessibilityValue(currentRenderState.phase.accessibilityValue)
@@ -296,49 +332,15 @@ private struct ThreadContentImageView: View {
     @ViewBuilder
     private var phaseContent: some View {
         switch currentRenderState {
-        case .idle:
-            imageStatusContent(
-                systemImage: "photo",
-                message: ThreadContentImageCopy.idleMessage
-            )
-        case .loading:
-            VStack(spacing: Spacing.small) {
-                ProgressView()
-                Text(ThreadContentImageCopy.loadingMessage)
-                    .font(Typography.font(.caption))
-            }
-            .foregroundStyle(SemanticColor.secondaryText)
         case let .rendered(_, image):
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .accessibilityHidden(true)
-        case .failedToDecode, .failedToFetch:
-            imageStatusContent(
-                systemImage: "photo.badge.exclamationmark",
-                message: ThreadContentImageCopy.failureMessage
-            )
-        case .cancelled:
-            imageStatusContent(
-                systemImage: "photo",
-                message: ThreadContentImageCopy.cancelledMessage
-            )
+            Image(uiImage: image).resizable().scaledToFit()
+        case .failedToFetch, .failedToDecode:
+            Rectangle().fill(SemanticColor.secondaryText.opacity(0.35)).frame(width: 8, height: 1)
+        case .idle, .loading, .cancelled:
+            TiebaParityTokens.neutralFill
         }
     }
 
-    private func imageStatusContent(
-        systemImage: String,
-        message: String
-    ) -> some View {
-        VStack(spacing: Spacing.small) {
-            Image(systemName: systemImage)
-                .font(.system(size: IconSize.large))
-                .accessibilityHidden(true)
-            Text(message)
-                .font(Typography.font(.caption))
-        }
-        .foregroundStyle(SemanticColor.secondaryText)
-    }
 }
 
 @MainActor

@@ -24,7 +24,8 @@ final class AppCompositionRoot {
         appSettingsRepository: (any AppSettingsRepository)? = nil,
         recommendationRepository: (any RecommendationRepository)? = nil,
         userProfileRepository: (any UserProfileRepository)? = nil,
-        forumHomeRepository: (any ForumHomeRepository)? = nil
+        forumHomeRepository: (any ForumHomeRepository)? = nil,
+        threadReaderRepository: (any ThreadReaderRepository)? = nil
     ) {
         self.environment = environment
         self.notificationCounts = notificationCounts
@@ -51,7 +52,7 @@ final class AppCompositionRoot {
             self.recommendationRepository =
                 recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
-            threadReaderRepository = FixtureThreadReaderRepository()
+            self.threadReaderRepository = threadReaderRepository ?? FixtureThreadReaderRepository()
             self.userProfileRepository =
                 userProfileRepository ?? FixtureUserProfileRepository()
 #endif
@@ -77,7 +78,7 @@ final class AppCompositionRoot {
             searchRepository = LiveSearchRepository(
                 client: environment.httpClient
             )
-            threadReaderRepository = LiveThreadReaderRepository(
+            self.threadReaderRepository = LiveThreadReaderRepository(
                 client: environment.httpClient
             )
             self.userProfileRepository =

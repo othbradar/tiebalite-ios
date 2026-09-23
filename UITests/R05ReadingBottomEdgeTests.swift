@@ -32,6 +32,11 @@ final class R05ReadingBottomEdgeTests: XCTestCase {
     @MainActor
     private func bottomGap(_ list: XCUIElement, app: XCUIApplication) -> CGFloat {
         XCTAssertTrue(list.waitForExistence(timeout: 5))
+        if list.identifier.hasPrefix("thread-reader.") {
+            let composer = app.descendants(matching: .any)["thread-reader.reply-bar"]
+            XCTAssertTrue(composer.waitForExistence(timeout: 5))
+            return composer.frame.minY - list.frame.maxY
+        }
         return app.frame.maxY - list.frame.maxY
     }
 }

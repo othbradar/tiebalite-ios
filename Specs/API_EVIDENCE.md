@@ -844,3 +844,9 @@ UI c5f1125：ForumPage.kt getSortType 默认 0、菜单值 [0,1]；generalTabs �
 R05 匿名运行（2026-09-23，固定公开高通吧）：reply/creation/good/good-filter 四种请求均 HTTP 200、application/octet-stream，分别 13 条；初始响应有 8 个符合 Android 筛选的普通分类、6 个精华分类。generalTabList HTTP 200、application/protobuf、343995 bytes，解码 30 条、id/threadID 均全部为正；首次 pipeline 因沿用 FRS 的 MIME 白名单而 fail closed。仅为 GeneralTabProtocol 添加已观察到的 application/protobuf，不改变 FRS 或全局网络校验。全部请求 Cookie=false，无原始 body/ID/内容持久化。
 
 R05 复验：live-probe-verified.log 六次请求全部 HTTP 200、Cookie=false。reply/creation/good/good-filter 各 13 条；generalTabList page 1 / page 2 各 30 条、343995 / 348384 bytes、application/protobuf、has_more=true，raw id/threadID 全为正，next 使用前页原 id cursor。两次请求媒体多图条目各 2，首屏最新多图 5。个人 level=false，UI 保持缺省不显示。此证据启用 ADR-0025 的匿名普通分类，未保存 body 或作者/帖子 ID，已删除临时 Probe。
+
+### R06 阅读楼层显示字段
+
+R06 用户修订CODE_EVIDENCE：协议锁 `PbPage/PbPageResponseData.proto` forum#2 → `SimpleForum.proto` id#1/name#2/avatar#4；UI锁c5f1125 `ThreadPage.kt` TopBar:1873–1920 使用 forum.avatar 加圆形Avatar及吧名。PBPageDomainMapper透传为ThreadReaderSnapshot.forumAvatarResource，沿用TiebaAvatarResource现有CDN规则及匿名ProductionImageLoader，缺失保持nil；追加页未返回头像时保留已加载的首屏值。R06ThreadPresentationTests的固定generated-message检查非空/缺失映射。没有改请求/Proto/凭据边界或合成URL。
+
+CODE_EVIDENCE：UI 锁 c5f1125 ThreadPage.kt:194–208/2130–2174 使用 author.ip_address、level_id、portrait、author.id == threadAuthorId、bawuType 与 post.agree.diffAgreeNum。协议锁下 User.proto field127 ip_address（生成 User.ipAddress）、Agree.proto field5 diffAgreeNum；Post.agree 的存在性通过 hasAgree 保留。TiebaUserVisualMapper 增加可选 ipLocation，PBPageDomainMapper 增加可选 agreeCount；缺字段不产生位置/计数，已有头像规则与请求凭据边界不改。确定性 generated-message 测试 R06ThreadPresentationTests 验证映射，不新增 endpoint 或更改 PBPage 请求。Live 数据展示尚待本阶段观察，不以 Fixture 冒充。

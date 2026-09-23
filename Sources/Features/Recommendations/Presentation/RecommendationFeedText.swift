@@ -10,10 +10,7 @@ enum RecommendationFeedText {
         case ..<86_400: return "\(elapsed / 3_600) 小时前"
         case ..<604_800: return "\(elapsed / 86_400) 天前"
         default:
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "zh_CN")
-            formatter.dateFormat = "yyyy-MM-dd"
-            return formatter.string(from: Date(timeIntervalSince1970: Double(timestamp)))
+            return TiebaDateText.date(Date(timeIntervalSince1970: Double(timestamp)), includesTime: false)
         }
     }
 

@@ -8,6 +8,7 @@ enum UITestLaunchScenario: String, CaseIterable {
     case sessionSignedInFixture = "session.signed-in-fixture"
     case rootNavigationMixedMedia = "root.mixed-media"
     case forumHomeParity = "forum.parity"
+    case threadReaderParity = "thread.parity"
     case dynamicFeedParity = "dynamic.parity"
     case sessionExpired = "session.expired"
 
@@ -27,6 +28,8 @@ enum UITestLaunchScenario: String, CaseIterable {
             "Harness: Session signed out"
         case .sessionSignedInFixture:
             "Harness: Session signed in fixture"
+        case .threadReaderParity:
+            "Harness: Thread parity"
         case .forumHomeParity:
             "Harness: Forum parity"
         case .dynamicFeedParity:

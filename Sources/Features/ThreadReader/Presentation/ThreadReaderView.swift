@@ -9,8 +9,10 @@ struct ThreadReaderView: View {
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
     let onDisplayed: (ThreadReaderSnapshot) async -> Void
+    let onOpenSubposts: (ThreadContentSource) -> Void
 
     @State private var retryGeneration: UInt64 = 0
+    @State private var showsUnavailableAction = false
 
     init(
         store: ThreadReaderStore,
@@ -18,7 +20,8 @@ struct ThreadReaderView: View {
         readingTextSize: ReadingTextSizePreference = .standard,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void,
         onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in },
-        onDisplayed: @escaping (ThreadReaderSnapshot) async -> Void = { _ in }
+        onDisplayed: @escaping (ThreadReaderSnapshot) async -> Void = { _ in },
+        onOpenSubposts: @escaping (ThreadContentSource) -> Void = { _ in }
     ) {
         self.store = store
         self.imageLoader = imageLoader
@@ -26,6 +29,7 @@ struct ThreadReaderView: View {
         self.onOpenMedia = onOpenMedia
         self.onOpenUser = onOpenUser
         self.onDisplayed = onDisplayed
+        self.onOpenSubposts = onOpenSubposts
     }
 
     var body: some View {
@@ -34,7 +38,18 @@ struct ThreadReaderView: View {
             content
         }
         .background(SemanticColor.background)
-        .navigationTitle(navigationTitle)
+        .navigationTitle("")
+        .toolbar { forumToolbar }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if store.state.snapshot != nil {
+                ThreadReaderReplyBar(imageLoader: imageLoader) { showsUnavailableAction = true }
+            }
+        }
+        .alert("功能暂未开放", isPresented: $showsUnavailableAction) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text("当前支持只读浏览，评论、点赞等功能暂未开放。")
+        }
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(
@@ -45,6 +60,23 @@ struct ThreadReaderView: View {
         }
         .task(id: displayedThreadID) {
             await recordDisplayedThreadAcrossProjection()
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var forumToolbar: some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            forumToolbarItem.sharedBackgroundVisibility(.hidden)
+        } else {
+            forumToolbarItem
+        }
+    }
+
+    private var forumToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            if let snapshot = store.state.snapshot {
+                ThreadReaderForumChip(snapshot: snapshot, imageLoader: imageLoader)
+            }
         }
     }
 
@@ -99,6 +131,8 @@ struct ThreadReaderView: View {
                         readingTextSize: configuredRow.readingTextSize,
                         onOpenMedia: onOpenMedia,
                         onOpenUser: onOpenUser,
+                        onOpenSubposts: onOpenSubposts,
+                        onReadOnlyAction: { showsUnavailableAction = true },
                         requestNextPage: requestNextPage
                     )
                 }
@@ -108,10 +142,6 @@ struct ThreadReaderView: View {
         } else {
             InitialLoadingView(title: "正在加载帖子")
         }
-    }
-
-    private var navigationTitle: String {
-        store.state.snapshot?.forumName ?? "帖子"
     }
 
     private var loadTaskID: ThreadReaderLoadTaskID {
@@ -170,201 +200,7 @@ private struct ThreadReaderLoadTaskID: Hashable {
 }
 
 @MainActor
-private struct ThreadReaderRowView: View {
-    let row: ThreadReaderRowModel
-    let imageLoader: any ImageLoading
-    let readingTextSize: ReadingTextSizePreference
-    let onOpenMedia: (ThreadMediaIntent) -> Void
-    let onOpenUser: (UserProfileRoute) -> Void
-    let requestNextPage: () -> Void
-
-    @ViewBuilder
-    var body: some View {
-        switch row.content {
-        case let .header(header):
-            ThreadReaderHeaderView(
-                header: header,
-                onOpenUser: onOpenUser
-            )
-                .padding(.top, Spacing.medium)
-                .padding(.bottom, Spacing.small)
-        case let .post(post):
-            ThreadReaderPostView(
-                post: post,
-                imageLoader: imageLoader,
-                readingTextSize: readingTextSize,
-                onOpenMedia: onOpenMedia
-            )
-            .padding(.vertical, Spacing.small)
-        case let .pagination(pagination):
-            ThreadReaderPaginationView(
-                pagination: pagination,
-                requestNextPage: requestNextPage
-            )
-            .padding(.vertical, Spacing.medium)
-        }
-    }
-}
-
-@MainActor
-private struct ThreadReaderHeaderView: View {
-    let header: ThreadReaderHeaderRowModel
-    let onOpenUser: (UserProfileRoute) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.small) {
-            Text(header.title)
-                .font(Typography.font(.title))
-                .foregroundStyle(SemanticColor.primaryText)
-                .textSelection(.enabled)
-            Label(header.forumName, systemImage: "rectangle.stack")
-            if let route = UserProfileRoute(
-                userID: header.author.rawUserID,
-                fallbackDisplayName: header.author.displayName
-            ) {
-                Button {
-                    onOpenUser(route)
-                } label: {
-                    Label(header.authorName, systemImage: "person")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(SemanticColor.accent)
-                .accessibilityHint("打开用户资料")
-                .accessibilityIdentifier(
-                    "thread-reader.author.\(header.author.rawUserID)"
-                )
-            } else {
-                Label(header.authorName, systemImage: "person")
-            }
-            Label("\(header.replyCount) 条回复", systemImage: "bubble.left")
-        }
-        .font(Typography.font(.subheadline))
-        .foregroundStyle(SemanticColor.secondaryText)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.medium)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
-        .padding(.horizontal, Spacing.medium)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(
-            ThreadReaderAccessibilityID.header(header.threadID)
-        )
-    }
-}
-
-@MainActor
-private struct ThreadReaderPostView: View {
-    let post: ThreadReaderPostRowModel
-    let imageLoader: any ImageLoading
-    let readingTextSize: ReadingTextSizePreference
-    let onOpenMedia: (ThreadMediaIntent) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.medium) {
-            HStack(alignment: .firstTextBaseline, spacing: Spacing.small) {
-                Text(post.floorNumber == 1 ? "楼主" : "\(post.floorNumber) 楼")
-                    .font(Typography.font(.headline))
-                    .foregroundStyle(SemanticColor.primaryText)
-                Spacer(minLength: Spacing.small)
-                Text(post.authorName)
-                    .font(Typography.font(.subheadline))
-                    .foregroundStyle(SemanticColor.secondaryText)
-            }
-
-            Text(post.metadata)
-                .font(Typography.font(.caption))
-                .foregroundStyle(SemanticColor.secondaryText)
-
-            ThreadContentRenderer(
-                document: post.document,
-                imageLoader: imageLoader,
-                readingTextSize: readingTextSize,
-                onOpenMedia: onOpenMedia
-            )
-
-            if !post.inlineSubposts.isEmpty {
-                VStack(alignment: .leading, spacing: Spacing.small) {
-                    ForEach(post.inlineSubposts) { subpost in
-                        ThreadReaderSubpostView(
-                            subpost: subpost,
-                            imageLoader: imageLoader,
-                            readingTextSize: readingTextSize,
-                            onOpenMedia: onOpenMedia
-                        )
-                    }
-
-                    if post.remainingSubpostCount > 0 {
-                        Text("查看全部 \(post.totalSubpostCount) 条回复")
-                            .font(Typography.font(.caption))
-                            .foregroundStyle(SemanticColor.secondaryText)
-                    }
-                }
-                .padding(Spacing.small)
-                .background(SemanticColor.background)
-                .clipShape(
-                    RoundedRectangle(cornerRadius: CornerRadius.small)
-                )
-            }
-        }
-        .padding(Spacing.medium)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
-        .padding(.horizontal, Spacing.medium)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(
-            ThreadReaderAccessibilityID.post(post.source)
-        )
-    }
-}
-
-@MainActor
-private struct ThreadReaderSubpostView: View {
-    let subpost: ThreadReaderSubpostRowModel
-    let imageLoader: any ImageLoading
-    let readingTextSize: ReadingTextSizePreference
-    let onOpenMedia: (ThreadMediaIntent) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xSmall) {
-            HStack(alignment: .firstTextBaseline, spacing: Spacing.xSmall) {
-                Text(subpost.authorName)
-                    .font(Typography.font(.subheadline))
-                    .foregroundStyle(SemanticColor.primaryText)
-                if let replyTo = subpost.replyToDisplayName {
-                    Text("回复 \(replyTo)")
-                        .font(Typography.font(.caption))
-                        .foregroundStyle(SemanticColor.secondaryText)
-                }
-                Spacer(minLength: Spacing.xSmall)
-                Text(subpost.metadata)
-                    .font(Typography.font(.caption))
-                    .foregroundStyle(SemanticColor.secondaryText)
-            }
-
-            if subpost.document.isVisiblyEmpty {
-                Text("回复内容暂不可用")
-                    .font(Typography.font(.body))
-                    .foregroundStyle(SemanticColor.secondaryText)
-            } else {
-                ThreadContentRenderer(
-                    document: subpost.document,
-                    imageLoader: imageLoader,
-                    readingTextSize: readingTextSize,
-                    onOpenMedia: onOpenMedia
-                )
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(
-            ThreadReaderAccessibilityID.subpost(subpost.document.source)
-        )
-    }
-}
-
-@MainActor
-private struct ThreadReaderPaginationView: View {
+struct ThreadReaderPaginationView: View {
     let pagination: ThreadReaderPaginationRowModel
     let requestNextPage: () -> Void
 

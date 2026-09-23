@@ -7,7 +7,7 @@ enum ForumFeedText {
         if elapsed < 60 { return "刚刚" }
         if elapsed < 3_600 { return "\(Int(elapsed / 60)) 分钟前" }
         if elapsed < 86_400 { return "\(Int(elapsed / 3_600)) 小时前" }
-        return Date(timeIntervalSince1970: Double(timestamp)).formatted(.dateTime.month().day())
+        return TiebaDateText.date(Date(timeIntervalSince1970: Double(timestamp)), includesTime: false)
     }
 
     static func count(_ count: Int64?, fallback: String) -> String {

@@ -163,6 +163,7 @@ struct ThreadReaderPost: Identifiable, Equatable, Sendable {
     let document: ThreadContentDocument
     let subposts: [ThreadReaderSubpost]
     let subpostTotal: Int
+    let agreeCount: Int64?
 
     init(
         floorNumber: Int,
@@ -171,7 +172,8 @@ struct ThreadReaderPost: Identifiable, Equatable, Sendable {
         createdAtUnixSeconds: UInt32? = nil,
         document: ThreadContentDocument,
         subposts: [ThreadReaderSubpost] = [],
-        subpostTotal: Int = 0
+        subpostTotal: Int = 0,
+        agreeCount: Int64? = nil
     ) {
         self.floorNumber = floorNumber
         self.author = author
@@ -180,6 +182,7 @@ struct ThreadReaderPost: Identifiable, Equatable, Sendable {
         self.document = document
         self.subposts = subposts
         self.subpostTotal = max(subpostTotal, subposts.count)
+        self.agreeCount = agreeCount.map { max(0, $0) }
     }
 
     var id: ThreadContentSource {
@@ -191,6 +194,7 @@ struct ThreadReaderSnapshot: Equatable, Sendable {
     let threadID: Int64
     let title: String
     let forumName: String
+    let forumAvatarResource: ImageResourceDescriptor?
     let author: ThreadReaderAuthor
     let replyCount: Int32
     let posts: [ThreadReaderPost]
@@ -203,6 +207,7 @@ struct ThreadReaderSnapshot: Equatable, Sendable {
         threadID: Int64,
         title: String,
         forumName: String,
+        forumAvatarResource: ImageResourceDescriptor? = nil,
         author: ThreadReaderAuthor,
         replyCount: Int32,
         posts: [ThreadReaderPost],
@@ -214,6 +219,7 @@ struct ThreadReaderSnapshot: Equatable, Sendable {
         self.threadID = threadID
         self.title = title
         self.forumName = forumName
+        self.forumAvatarResource = forumAvatarResource
         self.author = author
         self.replyCount = replyCount
         self.posts = posts

@@ -11,7 +11,8 @@ enum TiebaUserVisualMapper {
             portrait: user.portrait.isEmpty ? nil : user.portrait,
             levelID: user.levelID > 0 ? Int(user.levelID) : nil,
             isBawu: user.isBawu == 1,
-            bawuType: user.bawuType.isEmpty ? nil : user.bawuType
+            bawuType: user.bawuType.isEmpty ? nil : user.bawuType,
+            ipLocation: user.ipAddress.trimmingCharacters(in: .whitespacesAndNewlines)
         )
     }
 }

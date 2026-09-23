@@ -54,7 +54,7 @@ enum LaunchScenarioFactory {
             sessionStatus = .signedOut
             safeLabel = "Harness: Session signed out"
             imageLoader = HarnessFixtureImageLoader(fixtures: [:])
-        case .sessionSignedInFixture, .rootNavigationMixedMedia, .dynamicFeedParity, .forumHomeParity:
+        case .sessionSignedInFixture, .rootNavigationMixedMedia, .dynamicFeedParity, .forumHomeParity, .threadReaderParity:
             networkMode = .controlled
             httpBehavior = .controlled
             sessionStatus = .signedIn
@@ -68,9 +68,7 @@ enum LaunchScenarioFactory {
             imageLoader = HarnessFixtureImageLoader(fixtures: [:])
         }
 
-        let sessionDependencies = makeSessionDependencies(
-            status: sessionStatus
-        )
+        let sessionDependencies = makeSessionDependencies(status: sessionStatus)
         let environment = makeEnvironment(
             scenario: scenario,
             httpBehavior: httpBehavior,
@@ -89,7 +87,8 @@ enum LaunchScenarioFactory {
                 sessionStore: sessionDependencies.store,
                 loginWebSession: sessionDependencies.loginWebSession,
                 recommendationRepository: recommendationRepository(for: scenario),
-                forumHomeRepository: scenario == .forumHomeParity ? R05ForumFixture() : nil
+                forumHomeRepository: scenario == .forumHomeParity ? R05ForumFixture() : nil,
+                threadReaderRepository: scenario == .threadReaderParity ? R06ThreadFixtureRepository() : nil
             ),
             isolationCanary: LaunchScenarioRegistry.isolationCanary,
             displayProfile: displayProfile
@@ -104,6 +103,7 @@ enum LaunchScenarioFactory {
 
     private static func signedInLabel(for scenario: LaunchScenarioID) -> String {
         switch scenario {
+        case .threadReaderParity: "Harness: Thread parity"
         case .forumHomeParity: "Harness: Forum parity"
         case .dynamicFeedParity: "Harness: Dynamic parity"
         case .rootNavigationMixedMedia: "Harness: Mixed-size root media"
@@ -113,6 +113,7 @@ enum LaunchScenarioFactory {
 
     private static func signedInImageLoader(for scenario: LaunchScenarioID) -> any ImageLoading {
         switch scenario {
+        case .threadReaderParity: R06ThreadFixtureImages()
         case .dynamicFeedParity, .forumHomeParity: R04FeedFixtureImages()
         case .rootNavigationMixedMedia: HarnessMixedSizeImageLoader()
         default: FixtureReadingImageLoader()

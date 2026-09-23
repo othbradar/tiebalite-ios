@@ -34,6 +34,7 @@ enum PBPageDomainMapper {
             threadID: request.threadID,
             title: nonempty(data.thread.title, fallback: "无标题"),
             forumName: forumName(data),
+            forumAvatarResource: TiebaAvatarResource.forum(forumID: data.forum.id, avatar: data.forum.avatar),
             author: mapAuthor(data.thread.author),
             replyCount: max(0, data.thread.replyNum),
             posts: posts,
@@ -166,10 +167,7 @@ enum PBPageDomainMapper {
                 fallback: context.fallbackAuthor,
                 users: context.users
             ),
-            metadata: nonempty(
-                post.timeEx,
-                fallback: timestampMetadata(createdAt, fallback: "公开帖子")
-            ),
+            metadata: timestampMetadata(createdAt, fallback: nonempty(post.timeEx, fallback: "公开帖子")),
             createdAtUnixSeconds: createdAt,
             document: ThreadContentProtoMapper.map(
                 postContent: post.content,
@@ -183,7 +181,8 @@ enum PBPageDomainMapper {
                 threadID: context.threadID,
                 users: context.users
             ),
-            subpostTotal: Int(exactly: post.subPostNumber) ?? Int.max
+            subpostTotal: Int(exactly: post.subPostNumber) ?? Int.max,
+            agreeCount: post.hasAgree ? max(0, post.agree.diffAgreeNum) : nil
         )
     }
 
@@ -278,10 +277,7 @@ enum PBPageDomainMapper {
         guard let seconds else {
             return fallback
         }
-        return Date(timeIntervalSince1970: TimeInterval(seconds)).formatted(
-            date: .abbreviated,
-            time: .shortened
-        )
+        return TiebaDateText.date(Date(timeIntervalSince1970: TimeInterval(seconds)))
     }
 
     private static func mapAuthor(_ user: Tieba_User) -> ThreadReaderAuthor {

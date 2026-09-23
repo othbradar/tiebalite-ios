@@ -141,3 +141,7 @@ fixture 是人工合成、脱敏内容，只证明锁定 schema 的首楼正文 
 - 楼中楼 content renderer 空时 `reduce` 可崩溃。
 - Poll ratio 未防 `total_poll=0`，且包含本产品禁止的 submit 写操作。
 - Video/voice URL 和播放行为依赖 Android 实现，不是跨平台协议证据。
+
+## R06 渲染补充
+
+连续image节点在楼层Cell内形成TiebaMediaGrid；任意非image节点结束一组，node/media ID及服务端顺序不变。每组最多预览8图，保留尺寸比例，超过8图提示总数；Viewer intent仅包含当前组的可加载图片，initialMediaID仍为原节点。每张图片继续既有可取消加载/代次与迟到过滤，不通过Store或整表刷新传播加载状态。非图片渲染与官方表情fallback留待R07。子回复只按服务端顺序预览3条，更多入口走既有subposts route；回复/点赞操作只有本地未开放提示。

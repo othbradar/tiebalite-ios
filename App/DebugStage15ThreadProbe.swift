@@ -22,12 +22,15 @@ enum DebugStage15LongThreadLabLaunch {
 struct DebugStage15LongThreadLabView: View {
     @State private var store: ThreadReaderStore
     @State private var mediaPresentation: MediaViewerPresentation?
+    private let parity: Bool
+    @State private var subpostPath: [ThreadContentSource] = []
 
-    init() {
+    init(parity: Bool = false) {
+        self.parity = parity
         _store = State(
             initialValue: ThreadReaderStore(
                 threadID: 990_015,
-                repository: Stage15LongThreadFixtureRepository(
+                repository: parity ? R06ThreadFixtureRepository() : Stage15LongThreadFixtureRepository(
                     threadID: 990_015,
                     totalPostCount: 1_000,
                     pageSize: 200
@@ -37,23 +40,33 @@ struct DebugStage15LongThreadLabView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $subpostPath) {
             ThreadReaderView(
                 store: store,
-                imageLoader: FixtureReadingImageLoader(),
-                onOpenMedia: openMedia
+                imageLoader: imageLoader,
+                onOpenMedia: openMedia,
+                onOpenSubposts: { subpostPath.append($0) }
             )
+            .navigationDestination(for: ThreadContentSource.self) { source in
+                if let threadID = ThreadID(source.threadID), let postID = PostID(source.postID) {
+                    SubpostsUnavailableView(threadID: threadID, postID: postID)
+                }
+            }
         }
         .accessibilityIdentifier("thread-reader.debug.long-fixture")
         .fullScreenCover(item: $mediaPresentation) { presentation in
             MediaViewer(
                 presentation: presentation,
-                imageLoader: FixtureReadingImageLoader(),
+                imageLoader: imageLoader,
                 close: {
                     mediaPresentation = nil
                 }
             )
         }
+    }
+
+    private var imageLoader: any ImageLoading {
+        parity ? R06ThreadFixtureImages() : FixtureReadingImageLoader()
     }
 
     private func openMedia(_ intent: ThreadMediaIntent) {
