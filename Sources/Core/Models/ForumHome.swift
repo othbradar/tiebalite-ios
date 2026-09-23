@@ -97,6 +97,8 @@ struct ForumSummary: Equatable, Sendable {
     let postCount: Int
     let levelID: Int?
     let levelName: String?
+    let navigation: ForumNavigation
+    let membership: ForumMembership?
 
     init(
         forumID: Int64?,
@@ -107,7 +109,9 @@ struct ForumSummary: Equatable, Sendable {
         threadCount: Int,
         postCount: Int,
         levelID: Int? = nil,
-        levelName: String? = nil
+        levelName: String? = nil,
+        navigation: ForumNavigation = ForumNavigation(),
+        membership: ForumMembership? = nil
     ) {
         self.forumID = forumID
         self.name = name
@@ -118,6 +122,8 @@ struct ForumSummary: Equatable, Sendable {
         self.postCount = postCount
         self.levelID = levelID
         self.levelName = levelName
+        self.navigation = navigation
+        self.membership = membership
     }
 }
 
@@ -135,6 +141,7 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
     let thumbnailResources: [ImageResourceDescriptor]
     let hasVideo: Bool
     let author: TiebaUserVisuals?
+    let metadata: ForumThreadMetadata
 
     init(
         itemID: Int64,
@@ -149,7 +156,8 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
         mediaCount: Int = 0,
         thumbnailResources: [ImageResourceDescriptor] = [],
         hasVideo: Bool = false,
-        author: TiebaUserVisuals? = nil
+        author: TiebaUserVisuals? = nil,
+        metadata: ForumThreadMetadata = ForumThreadMetadata()
     ) {
         self.itemID = itemID
         self.threadID = threadID
@@ -164,6 +172,7 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
         self.thumbnailResources = thumbnailResources
         self.hasVideo = hasVideo
         self.author = author
+        self.metadata = metadata
     }
 
     var id: Int64 {
@@ -176,17 +185,20 @@ struct ForumHomeSnapshot: Equatable, Sendable {
     let threads: [ForumThreadSummary]
     let currentPage: Int
     let hasMore: Bool
+    let lastThreadID: Int64
 
     init(
         forum: ForumSummary,
         threads: [ForumThreadSummary],
         currentPage: Int = 1,
-        hasMore: Bool = false
+        hasMore: Bool = false,
+        lastThreadID: Int64 = 0
     ) {
         self.forum = forum
         self.threads = threads
         self.currentPage = currentPage
         self.hasMore = hasMore
+        self.lastThreadID = lastThreadID
     }
 
     func appending(_ page: ForumHomeSnapshot) -> ForumHomeSnapshot {
@@ -201,7 +213,8 @@ struct ForumHomeSnapshot: Equatable, Sendable {
             forum: forum,
             threads: merged,
             currentPage: max(currentPage, page.currentPage),
-            hasMore: page.hasMore
+            hasMore: page.hasMore,
+            lastThreadID: page.lastThreadID
         )
     }
 }
@@ -209,10 +222,20 @@ struct ForumHomeSnapshot: Equatable, Sendable {
 struct ForumHomePageRequest: Equatable, Sendable {
     let route: ForumRoute
     let pageNumber: Int
+    let query: ForumThreadQuery
+    let lastThreadID: Int64
+    let knownForum: ForumSummary?
 
-    init(route: ForumRoute, pageNumber: Int = 1) {
+    init(
+        route: ForumRoute, pageNumber: Int = 1,
+        query: ForumThreadQuery = .latest(.lastReply),
+        lastThreadID: Int64 = 0, knownForum: ForumSummary? = nil
+    ) {
         self.route = route
         self.pageNumber = pageNumber
+        self.query = query
+        self.lastThreadID = lastThreadID
+        self.knownForum = knownForum
     }
 }
 

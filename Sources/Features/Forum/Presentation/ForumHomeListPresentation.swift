@@ -39,6 +39,7 @@ struct ForumThreadThumbnailDescription: Identifiable, Equatable, Sendable {
 }
 
 struct ForumThreadRowModel: Identifiable, Equatable, Sendable {
+    let sourceSummary: ForumThreadSummary
     let itemID: Int64
     let threadID: Int64
     let forumID: Int64?
@@ -55,6 +56,7 @@ struct ForumThreadRowModel: Identifiable, Equatable, Sendable {
     let rowKind: ForumThreadRowKind
 
     init(thread: ForumThreadSummary, forumID: Int64?) {
+        sourceSummary = thread
         itemID = thread.itemID
         threadID = thread.threadID
         self.forumID = forumID
@@ -106,23 +108,6 @@ struct ForumThreadRowModel: Identifiable, Equatable, Sendable {
         threadID
     }
 
-    var sourceSummary: ForumThreadSummary {
-        ForumThreadSummary(
-            itemID: itemID,
-            threadID: threadID,
-            title: title,
-            summary: summary,
-            forumName: forumName,
-            authorName: authorName,
-            replyCount: replyCount,
-            viewCount: viewCount,
-            isPinned: isPinned,
-            mediaCount: thumbnailDescriptions.count + additionalThumbnailCount,
-            thumbnailResources: thumbnailResources,
-            hasVideo: rowKind == .video
-        )
-    }
-
     private static func normalized(
         _ value: String,
         fallback: String
@@ -150,6 +135,7 @@ enum ForumHomeSection: String, Equatable, Hashable, Sendable {
 }
 
 enum ForumHomeRowID: Equatable, Hashable, Sendable {
+    case rule(String)
     case empty(String)
     case header(String)
     case pagination(String)
@@ -159,6 +145,7 @@ enum ForumHomeRowID: Equatable, Hashable, Sendable {
 }
 
 enum ForumHomeRowContent: Equatable, Sendable {
+    case rule(String)
     case empty
     case header(ForumSummary)
     case pagination(ForumHomePaginationPresentation)
@@ -200,13 +187,9 @@ struct ForumHomeListPresentation: Equatable, Sendable {
         }
         threadIDs = seenThreadIDs
         rows = []
-        rows.append(
-            ForumHomeRowModel(
-                id: .header(forumKey),
-                content: .header(snapshot.forum)
-            )
-        )
-
+        if let title = snapshot.forum.navigation.ruleTitle {
+            rows.append(.init(id: .rule(forumKey), content: .rule(title)))
+        }
         let pinned = threadRows.filter(\.isPinned)
         let regular = threadRows.filter { !$0.isPinned }
         if threadRows.isEmpty {
@@ -269,15 +252,6 @@ struct ForumHomeListPresentation: Equatable, Sendable {
             }
         }
         threadRows.append(contentsOf: newRows)
-        let regularSectionID = ForumHomeRowID.section(forumKey, .regular)
-        if !rows.contains(where: { $0.id == regularSectionID }) {
-            rows.append(
-                ForumHomeRowModel(
-                    id: regularSectionID,
-                    content: .section(.regular)
-                )
-            )
-        }
         let insertionIndex = rows.firstIndex {
             if case .pagination = $0.id {
                 return true
@@ -342,7 +316,7 @@ struct ForumHomeListPresentation: Equatable, Sendable {
                 id: .retainedStatus(forumKey),
                 content: .retainedStatus(status)
             ),
-            at: min(1, rows.endIndex)
+            at: 0
         )
     }
 
@@ -355,12 +329,6 @@ struct ForumHomeListPresentation: Equatable, Sendable {
         guard !threads.isEmpty else {
             return
         }
-        rows.append(
-            ForumHomeRowModel(
-                id: .section(forumKey, section),
-                content: .section(section)
-            )
-        )
         rows.append(contentsOf: threads.map { thread in
             ForumHomeRowModel(
                 id: .thread(thread.threadID),

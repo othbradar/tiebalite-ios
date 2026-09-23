@@ -832,3 +832,15 @@ R04 头像传输补充：对无用户路径/参数的 `https://tb.himg.baidu.com
 本节是获批的实现合同，尚不代表修复后的真实头像加载通过；运行结果只在执行后写入 R04_AUTHOR_AVATAR。此前 HTTPS 合成 UNKNOWN 历史保留，这次没有声称旧域名支持 HTTPS。
 
 修复后 RUNTIME_EVIDENCE：最终正常 Debug 构建使用既有 Live Personalized → mapper → TiebaAvatarView → ProductionImageLoader，iPhone 动态首屏实际显示两个不同作者的真实头像；截图 iphone-live-avatars-top.png / iphone-live-final.png。没有临时 probe 或额外作者资料请求。匿名图片请求与精确 host/path 准入由 R04AuthorAvatarTests 验证；不将 Fixture 头像当 Live 证据，不将首屏截图当后续每个作者均成功的证明。
+
+## R05 Forum sort / good / ordinary tabs（CODE_EVIDENCE）
+
+UI c5f1125：ForumPage.kt getSortType 默认 0、菜单值 [0,1]；generalTabs 仅 isGeneralTab==1 && tabType==15。ForumThreadListViewModel 调 FrsPageRepository，精华 sort=-1 / goodClassifyId=0 或 forum.good_classify.class_id；MixedTiebaApiImpl.frsPage 写 sort_type、is_good、cid。ForumPage Header 消费 avatar/user_level/level_name/cur_score/levelup_score/is_like/sign_in_info；匿名缺省不能当成已登录等级。
+
+普通分类：MixedTiebaApiImpl.generalTabList / OfficialProtobufTiebaApi.generalTabListFlow，HTTPS tiebac.baidu.com POST /c/f/frs/generalTabList?cmd=309622&format=protobuf，multipart data/file、rn=30、pn=1+、tab_id/type/name/is_general_tab/is_default_navtab 均来自 nav_tab_info；sort_type 默认 0 或服务器 sort_menu.source_id；last_thread_id 初始 0，下一页 general_list.last.id。has_more==1 且列表非空继续。响应 general_list/user_list 复用 ThreadInfo/User；threadId 仍是既有 Forum route/行 ID。论坛请求保持匿名且不传播 Cookie 到图片 CDN。
+
+协议 reference 5545326 的 GeneralTabList 四个文件及 SortOption.proto 与 UI 相应协议一致；行为验收 Fixture 为合成内容，无 Live body/凭据。RUNTIME_EVIDENCE 待本轮最小匿名 Probe；生产开放依据 ADR-0025。
+
+R05 匿名运行（2026-09-23，固定公开高通吧）：reply/creation/good/good-filter 四种请求均 HTTP 200、application/octet-stream，分别 13 条；初始响应有 8 个符合 Android 筛选的普通分类、6 个精华分类。generalTabList HTTP 200、application/protobuf、343995 bytes，解码 30 条、id/threadID 均全部为正；首次 pipeline 因沿用 FRS 的 MIME 白名单而 fail closed。仅为 GeneralTabProtocol 添加已观察到的 application/protobuf，不改变 FRS 或全局网络校验。全部请求 Cookie=false，无原始 body/ID/内容持久化。
+
+R05 复验：live-probe-verified.log 六次请求全部 HTTP 200、Cookie=false。reply/creation/good/good-filter 各 13 条；generalTabList page 1 / page 2 各 30 条、343995 / 348384 bytes、application/protobuf、has_more=true，raw id/threadID 全为正，next 使用前页原 id cursor。两次请求媒体多图条目各 2，首屏最新多图 5。个人 level=false，UI 保持缺省不显示。此证据启用 ADR-0025 的匿名普通分类，未保存 body 或作者/帖子 ID，已删除临时 Probe。

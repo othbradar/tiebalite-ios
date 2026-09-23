@@ -27,10 +27,12 @@ extension AppShellSmokeTests {
             in: app
         )
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requireAbsent(.tabSettings, in: app)
         Stage16BUITestSupport.tapSystemBack(
             returningTo: Stage16BUITestID.historyScreen,
             in: app
         )
+        UITestHarness.requireTabSelected(.settings, in: app)
         UITestHarness.tapSystemBack(in: app, returningTo: .settingsRoot)
 
         scrollSettingsTo(Stage16BUITestID.settingsClearHistory, in: app).tap()

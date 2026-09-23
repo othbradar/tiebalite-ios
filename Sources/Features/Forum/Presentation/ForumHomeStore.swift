@@ -7,6 +7,11 @@ final class ForumHomeStore {
     private(set) var state: ForumHomeState = .initialLoading
     private(set) var listPresentation: ForumHomeListPresentation?
     private(set) var scrollAnchor: Int64?
+    private(set) var query: ForumThreadQuery
+    var selectedPage: ForumPageID? = .latest
+    var selectionGeneration: UInt64 = 0
+    private(set) var tabStores: [ForumPageID: ForumHomeStore] = [:]
+    private var knownForum: ForumSummary?
 
     private let repository: any ForumHomeRepository
     @ObservationIgnored private var hasCompletedLoad = false
@@ -21,14 +26,23 @@ final class ForumHomeStore {
 
     init(
         route: ForumRoute,
-        repository: any ForumHomeRepository
+        repository: any ForumHomeRepository,
+        query: ForumThreadQuery = .latest(.lastReply),
+        knownForum: ForumSummary? = nil
     ) {
         self.route = route
         self.repository = repository
+        self.query = query
+        self.knownForum = knownForum
     }
 
     func synchronize(with route: ForumRoute) async {
         if self.route != route {
+            tabStores.values.forEach { $0.cancel() }
+            tabStores = [:]
+            selectedPage = .latest
+            knownForum = nil
+            query = .latest(.lastReply)
             cancelCurrentLoad()
             self.route = route
             state = .initialLoading
@@ -62,6 +76,7 @@ final class ForumHomeStore {
     }
 
     func cancel() {
+        tabStores.values.forEach { $0.cancel() }
         guard activeGeneration != nil else {
             return
         }
@@ -74,15 +89,9 @@ final class ForumHomeStore {
     }
 
     func setScrollAnchor(_ rowID: ForumHomeRowID?) {
-        let threadID: Int64?
-        if case let .thread(id) = rowID {
-            threadID = id
-        } else {
-            threadID = nil
-        }
-        guard scrollAnchor != threadID else {
-            return
-        }
+        guard case let .thread(threadID)? = rowID,
+              listPresentation?.threadRows.contains(where: { $0.threadID == threadID }) == true,
+              scrollAnchor != threadID else { return }
         scrollAnchor = threadID
     }
 
@@ -93,6 +102,44 @@ final class ForumHomeStore {
         }
         displayedForumID = forumID
         return true
+    }
+
+    var pageIDs: [ForumPageID] {
+        [.latest, .good] + (state.displayedForum?.navigation.categories ?? []).map { .category($0.id) }
+    }
+
+    func pageStore(for id: ForumPageID) -> ForumHomeStore? {
+        id == .latest ? self : tabStores[id]
+    }
+
+    func selectPage(_ id: ForumPageID) {
+        guard pageIDs.contains(id), selectedPage != id else { return }
+        selectedPage = id
+        selectionGeneration &+= 1
+    }
+
+    func activateSelectedPage() async {
+        guard let id = selectedPage, let page = pageStore(for: id) else { return }
+        await page.synchronize(with: route)
+    }
+
+    func changeQuery(_ query: ForumThreadQuery) async {
+        guard self.query != query else { return }
+        self.query = query
+        scrollAnchor = nil
+        await reload()
+    }
+
+    private func configureTabs(_ forum: ForumSummary) {
+        guard case .latest = query else { return }
+        if tabStores[.good] == nil {
+            tabStores[.good] = ForumHomeStore(route: route, repository: repository, query: .good(0), knownForum: forum)
+        }
+        for category in forum.navigation.categories where tabStores[.category(category.id)] == nil {
+            tabStores[.category(category.id)] = ForumHomeStore(
+                route: route, repository: repository, query: .category(category, sort: 0), knownForum: forum
+            )
+        }
     }
 
     private func replaceInitialLoad(previous: ForumHomeSnapshot?) async {
@@ -106,7 +153,7 @@ final class ForumHomeStore {
         listPresentation?.setRetainedStatus(.refreshing)
 
         let repository = repository
-        let request = ForumHomePageRequest(route: route)
+        let request = ForumHomePageRequest(route: route, query: query, knownForum: knownForum)
         let task = Task { @MainActor [weak self] in
             do {
                 let snapshot = try await repository.loadForumHomePage(request)
@@ -148,7 +195,8 @@ final class ForumHomeStore {
         let repository = repository
         let request = ForumHomePageRequest(
             route: route,
-            pageNumber: pageNumber
+            pageNumber: pageNumber, query: query,
+            lastThreadID: previous.lastThreadID, knownForum: knownForum
         )
         let task = Task { @MainActor [weak self] in
             do {
@@ -203,6 +251,8 @@ final class ForumHomeStore {
         }
         switch result {
         case let .success(snapshot):
+            knownForum = snapshot.forum
+            configureTabs(snapshot.forum)
             state = snapshot.threads.isEmpty
                 ? .empty(snapshot.forum)
                 : .loaded(snapshot)

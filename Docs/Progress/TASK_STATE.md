@@ -1,5 +1,17 @@
 # TASK_STATE
 
+- 2026-09-23 用户完整检查后批准 R05，明确授权“提交05R进入06R”。R05 = USER_VISUALLY_APPROVED；提交前 R05/ThreadReader 定向 Unit 37 项/7 suites、lint/build/static/凭据扫描/diff 全通过。此前已记录的 Stage17 基线/连续旋转 XCTest 限制保留，不重跑长矩阵。批准截图在 Artifacts/VisualReview/R05/BottomInset/；后续按独立 R06 提示词实施。
+
+- 2026-09-23 用户回复“我看了修好了”：R05 底部白条修复 = USER_VISUALLY_APPROVED。正常 App 两台覆盖安装且停在高通吧；iPhone 前台、iPad 横屏。停止追加测试/交互，未暂存/提交、未进入 R06。
+
+- 2026-09-23 R05 底部白条修订：原短 Fixture 回归测得 34pt 空区；Forum/Thread destination 和 Forum Pager 页面内容延伸 bottom container 安全区后，iPhone 1/1（22.093s）、iPad 1/1（28.912s，横竖屏）通过 <=1pt 底边断言。lint/build/diff 通过，35 个保护文件 hash 未变。仅定向短回归，未重跑 Unit/quality/长矩阵；旧 Stage17/连续旋转验证限制继续保留。正常 Debug .app 已覆盖安装两台，无卸载/清 Keychain；详见 R05_NAVIGATION_REVISION.md 的底部白条章节。未暂存、未提交、未进入 R06。
+
+- 2026-09-23 R05 阅读导航修订 = READY_FOR_USER_VISUAL_REVIEW（有已记录验证失败）。吧/帖子及后续阅读路径移除根底栏和占位；iPad 竖屏全宽栈、横屏保留三列，canonical 路径和共享承载不变。iPhone 三轮阅读及原深滚动/分类等 7 项 UI 通过；iPad 4 项既有 UI 通过，新增连续旋转 XCTest 两次失败（等待动画通知/方向条件），主线程采样为空闲；CUA 三轮实际旋转、帖子返回、键盘观察正常。Unit 23/25，两个 Stage17 39/40 失败在原 Shell 同样复现。lint/build/static/网络/凭据/diff 通过，35 保护文件 hash 相同。正常 App 已覆盖安装，无卸载/清 Keychain；两台停 Live 高通吧，iPad 竖屏、iPhone 前台。详见 Docs/VisualParity/R05_NAVIGATION_REVISION.md；未暂存、未提交、不进入 R06。
+
+- 2026-09-23 R05 = READY_FOR_USER_VISUAL_REVIEW，未暂存/提交，未进入 R06。紧凑吧头、最新排序、精华/真实普通分类 Pager、独立 Store/分页/anchor、平面头像/多图帖子行已实现；共享列表/Pager/MediaViewer/图片/Session/根导航未改。定向 Unit 59 项及最后 MIME 修订后 10 项通过，iPhone Smoke 1/1（76.948s）、iPad 加强几何断言 Smoke 1/1（24.439s）；最终 lint/build/网络隔离/凭据扫描/diff 均通过，35 个受保护文件 SHA 一致。正常 Debug .app 已覆盖安装两台，无卸载/清 Keychain。iPhone 前台停 Live 高通吧“最新/按发帖时间”标签区；iPad 停同吧横向详情。Live 排序、精华、普通分类与真实头像/多图已观察，分类接口前两页各 30 条、无 Cookie。Live 深滚动及横滑仍待人工；完整命令、历史失败、截图与限制见 Docs/VisualParity/R05_ACCEPTANCE.md。
+
+- R04 已按用户授权提交 `62c2b13`（feat: align dynamic feed with TiebaLite），未推送。R05 开始，基线 Forum/Pager Unit 28 项通过，R04 approval build exit 0；计划与边界见 R05_ACCEPTANCE.md。
+
 - 2026-09-23 用户反馈“我看了确实修复了，那就提交R04进入R05”。R04 = USER_VISUALLY_APPROVED，授权精确提交当前阶段并开始 R05。头像 HTTP 边界和既有验证缺口不扩大；最终批准截图为 Artifacts/VisualReview/R04/AuthorAvatar/iphone-live-final.png。
 
 - 2026-09-23 R04 动态作者头像缺口已修复，READY_FOR_USER_VISUAL_REVIEW。用户明确允许 `tb.himg.baidu.com/sys/portrait/item/` 原版 HTTP，决策见 ADR-0024；LegacyPortraitURL 按 Android 规则转换真实 portrait，描述符与 Loader 仅放行精确来源，ATS 只配置该域名。没有 Cookie、TLS 证书绕过或新图片系统。40 项相关 Unit/80 次执行通过，补充的 6 项头像测试/32 次执行通过，iPhone 原 R04 Smoke 1/1（59.337s）、lint/build/secret scan/diff 通过。两台 Debug App 已覆盖安装，未卸载/清 Keychain；iPhone Live 首屏已实际显示两个真实作者头像并停在多图动态页。Live 深滚动仍因 CUA 滚动未生效而待人工复核。全部原始失败和证据见 R04_AUTHOR_AVATAR.md；未暂存/提交、不进入 R05。

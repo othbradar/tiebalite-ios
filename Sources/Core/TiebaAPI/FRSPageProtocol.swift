@@ -6,6 +6,7 @@ enum FRSPageProtocolError: Error, Equatable, Sendable {
     case emptyBody
     case forumIdentityMismatch
     case invalidItems
+    case invalidQuery
     case invalidPage
     case invalidStaticConfiguration
     case missingData
@@ -75,13 +76,16 @@ enum FRSPageProtocol {
         data.adParam = adParam
         data.callFrom = 0
         data.categoryID = 0
-        data.cid = 0
+        if case let .good(id) = pageRequest.query {
+            guard id >= 0 else { throw FRSPageProtocolError.invalidQuery }
+            data.cid = id
+            data.isGood = 1
+        }
         data.common = common
         data.ctime = 0
         data.dataSize = 0
         data.hotThreadID = 0
         data.isDefaultNavtab = 0
-        data.isGood = 0
         data.isSelection = 0
         data.kw = formEncode(route.forumName.rawValue)
         data.lastClickTid = 0
@@ -91,7 +95,11 @@ enum FRSPageProtocol {
         data.qType = 2
         data.rn = 90
         data.rnNeed = 30
-        data.sortType = 0
+        switch pageRequest.query {
+        case let .latest(order): data.sortType = order.rawValue
+        case .good: data.sortType = -1
+        case .category: throw FRSPageProtocolError.invalidQuery
+        }
         data.stParam = 0
         data.stType = "recom_flist"
         data.upSchema = ""
@@ -160,103 +168,6 @@ enum FRSPageProtocol {
         )
     }
 
-    static func map(
-        _ response: Tieba_FrsPage_FrsPageResponse,
-        requestedRoute: ForumRoute
-    ) throws -> ForumHomeSnapshot {
-        try map(
-            response,
-            request: ForumHomePageRequest(route: requestedRoute)
-        )
-    }
-
-    static func map(
-        _ response: Tieba_FrsPage_FrsPageResponse,
-        request: ForumHomePageRequest
-    ) throws -> ForumHomeSnapshot {
-        guard response.hasData else {
-            throw FRSPageProtocolError.missingData
-        }
-        let data = response.data
-        guard data.hasForum else {
-            throw FRSPageProtocolError.missingForum
-        }
-        let forum = data.forum
-        let requestedRoute = request.route
-        if let requestedID = requestedRoute.forumID,
-           forum.id > 0,
-           forum.id != requestedID.rawValue {
-            throw FRSPageProtocolError.forumIdentityMismatch
-        }
-
-        let forumName = nonempty(
-            forum.name,
-            fallback: requestedRoute.forumName.rawValue
-        )
-        let users = Dictionary(
-            data.userList.map { ($0.id, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        var seenThreadIDs: Set<Int64> = []
-        let threads = data.threadList.compactMap { thread -> ForumThreadSummary? in
-            guard thread.id > 0,
-                  thread.threadID > 0,
-                  seenThreadIDs.insert(thread.threadID).inserted else {
-                return nil
-            }
-            let title = threadTitle(thread)
-            let author = mapAuthor(thread, users: users)
-            return ForumThreadSummary(
-                itemID: thread.id,
-                threadID: thread.threadID,
-                title: title,
-                summary: threadSummary(thread, excluding: title),
-                forumName: nonempty(thread.forumName, fallback: forumName),
-                authorName: author?.displayName ?? "未知作者",
-                replyCount: max(0, thread.replyNum),
-                viewCount: max(0, thread.viewNum),
-                isPinned: thread.isTop == 1,
-                mediaCount: thread.media.count,
-                thumbnailResources: Array(
-                    thread.media.enumerated().lazy.compactMap { index, media in
-                        ThreadListImageResourceMapper.map(
-                            bigPicture: media.bigPic,
-                            dynamicPicture: media.dynamicPic,
-                            sourcePicture: media.srcPic,
-                            originalPicture: media.originPic,
-                            ownerResourceID:
-                                "forum.t\(thread.threadID).media.\(index + 1)"
-                        )
-                    }.prefix(3)
-                ),
-                hasVideo: thread.hasVideoInfo,
-                author: author
-            )
-        }
-        guard data.threadList.isEmpty || !threads.isEmpty else {
-            throw FRSPageProtocolError.invalidItems
-        }
-
-        return ForumHomeSnapshot(
-            forum: ForumSummary(
-                forumID: forum.id > 0
-                    ? forum.id
-                    : requestedRoute.forumID?.rawValue,
-                name: forumName,
-                slogan: nonempty(forum.slogan),
-                avatarResourceID: nonempty(forum.avatar),
-                memberCount: Int(max(0, forum.memberNum)),
-                threadCount: Int(max(0, forum.threadNum)),
-                postCount: Int(max(0, forum.postNum)),
-                levelID: forum.userLevel > 0 ? Int(forum.userLevel) : nil,
-                levelName: nonempty(forum.levelName)
-            ),
-            threads: threads,
-            currentPage: request.pageNumber,
-            hasMore: data.hasPage && data.page.hasMore_p != 0
-        )
-    }
-
     static func pipeline(
         requestedRoute: ForumRoute
     ) -> EndpointPipeline<
@@ -283,68 +194,6 @@ enum FRSPageProtocol {
                 try map(response, request: request)
             }
         )
-    }
-
-    private static func mapAuthor(
-        _ thread: Tieba_ThreadInfo,
-        users: [Int64: Tieba_User]
-    ) -> TiebaUserVisuals? {
-        if let user = users[thread.authorID] {
-            return TiebaUserVisualMapper.map(user)
-        }
-        if thread.hasAuthor {
-            return TiebaUserVisualMapper.map(thread.author)
-        }
-        return thread.authorID > 0 ? TiebaUserVisuals(
-            rawUserID: thread.authorID, displayName: "未知作者"
-        ) : nil
-    }
-
-    private static func threadTitle(_ thread: Tieba_ThreadInfo) -> String {
-        let title = thread.title.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        )
-        if !title.isEmpty {
-            return title
-        }
-        let richAbstract = thread.richAbstract
-            .filter { $0.type == 0 || $0.type == 40 }
-            .map(\.text)
-            .joined()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return richAbstract.isEmpty ? "无标题" : richAbstract
-    }
-
-    private static func threadSummary(
-        _ thread: Tieba_ThreadInfo,
-        excluding title: String
-    ) -> String? {
-        let rich = thread.richAbstract
-            .filter { $0.type == 0 || $0.type == 40 }
-            .map(\.text)
-            .joined()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let legacy = thread.abstract
-            .map(\.text)
-            .joined()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        let summary = rich.isEmpty ? legacy : rich
-        guard !summary.isEmpty, summary != title else {
-            return nil
-        }
-        return summary
-    }
-
-    private static func nonempty(_ value: String) -> String? {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
-
-    private static func nonempty(
-        _ value: String,
-        fallback: String
-    ) -> String {
-        nonempty(value) ?? fallback
     }
 
     private static func formEncode(_ value: String) -> String {

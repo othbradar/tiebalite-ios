@@ -101,3 +101,7 @@ Original source: `app/src/main/res/drawable/ic_animated_rounded_inventory_2.xml`
 `ic_animated_rounded_person.xml`. GPL-3.0 provenance is retained. Only the static
 outline/filled endpoints are used; animation is not copied. Details and conversion
 rules are recorded in `Resources/ROOT_NAVIGATION_PROVENANCE.md`.
+
+### R05 Forum UI / GeneralTabList
+
+Forum tabs, sort values, good classifications and compact feed presentation are adapted from TiebaLite UI commit c5f1125f42498e49db4e4a9cb66313b8c8a285c7: ForumPage.kt, ForumThreadListPage.kt, ForumThreadListViewModel.kt, GeneralTabListViewModel.kt and FeedCard.kt. GeneralTabList request/response schema and SortOption.proto come from the existing protocol reference 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2 under its existing GPL-3.0 provenance; exact hashes and imports are locked in Config/Protobuf/Personalized.inputs.tsv. No Android assets were copied.

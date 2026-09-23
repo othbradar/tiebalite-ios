@@ -33,7 +33,8 @@ NavigationSplitView
   没有改变任何 P0 root/Tab identity。
 - 每个主入口拥有独立导航路径、列表状态和滚动状态。
 - 主入口切换只切可见树，不重建其他入口。
-- iPhone 使用系统 `NavigationStack`；iPad 使用系统 `NavigationSplitView`。
+- iPhone 使用系统 `NavigationStack`；iPad 横向 regular 窗口使用系统 `NavigationSplitView`，竖向/方形或 compact 窗口按同一路径显示完整栈（ADR-0026）。
+- 紧凑 Shell 的 Forum/Thread 及其阅读子页不显示根底栏，也不预留底栏空间；系统返回到非阅读路径时恢复。History content 同样遵守。
 - MediaViewer 是受控覆盖层，不属于任何 Feature 自制 pager。
 - Android 的单 root NavHost、返回键先跳 home、Compose pager 和 rail/drawer 只是平台实现，不是 iOS 规范。
 

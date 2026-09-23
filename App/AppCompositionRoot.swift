@@ -23,7 +23,8 @@ final class AppCompositionRoot {
         browsingHistoryRepository: (any BrowsingHistoryRepository)? = nil,
         appSettingsRepository: (any AppSettingsRepository)? = nil,
         recommendationRepository: (any RecommendationRepository)? = nil,
-        userProfileRepository: (any UserProfileRepository)? = nil
+        userProfileRepository: (any UserProfileRepository)? = nil,
+        forumHomeRepository: (any ForumHomeRepository)? = nil
     ) {
         self.environment = environment
         self.notificationCounts = notificationCounts
@@ -46,7 +47,7 @@ final class AppCompositionRoot {
             self.appSettingsRepository =
                 appSettingsRepository ?? InMemoryAppSettingsRepository()
             followedForumsRepository = FixtureFollowedForumsRepository()
-            forumHomeRepository = FixtureForumHomeRepository()
+            self.forumHomeRepository = forumHomeRepository ?? FixtureForumHomeRepository()
             self.recommendationRepository =
                 recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
@@ -65,7 +66,7 @@ final class AppCompositionRoot {
                     client: environment.httpClient,
                     authContextProvider: resolvedAuthContextProvider
                 )
-            forumHomeRepository = LiveForumHomeRepository(
+            self.forumHomeRepository = LiveForumHomeRepository(
                 client: environment.httpClient
             )
             self.recommendationRepository =

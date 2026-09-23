@@ -68,7 +68,7 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|FRSPageMapping|GeneralTabProtocol|RecommendationFeedMapper|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
@@ -76,6 +76,7 @@ if [[ -n "$proto_usage" ]]; then
 fi
 for proto_adapter in \
   Sources/Core/TiebaAPI/FRSPageProtocol.swift \
+  Sources/Core/TiebaAPI/GeneralTabProtocol.swift \
   Sources/Core/TiebaAPI/ForumGuideProtocol.swift \
   Sources/Core/TiebaAPI/PBPageProtocol.swift \
   Sources/Core/TiebaAPI/PersonalizedProtocol.swift \
@@ -94,6 +95,8 @@ do
 done
 for domain_mapper in \
   Sources/Core/TiebaAPI/PBPageDomainMapper.swift \
+  Sources/Core/TiebaAPI/FRSPageMapping.swift \
+  Sources/Core/TiebaAPI/RecommendationFeedMapper.swift \
   Sources/Core/TiebaAPI/TiebaUserVisualMapper.swift
 do
   domain_mapper_imports="$(
@@ -148,10 +151,20 @@ reject_swift_matches \
   forum-home-credential-access \
   '\b(SessionAuthorization|SessionCredential|Keychain)\b|BDUSS|STOKEN' \
   Sources/Features/Forum
+# R05 / ADR-0025: one existing Pager, one system composer placeholder sheet,
+# and the non-interactive photo-count badge; all custom gestures remain forbidden.
 reject_swift_matches \
   forum-home-interaction-leak \
-  '\b(PagerContainer|MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.overlay[[:space:]]*\(|\.sheet[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
+  '\b(MediaViewer|DragGesture)\b|\.gesture[[:space:]]*\(|\.fullScreenCover[[:space:]]*\(|\.animation[[:space:]]*\(|withAnimation[[:space:]]*\(' \
   Sources/Features/Forum
+forum_presentations="$(
+  rg -n '\bPagerContainer\(|\.overlay\(|\.sheet\(' Sources/Features/Forum |
+    rg -v \
+      -e '^Sources/Features/Forum/Presentation/ForumHomeView\.swift:[0-9]+: *PagerContainer\(' \
+      -e '^Sources/Features/Forum/Presentation/ForumHomeView\.swift:[0-9]+: *\.sheet\(item: \$composeRoute\)' \
+      -e '^Sources/Features/Forum/Presentation/ForumThreadFeedRow\.swift:[0-9]+: *\.overlay\(alignment: \.bottomTrailing\)' || true
+)"
+[[ -z "$forum_presentations" ]] || fail forum-home-presentation-allowlist "$forum_presentations"
 reject_swift_matches \
   search-network-access \
   '\b(URLSession|HTTPClient|HTTPRequest|Endpoint)\b' \
@@ -372,7 +385,7 @@ if [[ -n "$generated_outside_allowlist" ]]; then
   fail generated-protobuf-location "$generated_outside_allowlist"
 fi
 generated_count="$(find Generated/Protobuf -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-if [[ "$generated_count" -ne 207 ]]; then
+if [[ "$generated_count" -ne 212 ]]; then
   fail generated-protobuf-count "$generated_count"
 fi
 
@@ -418,6 +431,7 @@ expected_unchecked_files="$(
     'Generated/Protobuf/FrsPage/FrsPage.pb.swift' \
     'Generated/Protobuf/FrsPage/HeadImgs.pb.swift' \
     'Generated/Protobuf/FrsPage/SignInfo.pb.swift' \
+    'Generated/Protobuf/GeneralTabList/GeneralTabListRequestData.pb.swift' \
     'Generated/Protobuf/GoodsInfo.pb.swift' \
     'Generated/Protobuf/Item.pb.swift' \
     'Generated/Protobuf/OriginThreadInfo.pb.swift' \
@@ -442,7 +456,7 @@ unchecked_count="$(
   rg -n '@unchecked[[:space:]]+Sendable' Generated/Protobuf | wc -l | tr -d ' '
 )"
 if [[ "$actual_unchecked_files" != "$expected_unchecked_files" ||
-      "$unchecked_count" -ne 29 ]]; then
+      "$unchecked_count" -ne 30 ]]; then
   fail generated-unchecked-sendable-allowlist "$actual_unchecked_files"
 fi
 

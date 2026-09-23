@@ -23,6 +23,9 @@ struct LiveForumHomeRepository: ForumHomeRepository {
     func loadForumHomePage(
         _ request: ForumHomePageRequest
     ) async throws -> ForumHomeSnapshot {
+        if case .category = request.query {
+            return try await loadCategory(request)
+        }
         let endpoint = try FRSPageProtocol.makeDescriptor(
             host: host,
             route: request.route
@@ -41,5 +44,16 @@ struct LiveForumHomeRepository: ForumHomeRepository {
         )
         try Task.checkCancellation()
         return snapshot
+    }
+    private func loadCategory(_ request: ForumHomePageRequest) async throws -> ForumHomeSnapshot {
+        let executor = EndpointExecutor(
+            client: client, requestBuilder: EndpointRequestBuilder(authorizer: AnonymousRequestAuthorizer())
+        )
+        let page = try await executor.execute(
+            endpoint: try GeneralTabProtocol.descriptor(host: host), authentication: .anonymous,
+            body: try GeneralTabProtocol.body(request), pipeline: GeneralTabProtocol.pipeline(request: request)
+        )
+        try Task.checkCancellation()
+        return page
     }
 }

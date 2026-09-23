@@ -32,8 +32,11 @@ final class IPadAppShellSmokeTests: XCTestCase {
         UITestHarness.requirePresent(.forumHomeHeader, in: app)
 
         device.orientation = .portrait
-        UITestHarness.requirePresent(.layoutRegular, in: app)
+        UITestHarness.requirePresent(.layoutCompact, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requireAbsent(.tabFollowedForums, in: app)
+        device.orientation = .landscapeLeft
+        UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.tapTab(.recommendations, in: app)
         UITestHarness.requirePresent(.recommendationsRoot, in: app)
         UITestHarness.tapTab(.followedForums, in: app)
@@ -44,6 +47,8 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
     @MainActor
     func testCanonicalStateSurvivesRegularCompactRegularProjection() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
         let app = UITestHarness.launch(scenario: .sessionSignedInFixture)
 
         UITestHarness.requirePresent(.layoutRegular, in: app)
@@ -51,13 +56,18 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
         UITestHarness.tap(.layoutControlCompact, in: app)
         UITestHarness.requirePresent(.layoutCompact, in: app)
-        UITestHarness.requireTabSelected(.followedForums, in: app)
+        UITestHarness.requireAbsent(.tabFollowedForums, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
 
+        UITestHarness.tap(.layoutControlRegular, in: app)
+        UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.tapTab(.settings, in: app)
         UITestHarness.tap(.debugOpenGallery, in: app)
         UITestHarness.requirePresent(.galleryRoot, in: app)
 
+        UITestHarness.tap(.layoutControlCompact, in: app)
+        UITestHarness.requirePresent(.layoutCompact, in: app)
+        UITestHarness.requirePresent(.galleryRoot, in: app)
         UITestHarness.tap(.layoutControlRegular, in: app)
         UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.requireTabSelected(.settings, in: app)

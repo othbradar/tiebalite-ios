@@ -3,7 +3,8 @@
 ## 导航
 
 - iPhone：每个主 Tab 保留独立 `NavigationStack` path。
-- iPad：优先 `NavigationSplitView`，选择吧/主题时保留侧栏状态；窄宽度自动折叠为栈。
+- iPad：横向 regular 窗口使用 `NavigationSplitView`，选择吧/主题时保留侧栏状态；竖向/方形或 compact 窗口使用同一 canonical route 的完整栈（ADR-0026）。
+- 紧凑 Shell 进入吧/帖子以及其后续阅读子页时移除根底栏和占位；返回非阅读路径时恢复。历史入口同样适用，不清空其他 Tab 的路径。
 - 系统返回手势必须可用，不用自定义横滑覆盖。
 - 重复点击当前 Tab：只有在产品规格明确时才滚到顶部；不得意外重建状态。
 - 深链和恢复必须通过 route 进入，不直接操纵 View 层 Bool。

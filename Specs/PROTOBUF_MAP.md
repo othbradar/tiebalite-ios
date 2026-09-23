@@ -408,3 +408,11 @@ Personalized + PBPage union；ADR-0015 以相同边界批准历史五个 root、
 App Store、商业使用及 notice/源码义务仍 `BLOCKED`；扩大范围前必须按
 `Docs/Audits/SOURCE_AND_LICENSE_NOTES.md` 新建权利决策，必要时切换到
 clean-room 最小兼容 schema。
+
+## R05：分类与展示字段
+
+锁定 reference 5545326 不变。新增 GeneralTabListRequest/Response roots，传递闭包增加 GeneralTabList 四文件与 SortOption，共 5 个，输入/输出总数 207 → 212；scripts/generate_protos.sh / Personalized.inputs.tsv / GENERATED_SHA256SUMS / GENERATION_METADATA 同步并通过双重干净生成校验。无手改生成 Swift、无新增依赖/版本漂移。
+
+FrsPage: sort_type=0/1、精华 sort_type=-1 + is_good=1/cid=class_id。响应 forum 的 cur_score/levelup_score、is_like、sign_in_info 只映射存在的已关注状态；nav_tab_info.tab 按 Android 的 isGeneralTab=1/tabType=15 筛选及稳定 tabId 去重，普通分类名与排序 source_id 来自服务端，good_classify 使用 class_id/class_name。
+
+GeneralTabListRequestData：tab_id#2/forum_id#3/pn#4/rn#5/last_thread_id#9/is_default_navtab#10/tab_name#11/is_general_tab#12/sort_type#13/tab_type#14/is_newfrs#22。common 复用已批准匿名 V12 字段，不传设备遥测或凭证。GeneralTabListResponseData：general_list#1/has_more#2/user_list#3；分页 cursor 取原始 id，行/导航继续使用正 threadID。ThreadInfo.lastTimeInt/agreeNum/shareNum 和所有媒体候选完整透传，行只预览前三个，原 owner/ordinal 保留。

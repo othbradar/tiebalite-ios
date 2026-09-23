@@ -14,30 +14,40 @@ struct AppShellView: View {
     let onOpenMedia: (ThreadMediaIntent) -> Void
 
     var body: some View {
-        shellContent
+        GeometryReader { geometry in
+            // Include safe-area occlusion so the keyboard cannot change the window's aspect.
+            let viewport = CGSize(
+                width: geometry.size.width + geometry.safeAreaInsets.leading + geometry.safeAreaInsets.trailing,
+                height: geometry.size.height + geometry.safeAreaInsets.top + geometry.safeAreaInsets.bottom
+            )
+            let layout = AppShellPresentation.layout(
+                hasRegularWidth: horizontalSizeClass == .regular, viewport: viewport
+            )
+            shellContent(layout: layout)
 #if UITESTING
-        .safeAreaInset(edge: .top, spacing: 0) {
-            if let harnessLabel {
-                HStack(spacing: Spacing.small) {
-                    Text("Shell")
-                        .accessibilityIdentifier(AppAccessibilityID.shellRoot)
-                    Text(harnessLabel)
-                        .accessibilityIdentifier(AppAccessibilityID.shellScenario)
-                    Text(horizontalSizeClass == .regular ? "Layout: Regular" : "Layout: Compact")
-                        .accessibilityIdentifier(
-                            horizontalSizeClass == .regular
-                                ? AppAccessibilityID.layoutRegular
-                                : AppAccessibilityID.layoutCompact
-                        )
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if let harnessLabel {
+                    HStack(spacing: Spacing.small) {
+                        Text("Shell")
+                            .accessibilityIdentifier(AppAccessibilityID.shellRoot)
+                        Text(harnessLabel)
+                            .accessibilityIdentifier(AppAccessibilityID.shellScenario)
+                        Text(layout == .regular ? "Layout: Regular" : "Layout: Compact")
+                            .accessibilityIdentifier(
+                                layout == .regular
+                                    ? AppAccessibilityID.layoutRegular
+                                    : AppAccessibilityID.layoutCompact
+                            )
+                    }
+                    .font(Typography.font(.caption))
+                    .foregroundStyle(SemanticColor.secondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Spacing.xSmall)
+                    .background(SemanticColor.surface)
                 }
-                .font(Typography.font(.caption))
-                .foregroundStyle(SemanticColor.secondaryText)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.xSmall)
-                .background(SemanticColor.surface)
             }
-        }
 #endif
+        }
         .background(SemanticColor.background)
     }
 
@@ -54,24 +64,24 @@ struct AppShellView: View {
     }
 
     @ViewBuilder
-    private var shellContent: some View {
+    private func shellContent(layout: AppShellLayout) -> some View {
 #if DEBUG
         if navigation.state.selectedTab == .settings,
            navigation.state.settingsPath.last == .interactionLab {
             // Keep the existing interaction lab container stable across size classes.
             content.personalStack
-                .padding(.horizontal, horizontalSizeClass == .regular ? Spacing.large : 0)
+                .padding(.horizontal, layout == .regular ? Spacing.large : 0)
         } else {
-            adaptiveShellContent
+            adaptiveShellContent(layout: layout)
         }
 #else
-        adaptiveShellContent
+        adaptiveShellContent(layout: layout)
 #endif
     }
 
     @ViewBuilder
-    private var adaptiveShellContent: some View {
-        if horizontalSizeClass == .regular {
+    private func adaptiveShellContent(layout: AppShellLayout) -> some View {
+        if layout == .regular {
             IPadAppShellView(content: content, notificationCounts: notificationCounts)
         } else {
             IPhoneAppShellView(content: content, notificationCounts: notificationCounts)
@@ -87,20 +97,25 @@ private struct IPhoneAppShellView: View {
     var body: some View {
         TabView(selection: selectedTabBinding) {
             content.rootStack(for: .followedForums)
+                .toolbar(.hidden, for: .tabBar)
                 .tag(AppTab.followedForums)
             content.rootStack(for: .recommendations)
+                .toolbar(.hidden, for: .tabBar)
                 .tag(AppTab.recommendations)
             NavigationStack { NotificationsRootView() }
+                .toolbar(.hidden, for: .tabBar)
                 .tag(AppTab.notifications)
             content.personalStack
+                .toolbar(.hidden, for: .tabBar)
                 .tag(AppTab.settings)
         }
-        .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            PhoneTabSelector(
-                navigation: content.navigation,
-                notificationCounts: notificationCounts
-            )
+            if AppShellPresentation.showsPhoneTabSelector(in: content.navigation.state) {
+                PhoneTabSelector(
+                    navigation: content.navigation,
+                    notificationCounts: notificationCounts
+                )
+            }
         }
         .tint(SemanticColor.primaryText)
     }

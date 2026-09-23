@@ -108,25 +108,13 @@ enum AppRouter {
                         .recordThread($0)
                 }
             )
+            // Extend the scrolling viewport, retaining keyboard and top-bar safe areas.
+            .ignoresSafeArea(.container, edges: .bottom)
         case let .forum(forum):
-            ForumHomeView(
-                store: dependencies.featureStores.forumHomeStore(
-                    for: scope,
-                    route: forum
-                ),
-                route: forum,
-                imageLoader: dependencies.imageLoader,
-                onOpenThread: { thread in
-                    guard let route = threadRoute(for: thread) else {
-                        return
-                    }
-                    openRoute(route)
-                },
-                onDisplayed: {
-                    await dependencies.featureStores.browsingHistoryStore
-                        .recordForum(route: forum, forum: $0)
-                }
+            ForumHomeDestination(
+                forum: forum, scope: scope, dependencies: dependencies, openRoute: openRoute
             )
+            .ignoresSafeArea(.container, edges: .bottom)
         case let .userProfile(profileRoute):
             UserProfileView(
                 store: dependencies.featureStores.userProfileStore(

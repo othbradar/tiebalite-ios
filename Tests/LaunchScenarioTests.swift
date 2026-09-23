@@ -5,7 +5,7 @@ struct LaunchScenarioTests {
     @Test
     func parsesEveryAllowlistedScenarioExactly() throws {
         #expect(LaunchScenarioRegistry.schemaVersion == 1)
-        #expect(LaunchScenarioID.allCases.count == 10)
+        #expect(LaunchScenarioID.allCases.count == 11)
 
         for scenario in LaunchScenarioID.allCases {
             let parsed = try LaunchScenarioParser.parse(arguments: [
@@ -108,7 +108,7 @@ struct LaunchScenarioTests {
                     .recommendationsAccessPolicy == expectedAccessPolicy
             )
             switch scenario {
-            case .sessionSignedInFixture, .rootNavigationMixedMedia, .dynamicFeedParity:
+            case .sessionSignedInFixture, .rootNavigationMixedMedia, .dynamicFeedParity, .forumHomeParity:
                 #expect(snapshot.status == .signedIn)
             case .sessionExpired:
                 #expect(snapshot.status == .expired)

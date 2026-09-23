@@ -12,6 +12,8 @@ final class R02RootShellSmokeTests: XCTestCase {
         UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
         UITestHarness.tap(.followedForumsFirstRow, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requireAbsent(.tabFollowedForums, in: app)
+        UITestHarness.tapSystemBack(in: app, returningTo: .followedForumsFirstRow)
 
         UITestHarness.tapTab(.recommendations, in: app)
         UITestHarness.requireAbsent(.shellTitle, in: app)
@@ -20,6 +22,8 @@ final class R02RootShellSmokeTests: XCTestCase {
         )
         UITestHarness.tap(.recommendationsSelectedRow, in: app)
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requireAbsent(.tabRecommendations, in: app)
+        UITestHarness.tapSystemBack(in: app, returningTo: .recommendationsSelectedRow)
 
         UITestHarness.tapTab(.settings, in: app)
         UITestHarness.requirePresent(.personalRoot, in: app)
@@ -38,11 +42,11 @@ final class R02RootShellSmokeTests: XCTestCase {
         UITestHarness.tapTab(.settings, in: app)
         UITestHarness.requirePresent(.settingsRoot, in: app)
         UITestHarness.tapTab(.recommendations, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.recommendationsSelectedRow, in: app)
         UITestHarness.tapTab(.recommendations, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.recommendationsSelectedRow, in: app)
         UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
     }
 
     @MainActor
@@ -166,7 +170,13 @@ final class R02RootShellSmokeTests: XCTestCase {
         UITestHarness.tap(.layoutControlCompact, in: app)
         UITestHarness.requirePresent(.layoutCompact, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requireAbsent(.tabFollowedForums, in: app)
+        UITestHarness.tap(.layoutControlRegular, in: app)
+        UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.requirePresent(.settingsRoot, in: app)
+        UITestHarness.tap(.layoutControlCompact, in: app)
+        UITestHarness.requirePresent(.layoutCompact, in: app)
         UITestHarness.requirePresent(.settingsRoot, in: app)
         UITestHarness.tap(.layoutControlRegular, in: app)
         UITestHarness.requirePresent(.layoutRegular, in: app)

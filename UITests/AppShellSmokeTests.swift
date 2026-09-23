@@ -11,21 +11,27 @@ final class AppShellSmokeTests: XCTestCase {
 
         UITestHarness.requireTabSelected(.recommendations, in: app)
         openFixtureThread(in: app)
+        UITestHarness.requireAbsent(.tabRecommendations, in: app)
+        UITestHarness.tapSystemBack(in: app, returningTo: .recommendationsSelectedRow)
         UITestHarness.tapTab(.followedForums, in: app)
         UITestHarness.requireTabSelected(.followedForums, in: app)
         UITestHarness.requirePresent(.followedForumsRoot, in: app)
         UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
         UITestHarness.tap(.followedForumsFirstRow, in: app)
         UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requireAbsent(.tabFollowedForums, in: app)
+        UITestHarness.tapSystemBack(in: app, returningTo: .followedForumsFirstRow)
 
         UITestHarness.tapTab(.recommendations, in: app)
         UITestHarness.requireTabSelected(.recommendations, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.recommendationsSelectedRow, in: app)
+        let before = UITestHarness.element(.recommendationsSelectedRow, in: app).frame
         UITestHarness.tapTab(.recommendations, in: app)
-        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        UITestHarness.requirePresent(.recommendationsSelectedRow, in: app)
+        XCTAssertEqual(UITestHarness.element(.recommendationsSelectedRow, in: app).frame.midY, before.midY, accuracy: 12)
 
         UITestHarness.tapTab(.followedForums, in: app)
-        UITestHarness.requirePresent(.routeForum, in: app)
+        UITestHarness.requirePresent(.followedForumsFirstRow, in: app)
     }
 
     @MainActor
