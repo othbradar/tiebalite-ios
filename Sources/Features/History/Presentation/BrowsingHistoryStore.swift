@@ -103,6 +103,7 @@ final class BrowsingHistoryStore {
             entry = try BrowsingHistoryEntry.forum(
                 forumID: forumID,
                 forumName: forum.name,
+                avatarResourceID: forum.avatarResourceID,
                 visitedAt: await clock.now
             )
         } catch BrowsingHistoryError.invalidIdentity {

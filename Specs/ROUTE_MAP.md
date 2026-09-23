@@ -65,7 +65,7 @@ root 打开是两个 Store；同 root 的同一 identity 加新 intent 复用 St
 |---|---|---|---|---|---|---|
 | recommendations root | RootID | 无 | public；live 匿名 UNKNOWN | root + safe list snapshot ref | Tab 内 root list | content list |
 | followedForums root | RootID | session capability | required | root；不持 membership/sessionID | Tab 内 root list/login state | content list/login state |
-| search（P1/16A） | 无参数 `RouteIdentity.search` | 关键词/结果/滚动锚由 scene 级 SearchStore 持有 | forum/thread Hybrid 匿名已验证 | identity only；不把 query 放入 route | recommendations stack push | recommendations detail root |
+| search（P1/16A、R03 首页入口） | 无参数 `RouteIdentity.search` | 关键词/结果/滚动锚由 scene 级 SearchStore 持有 | forum/thread Hybrid 匿名已验证 | identity only；不把 query 放入 route | recommendations / followedForums 各自 stack push | 对应 root 的 detail root |
 | user profile（P1/16B） | 正 userID；名称/portrait 仅降级显示 | 无 | anonymous Profile transport/decode/mapper 已运行验证 | identity only | Thread 后 push | detail tail |
 | forum | 可选正 forumID + 非空且通过边界校验的 forumName | initial tab/sort/classify | public；FRS 匿名首屏+一页下一页已验证 | identity + approved safe filter | push | detail root |
 | thread | 正 Int64 threadID | anchor/filter/sort/forum context | public；live 匿名 UNKNOWN | identity + approved safe read state | push | detail root/tail |

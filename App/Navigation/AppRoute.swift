@@ -268,6 +268,9 @@ enum RouteGrammar {
     private static func isValidFollowedForumsChain(
         _ routes: [RouteIdentity]
     ) -> Bool {
+        if isSearch(routes[0]) {
+            return isValidRecommendationsChain(routes)
+        }
         switch routes.count {
         case 1:
             return isForum(routes[0])

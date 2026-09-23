@@ -18,6 +18,8 @@ struct BrowsingHistoryEntry: Codable, Equatable, Identifiable, Sendable {
     let subtitle: String?
     let visitedAt: Date
     let visitCount: Int
+    // Optional for schema-1 histories written before the home recent-forums row.
+    private(set) var forumAvatarResourceID: String?
 
     var id: BrowsingHistoryIdentity {
         identity
@@ -66,6 +68,7 @@ struct BrowsingHistoryEntry: Codable, Equatable, Identifiable, Sendable {
     static func forum(
         forumID: Int64,
         forumName: String,
+        avatarResourceID: String? = nil,
         visitedAt: Date
     ) throws -> Self {
         guard let route = ForumRoute(
@@ -79,7 +82,10 @@ struct BrowsingHistoryEntry: Codable, Equatable, Identifiable, Sendable {
             title: "\(route.forumName.rawValue)吧",
             subtitle: "贴吧",
             visitedAt: visitedAt,
-            visitCount: 1
+            visitCount: 1,
+            forumAvatarResourceID: TiebaAvatarResource.forum(
+                forumID: forumID, avatar: avatarResourceID
+            )?.candidateURLs.first
         )
     }
 
@@ -111,7 +117,8 @@ struct BrowsingHistoryEntry: Codable, Equatable, Identifiable, Sendable {
             title: newest.title,
             subtitle: newest.subtitle,
             visitedAt: newest.visitedAt,
-            visitCount: visitCount + 1
+            visitCount: visitCount + 1,
+            forumAvatarResourceID: newest.forumAvatarResourceID ?? forumAvatarResourceID
         )
     }
 

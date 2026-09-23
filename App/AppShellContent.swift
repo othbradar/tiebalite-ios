@@ -126,7 +126,9 @@ struct AppShellContent {
             FollowedForumsAppRootView(
                 store: featureStores.followedForumsStore,
                 sessionStore: sessionStore,
+                historyStore: featureStores.browsingHistoryStore,
                 authContextProvider: authContextProvider,
+                imageLoader: environment.imageLoader,
                 openLogin: onOpenLogin,
                 openRoute: { open($0, in: root, regular: regular) }
             )

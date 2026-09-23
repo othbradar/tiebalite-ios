@@ -794,3 +794,23 @@ wire terminal 合同；真实末页仍未运行验证。不扩展到 PB Floor、
 - UI `api/models/protos/Extensions.kt:379` 吧务只在 is_bawu==1 时成立，manager 为吧主、其余为小吧主。缺失身份不得判断为楼主。
 
 验证样本为 R01VisualMappingTests 中完全合成的 Proto/JSON，非 Live 响应；Gallery 图片与等级为明确标注的本地展示样本，绝不进入 Live repository。本阶段不宣称新的 Live 网络运行证据。
+
+## R03 首页字段消费（CODE_EVIDENCE，2026-09-23）
+
+本轮复用既有 ForumGuideProtocol likeForum 的 avatar/hotNum/levelId/levelName；映射和请求均不改变。UI reference c5f1125 的 HomePage.kt / ForumItemContent 消费同名字段；热度以 StringUtil.getShortNumString 截断显示，不以 memberCount 替代。最近浏览使用 ForumHome 已成功显示的 ForumSummary.avatarResourceID，缺图仅回退相同 forumID 的已知关注头像。公开 HTTPS 地址持久化边界见 ADR-0023；不合成头像 URL、不新增 CDN Cookie、不新增请求。
+
+Android Toolbar.AccountNavIcon 使用 LocalAccount.portrait，而当前 iOS Session 只提供授权状态/lease，没有已证实的当前账号 userID/portrait。CURRENT_ACCOUNT_AVATAR 仍为 UNKNOWN，首页用中性缺省，不从登录 Cookie 推导身份，也不以 Fixture 冒充 Live。
+
+R03 只读 Live 字段复核：当前 18 条关注吧中 avatar 18 条为完整 HTTP、0 条为可加载 HTTPS、0 条缺失（只输出计数，临时诊断已移除）。因此本轮未证明 Live 吧头像加载成功；不升级 scheme、不放宽 ATS、不向 CDN 发送 Cookie。账号头像缺字段与吧头像 HTTP 限制是两个独立 UNKNOWN。
+
+### R03 ForumGuide 头像 HTTPS 传输适配（2026-09-23，CODE + RUNTIME_EVIDENCE）
+
+用户明确要求参照 Android 使吧头像正常显示后，补查 UI reference c5f1125：HomePage.kt:294–310 的 ForumItemContent 将 item.avatar 原样传入 Avatar；Avatars.kt:127–145 用 Sketch DisplayRequest；App.kt:777–780 创建独立 OkHttpStack；AndroidManifest.xml:59 允许 cleartext。Android 没有执行 HTTPS 升级，不声称这条适配来自 Android。
+
+iOS runtime 最小验证从当前 API 提供的两个完整公开头像地址出发，仅将 scheme 改为 HTTPS，使用同一注入的 ProductionImageLoader 加载，两次均 rendered=true。已证实 host=tiebapic.baidu.com、路径族=/forum/w=120;h=120/，地址带 query；未保存完整 URL、query 值或响应体。首次诊断因保守排除 query 没有发请求；保留原 query 后验证成功。详见 Artifacts/VisualReview/R03/forum-https-query-probe.log。
+
+因此只对完整 HTTP、精确 host、已验证 path prefix、无 userinfo/port/fragment 的吧头像进行 HTTPS 协议适配，域名/编码路径/query 逐字保留；不合成资源路径、不合成裸 portrait、不对任意域名升级、不回退 HTTP。生产 Loader/缓存/Session 保持不变，仍不附带 Cookie 或 Authorization；合成样本及匿名请求合同由 R03ForumAvatarTests 验证。此项补充取代本节上方“当前没有可用 HTTPS 吧图”的待证状态；当前账户头像仍 UNKNOWN。
+
+R03 完整列表复核发现 ForumGuide 实际 path 使用 percent encoding：decoded 前缀 forum/w=120;h=120，encoded 前缀 forum/w%3D120%3Bh%3D120，初版匹配 accepted=0。以 URLComponents.path 检查已验证路径族，输出仍仅替换原字符串 scheme，编码路径及 query 字节不变。新增 percentEncodedForumGuidePathKeepsItsExactBytes 回归；不通过重编码路径修复签名。
+
+R03 整表地址分类补充：18 项由两类各 9 项构成：tiebapic.baidu.com/forum/w=120;h=120 与 imgsrc.baidu.com/forum/pic。前者已运行验证；对后者另取一个接口原值，仅替换 HTTPS，通过同一 ProductionImageLoader 得到 rendered=true。记录为 forum-family-probe.log。将第二个精确 host/path 配对加入已验证转换范围，未知 host/path 仍拒绝；整表不依赖访问吧首页后才能显示。诊断源码已移除。

@@ -19,4 +19,11 @@ enum FollowedForumsState: Equatable, Sendable {
     case refreshing([FollowedForum])
     case signedOut
     case signingIn
+
+    var retainedForums: [FollowedForum] {
+        switch self {
+        case let .loaded(forums), let .refreshing(forums), let .refreshFailure(forums, _): forums
+        default: []
+        }
+    }
 }

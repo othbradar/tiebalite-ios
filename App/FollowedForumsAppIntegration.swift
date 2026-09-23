@@ -4,7 +4,9 @@ import SwiftUI
 struct FollowedForumsAppRootView: View {
     @Bindable var store: FollowedForumsStore
     @Bindable var sessionStore: SessionStore
+    @Bindable var historyStore: BrowsingHistoryStore
     let authContextProvider: SessionAuthContextProvider
+    let imageLoader: any ImageLoading
     let openLogin: () -> Void
     let openRoute: (RouteIdentity) -> Void
 
@@ -12,14 +14,19 @@ struct FollowedForumsAppRootView: View {
         FollowedForumsView(
             store: store,
             sessionAccess: sessionAccess,
+            imageLoader: imageLoader,
+            recentForums: RecentForum.project(historyStore.entries, followedForums: store.state.retainedForums),
             openLogin: openLogin,
+            openSearch: { openRoute(.search) },
             openForum: { forum in
                 guard let route = AppRouter.forumRoute(for: forum) else {
                     return
                 }
                 openRoute(route)
-            }
+            },
+            openRecentForum: { openRoute(.forum($0)) }
         )
+        .task { await historyStore.loadIfNeeded() }
     }
 
     private var sessionAccess: FollowedForumsSessionAccess {

@@ -4,241 +4,189 @@ import SwiftUI
 struct FollowedForumsView: View {
     @Bindable var store: FollowedForumsStore
     let sessionAccess: FollowedForumsSessionAccess
+    let imageLoader: any ImageLoading
+    let recentForums: [RecentForum]
     let openLogin: () -> Void
+    let openSearch: () -> Void
     let openForum: (FollowedForum) -> Void
+    let openRecentForum: (ForumRoute) -> Void
+
+    @State private var historyExpanded = true
 
     var body: some View {
-        content
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(SemanticColor.background)
-            .navigationTitle("首页")
-            .navigationBarTitleDisplayMode(.inline)
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier(FollowedForumsAccessibilityID.root)
-            .task(id: sessionAccess) {
-                await synchronizeStoreAcrossProjection()
-            }
-            .toolbar {
-                if store.state.canReload {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("重新加载", systemImage: "arrow.clockwise") {
-                            Task {
-                                await store.reload()
-                            }
-                        }
-                        .accessibilityIdentifier(FollowedForumsAccessibilityID.reload)
-                    }
-                    .tiebaFlatToolbarItem()
+        VStack(spacing: 0) {
+            HomeSearchBox(action: openSearch)
+            content
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(SemanticColor.background)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(FollowedForumsAccessibilityID.root)
+        .task(id: sessionAccess) { await synchronizeStoreAcrossProjection() }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                HStack(spacing: 12) {
+                    // Session currently exposes no verified account portrait.
+                    TiebaAvatarView(resource: nil, imageLoader: imageLoader, size: 32,
+                                    accessibilityLabel: "当前账户头像暂不可用")
+                    Text("首页").font(.title3.bold())
+                        .accessibilityIdentifier("home.title")
                 }
+                .fixedSize(horizontal: true, vertical: false)
             }
+            .tiebaFlatToolbarItem()
+            if store.state.canReload {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("重新加载", systemImage: "arrow.clockwise", action: requestReload)
+                        .accessibilityIdentifier(FollowedForumsAccessibilityID.reload)
+                }
+                .tiebaFlatToolbarItem()
+            }
+        }
     }
 
     @ViewBuilder
     private var content: some View {
         switch store.state {
-        case .signedOut:
-            sessionPrompt(
-                title: "登录后查看关注的吧",
-                message: "使用现有网页登录即可读取你的关注列表。",
-                buttonTitle: "登录",
-                stateIdentifier: FollowedForumsAccessibilityID.signedOut
-            )
-        case .signingIn:
-            InitialLoadingView(title: "正在登录")
-                .accessibilityIdentifier(
-                    FollowedForumsAccessibilityID.signingIn
-                )
-        case .expired:
-            sessionPrompt(
-                title: "登录已失效",
-                message: "请重新登录后再加载关注列表。",
-                buttonTitle: "重新登录",
-                stateIdentifier: FollowedForumsAccessibilityID.expired
-            )
-        case .initialLoading:
-            InitialLoadingView(title: "正在加载关注的吧")
-                .accessibilityIdentifier(
-                    FollowedForumsAccessibilityID.initialLoading
-                )
-        case .empty:
-            EmptyStateView(
-                title: "暂未关注贴吧",
-                message: "当前账号没有可显示的关注吧。",
-                systemImage: "star"
-            )
-            .accessibilityIdentifier(FollowedForumsAccessibilityID.empty)
-        case .initialFailure:
-            FullPageErrorView(
-                title: "关注列表加载失败",
-                message: "网络或服务暂时不可用。",
-                retry: requestReload
-            )
-            .accessibilityIdentifier(FollowedForumsAccessibilityID.failure)
         case let .loaded(forums):
             forumList(forums)
         case let .refreshing(forums):
             forumList(forums, status: .loading)
         case let .refreshFailure(forums, _):
             forumList(forums, status: .failure)
-        }
-    }
-
-    private func sessionPrompt(
-        title: String,
-        message: String,
-        buttonTitle: String,
-        stateIdentifier: String
-    ) -> some View {
-        VStack(spacing: Spacing.large) {
-            EmptyStateView(
-                title: title,
-                message: message,
-                systemImage: "person.crop.circle.badge.exclamationmark"
-            )
-            .accessibilityIdentifier(stateIdentifier)
-            Button(buttonTitle, action: openLogin)
-                .buttonStyle(.borderedProminent)
-                .tint(SemanticColor.accent)
-                .accessibilityIdentifier(FollowedForumsAccessibilityID.login)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(Spacing.large)
-        .background(SemanticColor.background)
-    }
-
-    private func forumList(
-        _ forums: [FollowedForum],
-        status: RetainedStatus? = nil
-    ) -> some View {
-        ScrollView {
-            LazyVStack(spacing: Spacing.medium) {
-                if status == .loading {
-                    InlineLoadingView(title: "正在重新加载")
-                } else if status == .failure {
-                    InlineErrorView(
-                        message: "重新加载失败，已保留原列表。",
-                        retry: requestReload
+        default:
+            VStack(spacing: 0) {
+                if !recentForums.isEmpty {
+                    HomeRecentForumsRow(
+                        forums: recentForums, expanded: historyExpanded, imageLoader: imageLoader,
+                        toggle: { historyExpanded.toggle() }, openForum: openRecentForum
                     )
                 }
-
-                ForEach(forums) { forum in
-                    Button {
-                        openForum(forum)
-                    } label: {
-                        FollowedForumRow(forum: forum)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("打开吧首页")
-                    .accessibilityIdentifier(
-                        FollowedForumsAccessibilityID.row(forum.forumID)
-                    )
-                    .id(forum.forumID)
-                }
+                stateContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .scrollTargetLayout()
-            .padding(Spacing.medium)
         }
-        .scrollPosition(id: scrollAnchorBinding, anchor: .center)
-        .background(SemanticColor.background)
-        .accessibilityElement(children: .contain)
-    }
-
-    private var scrollAnchorBinding: Binding<Int64?> {
-        Binding(
-            get: { store.scrollAnchor },
-            set: { store.setScrollAnchor($0) }
-        )
-    }
-
-    private func requestReload() {
-        Task {
-            await store.reload()
-        }
-    }
-
-    private func synchronizeStoreAcrossProjection() async {
-        let operation = Task { @MainActor in
-            await store.synchronize(with: sessionAccess)
-        }
-        await operation.value
-    }
-}
-
-@MainActor
-private struct FollowedForumRow: View {
-    let forum: FollowedForum
-
-    var body: some View {
-        HStack(alignment: .top, spacing: Spacing.medium) {
-            Image(systemName: "star.circle.fill")
-                .font(.system(size: IconSize.large))
-                .foregroundStyle(SemanticColor.accent)
-                .frame(minWidth: 44, minHeight: 44)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: Spacing.xSmall) {
-                Text(forum.name)
-                    .font(Typography.font(.headline))
-                    .foregroundStyle(SemanticColor.primaryText)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: Spacing.small) {
-                        levelLabel
-                        memberLabel
-                    }
-                    VStack(alignment: .leading, spacing: Spacing.xSmall) {
-                        levelLabel
-                        memberLabel
-                    }
-                }
-            }
-
-            Image(systemName: "chevron.right")
-                .font(Typography.font(.caption))
-                .foregroundStyle(SemanticColor.secondaryText)
-                .accessibilityHidden(true)
-        }
-        .padding(Spacing.medium)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
-    private var levelLabel: some View {
-        if let levelID = forum.levelID {
-            Label(
-                forum.levelName ?? "等级 \(levelID)",
-                systemImage: "chart.bar.fill"
-            )
-            .font(Typography.font(.caption))
-            .foregroundStyle(SemanticColor.secondaryText)
+    private var stateContent: some View {
+        switch store.state {
+        case .signedOut:
+            stateMessage("登录后查看关注的吧", detail: "使用现有网页登录即可读取你的关注列表。",
+                         identifier: FollowedForumsAccessibilityID.signedOut, button: "登录", action: openLogin)
+        case .expired:
+            stateMessage("登录已失效", detail: "请重新登录后再加载关注列表。",
+                         identifier: FollowedForumsAccessibilityID.expired, button: "重新登录", action: openLogin)
+        case .initialFailure:
+            stateMessage("关注列表加载失败", detail: "网络或服务暂时不可用。",
+                         identifier: FollowedForumsAccessibilityID.failure, button: "重试", action: requestReload)
+        case .empty:
+            stateMessage("暂未关注贴吧", detail: "当前账号没有可显示的关注吧。",
+                         identifier: FollowedForumsAccessibilityID.empty)
+        case .initialLoading, .signingIn:
+            VStack(spacing: 0) {
+                ForEach(0..<6, id: \.self) { _ in HomeForumSkeleton() }
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("正在加载关注的吧")
+            .accessibilityIdentifier(store.state == .signingIn
+                                    ? FollowedForumsAccessibilityID.signingIn
+                                    : FollowedForumsAccessibilityID.initialLoading)
+        case .loaded, .refreshing, .refreshFailure:
+            EmptyView()
         }
     }
 
-    private var memberLabel: some View {
-        Label("\(forum.memberCount) 位成员", systemImage: "person.2")
-            .font(Typography.font(.caption))
-            .foregroundStyle(SemanticColor.secondaryText)
+    private func stateMessage(
+        _ title: String, detail: String, identifier: String,
+        button: String? = nil, action: @escaping () -> Void = {}
+    ) -> some View {
+        VStack(spacing: 12) {
+            Text(title).font(.headline)
+            Text(detail).font(.subheadline).foregroundStyle(SemanticColor.secondaryText)
+            if let button {
+                Button(button, action: action)
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier(button == "重试"
+                                             ? FollowedForumsAccessibilityID.reload
+                                             : FollowedForumsAccessibilityID.login)
+            }
+        }
+        .multilineTextAlignment(.center)
+        .padding(24)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(identifier)
     }
-}
 
-private enum RetainedStatus {
-    case failure
-    case loading
+    private func forumList(
+        _ forums: [FollowedForum], status: FollowedForumsRetainedStatus? = nil
+    ) -> some View {
+        let presentation = FollowedForumsListPresentation(
+            forums: forums, recent: recentForums, expanded: historyExpanded, status: status
+        )
+        return VirtualizedList(
+            items: presentation.rows,
+            backgroundColor: .systemBackground,
+            accessibilityIdentifier: FollowedForumsAccessibilityID.list,
+            restoredAnchor: presentation.restoredRowID(for: store.scrollAnchor),
+            onScrollSettled: { rowID in
+                guard let forumID = presentation.forumAnchor(for: rowID) else { return }
+                store.setScrollAnchor(forumID)
+            },
+            rowContent: listRow
+        )
+    }
+
+    @ViewBuilder
+    private func listRow(_ row: FollowedForumsRowModel) -> some View {
+        switch row.content {
+        case let .recent(forums, expanded):
+            HomeRecentForumsRow(
+                forums: forums, expanded: expanded, imageLoader: imageLoader,
+                toggle: { historyExpanded.toggle() }, openForum: openRecentForum
+            )
+        case .heading:
+            HStack {
+                HomeSectionLabel(title: "关注")
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        case .status(.loading):
+            InlineLoadingView(title: "正在重新加载").padding(12)
+        case .status(.failure):
+            InlineErrorView(message: "重新加载失败，已保留原列表。", retry: requestReload).padding(12)
+        case let .forum(forum):
+            VStack(spacing: 0) {
+                Button { openForum(forum) } label: {
+                    HomeFollowedForumRow(forum: forum, avatarResource: row.avatarResource, imageLoader: imageLoader)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("打开吧首页")
+                .accessibilityIdentifier(FollowedForumsAccessibilityID.row(forum.forumID))
+                TiebaFlatDivider()
+            }
+        }
+    }
+
+    private func requestReload() {
+        Task { await store.reload() }
+    }
+
+    private func synchronizeStoreAcrossProjection() async {
+        let operation = Task { @MainActor in await store.synchronize(with: sessionAccess) }
+        await operation.value
+    }
 }
 
 private extension FollowedForumsState {
     var canReload: Bool {
         switch self {
-        case .empty, .initialFailure, .loaded, .refreshFailure:
-            true
-        case .expired, .initialLoading, .refreshing, .signedOut, .signingIn:
-            false
+        case .empty, .initialFailure, .loaded, .refreshFailure: true
+        case .expired, .initialLoading, .refreshing, .signedOut, .signingIn: false
         }
     }
 }
@@ -248,13 +196,12 @@ enum FollowedForumsAccessibilityID {
     static let expired = "followed-forums.session.expired"
     static let failure = "followed-forums.state.failure"
     static let initialLoading = "followed-forums.state.initial-loading"
+    static let list = "followed-forums.list"
     static let login = "followed-forums.session.login"
     static let reload = "followed-forums.reload"
     static let root = "app.root.followed-forums"
     static let signedOut = "followed-forums.session.signed-out"
     static let signingIn = "followed-forums.session.signing-in"
 
-    static func row(_ forumID: Int64) -> String {
-        "followed-forums.row.f\(forumID)"
-    }
+    static func row(_ forumID: Int64) -> String { "followed-forums.row.f\(forumID)" }
 }

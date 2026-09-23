@@ -44,7 +44,23 @@ enum TiebaAvatarResource {
     }
 
     static func forum(forumID: Int64?, avatar: String?) -> ImageResourceDescriptor? {
-        httpsResource(id: "forum.\(forumID ?? 0).avatar", value: avatar)
+        httpsResource(id: "forum.\(forumID ?? 0).avatar", value: forumHTTPSCandidate(avatar))
+    }
+
+    private static func forumHTTPSCandidate(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URLComponents(string: trimmed), url.scheme?.lowercased() == "http" else {
+            return value
+        }
+        // R03 runtime evidence: the same ForumGuide CDN resource supports TLS.
+        // Preserve the API's complete path/query; never synthesize a portrait URL.
+        let host = url.host?.lowercased()
+        let verifiedCDN = (host == "tiebapic.baidu.com" && url.path.hasPrefix("/forum/w=120;h=120/"))
+            || (host == "imgsrc.baidu.com" && url.path.hasPrefix("/forum/pic/"))
+        guard verifiedCDN,
+              url.user == nil, url.password == nil, url.port == nil, url.fragment == nil else { return nil }
+        return "https:" + trimmed.dropFirst(5)
     }
 
     private static func httpsResource(id: String, value: String?) -> ImageResourceDescriptor? {

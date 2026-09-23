@@ -155,8 +155,12 @@ struct Stage17FollowedProjectionHarness: View {
             FollowedForumsView(
                 store: store,
                 sessionAccess: access,
+                imageLoader: DisabledImageLoader(),
+                recentForums: [],
                 openLogin: {},
-                openForum: { _ in }
+                openSearch: {},
+                openForum: { _ in },
+                openRecentForum: { _ in }
             )
         } else {
             Color.clear
