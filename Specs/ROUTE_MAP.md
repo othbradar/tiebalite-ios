@@ -7,12 +7,23 @@
 Android/产品证据仍见 `Specs/NAVIGATION_MAP.md`。决策来源为
 ADR-0003、ADR-0020 与 ADR-0021。
 
+## R02 当前投影补充（2026-09-23）
+
+本节取代下文旧阶段关于三项 Shell 和 Settings 根页面的描述，依据 ADR-0022。
+默认根为 followedForums（首页）；recommendations identity 保持，显示“动态”。
+新增 notifications 无业务子 route，只有明确待实现占位；与 settings 一样 rootID=nil，
+但 iPad detail 只能在 selectedTab=settings 时投影 settingsPath。
+“我的”沿用 settings identity/settingsPath，新增 accountProfile 暂不可用入口和
+preferences 设置页面；preferences 可前缀既有合法设置链，禁止重复嵌套。
+现有两业务 root、deep link、Store key、重选 no-op、唯一媒体 cover 均不变。
+消息计数为组合根注入，Production=0；本阶段无通知 API、无已读动作。
+
 ## Canonical 模型
 
 每个 scene 只有：
 
 ```text
-AppTab = recommendations | followedForums | settings
+AppTab = followedForums（首页） | recommendations（动态） | notifications（消息） | settings（我的）
 RootID = recommendations | followedForums
 
 RouteIdentity =
@@ -23,7 +34,7 @@ RouteIdentity =
   | userProfile(userID)
 
 SettingsRoute =
-  history | about | licenses | content(RouteIdentity) | debug-only routes
+  accountProfile | preferences | history | about | licenses | content(RouteIdentity) | debug-only routes
 
 NavigationIntent =
   forum(initialTabID?, sort?, classify?)

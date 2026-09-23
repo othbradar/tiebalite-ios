@@ -11,6 +11,7 @@ extension AppShellSmokeTests {
             returningTo: .recommendationsSelectedRow
         )
         UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.tap(.personalSettings, in: app)
         scrollSettingsTo(Stage16BUITestID.openHistory, in: app).tap()
         _ = Stage16BUITestSupport.requirePresent(
             Stage16BUITestID.historyScreen,
@@ -72,6 +73,7 @@ extension AppShellSmokeTests {
         )
 
         UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.tap(.personalSettings, in: app)
         Stage16BUITestSupport.selectSegment(
             "深色",
             pickerIdentifier: Stage16BUITestID.appearancePicker,
@@ -165,6 +167,7 @@ extension IPadAppShellSmokeTests {
 
         revealRecommendationsSidebarIfNeeded(in: app)
         UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.tap(.personalSettings, in: app)
         _ = Stage16BUITestSupport.requirePresent(
             Stage16BUITestID.appearancePicker,
             in: app
@@ -198,7 +201,7 @@ extension IPadAppShellSmokeTests {
         ]
         guard !settingsTab.exists else { return }
 
-        let sidebarButton = app.navigationBars["推荐"]
+        let sidebarButton = app.navigationBars["动态"]
             .buttons
             .element(boundBy: 0)
         XCTAssertTrue(sidebarButton.waitForExistence(timeout: 5))

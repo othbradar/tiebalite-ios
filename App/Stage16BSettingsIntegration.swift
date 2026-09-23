@@ -43,11 +43,6 @@ struct AppSettingsRootView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.large) {
-                Text("TiebaLite")
-                    .font(Typography.font(.largeTitle))
-                    .foregroundStyle(SemanticColor.primaryText)
-                    .accessibilityIdentifier(AppAccessibilityID.shellTitle)
-
                 SettingsOptionsView(
                     store: settingsStore,
                     historyStore: historyStore,
@@ -108,10 +103,20 @@ struct SettingsRouteDestinationView: View {
     let featureStores: AppFeatureStoreRegistry
     let imageLoader: any ImageLoading
     let onOpenMedia: (ThreadMediaIntent) -> Void
+    let settingsPage: () -> AppSettingsRootView
 
     @ViewBuilder
     var body: some View {
         switch route {
+        case .preferences:
+            settingsPage()
+        case .accountProfile:
+            Text("当前账户资料暂不可用")
+                .foregroundStyle(SemanticColor.secondaryText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(SemanticColor.background)
+                .navigationTitle("个人资料")
+                .accessibilityIdentifier("personal.profile.unavailable")
         case .about:
             AboutView {
                 navigation.pushSettingsRoute(.licenses)

@@ -779,3 +779,18 @@ HTTP/MIME/Proto/current-page 运行证据与五页确定性 pagination tests
 支持。Android 已证 `has_more=0` 是 client stop signal，iOS 以其作为
 wire terminal 合同；真实末页仍未运行验证。不扩展到 PB Floor、
 倒序、跳楼、只看楼主、Live 图片或其他 endpoint。
+
+## R01 视觉字段补全（CODE_EVIDENCE，2026-09-05）
+
+不增加端点、请求参数、Proto 或凭据。API reference 保持
+`5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`，UI reference 为
+`c5f1125f42498e49db4e4a9cb66313b8c8a285c7`。
+
+- `app/src/main/protos/User.proto`：id#2/name#3/nameShow#4/portrait#5/level_id#23/is_bawu#25/bawu_type#26；推荐、PBPage、FRS、Profile 白名单映射为共同用户值。proto3 无 scalar presence，非正等级保持 nil；楼主只按正 userID 与主题作者 ID 相等判定。
+- `FrsPage/ForumInfo.proto`：user_level#7/level_name#8/member_num#9/thread_num#10/post_num#11/avatar#24。UI ForumPage 使用这些等级字段；没有已证 hot_num，不能用成员数冒充热度。
+- `ForumGuide/LikeForum.proto`：avatar#3/hot_num#4/member_count#5/thread_num#6/level_id#10/level_name#11；既有 FollowedForum 映射保留。
+- `SimpleForum.proto` avatar#4 来自 ThreadInfo.forumInfo；搜索 beans 的 SearchForumBean.ForumInfoBean.avatar、SearchThreadBean.UserInfoBean.user_id/portrait 和 ForumInfo.avatar 可选透传。搜索没有等级证据，保持 nil。
+- UI `utils/StringUtil.kt:getAvatarUrl` 150–156 对完整 HTTP/HTTPS 原样返回；裸 portrait 只证实 HTTP URL。iOS 只消费有效 HTTPS 原值，保留裸 portrait 但不升级 scheme、不放宽 TLS。安全 HTTPS token 合成仍为 UNKNOWN。
+- UI `api/models/protos/Extensions.kt:379` 吧务只在 is_bawu==1 时成立，manager 为吧主、其余为小吧主。缺失身份不得判断为楼主。
+
+验证样本为 R01VisualMappingTests 中完全合成的 Proto/JSON，非 Live 响应；Gallery 图片与等级为明确标注的本地展示样本，绝不进入 Live repository。本阶段不宣称新的 Live 网络运行证据。

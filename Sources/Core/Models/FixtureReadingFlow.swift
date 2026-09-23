@@ -31,6 +31,31 @@ struct RecommendationSummary: Identifiable, Equatable, Sendable {
     let authorName: String
     let replyCount: Int32
     let thumbnail: RecommendationThumbnail?
+    let author: TiebaUserVisuals?
+    let forumID: Int64?
+    let forumAvatarResource: ImageResourceDescriptor?
+
+    init(
+        threadID: Int64,
+        title: String,
+        forumName: String,
+        authorName: String,
+        replyCount: Int32,
+        thumbnail: RecommendationThumbnail?,
+        author: TiebaUserVisuals? = nil,
+        forumID: Int64? = nil,
+        forumAvatarResource: ImageResourceDescriptor? = nil
+    ) {
+        self.threadID = threadID
+        self.title = title
+        self.forumName = forumName
+        self.authorName = authorName
+        self.replyCount = replyCount
+        self.thumbnail = thumbnail
+        self.author = author
+        self.forumID = forumID
+        self.forumAvatarResource = forumAvatarResource
+    }
 
     var id: Int64 {
         threadID
@@ -96,10 +121,7 @@ extension RecommendationRepository {
     }
 }
 
-struct ThreadReaderAuthor: Equatable, Sendable {
-    let rawUserID: Int64
-    let displayName: String
-}
+typealias ThreadReaderAuthor = TiebaUserVisuals
 
 struct ThreadReaderSubpost: Identifiable, Equatable, Sendable {
     let parentPostID: Int64

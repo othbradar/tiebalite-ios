@@ -15,8 +15,10 @@ enum RootID: String, CaseIterable, Codable, Hashable, Sendable {
 }
 
 enum AppTab: String, CaseIterable, Identifiable, Hashable, Sendable {
-    case recommendations
+    // Preserve existing route identity while aligning the visible product hierarchy.
     case followedForums = "followed-forums"
+    case recommendations
+    case notifications
     case settings
 
     var id: String {
@@ -29,7 +31,7 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable, Sendable {
             .recommendations
         case .followedForums:
             .followedForums
-        case .settings:
+        case .notifications, .settings:
             nil
         }
     }
@@ -100,6 +102,8 @@ enum RouteIdentity: Codable, Hashable, Sendable {
 }
 
 enum SettingsRoute: Codable, Hashable, Sendable {
+    case accountProfile
+    case preferences
     case about
 #if DEBUG
     case componentGallery
@@ -135,7 +139,7 @@ struct AppNavigationState: Equatable, Sendable {
     private(set) var settingsPath: [SettingsRoute]
 
     init(
-        selectedTab: AppTab = .recommendations,
+        selectedTab: AppTab = .followedForums,
         routesByRoot: [RootID: [RouteIdentity]] = [:],
         settingsPath: [SettingsRoute] = []
     ) {
@@ -333,42 +337,51 @@ enum RouteGrammar {
 
 enum SettingsRouteGrammar {
     static func canonical(_ routes: [SettingsRoute]) -> [SettingsRoute] {
-        guard routes.count <= 4 else {
-            return []
+        if routes.first == .preferences {
+            return canonicalPreferences(routes)
         }
-        guard let first = routes.first else {
-            return routes
-        }
+        guard routes.count <= 4 else { return [] }
+        guard let first = routes.first else { return routes }
+        return isValidRootPath(routes, first: first) ? routes : []
+    }
+
+    private static func isValidRootPath(
+        _ routes: [SettingsRoute], first: SettingsRoute
+    ) -> Bool {
         switch first {
+        case .preferences:
+            return false
         case .history:
-            let contentRoutes = routes.dropFirst().compactMap { route -> RouteIdentity? in
-                guard case let .content(content) = route else {
-                    return nil
-                }
-                return content
-            }
-            guard contentRoutes.count == routes.count - 1,
-                  isValidHistoryContentChain(contentRoutes) else {
-                return []
-            }
+            return isValidHistoryPath(routes)
         case .about:
-            guard routes.count == 1
-                    || (routes.count == 2 && routes[1] == .licenses) else {
-                return []
-            }
-        case .licenses:
-            guard routes.count == 1 else {
-                return []
-            }
+            return isValidAboutPath(routes)
+        case .accountProfile, .licenses:
+            return routes.count == 1
 #if DEBUG
         case .componentGallery, .interactionLab, .threadContentRendererLab:
-            guard routes.count == 1 else {
-                return []
-            }
+            return routes.count == 1
 #endif
         case .content:
-            return []
+            return false
         }
+    }
+
+    private static func isValidAboutPath(_ routes: [SettingsRoute]) -> Bool {
+        routes.count == 1 || (routes.count == 2 && routes[1] == .licenses)
+    }
+
+    private static func isValidHistoryPath(_ routes: [SettingsRoute]) -> Bool {
+        let contents = routes.dropFirst().compactMap { route -> RouteIdentity? in
+            guard case let .content(content) = route else { return nil }
+            return content
+        }
+        return contents.count == routes.count - 1 && isValidHistoryContentChain(contents)
+    }
+
+    private static func canonicalPreferences(_ routes: [SettingsRoute]) -> [SettingsRoute] {
+        let children = Array(routes.dropFirst())
+        guard routes.count <= 5, !children.contains(.preferences),
+              canonical(children) == children else { return [] }
         return routes
     }
 

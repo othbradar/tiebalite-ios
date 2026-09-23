@@ -285,11 +285,7 @@ enum PBPageDomainMapper {
     }
 
     private static func mapAuthor(_ user: Tieba_User) -> ThreadReaderAuthor {
-        let name = nonempty(user.nameShow, fallback: user.name)
-        return ThreadReaderAuthor(
-            rawUserID: max(0, user.id),
-            displayName: nonempty(name, fallback: "未知作者")
-        )
+        TiebaUserVisualMapper.map(user)
     }
 
     private static func unknownAuthor(rawUserID: Int64) -> ThreadReaderAuthor {

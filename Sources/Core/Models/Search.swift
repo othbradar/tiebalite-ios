@@ -25,6 +25,25 @@ struct ForumSearchResult: Identifiable, Equatable, Sendable {
     let summary: String?
     let memberCountText: String?
     let postCountText: String?
+    let avatarResource: ImageResourceDescriptor?
+
+    init(
+        forumID: Int64,
+        name: String,
+        displayName: String,
+        summary: String?,
+        memberCountText: String?,
+        postCountText: String?,
+        avatarResource: ImageResourceDescriptor? = nil
+    ) {
+        self.forumID = forumID
+        self.name = name
+        self.displayName = displayName
+        self.summary = summary
+        self.memberCountText = memberCountText
+        self.postCountText = postCountText
+        self.avatarResource = avatarResource
+    }
 
     var id: Int64 {
         forumID
@@ -39,6 +58,30 @@ struct ThreadSearchResult: Identifiable, Equatable, Sendable {
     let forumName: String
     let authorName: String
     let replyCount: Int
+    let author: TiebaUserVisuals?
+    let forumAvatarResource: ImageResourceDescriptor?
+
+    init(
+        threadID: Int64,
+        title: String,
+        summary: String?,
+        forumID: Int64?,
+        forumName: String,
+        authorName: String,
+        replyCount: Int,
+        author: TiebaUserVisuals? = nil,
+        forumAvatarResource: ImageResourceDescriptor? = nil
+    ) {
+        self.threadID = threadID
+        self.title = title
+        self.summary = summary
+        self.forumID = forumID
+        self.forumName = forumName
+        self.authorName = authorName
+        self.replyCount = replyCount
+        self.author = author
+        self.forumAvatarResource = forumAvatarResource
+    }
 
     var id: Int64 {
         threadID

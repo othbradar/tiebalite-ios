@@ -94,6 +94,7 @@ extension IPadAppShellSmokeTests {
         let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
         UITestHarness.tapTab(.settings, in: app)
+        UITestHarness.tap(.personalSettings, in: app)
         let openHistory = Stage16BUITestSupport.scrollToHittable(
             Stage16BUITestID.openHistory,
             inside: UITestElementID.settingsRoot.rawValue,

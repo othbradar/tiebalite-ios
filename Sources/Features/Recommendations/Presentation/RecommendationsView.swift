@@ -10,23 +10,18 @@ struct RecommendationsView: View {
     @State private var retryGeneration: UInt64 = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text("TiebaLite")
-                .font(Typography.font(.largeTitle))
-                .foregroundStyle(SemanticColor.primaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.large)
-                .padding(.top, Spacing.small)
-                .accessibilityIdentifier(
-                    RecommendationsAccessibilityID.shellTitle
-                )
-
-            content
-        }
+        content
         .background(SemanticColor.background)
-        .navigationTitle("推荐")
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(RecommendationsAccessibilityID.root)
+        .navigationTitle("动态")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("动态")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier(RecommendationsAccessibilityID.root)
+            }
+        }
         .task(id: retryGeneration) {
             await loadStoreAcrossProjection()
         }
@@ -68,50 +63,49 @@ struct RecommendationsView: View {
     private func recommendationList(
         _ items: [RecommendationSummary]
     ) -> some View {
-        ScrollView {
-            LazyVStack(spacing: Spacing.medium) {
-                ForEach(items) { item in
-                    Button {
-                        onOpenThread(item)
-                    } label: {
-                        RecommendationRow(
-                            item: item,
-                            imageLoader: imageLoader
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("打开只读帖子")
-                    .accessibilityIdentifier(
-                        RecommendationsAccessibilityID.row(item.threadID)
-                    )
-                    .id(item.threadID)
-                    .task(id: RecommendationPrefetchTaskID(
-                        threadID: item.threadID,
-                        nextPage: store.nextPage
-                    )) {
-                        store.requestNextPage(after: item.threadID)
-                    }
-                }
-
-                PaginationFooter(
-                    state: paginationFooterState,
-                    retry: requestNextPage
-                )
+        let presentation = RecommendationsListPresentation(items: items, pagination: paginationFooterState)
+        return VirtualizedList(
+            items: presentation.rows,
+            backgroundColor: .systemBackground,
+            accessibilityIdentifier: RecommendationsAccessibilityID.list,
+            // The shared coordinator consumes this only when creating a new table.
+            // Updates, image completions and Tab returns keep the live table offset.
+            restoredAnchor: presentation.restoredRowID(for: store.scrollAnchor),
+            onPrefetch: { rowIDs in
+                guard let threadID = presentation.prefetchThreadID(in: rowIDs) else { return }
+                store.requestNextPage(after: threadID)
+            },
+            onScrollSettled: { rowID in
+                guard let threadID = presentation.threadAnchor(for: rowID) else { return }
+                store.setScrollAnchor(threadID)
+            },
+            rowContent: { row in
+                recommendationListRow(row)
+                    .padding(.horizontal, Spacing.medium)
+                    .padding(.top, row.isFirstThread ? Spacing.medium : 0)
+                    .padding(.bottom, Spacing.medium)
             }
-            .scrollTargetLayout()
-            .padding(Spacing.medium)
-        }
-        .scrollPosition(id: scrollAnchorBinding, anchor: .center)
+        )
         .background(SemanticColor.background)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(RecommendationsAccessibilityID.list)
     }
 
-    private var scrollAnchorBinding: Binding<Int64?> {
-        Binding(
-            get: { store.scrollAnchor },
-            set: { store.setScrollAnchor($0) }
-        )
+    @ViewBuilder
+    private func recommendationListRow(_ row: RecommendationsRowModel) -> some View {
+        switch row.content {
+        case let .thread(item):
+            Button {
+                onOpenThread(item)
+            } label: {
+                RecommendationRow(item: item, imageLoader: imageLoader)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("打开只读帖子")
+            .accessibilityIdentifier(RecommendationsAccessibilityID.row(item.threadID))
+            .id(item.threadID)
+        case let .pagination(state):
+            PaginationFooter(state: state, retry: requestNextPage)
+        }
     }
 
     private func requestRetry() {
@@ -144,11 +138,6 @@ struct RecommendationsView: View {
             .idle
         }
     }
-}
-
-private struct RecommendationPrefetchTaskID: Hashable {
-    let threadID: Int64
-    let nextPage: UInt32?
 }
 
 @MainActor

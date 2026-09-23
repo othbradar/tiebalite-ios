@@ -50,10 +50,7 @@ struct DebugComponentGalleryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
-                Text(Self.isolationCanary)
-                    .frame(width: 0, height: 0)
-                    .hidden()
-                    .accessibilityHidden(true)
+                DebugAndroidParityGallery()
 
                 environmentSummary
 
@@ -74,11 +71,17 @@ struct DebugComponentGalleryView: View {
                     retry: {}
                 )
                 PaginationFooter(state: .end, retry: {})
+                Text(Self.isolationCanary)
+                    .frame(width: 0, height: 0)
+                    .hidden()
+                    .accessibilityHidden(true)
             }
-            .padding(Spacing.large)
+            .padding(TiebaParityTokens.horizontalInset)
         }
         .background(SemanticColor.background)
         .navigationTitle("组件画廊")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AppAccessibilityID.galleryRoot)
     }
 

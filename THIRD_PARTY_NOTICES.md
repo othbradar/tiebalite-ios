@@ -42,8 +42,23 @@ SwiftProtobuf license does not grant rights to any input schema.
 
 The reference README also contains a non-commercial-use statement. Its exact
 relationship to the GPL text, the fork/upstream rights chain, and file-level
-ownership are unresolved. The iOS project does not copy Android Kotlin, Java,
-Compose UI, icons, or image resources.
+ownership are unresolved. The iOS project does not vendor Android Kotlin/Java
+or Compose UI files.
+
+R01 adapts the compact avatar/chip/divider/media presentation rules and level
+palette transform from UI reference `c5f1125f42498e49db4e4a9cb66313b8c8a285c7`.
+Sources under `app/src/main/java/com/huanchengfly/tieba/post/` include
+`ui/widgets/compose/{Avatars,Headers,Texts,FeedCard,Dividers}.kt`,
+`ui/page/main/home/HomePage.kt`, `ui/page/thread/ThreadPage.kt`, and
+`utils/{StringUtil.kt,Util.java,ColorUtils.java}`. The reference is GNU GPL
+version 3; these adapted rules retain that provenance under the project GPL
+source license. No Android icon or emoticon resource was imported for R01.
+
+Debug Gallery samples in `App/DebugR01ImageSamples.swift` are small extracts
+of user-provided Android-target screenshots, solely for component comparison.
+Their source rectangles are recorded in `Docs/VisualParity/R01_ACCEPTANCE.md`.
+They are not Live account data. The existing `Debug*.swift` Release source
+exclusion applies to the Gallery and its embedded samples.
 
 The generated Swift Proto closure currently contains eight roots and 207 locked
 inputs read directly from the pinned submodule. Paths, hashes, and import roots
@@ -66,3 +81,14 @@ copied, or packaged into the Debug or Release application bundle.
 The application uses system frameworks including SwiftUI, UIKit, Foundation,
 Security, WebKit, ImageIO, CoreGraphics, UniformTypeIdentifiers, and OSLog. They
 are supplied by the Apple SDK and are not vendored in this repository.
+
+### R02 Android root navigation vectors
+
+The `root-home`, `root-dynamic`, `root-messages`, and `root-personal` asset pairs
+are static SVG adaptations of TiebaLite Android's generic animated-vector
+navigation resources at UI commit `c5f1125f42498e49db4e4a9cb66313b8c8a285c7`.
+Original source: `app/src/main/res/drawable/ic_animated_rounded_inventory_2.xml`,
+`ic_animated_toy_fans.xml`, `ic_animated_rounded_notifications.xml`, and
+`ic_animated_rounded_person.xml`. GPL-3.0 provenance is retained. Only the static
+outline/filled endpoints are used; animation is not copied. Details and conversion
+rules are recorded in `Resources/ROOT_NAVIGATION_PROVENANCE.md`.

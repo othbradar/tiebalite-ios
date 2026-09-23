@@ -1,6 +1,7 @@
 @MainActor
 final class AppCompositionRoot {
     let environment: AppEnvironment
+    let notificationCounts: any NotificationCountSource
     let authContextProvider: SessionAuthContextProvider
     let sessionStore: SessionStore
     let loginWebSession: LoginWebSession
@@ -15,6 +16,7 @@ final class AppCompositionRoot {
 
     init(
         environment: AppEnvironment,
+        notificationCounts: any NotificationCountSource = UnavailableNotificationCountSource(),
         authContextProvider: SessionAuthContextProvider? = nil,
         sessionStore: SessionStore? = nil,
         loginWebSession: LoginWebSession? = nil,
@@ -24,6 +26,7 @@ final class AppCompositionRoot {
         userProfileRepository: (any UserProfileRepository)? = nil
     ) {
         self.environment = environment
+        self.notificationCounts = notificationCounts
         let resolvedAuthContextProvider =
             authContextProvider ?? SessionAuthContextProvider()
         let resolvedLoginWebSession = loginWebSession ?? LoginWebSession()

@@ -1,5 +1,22 @@
 # TASK_STATE
 
+- 2026-09-23 用户查看 Simulator 后明确反馈“我看了r02现在没问题了，提交并进入r03”，R02 记为 `USER_VISUALLY_APPROVED`。此前自动化返回位置失败保留为已知记录，不改写为通过；用户已授权提交当前实现并进入 R03。
+
+- 2026-09-23 用户批准 R02_ROOT_LIST_REDESIGN.md 最小承载修订。先在当前工作树重新证实原 root.mixed-media 主线程 LazySubviewPlacements / AttributeGraph 循环，再仅将动态列表接入既有 VirtualizedList。原卡死回归连续 3/3 通过，每次两轮第三页/四个根入口/返回位置/首行均验证。完整记录见 `Docs/VisualParity/R02_LIST_REDESIGN_ACCEPTANCE.md`。
+
+- R02 提交前验证记录：`IMPLEMENTED_WITH_OPEN_VALIDATION_FAILURES`（2026-09-23）。25 个逻辑 Unit / 26 次执行（含已有图片复用）通过；make lint/build、git diff --check exit 0。iPad 修正测试滑动落点后可达第三页，但侧栏返回原可见行失败；既有帖子返回偏移测试在候选与本轮原基线上均失败，不能宣布全部修复。93 个受保护文件 SHA-256 与本轮基线相同，Row/图片任务逐字一致，无新增动画/手势/overlay/依赖。未暂存、未提交、未进入 R03/R04。
+- 已覆盖安装两台 Debug .app 并截图、停动态页，iPhone 在前台且现有登录态保留；iPad 保持原未登录态。截图与逐项失败证据在 `Artifacts/VisualReview/R02/ListRedesign/`。本轮仅供用户手工检查，READY 不代表全部验证通过；不扩大到共享列表/根导航/图片系统。
+- 上一轮诊断收尾（历史记录，非本轮重跑）：make quality-fast exit 0（402 个逻辑 Unit / 434 次执行，含图片复用与固定传输测试）、make build / git diff --check exit 0；当时新增深滚动 UI 仍失败，候选撤回记录见 R02_ROOT_FREEZE.md。当时两台停首页，截图为 Artifacts/VisualReview/R02/RootFreeze/*-restored-home.png。本轮未重复全量 Unit/quality-fast/quality。
+- 此前验证（不覆盖此次卡死）：iPhone Shell Smoke 6/6；iPad 3/3，标题标识修正后 1/1 复核；make quality-fast exit 0（401 个逻辑 Unit / 433 次执行）；make build、git diff --check exit 0。首轮 lint、无障碍标识、R01 网络边界登记与 Simulator Shutdown 安装失败及修正均见 `Docs/VisualParity/R02_ACCEPTANCE.md`。
+- 此前直接覆盖安装 iPhone/iPad，未卸载/erase/清 Keychain。四个入口截图保存在 `Artifacts/VisualReview/R02/`；当时 iPhone Live 登录态恢复，iPad 保持真实未登录态。完整页面整改、真实消息和本人资料仍为后续范围。
+
+- 上一整改阶段：`R01 = USER_VISUALLY_APPROVED`（2026-09-23，用户视觉验收通过/未提交）。
+- 仅补全公开用户/吧字段与共用头像、等级、细分割线、元数据、1–8 图网格、平面 skeleton；只在 Debug Gallery 展示。VirtualizedList、ThreadReader/ForumHome UITableView 承载、Pager、MediaViewer、gesture ownership 与原有业务 ID 无修改。
+- 定向 Unit 48 个逻辑测试/57 次执行通过；FRS mapper 提取后的 8/8 定向回归通过；最终 make lint、make build、git diff --check exit 0。中途两次 lint 失败及修正、完整命令和日志见 `Docs/VisualParity/R01_ACCEPTANCE.md`，未运行全量 quality/UI smoke/Release。
+- R01 验收时已覆盖安装 iPhone/iPad Debug App，没有卸载、erase、清 Keychain 或退出登录；两台当时停在 Component Gallery 的 Android parity section。截图 `Artifacts/VisualReview/R01/iphone-gallery.png`、`ipad-gallery.png` 均完整同屏展示全部要求样本。用户解锁后，将 Debug 总览最大宽度限制为 340 pt，解决 iPhone skeleton 底部遮挡；重新运行 make lint/build 均 exit 0（capture-lint.log、capture-build.log），再覆盖安装两台并完成截图。
+- `AVATAR_HTTPS_TOKEN_SYNTHESIS = UNKNOWN`：Android 裸 portrait 只证实 HTTP 规则；只加载 API 自带的有效 HTTPS 头像，Gallery 为明确的本地展示样本，不冒充 Live 证据。
+- 2026-09-23 重新启动 iPhone 并打开 Component Gallery，说明改动后用户回复“行可以”，确认 R01 视觉通过。验收当时仅更新三份文档，没有修改代码或重跑测试；其后用户另行授权进入 R02（见顶部）。
+
 - 2026-09-04 公开源码决定：
   `PUBLIC_SOURCE_REPOSITORY = OWNER_APPROVED`；
   `ROOT_LICENSE = GPL-3.0-only`，仅覆盖项目作者有权许可的原创 iOS 代码；
@@ -15,7 +32,7 @@
   作为未签名 arm64 真机 IPA，SHA-256
   `18e29c811a000240900b96cdcf15c050b0de32ce362748ec536ad0626a16464b`。
   源码与 IPA 已推送到 `origin/main`，修复提交为 `4839b79`。
-- 当前阶段：19B（本地 Beta Release Candidate 已完成，停止）
+- 整改前基础阶段：19B（本地 Beta Release Candidate 已完成）
 - `PROJECT_STATUS = BETA_RELEASE_CANDIDATE`
 - 状态：`PHASE_16A_SEARCH = COMPLETE`
 - `PHASE_16 = COMPLETE`

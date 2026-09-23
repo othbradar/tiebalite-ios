@@ -3,6 +3,21 @@ struct RecommendationAuthor: Equatable, Sendable {
     let name: String
     let nameShow: String
     let portrait: String
+    let visuals: TiebaUserVisuals?
+
+    init(
+        rawUserID: Int64,
+        name: String,
+        nameShow: String,
+        portrait: String,
+        visuals: TiebaUserVisuals? = nil
+    ) {
+        self.rawUserID = rawUserID
+        self.name = name
+        self.nameShow = nameShow
+        self.portrait = portrait
+        self.visuals = visuals
+    }
 }
 
 struct RecommendationItem: Equatable, Sendable {
@@ -21,6 +36,43 @@ struct RecommendationItem: Equatable, Sendable {
     let hasVideo: Bool
     let hasLive: Bool
     let thumbnailResource: ImageResourceDescriptor?
+    let forumAvatarResource: ImageResourceDescriptor?
+
+    init(
+        rawFeedID: Int64,
+        rawThreadID: Int64,
+        title: String,
+        rawThreadType: Int32,
+        rawAuthorID: Int64,
+        author: RecommendationAuthor?,
+        rawForumID: Int64,
+        forumName: String,
+        replyCount: Int32,
+        viewCount: Int32,
+        isNoTitleRaw: Int32,
+        isDeletedRaw: Int32,
+        hasVideo: Bool,
+        hasLive: Bool,
+        thumbnailResource: ImageResourceDescriptor?,
+        forumAvatarResource: ImageResourceDescriptor? = nil
+    ) {
+        self.rawFeedID = rawFeedID
+        self.rawThreadID = rawThreadID
+        self.title = title
+        self.rawThreadType = rawThreadType
+        self.rawAuthorID = rawAuthorID
+        self.author = author
+        self.rawForumID = rawForumID
+        self.forumName = forumName
+        self.replyCount = replyCount
+        self.viewCount = viewCount
+        self.isNoTitleRaw = isNoTitleRaw
+        self.isDeletedRaw = isDeletedRaw
+        self.hasVideo = hasVideo
+        self.hasLive = hasLive
+        self.thumbnailResource = thumbnailResource
+        self.forumAvatarResource = forumAvatarResource
+    }
 }
 
 enum RecommendationTerminalState: Equatable, Sendable {

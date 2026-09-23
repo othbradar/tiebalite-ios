@@ -5,7 +5,7 @@ struct LaunchScenarioTests {
     @Test
     func parsesEveryAllowlistedScenarioExactly() throws {
         #expect(LaunchScenarioRegistry.schemaVersion == 1)
-        #expect(LaunchScenarioID.allCases.count == 8)
+        #expect(LaunchScenarioID.allCases.count == 9)
 
         for scenario in LaunchScenarioID.allCases {
             let parsed = try LaunchScenarioParser.parse(arguments: [
@@ -108,7 +108,7 @@ struct LaunchScenarioTests {
                     .recommendationsAccessPolicy == expectedAccessPolicy
             )
             switch scenario {
-            case .sessionSignedInFixture:
+            case .sessionSignedInFixture, .rootNavigationMixedMedia:
                 #expect(snapshot.status == .signedIn)
             case .sessionExpired:
                 #expect(snapshot.status == .expired)
@@ -116,6 +116,25 @@ struct LaunchScenarioTests {
                 #expect(snapshot.status == .signedOut)
             }
         }
+    }
+
+    @Test
+    @MainActor
+    func mixedMediaScenarioUsesDecodedFixedImagesInsteadOfExternalCandidates() async throws {
+        let descriptor = LaunchScenarioFactory.make(scenario: .rootNavigationMixedMedia)
+        let loader = descriptor.compositionRoot.environment.imageLoader
+        let payload = try await loader.load(ImageRequest(
+            resourceID: FixtureReadingImageResource.green,
+            candidateURLs: ["https://outside.fixture.invalid/not-read"],
+            targetPixelSize: ImageTargetPixelSize(width: 330, height: 220),
+            purpose: .listThumbnail,
+            resizeMode: .fill
+        ))
+        #expect(payload.data.isEmpty)
+        #expect(payload.decodedImage != nil)
+        #expect(payload.pixelSize == ImageTargetPixelSize(width: 330, height: 220))
+        let client = descriptor.compositionRoot.environment.httpClient as? HarnessMockHTTPClient
+        #expect(await client?.events().isEmpty == true)
     }
 
     @Test

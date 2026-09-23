@@ -6,6 +6,7 @@ enum UITestLaunchScenario: String, CaseIterable {
     case threadContentRenderer = "renderer.thread-content"
     case sessionSignedOut = "session.signed-out"
     case sessionSignedInFixture = "session.signed-in-fixture"
+    case rootNavigationMixedMedia = "root.mixed-media"
     case sessionExpired = "session.expired"
 
     var safeLabel: String {
@@ -24,6 +25,8 @@ enum UITestLaunchScenario: String, CaseIterable {
             "Harness: Session signed out"
         case .sessionSignedInFixture:
             "Harness: Session signed in fixture"
+        case .rootNavigationMixedMedia:
+            "Harness: Mixed-size root media"
         case .sessionExpired:
             "Harness: Session expired"
         }
@@ -37,6 +40,7 @@ enum UITestDisplayProfile: String {
 }
 
 enum UITestAppTab {
+    case notifications
     case followedForums
     case recommendations
     case settings
@@ -49,6 +53,8 @@ enum UITestAppTab {
             .tabFollowedForums
         case .settings:
             .tabSettings
+        case .notifications:
+            .tabNotifications
         }
     }
 }

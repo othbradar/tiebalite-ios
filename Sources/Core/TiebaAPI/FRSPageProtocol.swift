@@ -205,13 +205,14 @@ enum FRSPageProtocol {
                 return nil
             }
             let title = threadTitle(thread)
+            let author = mapAuthor(thread, users: users)
             return ForumThreadSummary(
                 itemID: thread.id,
                 threadID: thread.threadID,
                 title: title,
                 summary: threadSummary(thread, excluding: title),
                 forumName: nonempty(thread.forumName, fallback: forumName),
-                authorName: authorName(thread, users: users),
+                authorName: author?.displayName ?? "未知作者",
                 replyCount: max(0, thread.replyNum),
                 viewCount: max(0, thread.viewNum),
                 isPinned: thread.isTop == 1,
@@ -228,7 +229,8 @@ enum FRSPageProtocol {
                         )
                     }.prefix(3)
                 ),
-                hasVideo: thread.hasVideoInfo
+                hasVideo: thread.hasVideoInfo,
+                author: author
             )
         }
         guard data.threadList.isEmpty || !threads.isEmpty else {
@@ -245,7 +247,9 @@ enum FRSPageProtocol {
                 avatarResourceID: nonempty(forum.avatar),
                 memberCount: Int(max(0, forum.memberNum)),
                 threadCount: Int(max(0, forum.threadNum)),
-                postCount: Int(max(0, forum.postNum))
+                postCount: Int(max(0, forum.postNum)),
+                levelID: forum.userLevel > 0 ? Int(forum.userLevel) : nil,
+                levelName: nonempty(forum.levelName)
             ),
             threads: threads,
             currentPage: request.pageNumber,
@@ -281,23 +285,19 @@ enum FRSPageProtocol {
         )
     }
 
-    private static func authorName(
+    private static func mapAuthor(
         _ thread: Tieba_ThreadInfo,
         users: [Int64: Tieba_User]
-    ) -> String {
+    ) -> TiebaUserVisuals? {
         if let user = users[thread.authorID] {
-            return nonempty(
-                user.nameShow,
-                fallback: nonempty(user.name, fallback: "未知作者")
-            )
+            return TiebaUserVisualMapper.map(user)
         }
         if thread.hasAuthor {
-            return nonempty(
-                thread.author.nameShow,
-                fallback: nonempty(thread.author.name, fallback: "未知作者")
-            )
+            return TiebaUserVisualMapper.map(thread.author)
         }
-        return "未知作者"
+        return thread.authorID > 0 ? TiebaUserVisuals(
+            rawUserID: thread.authorID, displayName: "未知作者"
+        ) : nil
     }
 
     private static func threadTitle(_ thread: Tieba_ThreadInfo) -> String {

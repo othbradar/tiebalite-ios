@@ -2,22 +2,35 @@ extension AppTab {
     var title: String {
         switch self {
         case .recommendations:
-            return "推荐"
+            return "动态"
         case .followedForums:
-            return "关注的吧"
+            return "首页"
+        case .notifications:
+            return "消息"
         case .settings:
-            return "设置"
+            return "我的"
+        }
+    }
+
+    var iconAssetName: String {
+        switch self {
+        case .followedForums: "root-home"
+        case .recommendations: "root-dynamic"
+        case .notifications: "root-messages"
+        case .settings: "root-personal"
         }
     }
 
     var systemImage: String {
         switch self {
         case .recommendations:
-            return "sparkles"
+            return "fanblades"
         case .followedForums:
-            return "star"
+            return "archivebox"
+        case .notifications:
+            return "bell"
         case .settings:
-            return "gearshape"
+            return "person"
         }
     }
 
@@ -27,6 +40,8 @@ extension AppTab {
             return AppAccessibilityID.tabRecommendations
         case .followedForums:
             return AppAccessibilityID.tabFollowedForums
+        case .notifications:
+            return AppAccessibilityID.tabNotifications
         case .settings:
             return AppAccessibilityID.tabSettings
         }

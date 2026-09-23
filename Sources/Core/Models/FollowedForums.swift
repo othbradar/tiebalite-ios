@@ -12,6 +12,10 @@ struct FollowedForum: Identifiable, Equatable, Sendable {
     var id: Int64 {
         forumID
     }
+
+    var avatarResource: ImageResourceDescriptor? {
+        TiebaAvatarResource.forum(forumID: forumID, avatar: avatarResourceID)
+    }
 }
 
 enum FollowedForumsRepositoryError: Error, Equatable, Sendable {

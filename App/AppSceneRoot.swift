@@ -43,6 +43,7 @@ struct AppSceneRoot: View {
                     featureStores: featureStores,
                     sessionStore: sessionStore,
                     authContextProvider: compositionRoot.authContextProvider,
+                    notificationCounts: compositionRoot.notificationCounts,
                     onOpenLogin: openLogin,
                     onOpenMedia: presentMedia
                 )

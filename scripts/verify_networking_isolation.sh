@@ -68,7 +68,7 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
@@ -92,13 +92,17 @@ do
     fail protobuf-core-exact-imports "$proto_adapter: $proto_imports"
   fi
 done
-pb_page_mapper_imports="$(
-  rg '^import (GeneratedProtobuf|SwiftProtobuf)$' \
-    Sources/Core/TiebaAPI/PBPageDomainMapper.swift | sort
-)"
-if [[ "$pb_page_mapper_imports" != 'import GeneratedProtobuf' ]]; then
-  fail protobuf-domain-mapper-exact-imports "$pb_page_mapper_imports"
-fi
+for domain_mapper in \
+  Sources/Core/TiebaAPI/PBPageDomainMapper.swift \
+  Sources/Core/TiebaAPI/TiebaUserVisualMapper.swift
+do
+  domain_mapper_imports="$(
+    rg '^import (GeneratedProtobuf|SwiftProtobuf)$' "$domain_mapper" | sort
+  )"
+  if [[ "$domain_mapper_imports" != 'import GeneratedProtobuf' ]]; then
+    fail protobuf-domain-mapper-exact-imports "$domain_mapper: $domain_mapper_imports"
+  fi
+done
 
 reject_swift_matches \
   thread-content-domain-leak \
@@ -112,6 +116,14 @@ reject_swift_matches \
   pb-page-domain-mapper-side-effect \
   '@MainActor|\b(URLSession|HTTPClient|HTTPRequest|Endpoint|FileManager|UserDefaults|HTTPCookieStorage|Keychain)\b|SecItem(Add|CopyMatching|Update|Delete)' \
   Sources/Core/TiebaAPI/PBPageDomainMapper.swift
+reject_swift_matches \
+  user-visual-mapper-side-effect \
+  '@MainActor|\b(URLSession|HTTPClient|HTTPRequest|Endpoint|FileManager|UserDefaults|HTTPCookieStorage|Keychain)\b|SecItem(Add|CopyMatching|Update|Delete)' \
+  Sources/Core/TiebaAPI/TiebaUserVisualMapper.swift
+reject_swift_matches \
+  user-visual-domain-leak \
+  '^import (SwiftUI|UIKit|GeneratedProtobuf|SwiftProtobuf)$|\bTieba_[A-Za-z0-9_]+\b' \
+  Sources/Core/Models/TiebaUserVisuals.swift
 reject_swift_matches \
   thread-reader-protobuf-leak \
   '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
@@ -251,12 +263,45 @@ if ! rg -q 'readingDataSourceMode: \.fixture' \
   fail ui-scenario-fixture-mode
 fi
 scenario_live_usage="$(
-  rg -n '\.live\b|URLSessionHTTPClient|ProductionImageLoader|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveSearchRepository|LiveThreadReaderRepository|LiveUserProfileRepository|tiebac\.baidu\.com|tieba\.baidu\.com' \
+  rg -n '\.live\b|URLSessionHTTPClient|LiveFollowedForumsRepository|LiveForumHomeRepository|LiveRecommendationRepository|LiveSearchRepository|LiveThreadReaderRepository|LiveUserProfileRepository|tiebac\.baidu\.com|tieba\.baidu\.com' \
     TestSupport/LaunchScenarios 2>/dev/null || true
 )"
 if [[ -n "$scenario_live_usage" ]]; then
   fail ui-scenario-live-reachability "$scenario_live_usage"
 fi
+# The root-scroll regression needs the real decoder, with a mandatory in-memory
+# transport. Permit only these exact declarations; production factories and all
+# other decoder construction in LaunchScenarios remain rejected.
+fixture_decoder='TestSupport/LaunchScenarios/HarnessMixedSizeImageLoader.swift'
+decoder_allowlist='^TestSupport/LaunchScenarios/HarnessMixedSizeImageLoader\.swift:[0-9]+: +(private let loader: ProductionImageLoader|loader = ProductionImageLoader\(loader: HarnessMixedMediaTransport\(images: images\)\))$'
+scenario_decoder_usage="$(
+  rg -n 'ProductionImageLoader' TestSupport/LaunchScenarios |
+    rg -v "$decoder_allowlist" || true
+)"
+if [[ -n "$scenario_decoder_usage" ]]; then
+  fail ui-scenario-live-decoder "$scenario_decoder_usage"
+fi
+for unsafe_decoder in \
+  'TestSupport/LaunchScenarios/HarnessMixedSizeImageLoader.swift:1: loader = ProductionImageLoader.production()' \
+  'TestSupport/LaunchScenarios/Other.swift:1: loader = ProductionImageLoader(loader: client)'
+do
+  if printf '%s\n' "$unsafe_decoder" | rg -q "$decoder_allowlist"; then
+    fail ui-scenario-decoder-allowlist-canary
+  fi
+done
+reject_swift_matches ui-fixture-decoder-network \
+  '\b(URLSession|URLSessionHTTPClient|HTTPCookieStorage|URLCredentialStorage|KeychainSessionStore)\b|\.production\(' \
+  "$fixture_decoder"
+for fixture_requirement in \
+  'loader = ProductionImageLoader(loader: HarnessMixedMediaTransport(images: images))' \
+  'private struct HarnessMixedMediaTransport: HTTPDataLoading' \
+  'url.host == "root.fixture.invalid"' \
+  'let data = images[url.lastPathComponent]'
+do
+  if ! rg -F -q "$fixture_requirement" "$fixture_decoder"; then
+    fail ui-fixture-decoder-fixed-transport "$fixture_requirement"
+  fi
+done
 
 package_block="$(sed -n '/^packages:/,/^fileGroups:/p' project.yml)"
 expected_package_block="$(

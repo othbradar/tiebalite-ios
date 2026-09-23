@@ -224,7 +224,11 @@ enum PersonalizedProtocol {
                 isDeletedRaw: thread.isDeleted,
                 hasVideo: thread.hasVideoInfo,
                 hasLive: thread.hasAlaInfo,
-                thumbnailResource: thumbnailResource
+                thumbnailResource: thumbnailResource,
+                forumAvatarResource: thread.hasForumInfo ? TiebaAvatarResource.forum(
+                    forumID: thread.forumID,
+                    avatar: thread.forumInfo.avatar
+                ) : nil
             )
         }
         let (nextPage, overflow) = requestedPage.addingReportingOverflow(1)
@@ -257,7 +261,8 @@ enum PersonalizedProtocol {
             rawUserID: thread.author.id,
             name: thread.author.name,
             nameShow: thread.author.nameShow,
-            portrait: thread.author.portrait
+            portrait: thread.author.portrait,
+            visuals: TiebaUserVisualMapper.map(thread.author)
         )
     }
 }

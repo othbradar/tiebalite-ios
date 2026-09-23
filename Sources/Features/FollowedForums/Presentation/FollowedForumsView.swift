@@ -11,7 +11,8 @@ struct FollowedForumsView: View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(SemanticColor.background)
-            .navigationTitle("关注的吧")
+            .navigationTitle("首页")
+            .navigationBarTitleDisplayMode(.inline)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(FollowedForumsAccessibilityID.root)
             .task(id: sessionAccess) {
@@ -19,14 +20,15 @@ struct FollowedForumsView: View {
             }
             .toolbar {
                 if store.state.canReload {
-                    Button("重新加载", systemImage: "arrow.clockwise") {
-                        Task {
-                            await store.reload()
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("重新加载", systemImage: "arrow.clockwise") {
+                            Task {
+                                await store.reload()
+                            }
                         }
+                        .accessibilityIdentifier(FollowedForumsAccessibilityID.reload)
                     }
-                    .accessibilityIdentifier(
-                        FollowedForumsAccessibilityID.reload
-                    )
+                    .tiebaFlatToolbarItem()
                 }
             }
     }

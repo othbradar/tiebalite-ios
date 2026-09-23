@@ -41,16 +41,19 @@ struct TiebaLiteApp: App {
 #if UITESTING
             switch launchResolution {
             case let .ready(descriptor):
-                LaunchShellLayoutHarness {
-                    AppSceneRoot(
-                        compositionRoot: descriptor.compositionRoot,
-                        harnessLabel: descriptor.safeLabel
-                    )
-                    .modifier(
-                        LaunchDisplayProfileModifier(
-                            profile: descriptor.displayProfile
+                if descriptor.scenario == .rootNavigationMixedMedia {
+                    // Exercise the production shell geometry with fully isolated fixture data.
+                    AppSceneRoot(compositionRoot: descriptor.compositionRoot)
+                } else {
+                    LaunchShellLayoutHarness {
+                        AppSceneRoot(
+                            compositionRoot: descriptor.compositionRoot,
+                            harnessLabel: descriptor.safeLabel
                         )
-                    )
+                        .modifier(
+                            LaunchDisplayProfileModifier(profile: descriptor.displayProfile)
+                        )
+                    }
                 }
             case let .invalid(code):
                 LaunchScenarioFailureView(code: code)

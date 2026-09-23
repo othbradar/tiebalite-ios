@@ -95,6 +95,30 @@ struct ForumSummary: Equatable, Sendable {
     let memberCount: Int
     let threadCount: Int
     let postCount: Int
+    let levelID: Int?
+    let levelName: String?
+
+    init(
+        forumID: Int64?,
+        name: String,
+        slogan: String?,
+        avatarResourceID: String?,
+        memberCount: Int,
+        threadCount: Int,
+        postCount: Int,
+        levelID: Int? = nil,
+        levelName: String? = nil
+    ) {
+        self.forumID = forumID
+        self.name = name
+        self.slogan = slogan
+        self.avatarResourceID = avatarResourceID
+        self.memberCount = memberCount
+        self.threadCount = threadCount
+        self.postCount = postCount
+        self.levelID = levelID
+        self.levelName = levelName
+    }
 }
 
 struct ForumThreadSummary: Identifiable, Equatable, Sendable {
@@ -110,6 +134,7 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
     let mediaCount: Int
     let thumbnailResources: [ImageResourceDescriptor]
     let hasVideo: Bool
+    let author: TiebaUserVisuals?
 
     init(
         itemID: Int64,
@@ -123,7 +148,8 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
         isPinned: Bool,
         mediaCount: Int = 0,
         thumbnailResources: [ImageResourceDescriptor] = [],
-        hasVideo: Bool = false
+        hasVideo: Bool = false,
+        author: TiebaUserVisuals? = nil
     ) {
         self.itemID = itemID
         self.threadID = threadID
@@ -137,6 +163,7 @@ struct ForumThreadSummary: Identifiable, Equatable, Sendable {
         self.mediaCount = max(0, mediaCount)
         self.thumbnailResources = thumbnailResources
         self.hasVideo = hasVideo
+        self.author = author
     }
 
     var id: Int64 {

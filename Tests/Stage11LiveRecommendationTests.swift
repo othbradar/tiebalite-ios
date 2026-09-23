@@ -69,6 +69,11 @@ struct Stage11LiveRecommendationTests {
         thread.threadID = 7_001
         thread.title = "带图帖子"
         thread.forumName = "Fixture吧"
+        thread.forumID = 401
+        thread.forumInfo.avatar = "https://images.fixture.invalid/forum.jpg"
+        thread.author.id = 101
+        thread.author.portrait = "https://images.fixture.invalid/user.jpg"
+        thread.author.levelID = 14
         thread.media = [media]
         var data = Tieba_PersonalizedResponseData()
         data.threadList = [thread]
@@ -88,6 +93,12 @@ struct Stage11LiveRecommendationTests {
 
         let summaries = try await load.value
         let thumbnail = try #require(summaries.first?.thumbnail)
+        #expect(summaries.first?.id == 7_001)
+        #expect(summaries.first?.author?.rawUserID == 101)
+        #expect(summaries.first?.author?.levelID == 14)
+        #expect(summaries.first?.author?.avatarResource?.isNetworkLoadable == true)
+        #expect(summaries.first?.forumID == 401)
+        #expect(summaries.first?.forumAvatarResource?.isNetworkLoadable == true)
         #expect(thumbnail.resource.resourceID == "recommendation.t7001.media.1")
         #expect(thumbnail.resource.candidateURLs == [
             "https://images.fixture.invalid/big.jpg",

@@ -241,7 +241,8 @@ enum SearchWebProtocol {
                 summary: nonempty(candidate.intro)
                     ?? nonempty(candidate.slogan),
                 memberCountText: nonempty(candidate.concernCount),
-                postCountText: nonempty(candidate.postCount)
+                postCountText: nonempty(candidate.postCount),
+                avatarResource: TiebaAvatarResource.forum(forumID: forumID, avatar: candidate.avatar)
             )
         }
     }
@@ -278,7 +279,18 @@ enum SearchWebProtocol {
                 forumID: forumID,
                 forumName: nonempty(item.forumName) ?? "未知吧",
                 authorName: authorName,
-                replyCount: max(0, item.replyCount ?? 0)
+                replyCount: max(0, item.replyCount ?? 0),
+                author: item.user.map {
+                    TiebaUserVisuals(
+                        rawUserID: max(0, $0.userID ?? 0),
+                        displayName: authorName,
+                        portrait: $0.portrait
+                    )
+                },
+                forumAvatarResource: TiebaAvatarResource.forum(
+                    forumID: forumID,
+                    avatar: item.forumInfo?.avatar
+                )
             )
         }
         return ThreadSearchPage(
@@ -353,6 +365,7 @@ struct SearchForumFuzzyMatch: Decodable, Sendable {
 }
 
 struct SearchForumCandidate: Decodable, Sendable {
+    let avatar: String?
     let forumID: Int64?
     let forumName: String?
     let forumNameShow: String?
@@ -362,6 +375,7 @@ struct SearchForumCandidate: Decodable, Sendable {
     let slogan: String?
 
     private enum CodingKeys: String, CodingKey {
+        case avatar
         case concernCount = "concern_num"
         case forumID = "forum_id"
         case forumName = "forum_name"
@@ -389,6 +403,7 @@ struct SearchForumCandidate: Decodable, Sendable {
         concernCount = try container.decodeSearchCount(
             forKey: .concernCount
         )
+        avatar = try container.decodeIfPresent(String.self, forKey: .avatar)
         intro = try container.decodeIfPresent(String.self, forKey: .intro)
         slogan = try container.decodeIfPresent(String.self, forKey: .slogan)
     }
@@ -440,6 +455,7 @@ struct SearchThreadData: Decodable, Sendable {
 }
 
 struct SearchThreadCandidate: Decodable, Sendable {
+    let forumInfo: SearchThreadForumInfo?
     let threadID: String
     let title: String?
     let content: String?
@@ -450,6 +466,7 @@ struct SearchThreadCandidate: Decodable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case content
+        case forumInfo = "forum_info"
         case forumID = "forum_id"
         case forumName = "forum_name"
         case replyCount = "post_num"
@@ -469,6 +486,7 @@ struct SearchThreadCandidate: Decodable, Sendable {
             String.self,
             forKey: .forumName
         )
+        forumInfo = try container.decodeIfPresent(SearchThreadForumInfo.self, forKey: .forumInfo)
         user = try container.decodeIfPresent(
             SearchThreadUser.self,
             forKey: .user
@@ -505,11 +523,27 @@ private extension KeyedDecodingContainer {
 }
 
 struct SearchThreadUser: Decodable, Sendable {
+    let userID: Int64?
+    let portrait: String?
     let userName: String?
     let displayName: String?
 
     private enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case portrait
         case displayName = "show_nickname"
         case userName = "user_name"
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        userID = try container.decodeSearchInt64(forKey: .userID)
+        portrait = try container.decodeIfPresent(String.self, forKey: .portrait)
+        userName = try container.decodeIfPresent(String.self, forKey: .userName)
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+    }
+}
+
+struct SearchThreadForumInfo: Decodable, Sendable {
+    let avatar: String?
 }

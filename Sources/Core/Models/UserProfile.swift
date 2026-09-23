@@ -83,6 +83,35 @@ struct UserProfile: Equatable, Sendable {
     let threadCount: Int?
     let totalAgreeCount: Int?
     let displayTiebaID: String?
+    let visuals: TiebaUserVisuals?
+
+    init(
+        userID: UserID,
+        displayName: String,
+        portraitResourceID: String?,
+        introduction: String?,
+        sex: UserProfileSex?,
+        followingCount: Int?,
+        followerCount: Int?,
+        postCount: Int?,
+        threadCount: Int?,
+        totalAgreeCount: Int?,
+        displayTiebaID: String?,
+        visuals: TiebaUserVisuals? = nil
+    ) {
+        self.userID = userID
+        self.displayName = displayName
+        self.portraitResourceID = portraitResourceID
+        self.introduction = introduction
+        self.sex = sex
+        self.followingCount = followingCount
+        self.followerCount = followerCount
+        self.postCount = postCount
+        self.threadCount = threadCount
+        self.totalAgreeCount = totalAgreeCount
+        self.displayTiebaID = displayTiebaID
+        self.visuals = visuals
+    }
 }
 
 protocol UserProfileRepository: Sendable {

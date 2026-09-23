@@ -133,11 +133,12 @@ enum ProfileProtocol {
                 fallback: requestedRoute.fallbackDisplayName
             )
         )
+        let portrait = nonempty(user.portrait) ?? requestedRoute.portraitResourceID
+        let visualFields = TiebaUserVisualMapper.map(user)
         return UserProfile(
             userID: requestedRoute.userID,
             displayName: displayName,
-            portraitResourceID: nonempty(user.portrait)
-                ?? requestedRoute.portraitResourceID,
+            portraitResourceID: portrait,
             introduction: nonempty(user.intro),
             sex: mapSex(user.sex),
             followingCount: Int(max(0, user.concernNum)),
@@ -145,7 +146,15 @@ enum ProfileProtocol {
             postCount: Int(max(0, user.postNum)),
             threadCount: Int(max(0, user.threadNum)),
             totalAgreeCount: Int(user.totalAgreeNum),
-            displayTiebaID: nonempty(user.tiebaUid)
+            displayTiebaID: nonempty(user.tiebaUid),
+            visuals: TiebaUserVisuals(
+                rawUserID: user.id,
+                displayName: displayName,
+                portrait: portrait,
+                levelID: visualFields.levelID,
+                isBawu: visualFields.isBawu,
+                bawuType: visualFields.bawuType
+            )
         )
     }
 

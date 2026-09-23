@@ -78,7 +78,9 @@ struct AppNavigationStoreTests {
     func regularAndCompactProjectionNeverMutateCanonicalRoutes() throws {
         let forum = try #require(ForumRoute("swiftui"))
         let thread = try #require(ThreadID(101))
-        let store = AppNavigationStore()
+        let store = AppNavigationStore(
+            initialState: AppNavigationState(selectedTab: .recommendations)
+        )
 
         #expect(store.push(.forum(forum), in: .recommendations))
         #expect(store.push(.thread(thread), in: .recommendations))

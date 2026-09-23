@@ -69,7 +69,7 @@ final class LaunchSmokeTests: XCTestCase {
         let app = UITestHarness.launch(scenario: scenario)
 
         UITestHarness.requirePresent(.shellRoot, in: app)
-        UITestHarness.requirePresent(.shellTitle, in: app)
+        UITestHarness.requireAbsent(.shellTitle, in: app)
         UITestHarness.requirePresent(.recommendationsRoot, in: app)
         UITestHarness.requireTabPresent(.recommendations, in: app)
         UITestHarness.requireTabPresent(.followedForums, in: app)

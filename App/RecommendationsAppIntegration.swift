@@ -54,7 +54,8 @@ struct RecommendationsAppRootView: View {
             InitialLoadingView(title: "正在登录")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(SemanticColor.background)
-                .navigationTitle("推荐")
+                .navigationTitle("动态")
+                .navigationBarTitleDisplayMode(.inline)
                 .accessibilityIdentifier(
                     RecommendationsAccessibilityID.sessionSigningIn
                 )
@@ -84,7 +85,8 @@ struct RecommendationsAppRootView: View {
             InitialLoadingView(title: "正在加载推荐")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(SemanticColor.background)
-                .navigationTitle("推荐")
+                .navigationTitle("动态")
+                .navigationBarTitleDisplayMode(.inline)
                 .accessibilityIdentifier(
                     RecommendationsAccessibilityID.initialLoading
                 )
@@ -134,7 +136,8 @@ struct RecommendationsAppRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(Spacing.large)
         .background(SemanticColor.background)
-        .navigationTitle("推荐")
+        .navigationTitle("动态")
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(RecommendationsAccessibilityID.root)
     }

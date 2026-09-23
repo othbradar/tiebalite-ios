@@ -98,7 +98,12 @@ struct LiveRecommendationRepository: RecommendationRepository {
                         resource: $0,
                         alternativeText: "\(title) 的缩略图"
                     )
-                }
+                },
+                author: item.author?.visuals ?? (item.rawAuthorID > 0 ? TiebaUserVisuals(
+                    rawUserID: item.rawAuthorID, displayName: authorName(item.author)
+                ) : nil),
+                forumID: item.rawForumID > 0 ? item.rawForumID : nil,
+                forumAvatarResource: item.forumAvatarResource
             )
         }
     }
