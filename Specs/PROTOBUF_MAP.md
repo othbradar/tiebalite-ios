@@ -191,6 +191,17 @@ HTTPS-only、无 credential/fragment、去重和长度上限。原始 media ordi
 图片 target pixels、content mode、缓存和解码错误不属于 Wire 语义；它们是
 阶段 19A 的本地图片加载策略，不能反推为 Proto 字段含义。
 
+### R04 feed display projection
+
+Personalized `ThreadInfo.lastTimeInt` is the FeedCard header time; `createTime`
+is not substituted. `richAbstract` types 0/40 provide text, type 2 retains the
+text emoticon marker until R07; legacy `abstract` types 0/4 are the fallback.
+`shareNum`/`agreeNum` positive values become optional display counts; proto3 zero
+cannot prove scalar presence. `RecommendationFeedDetails` retains all valid
+media candidate descriptors and the original media-array count; the feed
+previews the first three only. Existing thread route ID, original media
+ordinals, HTTPS validation, generated schema and request remain unchanged.
+
 ### FRS Page
 
 来源：`FrsPage/FrsPage.proto`。

@@ -54,6 +54,15 @@ Sources under `app/src/main/java/com/huanchengfly/tieba/post/` include
 version 3; these adapted rules retain that provenance under the project GPL
 source license. No Android icon or emoticon resource was imported for R01.
 
+R04 also adapts the feed display contracts from the same UI commit's
+`FeedCard.kt` and `api/models/protos/Extensions.kt`: compact user header,
+five-line text, three-image preview with count, forum chip and read-only
+counts. The implementation remains native SwiftUI using the existing image
+loader and virtualized table; no additional Android bitmap/icon was imported.
+The R04 author-avatar fix also adapts the same commit's
+`utils/StringUtil.kt:getAvatarUrl` portrait-prefix rule. Its strictly scoped
+legacy HTTP transport exception is recorded in ADR-0024.
+
 Debug Gallery samples in `App/DebugR01ImageSamples.swift` are small extracts
 of user-provided Android-target screenshots, solely for component comparison.
 Their source rectangles are recorded in `Docs/VisualParity/R01_ACCEPTANCE.md`.

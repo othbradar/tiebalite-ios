@@ -34,6 +34,7 @@ struct RecommendationSummary: Identifiable, Equatable, Sendable {
     let author: TiebaUserVisuals?
     let forumID: Int64?
     let forumAvatarResource: ImageResourceDescriptor?
+    let feed: RecommendationFeedDetails
 
     init(
         threadID: Int64,
@@ -44,7 +45,8 @@ struct RecommendationSummary: Identifiable, Equatable, Sendable {
         thumbnail: RecommendationThumbnail?,
         author: TiebaUserVisuals? = nil,
         forumID: Int64? = nil,
-        forumAvatarResource: ImageResourceDescriptor? = nil
+        forumAvatarResource: ImageResourceDescriptor? = nil,
+        feed: RecommendationFeedDetails = RecommendationFeedDetails()
     ) {
         self.threadID = threadID
         self.title = title
@@ -55,6 +57,7 @@ struct RecommendationSummary: Identifiable, Equatable, Sendable {
         self.author = author
         self.forumID = forumID
         self.forumAvatarResource = forumAvatarResource
+        self.feed = feed
     }
 
     var id: Int64 {

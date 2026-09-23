@@ -15,6 +15,7 @@
 
 - 一个生产 ImageRepository；列表与 MediaViewer 共用。
 - 只请求已验证 HTTPS URL，不猜测把 HTTP 字符串改为 HTTPS。
+  2026-09-23 用户批准的唯一公开头像 HTTP 例外及精确边界见 ADR-0024；不改变业务 API 的 HTTPS 合同。
 - cache namespace 与 session/privacy 分类一致。
 - row 复用、取消和晚到结果不能显示错图或写回失效 session。
 - 不用 `@unchecked Sendable` 掩盖 UIImage/CGImage 并发问题。

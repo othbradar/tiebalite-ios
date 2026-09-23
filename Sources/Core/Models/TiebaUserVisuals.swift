@@ -40,11 +40,11 @@ struct TiebaUserVisuals: Equatable, Sendable {
 
 enum TiebaAvatarResource {
     static func user(userID: Int64, portrait: String?) -> ImageResourceDescriptor? {
-        httpsResource(id: "user.\(userID).avatar", value: portrait)
+        imageResource(id: "user.\(userID).avatar", value: portrait.flatMap(LegacyPortraitURL.candidate))
     }
 
     static func forum(forumID: Int64?, avatar: String?) -> ImageResourceDescriptor? {
-        httpsResource(id: "forum.\(forumID ?? 0).avatar", value: forumHTTPSCandidate(avatar))
+        imageResource(id: "forum.\(forumID ?? 0).avatar", value: forumHTTPSCandidate(avatar))
     }
 
     private static func forumHTTPSCandidate(_ value: String?) -> String? {
@@ -63,10 +63,8 @@ enum TiebaAvatarResource {
         return "https:" + trimmed.dropFirst(5)
     }
 
-    private static func httpsResource(id: String, value: String?) -> ImageResourceDescriptor? {
+    private static func imageResource(id: String, value: String?) -> ImageResourceDescriptor? {
         guard let value else { return nil }
-        // Android accepts complete URLs unchanged. Bare portrait only has an
-        // HTTP synthesis rule: preserve it in the model, never guess HTTPS.
         let resource = ImageResourceDescriptor(resourceID: id, candidateURLs: [value])
         return resource.isNetworkLoadable ? resource : nil
     }

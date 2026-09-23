@@ -814,3 +814,21 @@ iOS runtime 最小验证从当前 API 提供的两个完整公开头像地址出
 R03 完整列表复核发现 ForumGuide 实际 path 使用 percent encoding：decoded 前缀 forum/w=120;h=120，encoded 前缀 forum/w%3D120%3Bh%3D120，初版匹配 accepted=0。以 URLComponents.path 检查已验证路径族，输出仍仅替换原字符串 scheme，编码路径及 query 字节不变。新增 percentEncodedForumGuidePathKeepsItsExactBytes 回归；不通过重编码路径修复签名。
 
 R03 整表地址分类补充：18 项由两类各 9 项构成：tiebapic.baidu.com/forum/w=120;h=120 与 imgsrc.baidu.com/forum/pic。前者已运行验证；对后者另取一个接口原值，仅替换 HTTPS，通过同一 ProductionImageLoader 得到 rendered=true。记录为 forum-family-probe.log。将第二个精确 host/path 配对加入已验证转换范围，未知 host/path 仍拒绝；整表不依赖访问吧首页后才能显示。诊断源码已移除。
+
+## R04 Personalized feed 展示投影（2026-09-23，CODE_EVIDENCE）
+
+锁定 API commit 5545326 的 ThreadInfo.proto / Media.proto / PbContent.proto 与 UI c5f1125 的 FeedCard.kt、api/models/protos/Extensions.kt：FeedCardForThreadInfo 的 UserHeader 使用 author + lastTimeInt；正文按 isNoTitle/title 与 richAbstract 展示，richAbstract 类型 0/40 为文本（连续空格收敛），2 为表情文字标记，未知类型不显示；旧 Abstract 类型 0/4 仅作缺少 richAbstract 时兼容。media 全数组保持原始 ordinal 及既有 big/dynamic/src/origin 候选顺序，动态只预览前三张，角标为完整媒体总数。forumInfo.avatar/name、shareNum、replyNum、agreeNum 分别用于吧 chip 和三栏计数。计数负值/零值不作有效正数展示；proto3 scalar presence 不可区分，不能宣称零值来自显式服务器字段。
+
+请求、认证、分页、去重、route identity 维持既有链路；新增字段仅为响应白名单投影。合成 protobuf 回归位于 R04FeedMappingTests / Stage11LiveRecommendationTests，隔离 UI 样本明确标注 Fixture。本节为源码证据，不冒充 Live 运行结果。
+
+R04 用户头像最小 RUNTIME_EVIDENCE：对 StringUtil.getAvatarUrl 已证实的 tb.himg.baidu.com/sys/portrait/item/ 路径仅更换 HTTPS，用现有 ProductionImageLoader 验证两个当前裸 portrait，结果均 transport（补充分类的一次复核亦如此）。没有记录完整地址/portrait/用户 ID。不能据此批准安全 HTTPS token 合成；AVATAR_HTTPS_TOKEN_SYNTHESIS 仍 UNKNOWN，完整 HTTPS 原值继续受支持。未修改生产 URL 规则。
+
+R04 头像传输补充：对无用户路径/参数的 `https://tb.himg.baidu.com/` 执行 curl --head --max-time 10，exit 60，报告证书 subject name 不匹配目标 hostname。portrait-host-tls.log 为原始结果。没有使用 -k、ATS 例外或更换未获证据支持的域名。此结果解释当前环境的 TLS 失败，不证明所有网络环境永远失败。
+
+### R04 作者头像 HTTP 例外（2026-09-23，用户已授权）
+
+用户明确允许 `tb.himg.baidu.com/sys/portrait/item/` 使用原版 HTTP，决策和拒绝边界见 ADR-0024。CODE_EVIDENCE 仍为 UI c5f1125 的 StringUtil.kt:150–156、FeedCard.UserHeader，输入为 User.portrait#5，不新增接口或请求字段。只使用原版前缀加服务端标识；完整 HTTPS 原值继续使用，不将 HTTPS 失败改为自动 HTTP fallback。API、Session、身份和其他 CDN 不变，图片继续匿名且拒绝重定向。
+
+本节是获批的实现合同，尚不代表修复后的真实头像加载通过；运行结果只在执行后写入 R04_AUTHOR_AVATAR。此前 HTTPS 合成 UNKNOWN 历史保留，这次没有声称旧域名支持 HTTPS。
+
+修复后 RUNTIME_EVIDENCE：最终正常 Debug 构建使用既有 Live Personalized → mapper → TiebaAvatarView → ProductionImageLoader，iPhone 动态首屏实际显示两个不同作者的真实头像；截图 iphone-live-avatars-top.png / iphone-live-final.png。没有临时 probe 或额外作者资料请求。匿名图片请求与精确 host/path 准入由 R04AuthorAvatarTests 验证；不将 Fixture 头像当 Live 证据，不将首屏截图当后续每个作者均成功的证明。

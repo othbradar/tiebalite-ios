@@ -74,7 +74,14 @@ struct Stage11LiveRecommendationTests {
         thread.author.id = 101
         thread.author.portrait = "https://images.fixture.invalid/user.jpg"
         thread.author.levelID = 14
-        thread.media = [media]
+        thread.media = [media, media, media, media]
+        thread.lastTimeInt = 1_700_000_000
+        thread.agreeNum = 46
+        thread.shareNum = 1
+        var abstract = Tieba_PbContent()
+        abstract.type = 0
+        abstract.text = "真实字段的合成摘要"
+        thread.richAbstract = [abstract]
         var data = Tieba_PersonalizedResponseData()
         data.threadList = [thread]
         var response = Tieba_PersonalizedResponse()
@@ -97,6 +104,13 @@ struct Stage11LiveRecommendationTests {
         #expect(summaries.first?.author?.rawUserID == 101)
         #expect(summaries.first?.author?.levelID == 14)
         #expect(summaries.first?.author?.avatarResource?.isNetworkLoadable == true)
+        #expect(summaries.first?.feed.abstractText == "真实字段的合成摘要")
+        #expect(summaries.first?.feed.timeUnixSeconds == 1_700_000_000)
+        #expect(summaries.first?.feed.agreeCount == 46)
+        #expect(summaries.first?.feed.shareCount == 1)
+        #expect(summaries.first?.mediaResources.count == 4)
+        #expect(summaries.first?.previewMediaResources.count == 3)
+        #expect(summaries.first?.mediaCount == 4)
         #expect(summaries.first?.forumID == 401)
         #expect(summaries.first?.forumAvatarResource?.isNetworkLoadable == true)
         #expect(thumbnail.resource.resourceID == "recommendation.t7001.media.1")

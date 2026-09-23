@@ -333,7 +333,7 @@ actor ProductionImageLoader: ImageLoading {
     ) -> URL? {
         guard let components = URLComponents(string: rawValue),
               let scheme = components.scheme?.lowercased(),
-              scheme == "http" || scheme == "https",
+              scheme == "https" || LegacyPortraitURL.permits(components),
               components.host?.isEmpty == false,
               components.user == nil,
               components.password == nil,

@@ -37,6 +37,7 @@ struct RecommendationItem: Equatable, Sendable {
     let hasLive: Bool
     let thumbnailResource: ImageResourceDescriptor?
     let forumAvatarResource: ImageResourceDescriptor?
+    let feed: RecommendationFeedDetails
 
     init(
         rawFeedID: Int64,
@@ -54,7 +55,8 @@ struct RecommendationItem: Equatable, Sendable {
         hasVideo: Bool,
         hasLive: Bool,
         thumbnailResource: ImageResourceDescriptor?,
-        forumAvatarResource: ImageResourceDescriptor? = nil
+        forumAvatarResource: ImageResourceDescriptor? = nil,
+        feed: RecommendationFeedDetails = RecommendationFeedDetails()
     ) {
         self.rawFeedID = rawFeedID
         self.rawThreadID = rawThreadID
@@ -72,6 +74,7 @@ struct RecommendationItem: Equatable, Sendable {
         self.hasLive = hasLive
         self.thumbnailResource = thumbnailResource
         self.forumAvatarResource = forumAvatarResource
+        self.feed = feed
     }
 }
 

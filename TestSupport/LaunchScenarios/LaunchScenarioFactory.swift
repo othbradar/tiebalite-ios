@@ -54,7 +54,7 @@ enum LaunchScenarioFactory {
             sessionStatus = .signedOut
             safeLabel = "Harness: Session signed out"
             imageLoader = HarnessFixtureImageLoader(fixtures: [:])
-        case .sessionSignedInFixture, .rootNavigationMixedMedia:
+        case .sessionSignedInFixture, .rootNavigationMixedMedia, .dynamicFeedParity:
             networkMode = .controlled
             httpBehavior = .controlled
             sessionStatus = .signedIn
@@ -102,13 +102,19 @@ enum LaunchScenarioFactory {
     }
 
     private static func signedInLabel(for scenario: LaunchScenarioID) -> String {
-        scenario == .rootNavigationMixedMedia
-            ? "Harness: Mixed-size root media" : "Harness: Session signed in fixture"
+        switch scenario {
+        case .dynamicFeedParity: "Harness: Dynamic parity"
+        case .rootNavigationMixedMedia: "Harness: Mixed-size root media"
+        default: "Harness: Session signed in fixture"
+        }
     }
 
     private static func signedInImageLoader(for scenario: LaunchScenarioID) -> any ImageLoading {
-        scenario == .rootNavigationMixedMedia
-            ? HarnessMixedSizeImageLoader() : FixtureReadingImageLoader()
+        switch scenario {
+        case .dynamicFeedParity: R04FeedFixtureImages()
+        case .rootNavigationMixedMedia: HarnessMixedSizeImageLoader()
+        default: FixtureReadingImageLoader()
+        }
     }
 
     private static func makeSessionDependencies(
@@ -185,6 +191,7 @@ enum LaunchScenarioFactory {
         switch scenario {
         case .networkOffline: HarnessRecoveringRecommendations()
         case .rootNavigationMixedMedia: HarnessMixedMetadataRecommendations()
+        case .dynamicFeedParity: R04FeedFixture()
         default: nil
         }
     }

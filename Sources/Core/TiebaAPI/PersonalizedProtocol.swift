@@ -198,17 +198,7 @@ enum PersonalizedProtocol {
             let stableThreadID = thread.threadID > 0
                 ? thread.threadID
                 : thread.id
-            let thumbnailResource = thread.media.enumerated().lazy
-                .compactMap { index, media in
-                    ThreadListImageResourceMapper.map(
-                        bigPicture: media.bigPic,
-                        dynamicPicture: media.dynamicPic,
-                        sourcePicture: media.srcPic,
-                        originalPicture: media.originPic,
-                        ownerResourceID:
-                            "recommendation.t\(stableThreadID).media.\(index + 1)"
-                    )
-                }.first
+            let feed = RecommendationFeedMapper.map(thread, ownerThreadID: stableThreadID)
             return RecommendationItem(
                 rawFeedID: thread.id,
                 rawThreadID: thread.threadID,
@@ -224,11 +214,12 @@ enum PersonalizedProtocol {
                 isDeletedRaw: thread.isDeleted,
                 hasVideo: thread.hasVideoInfo,
                 hasLive: thread.hasAlaInfo,
-                thumbnailResource: thumbnailResource,
+                thumbnailResource: feed.media.first,
                 forumAvatarResource: thread.hasForumInfo ? TiebaAvatarResource.forum(
                     forumID: thread.forumID,
                     avatar: thread.forumInfo.avatar
-                ) : nil
+                ) : nil,
+                feed: feed
             )
         }
         let (nextPage, overflow) = requestedPage.addingReportingOverflow(1)

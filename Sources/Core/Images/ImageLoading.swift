@@ -96,7 +96,7 @@ struct ImageResourceDescriptor: Equatable, Hashable, Sendable {
             )
             guard trimmed.utf8.count <= Self.maximumURLLength,
                   let components = URLComponents(string: trimmed),
-                  components.scheme?.lowercased() == "https",
+                  components.scheme?.lowercased() == "https" || LegacyPortraitURL.permits(components),
                   components.host?.isEmpty == false,
                   components.user == nil,
                   components.password == nil,

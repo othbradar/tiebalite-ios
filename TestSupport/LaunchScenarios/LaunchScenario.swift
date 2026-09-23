@@ -18,6 +18,7 @@ enum LaunchScenarioID: String, CaseIterable, Equatable, Sendable {
     case sessionExpired = "session.expired"
     case sessionSignedInFixture = "session.signed-in-fixture"
     case rootNavigationMixedMedia = "root.mixed-media"
+    case dynamicFeedParity = "dynamic.parity"
     case sessionSignedOut = "session.signed-out"
 }
 

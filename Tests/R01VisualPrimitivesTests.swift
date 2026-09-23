@@ -3,8 +3,10 @@ import Testing
 
 struct R01VisualPrimitivesTests {
     @Test
-    func avatarOnlyConsumesAnEvidenceBackedHTTPSValue() {
-        #expect(TiebaAvatarResource.user(userID: 1, portrait: "portrait-token") == nil)
+    func avatarConsumesHTTPSAndTheExplicitlyApprovedAndroidPortraitSource() {
+        #expect(TiebaAvatarResource.user(userID: 1, portrait: "portrait-token")?.candidateURLs == [
+            "http://tb.himg.baidu.com/sys/portrait/item/portrait-token"
+        ])
         #expect(TiebaAvatarResource.user(userID: 1, portrait: "http://tb.himg.baidu.com/a") == nil)
         #expect(TiebaAvatarResource.user(userID: 1, portrait: "https://user:pass@fixture.invalid/a") == nil)
         let first = TiebaAvatarResource.user(userID: 1, portrait: "https://images.fixture.invalid/a")

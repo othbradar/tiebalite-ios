@@ -128,6 +128,7 @@ enum UITestElementID: String, CaseIterable {
     case recommendationsFirstRow = "recommendations.row.t100001"
     case recommendationsFailure = "recommendations.state.failure"
     case recommendationsList = "recommendations.list"
+    case recommendationsAvatarFailureRow = "recommendations.row.t100009"
     case recommendationsLastPageRow = "recommendations.row.t100012"
     case recommendationsLastPageThreadScreen = "thread-reader.screen.t100012"
     case recommendationsSelectedRow = "recommendations.row.t100003"

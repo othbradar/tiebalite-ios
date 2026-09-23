@@ -149,3 +149,5 @@ wire codec 可替换。无 HTTPS/合法参数时回退 fixture-only；schema 权
 
 任何实现需要 HTTP 降级、shared Cookie、全局账户或删除 malformed tests
 才能工作，立即回滚到 fixture adapter。
+
+2026-09-23 补充：用户明确批准的旧公开头像 HTTP 来源见 ADR-0024，仅用于匿名图片 Loader；本文业务 HTTPClient、接口认证和重定向约束不变。

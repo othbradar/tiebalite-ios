@@ -7,6 +7,7 @@ enum UITestLaunchScenario: String, CaseIterable {
     case sessionSignedOut = "session.signed-out"
     case sessionSignedInFixture = "session.signed-in-fixture"
     case rootNavigationMixedMedia = "root.mixed-media"
+    case dynamicFeedParity = "dynamic.parity"
     case sessionExpired = "session.expired"
 
     var safeLabel: String {
@@ -25,6 +26,8 @@ enum UITestLaunchScenario: String, CaseIterable {
             "Harness: Session signed out"
         case .sessionSignedInFixture:
             "Harness: Session signed in fixture"
+        case .dynamicFeedParity:
+            "Harness: Dynamic parity"
         case .rootNavigationMixedMedia:
             "Harness: Mixed-size root media"
         case .sessionExpired:

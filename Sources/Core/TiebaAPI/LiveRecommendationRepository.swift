@@ -103,7 +103,8 @@ struct LiveRecommendationRepository: RecommendationRepository {
                     rawUserID: item.rawAuthorID, displayName: authorName(item.author)
                 ) : nil),
                 forumID: item.rawForumID > 0 ? item.rawForumID : nil,
-                forumAvatarResource: item.forumAvatarResource
+                forumAvatarResource: item.forumAvatarResource,
+                feed: item.feed
             )
         }
     }

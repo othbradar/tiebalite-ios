@@ -58,6 +58,16 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: "18.0"
+    info:
+      path: Config/TiebaLite-Info.plist
+      properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSAppTransportSecurity:
+          NSExceptionDomains:
+            tb.himg.baidu.com:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: false
     sources:
       - path: App
         excludes:

@@ -1,5 +1,12 @@
 # TASK_STATE
 
+- 2026-09-23 用户反馈“我看了确实修复了，那就提交R04进入R05”。R04 = USER_VISUALLY_APPROVED，授权精确提交当前阶段并开始 R05。头像 HTTP 边界和既有验证缺口不扩大；最终批准截图为 Artifacts/VisualReview/R04/AuthorAvatar/iphone-live-final.png。
+
+- 2026-09-23 R04 动态作者头像缺口已修复，READY_FOR_USER_VISUAL_REVIEW。用户明确允许 `tb.himg.baidu.com/sys/portrait/item/` 原版 HTTP，决策见 ADR-0024；LegacyPortraitURL 按 Android 规则转换真实 portrait，描述符与 Loader 仅放行精确来源，ATS 只配置该域名。没有 Cookie、TLS 证书绕过或新图片系统。40 项相关 Unit/80 次执行通过，补充的 6 项头像测试/32 次执行通过，iPhone 原 R04 Smoke 1/1（59.337s）、lint/build/secret scan/diff 通过。两台 Debug App 已覆盖安装，未卸载/清 Keychain；iPhone Live 首屏已实际显示两个真实作者头像并停在多图动态页。Live 深滚动仍因 CUA 滚动未生效而待人工复核。全部原始失败和证据见 R04_AUTHOR_AVATAR.md；未暂存/提交、不进入 R05。
+
+- R03 已由用户视觉批准并提交 `c4f1302`（feat: align home and followed forums with TiebaLite），未推送。按同一授权进入 R04；R04 平面动态行、完整媒体数据/三图预览、摘要/时间/吧 chip/真实计数已实现，未暂存/提交、不进入 R05。最终定向 Unit 43 项通过（final-verified-unit.xcresult），iPhone 单个 Smoke 1/1 通过（55.912s），make lint/build 和 diff 检查通过。44 个受保护文件 SHA-256 一致。完整执行与失败修正见 Docs/VisualParity/R04_ACCEPTANCE.md。
+- R04 首轮历史验收缺口：Android 裸 portrait 的原 CDN 主机 HTTPS 证书名称不匹配，当时保持中性头像；已由上方用户批准的 HTTP 兼容修订解决，完整 HTTPS 用户头像与已验证吧图链路不变。Live 第二页及中部截图仍待用户手动滑动，未把隔离 Fixture 的三页通过冒充 Live。
+
 - 2026-09-23 用户反馈“我看了可以了提交R03进入R04”。R03 = USER_VISUALLY_APPROVED，已授权提交并进入 R04；原始失败及工具未采集的中部截图限制保留在 R03_ACCEPTANCE.md。R02 已提交 4d45b62，未推送。
 
 - 2026-09-23 用户查看 Simulator 后明确反馈“我看了r02现在没问题了，提交并进入r03”，R02 记为 `USER_VISUALLY_APPROVED`。此前自动化返回位置失败保留为已知记录，不改写为通过；用户已授权提交当前实现并进入 R03。

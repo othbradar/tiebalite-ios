@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 @MainActor
 struct RecommendationsView: View {
@@ -31,10 +30,14 @@ struct RecommendationsView: View {
     private var content: some View {
         switch store.state {
         case .initialLoading:
-            InitialLoadingView(title: "正在加载推荐")
-                .accessibilityIdentifier(
-                    RecommendationsAccessibilityID.initialLoading
-                )
+            VStack(spacing: 0) {
+                ForEach(0..<3) { _ in
+                    TiebaFeedRowSkeleton().padding(.horizontal, TiebaParityTokens.horizontalInset)
+                    TiebaFlatDivider()
+                }
+                Spacer(minLength: 0)
+            }
+            .accessibilityIdentifier(RecommendationsAccessibilityID.initialLoading)
         case let .loaded(items),
              let .loadingNextPage(items),
              let .nextPageFailure(items),
@@ -81,9 +84,6 @@ struct RecommendationsView: View {
             },
             rowContent: { row in
                 recommendationListRow(row)
-                    .padding(.horizontal, Spacing.medium)
-                    .padding(.top, row.isFirstThread ? Spacing.medium : 0)
-                    .padding(.bottom, Spacing.medium)
             }
         )
         .background(SemanticColor.background)
@@ -94,14 +94,9 @@ struct RecommendationsView: View {
     private func recommendationListRow(_ row: RecommendationsRowModel) -> some View {
         switch row.content {
         case let .thread(item):
-            Button {
+            RecommendationFeedRow(item: item, imageLoader: imageLoader) {
                 onOpenThread(item)
-            } label: {
-                RecommendationRow(item: item, imageLoader: imageLoader)
             }
-            .buttonStyle(.plain)
-            .accessibilityHint("打开只读帖子")
-            .accessibilityIdentifier(RecommendationsAccessibilityID.row(item.threadID))
             .id(item.threadID)
         case let .pagination(state):
             PaginationFooter(state: state, retry: requestNextPage)
@@ -136,147 +131,6 @@ struct RecommendationsView: View {
             store.nextPage == nil ? .end : .idle
         case .empty, .initialFailure, .initialLoading:
             .idle
-        }
-    }
-}
-
-@MainActor
-private struct RecommendationRow: View {
-    let item: RecommendationSummary
-    let imageLoader: any ImageLoading
-
-    var body: some View {
-        ContentSummaryCard(
-            title: item.title,
-            primaryMetadata: item.forumName,
-            primarySystemImage: "rectangle.stack",
-            secondaryMetadata: item.authorName,
-            secondarySystemImage: "person",
-            trailingMetadata: "\(item.replyCount)",
-            trailingAccessibilityLabel: "\(item.replyCount) 条回复"
-        ) {
-            if let thumbnail = item.thumbnail {
-                RecommendationThumbnailView(
-                    threadID: item.threadID,
-                    thumbnail: thumbnail,
-                    imageLoader: imageLoader
-                )
-            }
-        }
-    }
-}
-
-@MainActor
-private struct RecommendationThumbnailView: View {
-    enum Phase {
-        case failed
-        case loading
-        case rendered
-    }
-
-    let threadID: Int64
-    let thumbnail: RecommendationThumbnail
-    let imageLoader: any ImageLoading
-
-    @Environment(\.displayScale) private var displayScale
-    @State private var phase = Phase.loading
-    @State private var image: UIImage?
-    @State private var targetPixelSize: ImageTargetPixelSize?
-
-    var body: some View {
-        ZStack {
-            SemanticColor.background
-
-            switch phase {
-            case .loading:
-                ProgressView()
-            case .rendered:
-                if let image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .accessibilityHidden(true)
-                }
-            case .failed:
-                Image(systemName: "photo.badge.exclamationmark")
-                    .foregroundStyle(SemanticColor.secondaryText)
-                    .accessibilityHidden(true)
-            }
-        }
-        .aspectRatio(16 / 9, contentMode: .fit)
-        .frame(maxWidth: .infinity)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.small))
-        .accessibilityLabel(thumbnail.alternativeText)
-        .accessibilityValue(phase.accessibilityValue)
-        .accessibilityIdentifier(
-            RecommendationsAccessibilityID.thumbnail(threadID)
-        )
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: { size in
-            targetPixelSize = ImageTargetPixelSize.normalized(
-                pointWidth: size.width,
-                pointHeight: size.height,
-                displayScale: displayScale,
-                purpose: .listThumbnail
-            )
-        }
-        .task(id: RecommendationThumbnailTaskID(
-            resource: thumbnail.resource,
-            targetPixelSize: targetPixelSize
-        )) {
-            await load()
-        }
-        .onDisappear {
-            image = nil
-        }
-    }
-
-    private func load() async {
-        phase = .loading
-        image = nil
-        guard let targetPixelSize else {
-            return
-        }
-        do {
-            let payload = try await imageLoader.load(
-                ImageRequest(
-                    resource: thumbnail.resource,
-                    targetPixelSize: targetPixelSize,
-                    purpose: .listThumbnail,
-                    resizeMode: .fill
-                )
-            )
-            try Task.checkCancellation()
-            guard let decoded = payload.displayImage() else {
-                phase = .failed
-                return
-            }
-            image = decoded
-            phase = .rendered
-        } catch is CancellationError {
-            return
-        } catch {
-            phase = .failed
-        }
-    }
-}
-
-private struct RecommendationThumbnailTaskID: Hashable {
-    let resource: ImageResourceDescriptor
-    let targetPixelSize: ImageTargetPixelSize?
-}
-
-private extension RecommendationThumbnailView.Phase {
-    var accessibilityValue: String {
-        switch self {
-        case .loading:
-            "正在加载"
-        case .rendered:
-            "已加载"
-        case .failed:
-            "加载失败"
         }
     }
 }
