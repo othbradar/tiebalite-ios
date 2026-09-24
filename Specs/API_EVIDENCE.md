@@ -894,3 +894,13 @@ CODE_EVIDENCE（UI c5f1125f）：`RetrofitTiebaApi.kt:280–344`为POST客户端
 RUNTIME_EVIDENCE补充：在完整Debug App中通过当前AuthContext和原HTTPClient执行一次仅限host=c.tieba.baidu.com/path=/c/s/login的前置诊断。HTTP200、error_code0、MIME application/x-javascript;charset=utf-8、JSON有效、user.id为string、tbs非空，生产Account decoder返回account-ready；publishRequests=0。只输出类型/布尔/计数，不保存uid、tbs、正文或凭据。记录live-account-metadata.json。临时诊断启动标志及代码已全部移除，最终安装正常App。
 
 RUNTIME_EVIDENCE（用户手动发布，2026-09-24）：用户明确确认修订版主题回复发送成功，并提供原帖新增第9楼截图。此证据覆盖AddPost的threadReply路径；没有采集原始发布响应或服务端pid，不推定新帖/指定楼层/楼中楼均通过。截图留在ignored Artifacts/VisualReview/R09/WritePreflight/user-confirmed-live-thread-reply.png。所有AI操作均未触发Live发布。
+
+## R10 图片上传（CODE_EVIDENCE + 用户手动端到端 RUNTIME_EVIDENCE）
+
+UI参考 c5f1125：`components/ImageUploader.kt::uploadSinglePicture` 分块512000，普通5MiB/原图10MiB；`api/retrofit/interfaces/OfficialTiebaApi.kt::uploadPicture` POST `/c/s/uploadPicture`，JSON。`RetrofitTiebaApi::OFFICIAL_TIEBA_API` 基址 c.tieba.baidu.com；采用HTTPS安全适配（用户单图主题回复验证见下文，未采集原始响应），_client_version=12.41.7.1，User-Agent同版本，BDUSS及公共字段由 CommonParamInterceptor 注入，multipart非文件字段由 SortAndSignInterceptor 签名，文件chunk不签；StParamInterceptor对multipart不增加遥测。接口删除Charset/_client_type请求头及naws_game_ver/sdk_ver表单；Cookie仅ka=open（不伪造BAIDUID）。不虚构设备/安装/追踪字段。
+
+业务字段：alt=json、chunkNo从1、forum_name/small_flow_fname=真实吧名、groupId=1、height/width、isFinish=0/1、is_bjh=0、pic_water_type=2、resourceId=文件MD5+512000、saveOrigin=0、size=实际字节数。文件part name=chunk filename=file。响应 `UploadPictureResultBean`: error_code/error_msg/resourceId/chunkNo/picId，最终picInfo.originPic.width/height。分块序号必须匹配，最后真实picId及正尺寸齐全才算成功；非零代码/畸形响应不继续发帖。
+
+`ReplyPage` 最多9张，只在发送后upload，成功按顺序拼 `正文\n#(pic,picId,width,height)`；表情插入 `#(名称)`，复用 R07 目录。fixture为完全虚构 picID/尺寸，自动化不发送Live。对应 ADR-0028。Live最终发布只由用户本人进行。
+
+RUNTIME_EVIDENCE（用户手动上传并发布，2026-09-24）：用户确认“都正常，图片和表情包都正确，可以提交了”，并提供完整 Live App 的高通吧帖子第14/15楼截图；第15楼含文字、已渲染滑稽及一张 LOCAL PHOTO 4 图片。证据：ignored `Artifacts/VisualReview/R10/UserApproval/user-confirmed-live-image-emoticon-reply.png`。此记录只证明当前账号的一次单图加表情主题回复端到端成功；没有原始上传响应、picId 或发布响应采样，不将其推定为所有账号、四种写入目标、多图发布或 Live 重试全部通过。AI 未触发 Live 上传或发布。

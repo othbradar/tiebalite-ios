@@ -244,6 +244,11 @@ enum ImageLoadingError: Error, Equatable, Sendable {
 
 protocol ImageLoading: Sendable {
     func load(_ request: ImageRequest) async throws -> ImagePayload
+    func loadLocalPhoto(_ photo: ComposerPhoto) async throws -> ImagePayload
+}
+
+extension ImageLoading {
+    func loadLocalPhoto(_ photo: ComposerPhoto) async throws -> ImagePayload { throw ImageLoadingError.unavailable }
 }
 
 struct DisabledImageLoader: ImageLoading {

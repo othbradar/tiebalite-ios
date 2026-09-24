@@ -155,3 +155,5 @@ Resources/TIEBA_EMOTICONS_PROVENANCE.md. All are bundled original artwork;
 production adds no remote downloader, cache, credentials or transport exception.
 
 R09 extends the same locked Android Protobuf source closure to AddPost and its verification/response dependencies (18 generated files); original source/license attribution above remains applicable. No additional runtime package is introduced.
+
+R10 upload wire contract and emoticon picker behavior are traced to TiebaLite Android UI reference c5f1125f42498e49db4e4a9cb66313b8c8a285c7: ImageUploader.kt, UploadPictureResultBean.kt, OfficialTiebaApi.kt, RetrofitTiebaApi.kt, ReplyPage.kt and request interceptors. This phase reuses the previously attributed official emoticon resources; no new remote artwork or third-party library is added.

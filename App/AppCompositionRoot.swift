@@ -65,6 +65,8 @@ final class AppCompositionRoot {
         case .live:
             textComposer = TextComposerService(repository: LiveTextWriteRepository(
                 client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
+                uploader: LiveComposerImageUploader(client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
+                imageLoader: environment.imageLoader,
                 currentContext: { resolvedAuthContextProvider.context() })
             self.browsingHistoryRepository =
                 browsingHistoryRepository

@@ -51,6 +51,8 @@ struct DebugComponentGalleryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
 #if UITESTING
+                NavigationLink("图片与表情") { DebugR10ComposerGallery() }
+                    .accessibilityIdentifier("r10.gallery.open")
                 NavigationLink("文字编辑器") { DebugR09ComposerGallery() }
                     .accessibilityIdentifier("r09.gallery.open")
 #endif

@@ -1,5 +1,13 @@
 # TASK_STATE
 
+- 2026-09-24 R10 = USER_VISUALLY_APPROVED：用户确认图片和表情均正常并明确授权提交。用户自行完成高通吧单图加表情主题回复，第14/15楼截图已存 ignored Artifacts/VisualReview/R10/UserApproval/user-confirmed-live-image-emoticon-reply.png；未采集原始响应，其他写入目标、多图Live发布/重试不扩大结论。AI零Live上传/发布。本轮仅更新记录、执行定向提交门禁及精确提交，不再改UI，不推送、不进入R11。提交门禁11 Unit/13次执行、iPhone2短UI（54.436秒）、lint/build/secret/diff通过；Unit曾被系统粘贴权限提示阻塞，拒绝读取外部剪贴板后原测试继续通过，证据保留。正常完整App已恢复到iPhone，SHA dadbb284…与用户验收候选一致；44保护文件hash未变。
+
+- 2026-09-24 用户批准 R10 最小原生输入区域重设计后实施完成，READY_FOR_USER_VISUAL_REVIEW，未暂存/提交/进入R11。键盘与表情使用同一UITextView inputView，实际窗口宽度仅变化时同步，保留当前回调/选区/控制器和内联wire映射；撤下旧VStack面板。接入中多个UI失败完整保留（包括真实零宽证据），不归因UIKit缺陷；最终iPhone2/2（含原三轮开合/滚动与四图Mock失败重试）、iPad1/1（转屏/全宽/草稿）、9项定向Unit/11执行、lint/build/secret/diff通过。44保护文件hash未变。完整正常Live两台覆盖安装SHA dadbb284…一致，无卸载/清Keychain。iPhone原耐腐蚀艺术馆吧“最没用的非放射性元素是81”回复草稿已通过PhotosPicker选4张本地样图、点选笑眼/滑稽等多个内联表情，零自动上传/发送。证据 NativeInput/ 和 R10_ACCEPTANCE.md；所有历史失败/测试窗口appearance警告保留，真实上传仍UNKNOWN。
+
+- 2026-09-24 R10用户反馈修订：正文plain token+分离预览根因确认，改为单UITextView内联附件，2项定向Unit/4次执行通过（光标/连续表情/删除/复制粘贴）；Live原帖已点选笑眼并实际显示在正文。面板初版3次复现错位，两次局部布局修正仍失败，按规则撤回失败布局，保留证据，停止第三补丁。R10=STOPPED_WITH_OPEN_PANEL_REGRESSION，提案见R10_EDITOR_LAYOUT_REDESIGN.md，尚未实施。lint/build/secret/diff通过；两台完整正常Debug覆盖安装hash9d82772e…一致，不卸载/清Keychain。CUA点击已恢复，iPhone停原耐腐蚀艺术馆吧“最没用的非放射性元素是81”回复编辑器，只有未发送笑眼草稿。无Live上传/发送，无暂存/提交，不进入R11；失败与截图在EditorRevision和R10_ACCEPTANCE.md。
+
+- 2026-09-24 R09已提交1100788（feat: add text posting and replies），正常App的回复验收入口已去除，未推送。按用户授权进入R10；当前IMPLEMENTED_WAITING_LIVE_PRESENTATION：选图/顺序预览/上传重试/官方表情面板已实现，34定向Unit+最终6补充、iPhone1/iPad1短UI、lint/build/secret/network/diff通过。两台正常完整App已覆盖安装并核对hash44fee57e…；CUA连续windowNotFoundAtPosition导致最终Live四图停留尚未完成，已询问用户解锁并置前。自动化只Mock，零Live上传/发布。全部失败/限制/证据见R10_ACCEPTANCE.md。R10未暂存/提交，不进入R11。
+
 - 2026-09-24 用户批准提交 R09 并进入 R10。已从正常应用移除 R09 验收入口，隔离自动化保留。提交检查 13 Unit、1 短 UI、lint/build/secret/diff 通过；首个 UI 配置拼写错误导致 exit 70，纠正后通过。R09 = USER_VISUALLY_APPROVED；真实主题回复已由用户验证，其余写入类型仍未单独 Live 验证。未自动发送、未推送。
 
 - 2026-09-24 R09主题回复 = LIVE_THREAD_REPLY_USER_VERIFIED：用户明确“我确实发送成功了”，提供原帖新增第9楼截图（Artifacts/VisualReview/R09/WritePreflight/user-confirmed-live-thread-reply.png）。该成功来自用户自行发送；AI没有自动发布。本次仅更新记录，diff check通过；未重跑测试/构建。新帖/指定楼层/楼中楼未单独Live验证，不扩大结论。R09未暂存/提交，未进入R10。

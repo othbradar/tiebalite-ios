@@ -36,7 +36,9 @@ struct TextComposeTarget: Identifiable, Equatable, Sendable {
 struct TextDraft: Equatable, Sendable {
     var title = ""
     var content = ""
-    var isSendable: Bool { !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && title.count <= 31 }
+    var photos: [ComposerPhoto] = []
+    var isSendable: Bool { (!content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !photos.isEmpty)
+        && photos.count <= ComposerPhoto.limit && title.count <= 31 }
 }
 
 struct TextWriteRequest: Equatable, Sendable {

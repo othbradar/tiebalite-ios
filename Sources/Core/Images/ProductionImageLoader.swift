@@ -191,6 +191,10 @@ actor ProductionImageLoader: ImageLoading {
         if let responseMIME, !responseMIME.hasPrefix("image/") {
             throw ImageLoadingError.invalidMIME
         }
+        return try decode(data: data, responseMIME: responseMIME, request: request)
+    }
+
+    private func decode(data: Data, responseMIME: String?, request: ImageRequest) throws -> CachedImage {
         guard let source = CGImageSourceCreateWithData(
             data as CFData,
             [kCGImageSourceShouldCache: false] as CFDictionary
@@ -365,4 +369,25 @@ actor ProductionImageLoader: ImageLoading {
         )
         return overflow ? Int.max : max(1, cost)
     }
+}
+
+extension ProductionImageLoader {
+    func loadLocalPhoto(_ photo: ComposerPhoto) async throws -> ImagePayload {
+        try Task.checkCancellation()
+        guard photo.file.url.isFileURL, photo.byteCount <= responseByteLimit else { throw ImageLoadingError.invalidRequest }
+        let request = ImageRequest(
+            resourceID: "composer." + photo.id,
+            targetPixelSize: .init(width: 240, height: 240), purpose: .listThumbnail, resizeMode: .fill)
+        let key = request.stableCacheKey as NSString
+        let decoded: CachedImage
+        if let cached = cache.object(forKey: key) { decoded = cached } else {
+            let data = try Data(contentsOf: photo.file.url, options: .mappedIfSafe)
+            guard data.count <= responseByteLimit else { throw ImageLoadingError.responseTooLarge(limit: responseByteLimit) }
+            decoded = try decode(data: data, responseMIME: "image/jpeg", request: request)
+            try Task.checkCancellation()
+            cache.setObject(decoded, forKey: key, cost: Self.memoryCost(of: decoded.image))
+        }
+        return ImagePayload(decodedImage: decoded.image, mediaType: decoded.mediaType, pixelSize: decoded.pixelSize)
+    }
+
 }
