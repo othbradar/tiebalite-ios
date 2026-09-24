@@ -207,10 +207,13 @@ struct AppNavigationState: Equatable, Sendable {
 
 enum RouteGrammar {
     static func isValid(_ routes: [RouteIdentity], for root: RootID) -> Bool {
-        guard routes.count <= 4, Set(routes).count == routes.count else {
+        guard routes.count <= 5, Set(routes).count == routes.count else {
             return false
         }
 
+        if routes.count >= 2, case .userProfile = routes[routes.count - 1], case .subposts = routes[routes.count - 2] {
+            return isValid(Array(routes.dropLast()), for: root)
+        }
         guard !routes.isEmpty else {
             return true
         }
@@ -343,7 +346,7 @@ enum SettingsRouteGrammar {
         if routes.first == .preferences {
             return canonicalPreferences(routes)
         }
-        guard routes.count <= 4 else { return [] }
+        guard routes.count <= 5 else { return [] }
         guard let first = routes.first else { return routes }
         return isValidRootPath(routes, first: first) ? routes : []
     }
@@ -383,7 +386,7 @@ enum SettingsRouteGrammar {
 
     private static func canonicalPreferences(_ routes: [SettingsRoute]) -> [SettingsRoute] {
         let children = Array(routes.dropFirst())
-        guard routes.count <= 5, !children.contains(.preferences),
+        guard routes.count <= 6, !children.contains(.preferences),
               canonical(children) == children else { return [] }
         return routes
     }
@@ -391,7 +394,7 @@ enum SettingsRouteGrammar {
     private static func isValidHistoryContentChain(
         _ routes: [RouteIdentity]
     ) -> Bool {
-        guard routes.count <= 3 else {
+        guard routes.count <= 4 else {
             return false
         }
         guard let first = routes.first else {
@@ -405,7 +408,7 @@ enum SettingsRouteGrammar {
         }
         for (parent, child) in zip(routes, routes.dropFirst()) {
             switch (parent, child) {
-            case (.forum, .thread), (.thread, .userProfile):
+            case (.forum, .thread), (.thread, .userProfile), (.subposts, .userProfile):
                 continue
             case let (.thread(threadID), .subposts(childThreadID, _)):
                 guard threadID == childThreadID else {

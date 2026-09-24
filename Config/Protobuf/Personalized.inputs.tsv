@@ -1,7 +1,7 @@
-# endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide,forum.frsPage,user.profile,forum.generalTabList
+# endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide,forum.frsPage,user.profile,forum.generalTabList,thread.pbFloor
 # reference_commit=5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
 # reference_root=app/src/main/protos
-# roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto,FrsPage/FrsPage.proto,Profile/ProfileRequest.proto,Profile/ProfileResponse.proto,GeneralTabList/GeneralTabListRequest.proto,GeneralTabList/GeneralTabListResponse.proto
+# roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto,FrsPage/FrsPage.proto,Profile/ProfileRequest.proto,Profile/ProfileResponse.proto,GeneralTabList/GeneralTabListRequest.proto,GeneralTabList/GeneralTabListResponse.proto,PbFloor/PbFloorRequest.proto,PbFloor/PbFloorResponse.proto
 # columns=sha256<TAB>relative_path<TAB>relationship<TAB>direct_imports
 d9a4901fa0d94625c6c68167636a751aed2ba0c6182c465b4253f1ec6ec6e6ca	Abstract.proto	transitive	-
 f4efb14ee9886a56b83706f575a18dc70ef9a12989f8f867c9ecf2e3f49e79bf	ActBtn.proto	transitive	-
@@ -116,6 +116,10 @@ da6e22c9f0e951600095aa25a7834008f06c1e1a84399ce905e1914f328929f2	NoticeInfo.prot
 6eb01774b449c9119037365ae46c7b8ddf2cb802be1aa0ae34c33e7f77bb0ff9	OriginThreadInfo.proto	transitive	Abstract.proto,Agree.proto,AlaLiveInfo.proto,Baijiahao.proto,HeadItem.proto,Item.proto,Media.proto,PbContent.proto,PbLinkInfo.proto,PollInfo.proto,User.proto,VideoInfo.proto,Voice.proto
 79600b9ccdf2f3cac614106dec4561ff338e546d1c93f93b847cd91f2d753cd5	Page.proto	direct	-
 141f80962270b40e647c218383386ae3ad9678657aaf6bb29aaa9c4dbb06a33a	PbContent.proto	transitive	MemeInfo.proto
+8762b1c4b48388ba87822357ec878c9d5d0ef780fb196f65a4555ba60ed25f1e	PbFloor/PbFloorRequest.proto	root	PbFloor/PbFloorRequestData.proto
+a2456e7e7eebd71f47ac898ab2ce5d10e3ecc3cec89b029cb4b2a4736fe958e5	PbFloor/PbFloorRequestData.proto	direct	CommonRequest.proto
+878e0afb23d639ab635e73f9a131a7a1eaee07afde395f0c97d29c6711187eca	PbFloor/PbFloorResponse.proto	root	Error.proto,PbFloor/PbFloorResponseData.proto
+d290d5929d9c749ad8ab3e7eddb1aa7a3340f3e73d2e1d2bcfb4a69d711b314a	PbFloor/PbFloorResponseData.proto	direct	Anti.proto,Page.proto,Post.proto,SimpleForum.proto,SubPostList.proto,ThreadInfo.proto
 4f02de3525bd904e0408b2f891e4dd43aac283e5b6762795ae44e57c7bd0ff1e	PbHotPost.proto	transitive	HotPost.proto,Post.proto
 8adaa7b59216aee2f4e0a0d72418e5b44a274b49246751a942e3a05973fa30c7	PbLinkInfo.proto	transitive	-
 93294fb1f3bb87660d90c71c043586c96182a8e1617654f54396c3ff6346c64f	PbPage/AdParam.proto	transitive	-

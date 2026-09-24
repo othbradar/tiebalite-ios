@@ -142,3 +142,14 @@ Tieba web utility module hybrid-usergrow-base:174 at `https://tb3.bdstatic.com/t
 Per-file URLs/hashes and name conflict handling are preserved in the provenance
 record. No downloaded JavaScript is executed or bundled. Artwork rights remain
 with their respective owners; this does not grant distribution permission.
+
+### R08 PbFloor / Subposts
+
+Four PbFloor schemas are generated from the same GPL-3.0 Android protocol reference 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2; exact hashes/imports remain in Config/Protobuf/Personalized.inputs.tsv. Read-only Subposts presentation follows SubPostsPage.kt/SubPostsViewModel.kt and ThreadPage.kt from UI commit c5f1125f42498e49db4e4a9cb66313b8c8a285c7. No new dependencies. Existing distribution limitations still apply.
+
+The R08 emoticon correction adds five original Shoubai PNGs (19,684 bytes),
+verified from the reported public PbFloor type-2 text/c pairs and acquired using
+Android's exact client asset URL rule. The local catalog now contains 132 images
+(399,224 bytes). Per-file source URLs and SHA-256 are recorded in
+Resources/TIEBA_EMOTICONS_PROVENANCE.md. All are bundled original artwork;
+production adds no remote downloader, cache, credentials or transport exception.

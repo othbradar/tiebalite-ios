@@ -1,5 +1,13 @@
 # TASK_STATE
 
+- 2026-09-24 用户明确“可以了，提交R08进入R09”，R08 = USER_VISUALLY_APPROVED。提交前12项R08 Unit、iPhone原短Smoke 1/1、lint/build/secret/diff通过，证据Artifacts/VisualReview/R09/r08-approval-*。保留已记录资源缺口和历史失败；精确提交R08后按R09提示词开始文字编辑/发送状态，首轮停布局验收，自动化只用Mock，不执行Live发布。
+
+- 2026-09-24 R08表情修订 = READY_FOR_USER_VISUAL_REVIEW（有资源缺口）：匿名核实用户第6楼全部三页77条，缺失为shoubai_emoji_face族未注册；加入原图可用的04/大笑、07/笑哭、60/赞同、71/滑稽、72/捂脸，全目录132图，保留原ID/名称优先级及所有renderer/列表。368/绝两处官方源404；6处[图片]是服务端type0原文，无图可恢复。新回归三例先红后绿，18 Unit、iPhone1/iPad1短Smoke、lint/build/secret/diff通过，45保护文件不变。两台完整正常Live覆盖安装，hash35109570…一致、5新资源在包内、登录态保留。iPhone打开同一原帖子，CUA滚动未生效，需手动到第6楼；前后/固定样本截图及完整缺口见R08_ACCEPTANCE.md最新修订和Artifacts/VisualReview/R08/Emoticons。未暂存/提交、不进入R09。
+
+- 2026-09-24 R08 = READY_FOR_USER_VISUAL_REVIEW（Live中部停留待手工滑动）：PbFloor真实接口/领域映射、独立Store、平面VirtualizedList、分页去重/重试、资料子路径和只读回复intent已实现。10项定向Unit、iPhone1/iPad1短Smoke（含30条两页、返回位置、横竖屏）、lint/build/生成一致性/网络隔离/secret scan/diff通过；41共享基础文件hash不变。两台正常Debug完整R08已覆盖安装并核对二进制，无卸载/清Keychain；iPhone真实“6楼的回复”显示79条计数及真实作者、等级、回复对象，现停首屏，CUA滚动未生效，不冒充Live深滚动通过。截图Artifacts/VisualReview/R08/iphone-live-top.png及两台Fixture中部图；全部失败修正、文件范围和限制见R08_ACCEPTANCE.md。未暂存/提交R08，不进入R09。
+
+- 2026-09-24 R07已提交4420ed0（feat: render official Tieba emoticons inline），未推送。按同一用户授权开始R08；范围与计划见R08_ACCEPTANCE.md。
+
 - 2026-09-24 用户明确授权“提交R07进入R08”。R07提交前11项定向Unit、iPhone短Smoke 1/1、lint/build/secret scan/diff check通过；只提交R07拥有的代码、资源、测试及记录，保留用户Prompt/skill未跟踪文件。批准图为Artifacts/VisualReview/R07/FullEmoticons/iphone-live-floor7.png。
 
 - 2026-09-24 用户查看127表情完整Live候选后反馈“可以了我看了，基本上表情都加载了”，R07 = USER_VISUALLY_APPROVED。当前差异保留，未暂存/提交，不进入R08；验收及全部执行证据见R07_ACCEPTANCE.md。

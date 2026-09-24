@@ -32,7 +32,7 @@ struct DebugR07EmoticonsView: View {
                 sample("多行长文", document: document(
                     text: String(repeating: "表情跟着文字#(滑稽)换行，English 与中文保持顺序。", count: 4), ordinal: 5))
                 Text("固定样本 · 非 Live 数据").font(.caption).foregroundStyle(SemanticColor.secondaryText)
-                NavigationLink("全部 127 个官方表情") {
+                NavigationLink("全部 \(TiebaEmoticonRegistry.catalog.count) 个官方表情") {
                     DebugR07EmoticonCatalogView()
                 }
                 .accessibilityIdentifier("r07.catalog.open")
@@ -94,7 +94,7 @@ private struct DebugR07EmoticonCatalogView: View {
             .accessibilityIdentifier("r07.catalog.\(emoticon.resourceID)")
         }
         .listStyle(.plain)
-        .navigationTitle("官方表情 · 127")
+        .navigationTitle("官方表情 · \(TiebaEmoticonRegistry.catalog.count)")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

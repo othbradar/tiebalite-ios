@@ -168,3 +168,18 @@ Additional104-default images use Android's exact client PNG URL already establis
 | 137 | http://static.tieba.baidu.com/tb/editor/images/client/image_emoticon137.png | TiebaEmoticons/image_emoticon137.png | a32dc3f0e5c66f1b349a703948f1d1a8ddbc8f1edb4dfc6d378f8fe2a2211279 | 3041 |
 
 The existing artwork rights/distribution limitations remain. Unknown future IDs and unrelated topics preserve their original text.
+
+
+## R08 registered Shoubai faces — 2026-09-24
+
+The reported PbFloor's three pages contain six additional type-2 text/c pairs. Five original PNGs are available via locked Android EmoticonManager.fetchEmoticons' exact client URL. These are copied byte-for-byte at development time; the app uses the existing bundled UIImage path and makes no new CDN requests. Old plain-name 滑稽 remains image_emoticon25; explicit shoubai_emoji_face_71 retains its own image. Total: **132 images / 399224 bytes**. No recoloring, conversion, new cache, ATS exception or credentials. Existing artwork/distribution limitations continue.
+
+| ID / name | Original URL | SHA-256 | Bytes |
+|---|---|---|---|
+| shoubai_emoji_face_04 / 大笑 | http://static.tieba.baidu.com/tb/editor/images/client/shoubai_emoji_face_04.png | 2c4db667fb419bec7dcebe6fa95c3011ac21fec3e91ec12b352ec6f62974df8f | 3801 |
+| shoubai_emoji_face_07 / 笑哭 | http://static.tieba.baidu.com/tb/editor/images/client/shoubai_emoji_face_07.png | 346f68ca8500e7c30654b811b2617c873c4013d630fa77d72a449b5d176336a9 | 4095 |
+| shoubai_emoji_face_60 / 赞同 | http://static.tieba.baidu.com/tb/editor/images/client/shoubai_emoji_face_60.png | fc588f6b581405e16b3a0cc168dca78090957c810def4c593a5bdcbdeecb5fa2 | 2872 |
+| shoubai_emoji_face_71 / 滑稽 | http://static.tieba.baidu.com/tb/editor/images/client/shoubai_emoji_face_71.png | 96b3d888a7f843df46203e3832af103f45acf252986cbd6a4d53caf696c7cbd6 | 4479 |
+| shoubai_emoji_face_72 / 捂脸 | http://static.tieba.baidu.com/tb/editor/images/client/shoubai_emoji_face_72.png | b9e22f59e470c4eea6e44e8c7d42b337175111d51d902cb7ea78441134696015 | 4437 |
+
+UNKNOWN: shoubai_emoji_face_368 / 绝 has no available image at either the Android client PNG URL or the previously verified official web renderer's tb3.bdstatic.com/emoji/<id>@2x.png URL (both HTTP404). It retains readable fallback text. Literal type-0 [图片] in this floor contains no image URL or ID and is not replaced. This revision covers all available missing IDs observed across that floor, not every possible future registered family.

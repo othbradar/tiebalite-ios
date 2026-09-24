@@ -6,6 +6,8 @@ final class AppFeatureStoreRegistry {
     let searchStore: SearchStore
     let settingsStore: SettingsStore
 
+    private let makeSubpostsStore: (@MainActor (SubpostsRoute) -> SubpostsStore)?
+    private var subpostsStores: [SubpostsStoreKey: SubpostsStore] = [:]
     private let makeThreadReaderStore: @MainActor (Int64) -> ThreadReaderStore
     private let makeForumHomeStore: @MainActor (ForumRoute) -> ForumHomeStore
     private let makeUserProfileStore:
@@ -23,7 +25,8 @@ final class AppFeatureStoreRegistry {
         makeThreadReaderStore: @escaping @MainActor (Int64) -> ThreadReaderStore,
         makeForumHomeStore: @escaping @MainActor (ForumRoute) -> ForumHomeStore,
         makeUserProfileStore: @escaping @MainActor (UserProfileRoute) ->
-            UserProfileStore
+            UserProfileStore,
+        makeSubpostsStore: (@MainActor (SubpostsRoute) -> SubpostsStore)? = nil
     ) {
         self.browsingHistoryStore = browsingHistoryStore
         self.followedForumsStore = followedForumsStore
@@ -33,6 +36,7 @@ final class AppFeatureStoreRegistry {
         self.makeThreadReaderStore = makeThreadReaderStore
         self.makeForumHomeStore = makeForumHomeStore
         self.makeUserProfileStore = makeUserProfileStore
+        self.makeSubpostsStore = makeSubpostsStore
     }
 
     convenience init(compositionRoot: AppCompositionRoot) {
@@ -44,7 +48,8 @@ final class AppFeatureStoreRegistry {
             searchStore: compositionRoot.makeSearchStore(),
             makeThreadReaderStore: compositionRoot.makeThreadReaderStore,
             makeForumHomeStore: compositionRoot.makeForumHomeStore,
-            makeUserProfileStore: compositionRoot.makeUserProfileStore
+            makeUserProfileStore: compositionRoot.makeUserProfileStore,
+            makeSubpostsStore: compositionRoot.makeSubpostsStore
         )
     }
 
@@ -101,7 +106,29 @@ final class AppFeatureStoreRegistry {
         return store
     }
 
+    func subpostsStore(for scope: AppFeatureScope, route: SubpostsRoute) -> SubpostsStore? {
+        let key = SubpostsStoreKey(scope: scope, route: route)
+        if let existing = subpostsStores[key] { return existing }
+        guard let store = makeSubpostsStore?(route) else { return nil }
+        subpostsStores[key] = store
+        return store
+    }
+
     func retainFeatureStores(in navigationState: AppNavigationState) {
+        let subpostKeys = Set(RootID.allCases.flatMap { root in
+            navigationState.routes(for: root).compactMap { route -> SubpostsStoreKey? in
+                guard case let .subposts(thread, post) = route else { return nil }
+                return .init(scope: .root(root), route: .init(threadID: thread.rawValue, postID: post.rawValue))
+            }
+        }).union(settingsContentRoutes(in: navigationState).compactMap { route -> SubpostsStoreKey? in
+            guard case let .subposts(thread, post) = route else { return nil }
+            return .init(scope: .settings, route: .init(threadID: thread.rawValue, postID: post.rawValue))
+        })
+        subpostsStores = subpostsStores.filter { key, store in
+            if subpostKeys.contains(key) { return true }
+            store.cancel()
+            return false
+        }
         let activeForumKeys: Set<ForumStoreKey> = Set(
             RootID.allCases.flatMap { root in
                 navigationState.routes(for: root).compactMap { route -> ForumStoreKey? in
@@ -243,4 +270,9 @@ private struct ThreadStoreKey: Hashable {
 private struct UserProfileStoreKey: Hashable {
     let scope: AppFeatureScope
     let userID: UserID
+}
+
+private struct SubpostsStoreKey: Hashable {
+    let scope: AppFeatureScope
+    let route: SubpostsRoute
 }

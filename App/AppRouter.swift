@@ -129,7 +129,17 @@ enum AppRouter {
                 }
             )
         case let .subposts(threadID, postID):
-            SubpostsUnavailableView(threadID: threadID, postID: postID)
+            if let store = dependencies.featureStores.subpostsStore(
+                for: scope,
+                route: .init(threadID: threadID.rawValue, postID: postID.rawValue)) {
+                SubpostsView(
+                    store: store, imageLoader: dependencies.imageLoader,
+                    readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
+                    onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) })
+                    .ignoresSafeArea(.container, edges: .bottom)
+            } else {
+                SubpostsUnavailableView(threadID: threadID, postID: postID)
+            }
         }
     }
 

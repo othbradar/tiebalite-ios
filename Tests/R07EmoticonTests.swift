@@ -106,7 +106,7 @@ struct R07RichTextBuilderTests {
 
     @Test
     func everyBundledOfficialAssetDecodesLocally() {
-        #expect(TiebaEmoticonRegistry.bundledResourceIDs.count == 127)
+        #expect(TiebaEmoticonRegistry.bundledResourceIDs.count == 132)
         for id in TiebaEmoticonRegistry.bundledResourceIDs {
             let image = TiebaRichTextBuilder.image(resourceID: id)
             #expect(image != nil, "Missing bundled official resource: \(id)")

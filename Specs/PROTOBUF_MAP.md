@@ -416,3 +416,9 @@ clean-room 最小兼容 schema。
 FrsPage: sort_type=0/1、精华 sort_type=-1 + is_good=1/cid=class_id。响应 forum 的 cur_score/levelup_score、is_like、sign_in_info 只映射存在的已关注状态；nav_tab_info.tab 按 Android 的 isGeneralTab=1/tabType=15 筛选及稳定 tabId 去重，普通分类名与排序 source_id 来自服务端，good_classify 使用 class_id/class_name。
 
 GeneralTabListRequestData：tab_id#2/forum_id#3/pn#4/rn#5/last_thread_id#9/is_default_navtab#10/tab_name#11/is_general_tab#12/sort_type#13/tab_type#14/is_newfrs#22。common 复用已批准匿名 V12 字段，不传设备遥测或凭证。GeneralTabListResponseData：general_list#1/has_more#2/user_list#3；分页 cursor 取原始 id，行/导航继续使用正 threadID。ThreadInfo.lastTimeInt/agreeNum/shareNum 和所有媒体候选完整透传，行只预览前三个，原 owner/ordinal 保留。
+
+### R08 PbFloor closure and domain mapping
+
+CODE_EVIDENCE: PbFloorRequest/RequestData/Response/ResponseData (same Android reference5545326) add four inputs to the existing closure: 212→216. No existing schema changed. `kz/pid/pn`, explicit zero `spid/is_comm_reverse/ori_ugc_type`; anonymous V12 common. Runtime established forum_id=0 without screen/device parameters for the tested public floor. `Page.current_page < total_page` controls continuation even if `has_more` disagrees. `post.id/thread.id` and requested page validated; returned IDs stay stable. `SubPostList.content` retains mention/text order, official emoji and image nodes through ThreadContentProtoMapper. `author.level_id/portrait` remain nullable real fields; missing authors remain neutral. Reply intent preserves parent ID and separate subPostID. No R09 write endpoint.
+
+Generated inputs/import hashes and outputs are deterministic and checked by make generate; new mapper fixtures/tests are R08PBFloorFixture/R08SubpostsProtocolTests. Live metadata only:13 unique replies, page1/total1,total_count14; discrepancy and nonzero-spid behavior remain UNKNOWN.

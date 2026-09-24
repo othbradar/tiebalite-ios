@@ -11,6 +11,7 @@ final class AppCompositionRoot {
     private let appSettingsRepository: any AppSettingsRepository
     private let recommendationRepository: any RecommendationRepository
     private let searchRepository: any SearchRepository
+    private let subpostsRepository: any SubpostsRepository
     private let threadReaderRepository: any ThreadReaderRepository
     private let userProfileRepository: any UserProfileRepository
 
@@ -52,6 +53,7 @@ final class AppCompositionRoot {
             self.recommendationRepository =
                 recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
+            subpostsRepository = FixtureSubpostsRepository()
             self.threadReaderRepository = threadReaderRepository ?? FixtureThreadReaderRepository()
             self.userProfileRepository =
                 userProfileRepository ?? FixtureUserProfileRepository()
@@ -78,6 +80,7 @@ final class AppCompositionRoot {
             searchRepository = LiveSearchRepository(
                 client: environment.httpClient
             )
+            subpostsRepository = LiveSubpostsRepository(client: environment.httpClient)
             self.threadReaderRepository = LiveThreadReaderRepository(
                 client: environment.httpClient
             )
@@ -126,6 +129,10 @@ final class AppCompositionRoot {
             threadID: threadID,
             repository: threadReaderRepository
         )
+    }
+
+    func makeSubpostsStore(route: SubpostsRoute) -> SubpostsStore {
+        SubpostsStore(route: route, repository: subpostsRepository)
     }
 
     func makeUserProfileStore(route: UserProfileRoute) -> UserProfileStore {

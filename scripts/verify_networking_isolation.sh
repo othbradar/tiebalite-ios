@@ -68,7 +68,7 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(FRSPageProtocol|FRSPageMapping|GeneralTabProtocol|RecommendationFeedMapper|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|FRSPageMapping|GeneralTabProtocol|RecommendationFeedMapper|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PBFloorMapper|PBFloorProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
@@ -79,6 +79,7 @@ for proto_adapter in \
   Sources/Core/TiebaAPI/GeneralTabProtocol.swift \
   Sources/Core/TiebaAPI/ForumGuideProtocol.swift \
   Sources/Core/TiebaAPI/PBPageProtocol.swift \
+  Sources/Core/TiebaAPI/PBFloorProtocol.swift \
   Sources/Core/TiebaAPI/PersonalizedProtocol.swift \
   Sources/Core/TiebaAPI/ProfileProtocol.swift \
   Sources/Core/TiebaAPI/ThreadContentProtoMapper.swift
@@ -95,6 +96,7 @@ do
 done
 for domain_mapper in \
   Sources/Core/TiebaAPI/PBPageDomainMapper.swift \
+  Sources/Core/TiebaAPI/PBFloorMapper.swift \
   Sources/Core/TiebaAPI/FRSPageMapping.swift \
   Sources/Core/TiebaAPI/RecommendationFeedMapper.swift \
   Sources/Core/TiebaAPI/TiebaUserVisualMapper.swift
@@ -385,7 +387,7 @@ if [[ -n "$generated_outside_allowlist" ]]; then
   fail generated-protobuf-location "$generated_outside_allowlist"
 fi
 generated_count="$(find Generated/Protobuf -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-if [[ "$generated_count" -ne 212 ]]; then
+if [[ "$generated_count" -ne 216 ]]; then
   fail generated-protobuf-count "$generated_count"
 fi
 
@@ -436,6 +438,7 @@ expected_unchecked_files="$(
     'Generated/Protobuf/Item.pb.swift' \
     'Generated/Protobuf/OriginThreadInfo.pb.swift' \
     'Generated/Protobuf/PbContent.pb.swift' \
+    'Generated/Protobuf/PbFloor/PbFloorResponseData.pb.swift' \
     'Generated/Protobuf/PbPage/PbPageRequestData.pb.swift' \
     'Generated/Protobuf/PbPage/PbPageResponseData.pb.swift' \
     'Generated/Protobuf/Personalized.pb.swift' \
@@ -456,7 +459,7 @@ unchecked_count="$(
   rg -n '@unchecked[[:space:]]+Sendable' Generated/Protobuf | wc -l | tr -d ' '
 )"
 if [[ "$actual_unchecked_files" != "$expected_unchecked_files" ||
-      "$unchecked_count" -ne 30 ]]; then
+      "$unchecked_count" -ne 31 ]]; then
   fail generated-unchecked-sendable-allowlist "$actual_unchecked_files"
 fi
 

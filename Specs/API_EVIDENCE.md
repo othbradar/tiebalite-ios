@@ -531,10 +531,13 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 - 关键 headers / 设备参数：同 V12 protobuf family。
 - 敏感字段：可选 CommonRequest session/device fields。
 - iOS domain mapper：`SubpostPage`，按 subpost id 去重、保序；空/未知内容节点必须有效。
-- Fixture 路径：`TestSupport/Fixtures/API/Thread/PBFloor/`（`NOT_CREATED`）。
+- Fixture 路径：`TestSupport/Fixtures/API/Thread/PBFloor/`（R08 synthetic fixtures）。
 - Fixture 获取/生成方式：正常、空、重叠页、缺作者、仅未知节点、页字段冲突。
 - 已验证行为：Android UI production call chain 和 page 比较逻辑。
-- UNKNOWN：外层无 token 时服务器是否匿名、Page 字段冲突优先级、subPostId 锚定语义。
+- R08 CODE_EVIDENCE：请求kz/pid/pn/forum_id/spid=0/is_comm_reverse=0/ori_ugc_type=0，V12 common，needSToken=false；不增加排序/锚定选项。回复目标已经是PbContent(type4)与文字组合，保留原始顺序，不能猜独立reply_user字段。SubPostList.content含PbContent，Android逐节点Render，允许复用图片renderer。
+- R08 RUNTIME_EVIDENCE（2026-09-24）：公开帖匿名HTTPS最小请求，forum_id=0且无scr_*设备数据，HTTP200/application/octet-stream/error0，返回父楼身份匹配，13条唯一回复、13作者/等级、节点0/2/4。current_page=1,total_page=1,total_count=14；按Android页比较终止，不用has_more或条数推测。仅保存元数据于Artifacts/VisualReview/R08/public-floor-page1.json。
+- R08客户端策略：只读匿名、不带Cookie/session/device；返回父楼/主题/页必须匹配，初页需要父楼，后续可保留已加载父楼。按稳定subPostID保序去重。真实错误码保留server(code)，不猜测登录失效映射。合成成功/空/错误/畸形/重叠页/缺作者/未知节点及Mock timeout/cancel均独立验证。
+- UNKNOWN：跨主题匿名稳定性、Live第二页、服务端total_count差异原因、subPostId非零锚定语义；本阶段不支持后者。
 
 ### `media.picPage`
 
@@ -852,6 +855,8 @@ R06 用户修订CODE_EVIDENCE：协议锁 `PbPage/PbPageResponseData.proto` foru
 CODE_EVIDENCE：UI 锁 c5f1125 ThreadPage.kt:194–208/2130–2174 使用 author.ip_address、level_id、portrait、author.id == threadAuthorId、bawuType 与 post.agree.diffAgreeNum。协议锁下 User.proto field127 ip_address（生成 User.ipAddress）、Agree.proto field5 diffAgreeNum；Post.agree 的存在性通过 hasAgree 保留。TiebaUserVisualMapper 增加可选 ipLocation，PBPageDomainMapper 增加可选 agreeCount；缺字段不产生位置/计数，已有头像规则与请求凭据边界不改。确定性 generated-message 测试 R06ThreadPresentationTests 验证映射，不新增 endpoint 或更改 PBPage 请求。Live 数据展示尚待本阶段观察，不以 Fixture 冒充。
 
 ## R07 官方表情显示证据（不新增 API）
+
+R08 用户反馈补充（2026-09-24）：匿名读取所报PbFloor全部3页（30/30/17条），除image_emoticon外实际还有type2：shoubai_emoji_face_04/大笑、07/笑哭、60/赞同、71/滑稽、72/捂脸及368/绝。前5个原PNG由锁定Android EmoticonManager.fetchEmoticons的已证实URL取得并本地打包；368的Android源和已证实web备用源均404，继续可读fallback。共6处“[图片]”是type0原文，响应不含对应图片ID/URL，不能重建表情。只保存类型/名称/ID和计数，证据在Artifacts/VisualReview/R08/Emoticons/wire-page{1,2,3}.json；没有Proto/API/Session或文本渲染器更改。R08SubpostEmoticonTests以合成回复复现并覆盖全部5种、旧目录、字号、附件、复制和链接node身份。
 
 CODE_EVIDENCE：锁定UI c5f1125f42498e49db4e4a9cb66313b8c8a285c7 的 `api/models/protos/Extensions.kt::List<PbContent>.renders` case2 使用 text 注册资源ID、c 注册名称，然后以 `#(c)` 追加同一正文段；`utils/EmoticonManager.kt::registerEmoticon` 将 image_emoticon 别名规范化为 image_emoticon1。现有 PBPageDomainMapper/ThreadContentProtoMapper 已保留该独立node，无端点/请求/响应schema变化。合成 Swift Proto 回归验证独立type2、链接及@顺序，不能冒充Live抓包。直接复制资源和名称表的完整provenance见 Resources/TIEBA_EMOTICONS_PROVENANCE.md；无下载接口、CDN Cookie、TLS或Session修改。
 

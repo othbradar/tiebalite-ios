@@ -26,6 +26,8 @@ root_protos=(
   "Profile/ProfileResponse.proto"
   "GeneralTabList/GeneralTabListRequest.proto"
   "GeneralTabList/GeneralTabListResponse.proto"
+  "PbFloor/PbFloorRequest.proto"
+  "PbFloor/PbFloorResponse.proto"
 )
 
 if [[ "${1:-}" == "--output" ]]; then
@@ -188,8 +190,8 @@ while IFS=$'\t' read -r expected_hash relative_path relationship direct_imports;
   proto_sources+=("$source_path")
 done < "$manifest"
 
-[[ "${#proto_args[@]}" -eq 212 ]] || {
-  printf 'ERROR: expected 212 locked proto inputs; found %d.\n' \
+[[ "${#proto_args[@]}" -eq 216 ]] || {
+  printf 'ERROR: expected 216 locked proto inputs; found %d.\n' \
     "${#proto_args[@]}" >&2
   exit 1
 }
@@ -221,8 +223,8 @@ mv \
   "$generated/FrsPage/FRSAdParam.pb.swift"
 
 generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-[[ "$generated_count" -eq 212 ]] || {
-  printf 'ERROR: expected 212 generated Swift files; found %s.\n' \
+[[ "$generated_count" -eq 216 ]] || {
+  printf 'ERROR: expected 216 generated Swift files; found %s.\n' \
     "$generated_count" >&2
   exit 1
 }
@@ -237,10 +239,10 @@ generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d 
 ) > "$generated/GENERATED_SHA256SUMS"
 
 cat > "$generated/GENERATION_METADATA.txt" <<EOF
-endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide,forum.frsPage,user.profile,forum.generalTabList
-roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto,FrsPage/FrsPage.proto,Profile/ProfileRequest.proto,Profile/ProfileResponse.proto,GeneralTabList/GeneralTabListRequest.proto,GeneralTabList/GeneralTabListResponse.proto
+endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide,forum.frsPage,user.profile,forum.generalTabList,thread.pbFloor
+roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto,FrsPage/FrsPage.proto,Profile/ProfileRequest.proto,Profile/ProfileResponse.proto,GeneralTabList/GeneralTabListRequest.proto,GeneralTabList/GeneralTabListResponse.proto,PbFloor/PbFloorRequest.proto,PbFloor/PbFloorResponse.proto
 reference_commit=$expected_commit
-input_count=212
+input_count=216
 protoc=$expected_protoc
 protoc_gen_swift=$expected_generator
 swiftprotobuf_runtime=$expected_generator

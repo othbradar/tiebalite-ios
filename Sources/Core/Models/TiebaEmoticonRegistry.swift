@@ -138,16 +138,28 @@ enum TiebaEmoticonRegistry {
         137: "鼠2"
     ]
 
+    // PbFloor type-2 registration uses this family too; preserve its exact artwork/ID.
+    // These pairs and original PNGs are verified from the reported floor and Android's CDN rule.
+    private static let registeredFaces: [TiebaEmoticon] = [
+        .init(resourceID: "shoubai_emoji_face_04", name: "大笑"),
+        .init(resourceID: "shoubai_emoji_face_07", name: "笑哭"),
+        .init(resourceID: "shoubai_emoji_face_60", name: "赞同"),
+        .init(resourceID: "shoubai_emoji_face_71", name: "滑稽"),
+        .init(resourceID: "shoubai_emoji_face_72", name: "捂脸")
+    ]
+
     static let catalog: [TiebaEmoticon] = resourceNames.keys.sorted().compactMap { number in
         resourceNames[number].map { TiebaEmoticon(resourceID: "image_emoticon\(number)", name: $0) }
-    }
+    } + registeredFaces
     static let bundledResourceIDs = Set(catalog.map(\.resourceID))
 
     private static let canonicalNames: [String: TiebaEmoticon] = {
         var names: [String: TiebaEmoticon] = [:]
         // Duplicate 吃瓜 IDs62/86: plain text follows the official editor's current ID86.
         // Explicit content nodes always retain their supplied ID, including legacy ID62.
-        for emoticon in catalog { names[emoticon.name] = emoticon }
+        for emoticon in catalog where !emoticon.resourceID.hasPrefix("shoubai_") { names[emoticon.name] = emoticon }
+        // Existing plain-name syntax keeps its R07 image. Explicit nodes select their exact registered ID.
+        for emoticon in registeredFaces where names[emoticon.name] == nil { names[emoticon.name] = emoticon }
         names["小姐姐来拉"] = names["小姐姐来啦"]
         return names
     }()
