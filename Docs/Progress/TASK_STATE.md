@@ -1,5 +1,17 @@
 # TASK_STATE
 
+- 2026-09-24 用户明确授权“提交R07进入R08”。R07提交前11项定向Unit、iPhone短Smoke 1/1、lint/build/secret scan/diff check通过；只提交R07拥有的代码、资源、测试及记录，保留用户Prompt/skill未跟踪文件。批准图为Artifacts/VisualReview/R07/FullEmoticons/iphone-live-floor7.png。
+
+- 2026-09-24 用户查看127表情完整Live候选后反馈“可以了我看了，基本上表情都加载了”，R07 = USER_VISUALLY_APPROVED。当前差异保留，未暂存/提交，不进入R08；验收及全部执行证据见R07_ACCEPTANCE.md。
+
+- 2026-09-24 R07全量修订：用户指出只补捂嘴笑不满足“其他表情”要求。本次补齐Android默认104及官方扩展23，共127原图379540字节和完整名称目录；微微一笑91经匿名Proto核实。新增全量回归先红后绿，11项定向Unit、iPhone/iPad各1短Smoke、lint/build/secret scan/diff通过。正常Debug完整Live已覆盖安装两台并核对127资源；原反馈帖第7楼实际已看到微微一笑（用户操作后读取，iphone-live-floor7.png）。36保护文件不变，未暂存/提交、不进入R08。READY_FOR_USER_VISUAL_REVIEW。详见R07_ACCEPTANCE.md最上方全量修订节及FullEmoticons证据目录。
+
+- 2026-09-24 R07 用户反馈捂嘴笑缺失：匿名PBPage确认image_emoticon67/捂嘴笑；缺失本地原图和名称映射为根因，已补原PNG及映射（52张）。新增回归先红后绿，9项表情Unit、iPhone/iPad各1短Smoke、lint/build/secret scan/diff通过。完整Debug Live已覆盖安装两台、登录态保留；iPhone留在原反馈帖首屏，第5楼Live实拍因CUA滚动未生效仍待用户手动复核。正常/大字截图及所有失败记录见 R07_ACCEPTANCE.md 修订节和 Artifacts/VisualReview/R07/MissingEmoticons。READY_FOR_USER_VISUAL_REVIEW，未暂存/提交、不进入R08。
+
+- 2026-09-23 R07获批续作 = READY_FOR_USER_VISUAL_REVIEW：完整恢复候选代码/51资源；实际A/B/C及原样例单击正常，native/AX frame一致。原失败根因是测试立即断言早于UIKit action执行，采用既有5秒可观察状态等待保留单击及精确断言，没有重写正常生产点击。18项Unit、iPhone3项定向UI、iPad1项短UI、lint/build/secret/diff通过；36保护文件SHA未变。两台覆盖安装完整正常Debug R07，已安装二进制SHA与本次构建一致（bf32c37e…），保留账号，无样本启动参数。iPhone停真实高通吧“8EE6拉完了”帖子，内联表情/两图/子回复可见；完整App保留官方表情与链接验收入口。正常/大字/复制及失败历史见R07_ACCEPTANCE.md与Artifacts/VisualReview/R07/Redesign/；CUA大字号开关与Live手工拖动未确认，相关结论采用定向UI证据。未暂存/提交、不进入R08。
+
+- 2026-09-23 R06已按用户批准提交 `d1819c7`（feat: align thread floors media and subpost previews），未推送。R07已开始但状态为STOPPED_WITH_OPEN_REGRESSION：51资源/解析/原始node/复制/换行/复用等18项Unit通过；新原生富文本链接点击不派发动作，两项修正均未解决。按两次失败规则撤回所有本轮应用代码/资源/工程修改到R06，候选和结果完整保存在Artifacts/VisualReview/R07/；仅留下阶段记录与最小重设计方案 `R07_RICHTEXT_REDESIGN.md`。iPhone覆盖安装已验收R06正常应用，无卸载/清Keychain/Fixture参数；观察到完整Live高通吧。R07不提交、不宣称READY、不进入R08。
+
 - 2026-09-23 用户确认“可以这次看起来没问题了，提交R06进入R07”。R06 = USER_VISUALLY_APPROVED，授权提交并开始 R07 官方表情；提交前定向 Unit 22项/5 suites、R06短UI 2/2（51.639s）、make lint/build通过，日志在 Artifacts/VisualReview/R07/r06-approval-*。历史失败与1000楼手工性能未采集项继续保留；未运行完整quality。后续手工交付继续使用保留账号的完整Live应用。
 
 - 2026-09-23 R06用户修订 = READY_FOR_USER_VISUAL_REVIEW：应用日期统一中文（帖子/动态/吧内/历史，保留本地时区），吧chip移到系统返回键右侧固定toolbar，加入真实圆形吧头像并加宽，关闭iOS26叠加玻璃背景。帖子列表只移除原header项，楼层/footer ID和承载不变；Store仅新增一行分页缺图时保留论坛头像，22个共享列表/手势/图片/Session文件hash未变。Unit20项通过，最终短UI iPhone1/1（13.399s）/iPad1/1（14.215s）、lint/build/static/网络/凭据/diff通过；原始失败和修正见R06_ACCEPTANCE.md。两台正常App覆盖安装，无卸载/清Keychain/样本启动参数；iPhone已回到用户截图同一真实QLC帖子，日期“2026年9月20日 12:59”、高通吧头像可见；iPad停Live施德楼吧且旧日期中文可见。证据在Artifacts/VisualReview/R06/ToolbarRevision/。未暂存/提交、不进入R07；既有1000楼手工滚动缺口保留。

@@ -95,6 +95,9 @@ targets:
         group: TestSupport
       - path: Resources/Assets.xcassets
         buildPhase: resources
+      - path: Resources/TiebaEmoticons
+        type: folder
+        buildPhase: resources
     dependencies:
       - target: GeneratedProtobuf
       - package: SwiftProtobuf

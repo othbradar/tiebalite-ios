@@ -25,6 +25,12 @@ struct DebugThreadContentRendererLabView: View {
                     .hidden()
                     .accessibilityHidden(true)
 
+                NavigationLink {
+                    DebugR07EmoticonsView(imageLoader: imageLoader)
+                } label: {
+                    Text("官方表情对照").frame(minHeight: 44)
+                }
+                .accessibilityIdentifier("r07.emoticons.open")
                 environmentSummary
                 intentSummary
                 mediaViewerControls

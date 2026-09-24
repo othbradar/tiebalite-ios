@@ -6,7 +6,6 @@ struct RecommendationFeedRow: View {
     let imageLoader: any ImageLoading
     let openThread: () -> Void
 
-    @ScaledMetric(relativeTo: .body) private var bodySize: CGFloat = 15
     @ScaledMetric(relativeTo: .subheadline) private var nameSize: CGFloat = 13
     @ScaledMetric(relativeTo: .caption) private var metadataSize: CGFloat = 12
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -64,15 +63,13 @@ struct RecommendationFeedRow: View {
     private var contentText: some View {
         let abstract = item.feed.abstractText
         let showTitle = item.feed.showsTitle || abstract.isEmpty
-        let title = showTitle ? Text(item.title).bold() : Text("")
+        let title = showTitle ? TiebaRichText.parse(item.title, bold: true) : []
         let separator = showTitle && !abstract.isEmpty ? "\n" : ""
-        return (title + Text(separator + abstract))
-            .font(.system(size: bodySize))
-            .foregroundStyle(SemanticColor.primaryText)
-            .lineSpacing(0.8)
-            .lineLimit(5)
-            .multilineTextAlignment(.leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        return TiebaRichTextView(
+            runs: title + TiebaRichText.parse(separator + abstract),
+            fontSize: 15, lineLimit: 5, interactive: false
+        )
+
     }
 
     private var mediaPreview: some View {

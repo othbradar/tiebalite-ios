@@ -850,3 +850,17 @@ R05 复验：live-probe-verified.log 六次请求全部 HTTP 200、Cookie=false�
 R06 用户修订CODE_EVIDENCE：协议锁 `PbPage/PbPageResponseData.proto` forum#2 → `SimpleForum.proto` id#1/name#2/avatar#4；UI锁c5f1125 `ThreadPage.kt` TopBar:1873–1920 使用 forum.avatar 加圆形Avatar及吧名。PBPageDomainMapper透传为ThreadReaderSnapshot.forumAvatarResource，沿用TiebaAvatarResource现有CDN规则及匿名ProductionImageLoader，缺失保持nil；追加页未返回头像时保留已加载的首屏值。R06ThreadPresentationTests的固定generated-message检查非空/缺失映射。没有改请求/Proto/凭据边界或合成URL。
 
 CODE_EVIDENCE：UI 锁 c5f1125 ThreadPage.kt:194–208/2130–2174 使用 author.ip_address、level_id、portrait、author.id == threadAuthorId、bawuType 与 post.agree.diffAgreeNum。协议锁下 User.proto field127 ip_address（生成 User.ipAddress）、Agree.proto field5 diffAgreeNum；Post.agree 的存在性通过 hasAgree 保留。TiebaUserVisualMapper 增加可选 ipLocation，PBPageDomainMapper 增加可选 agreeCount；缺字段不产生位置/计数，已有头像规则与请求凭据边界不改。确定性 generated-message 测试 R06ThreadPresentationTests 验证映射，不新增 endpoint 或更改 PBPage 请求。Live 数据展示尚待本阶段观察，不以 Fixture 冒充。
+
+## R07 官方表情显示证据（不新增 API）
+
+CODE_EVIDENCE：锁定UI c5f1125f42498e49db4e4a9cb66313b8c8a285c7 的 `api/models/protos/Extensions.kt::List<PbContent>.renders` case2 使用 text 注册资源ID、c 注册名称，然后以 `#(c)` 追加同一正文段；`utils/EmoticonManager.kt::registerEmoticon` 将 image_emoticon 别名规范化为 image_emoticon1。现有 PBPageDomainMapper/ThreadContentProtoMapper 已保留该独立node，无端点/请求/响应schema变化。合成 Swift Proto 回归验证独立type2、链接及@顺序，不能冒充Live抓包。直接复制资源和名称表的完整provenance见 Resources/TIEBA_EMOTICONS_PROVENANCE.md；无下载接口、CDN Cookie、TLS或Session修改。
+
+### R07 捂嘴笑资源补齐（2026-09-24）
+
+RUNTIME_EVIDENCE：对用户反馈的公开帖子使用现有 PBPageProtocol 匿名请求，HTTP200 / error_code0，仅提取 PbContent type2 的公开 text/c 对：`image_emoticon67` / `捂嘴笑`（同时返回已支持的25/滑稽）。未读取账户、Cookie、Keychain，不持久化完整响应。脱敏诊断记录：Artifacts/VisualReview/R07/MissingEmoticons/sanitized-emoticon-evidence.json。
+
+CODE_EVIDENCE：UI锁c5f1125 Extensions.kt:47/59/254调用 EmoticonManager.registerEmoticon(text,c)；EmoticonManager.init预置61…101，fetchEmoticons下载缺失drawable的准确公开地址见 Resources/TIEBA_EMOTICONS_PROVENANCE.md。将67原PNG打包，并增加名称别名；生产请求/mapper/Proto/Session不变。其余未收录资源继续原文降级，不宣称完整动态注册支持。
+
+### R07 全量表情目录修订（2026-09-24）
+
+同一已存在匿名PBPage请求对第二个用户报告的公开帖子返回 type2/text=`image_emoticon91`/c=`微微一笑`；无账号/Cookie，未保存完整响应。Android锁定init编号集合104项全部收录。官方公开网页util.d8d2afea.js模块174提供完整名称表（包括23个注册扩展），core-common.6de6fbbf.js提供对应HTTPS图片规则；详细路径、SHA和冲突选择在 Resources/TIEBA_EMOTICONS_PROVENANCE.md。文本别名补齐，Proto给出的ID不重写。不新增生产API/动态注册/网络层，未改变Store/Repo/Proto/Session。总计127资源；无证据的51…60及未来未知ID保持原文，不以猜测填补。

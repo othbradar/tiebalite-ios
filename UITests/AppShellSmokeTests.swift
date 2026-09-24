@@ -124,8 +124,10 @@ final class AppShellSmokeTests: XCTestCase {
         UITestHarness.requirePresent(.threadContentLabRoot, in: app)
         requireThreadContentAccessibilityProfile(in: app)
 
-        UITestHarness.scrollToHittable(.threadContentLink, in: app)
-        UITestHarness.tap(.threadContentLink, in: app)
+        let inlineLink = app.textViews[UITestElementID.threadContentInlineText.rawValue].links["合成安全链接"]
+        for _ in 0..<8 where !inlineLink.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(inlineLink.isHittable)
+        inlineLink.tap()
         UITestHarness.requireLabelNotEqual(
             .threadContentExternalIntent,
             to: "External intent: none",

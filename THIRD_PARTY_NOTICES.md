@@ -105,3 +105,40 @@ rules are recorded in `Resources/ROOT_NAVIGATION_PROVENANCE.md`.
 ### R05 Forum UI / GeneralTabList
 
 Forum tabs, sort values, good classifications and compact feed presentation are adapted from TiebaLite UI commit c5f1125f42498e49db4e4a9cb66313b8c8a285c7: ForumPage.kt, ForumThreadListPage.kt, ForumThreadListViewModel.kt, GeneralTabListViewModel.kt and FeedCard.kt. GeneralTabList request/response schema and SortOption.proto come from the existing protocol reference 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2 under its existing GPL-3.0 provenance; exact hashes and imports are locked in Config/Protobuf/Personalized.inputs.tsv. No Android assets were copied.
+
+### R07 Official inline Tieba emoticons
+
+51 original WebP resources are copied without modification from UI reference
+`c5f1125f42498e49db4e4a9cb66313b8c8a285c7`,
+`app/src/main/res/drawable/image_emoticon{1…50,89}.webp`.
+Each source/local path, original SHA-256 and size is listed in
+`Resources/TIEBA_EMOTICONS_PROVENANCE.md` (143,676 bytes total).
+
+Name/ID and syntax mappings are adapted from the same commit's
+`app/src/main/java/com/huanchengfly/tieba/post/utils/EmoticonManager.kt`
+(`DEFAULT_EMOTICON_MAPPING`, `registerEmoticon`) and `EmoticonUtil.kt`
+(`WEB_EMOTICON_NAME_MAPPING`, canonical/web expressions).
+Inline placement follows `ui/common/PbContentRender.kt` and
+`ui/widgets/compose/Texts.kt`; `ui/page/reply/ReplyPage.kt` confirms the
+`#(name)` insertion syntax. These mapping adaptations retain Android GPL-3.0
+provenance. The Android repository's license and non-commercial statement do
+not resolve the separate ownership/distribution rights of Tieba artwork.
+The existing binary/App Store/commercial distribution limitations remain.
+No new remote image source, image library or emoticon download cache is added.
+
+R07 missing-emoticon revision additionally bundles the original 3,250-byte
+`image_emoticon67.png` (捂嘴笑) from the exact public asset URL used by Android
+`EmoticonManager.fetchEmoticons`. Its name/ID pair is verified from public
+PbContent type-2 fields following Android's registration rule. Full source,
+SHA-256, acquisition method and rights limitation are recorded in
+`Resources/TIEBA_EMOTICONS_PROVENANCE.md`. This is a development-time asset
+acquisition; production still loads local images only.
+
+The complete R07 catalog revision adds 75 more original PNGs: the remaining
+52 Android-default assets and 23 official registered extensions. The current
+127-image catalog totals 379540 bytes. Name metadata comes from the public
+Tieba web utility module hybrid-usergrow-base:174 at `https://tb3.bdstatic.com/tb/wise/hybrid-usergrow-base/static/js/util.d8d2afea.js`;
+102…124 images use the official web renderer's HTTPS image source above.
+Per-file URLs/hashes and name conflict handling are preserved in the provenance
+record. No downloaded JavaScript is executed or bundled. Artwork rights remain
+with their respective owners; this does not grant distribution permission.

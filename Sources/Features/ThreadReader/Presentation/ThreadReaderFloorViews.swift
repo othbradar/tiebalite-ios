@@ -166,28 +166,17 @@ private struct ThreadReaderSubpostPreview: View {
     let subpost: ThreadReaderSubpostRowModel
 
     var body: some View {
-        (Text(subpost.authorName + ": ").bold() + Text(preview))
-            .font(Typography.font(.subheadline))
-            .lineLimit(4)
+        TiebaRichTextView(runs: runs, fontSize: 15, lineLimit: 4)
             .accessibilityIdentifier(ThreadReaderAccessibilityID.subpost(subpost.document.source))
     }
 
-    private var preview: String {
-        let content = subpost.document.nodes.map { node -> String in
-            switch node.payload {
-            case let .text(text): text.value
-            case let .emoji(emoji): emoji.fallbackText
-            case let .mention(mention): mention.label
-            case let .link(link): link.label
-            case .image: "[图片]"
-            case .video: "[视频]"
-            case .voice: "[语音]"
-            case .unsupported: "[暂不支持的内容]"
-            }
-        }.joined()
-        return (subpost.replyToDisplayName.map { "回复 \($0)：" } ?? "")
-            + (content.isEmpty ? "回复内容暂不可用" : content)
+    private var runs: [TiebaRichTextRun] {
+        let prefix: [TiebaRichTextRun] = [.text(subpost.authorName + ": ", bold: true)]
+            + [.text(subpost.replyToDisplayName.map { "回复 \($0)：" } ?? "")]
+        let content = TiebaRichText.runs(nodes: subpost.document.nodes)
+        return prefix + (content.isEmpty ? [.text("回复内容暂不可用")] : content)
     }
+
 }
 
 struct ThreadReaderReplyBar: View {

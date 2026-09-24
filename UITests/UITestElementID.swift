@@ -183,8 +183,8 @@ enum UITestElementID: String, CaseIterable {
     case threadContentLabReduceMotion =
         "thread-reader.renderer-lab.reduce-motion"
     case threadContentLabRoot = "thread-reader.renderer-lab"
-    case threadContentLink =
-        "thread-reader.content.node.t91001.p92001.sfirstPost.n6"
+    case threadContentInlineText =
+        "thread-reader.content.node.t91001.p92001.sfirstPost.n0"
     case threadContentMediaIntent =
         "thread-reader.renderer-lab.media-route"
     case threadContentUnknown =

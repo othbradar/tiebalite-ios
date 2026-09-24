@@ -41,6 +41,14 @@ struct ThreadContentRenderer: View {
         .accessibilityIdentifier(ThreadContentAccessibilityID.document)
     }
 
+    private var readingFontSize: CGFloat {
+        switch readingTextSize {
+        case .small: 15
+        case .standard: 17
+        case .large: 22
+        }
+    }
+
     @ViewBuilder
     private var availableContent: some View {
         if document.isVisiblyEmpty {
@@ -54,6 +62,12 @@ struct ThreadContentRenderer: View {
                         readingTextSize: readingTextSize, onOpenMedia: onOpenMedia,
                         onOpenExternalLink: onOpenExternalLink
                     )
+                case let .richText(nodes):
+                    TiebaRichTextView(
+                        runs: TiebaRichText.runs(nodes: nodes), fontSize: readingFontSize,
+                        onOpenExternalLink: onOpenExternalLink
+                    )
+                    .accessibilityIdentifier(nodes.first.map { ThreadContentAccessibilityID.node($0.id) } ?? "thread-content.text")
                 case let .images(nodes):
                     ThreadContentImageGroup(nodes: nodes, imageLoader: imageLoader, onOpenMedia: onOpenMedia)
                 }
@@ -110,23 +124,9 @@ private struct ThreadContentNodeView: View {
     var body: some View {
         Group {
             switch node.payload {
-            case let .text(content):
-                Text(content.value)
-                    .textSelection(.enabled)
-            case let .link(content):
-                ThreadLinkView(
-                    content: content,
-                    onOpenExternalLink: onOpenExternalLink
-                )
-            case let .emoji(content):
-                Text(content.fallbackText)
-                    .accessibilityLabel("表情，\(content.fallbackText)")
-            case let .mention(content):
-                Text(content.label.isEmpty ? "提及用户" : content.label)
-                    .foregroundStyle(SemanticColor.accent)
-                    .accessibilityLabel(
-                        content.label.isEmpty ? "提及用户" : content.label
-                    )
+            case .text, .emoji, .link, .mention:
+                // Inline-capable nodes are grouped before reaching this media/fallback branch.
+                TiebaRichTextView(runs: TiebaRichText.runs(nodes: [node]), onOpenExternalLink: onOpenExternalLink)
             case let .image(content):
                 ThreadContentImageView(
                     content: content,
@@ -155,42 +155,6 @@ private struct ThreadContentNodeView: View {
         .accessibilityIdentifier(
             ThreadContentAccessibilityID.node(node.id)
         )
-    }
-}
-
-@MainActor
-private struct ThreadLinkView: View {
-    let content: ThreadLinkContent
-    let onOpenExternalLink: (ExternalLinkIntent) -> Void
-
-    @ViewBuilder
-    var body: some View {
-        if let intent = content.intent {
-            Button {
-                onOpenExternalLink(intent)
-            } label: {
-                Label(
-                    content.label.isEmpty ? "打开链接" : content.label,
-                    systemImage: "link"
-                )
-                .frame(
-                    maxWidth: .infinity,
-                    minHeight: ThreadContentLayout.minimumInteractiveDimension,
-                    alignment: .leading
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(SemanticColor.accent)
-            .accessibilityHint("生成外部链接意图")
-        } else {
-            Label(
-                content.label.isEmpty ? "链接不可用" : content.label,
-                systemImage: "link.badge.plus"
-            )
-            .foregroundStyle(SemanticColor.secondaryText)
-            .accessibilityValue("链接不可用")
-        }
     }
 }
 

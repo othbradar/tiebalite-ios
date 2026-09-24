@@ -3,25 +3,34 @@ import Foundation
 enum ThreadContentBlock: Identifiable, Equatable, Sendable {
     case node(ThreadContentNode)
     case images([ThreadContentNode])
+    case richText([ThreadContentNode])
 
     var id: ThreadContentNodeID? {
         switch self {
         case let .node(node): node.id
-        case let .images(nodes): nodes.first?.id
+        case let .images(nodes), let .richText(nodes): nodes.first?.id
         }
     }
 
     static func make(_ nodes: [ThreadContentNode]) -> [Self] {
         var blocks: [Self] = []
         var images: [ThreadContentNode] = []
+        var inline: [ThreadContentNode] = []
         for node in nodes {
-            if case .image = node.payload {
+            switch node.payload {
+            case .image:
+                if !inline.isEmpty { blocks.append(.richText(inline)); inline = [] }
                 images.append(node)
-            } else {
+            case .text, .emoji, .link, .mention:
+                if !images.isEmpty { blocks.append(.images(images)); images = [] }
+                inline.append(node)
+            default:
+                if !inline.isEmpty { blocks.append(.richText(inline)); inline = [] }
                 if !images.isEmpty { blocks.append(.images(images)); images = [] }
                 blocks.append(.node(node))
             }
         }
+        if !inline.isEmpty { blocks.append(.richText(inline)) }
         if !images.isEmpty { blocks.append(.images(images)) }
         return blocks
     }

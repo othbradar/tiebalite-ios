@@ -49,7 +49,7 @@ Proto。`Post.proto` 需要额外 25 个输入且未获 ADR-0011 批准；普通
 | `type=35` | 同上；不得与 field 35 混淆 | `type#1=35`, `text#2` | 与普通文本同分支；业务原义 `UNKNOWN` | raw 35 | `DEGRADED` |
 | `type=40` | 同上 | `type#1=40`, `text#2` | 与普通文本同分支；业务原义 `UNKNOWN` | raw 40 | `DEGRADED` |
 | `type=1` link | `Extensions.kt::renders` raw 1；`PbContentRender.kt::PbContentText` URL annotation | `type#1=1`, label `text#2`, target `link#3` | 加 link icon/主色 label；现有 Android 路径内没有 scheme 校验 | HTTP/HTTPS、`javascript:`、空 label/target 构造 | `SUPPORTED`（非 HTTP(S) 只显示 label） |
-| `type=2` emoji | `Extensions.kt::renders` raw 2 | `type#1=2`, registry key `text#2`, code `c#11` | 注册 `(text,c)` 后显示 `#(c)`；资源表/未知资源最终行为 `UNKNOWN` | 合成 code、空/未知 code 领域 fixture | `DEGRADED`（可读 fallback） |
+| `type=2` emoji | `Extensions.kt::renders` raw 2 | `type#1=2`, registry key `text#2`, code `c#11` | 注册 `(text,c)` 后内联显示；R07 按锁定 UI commit 映射51个本地资源 | 合成 code、空/未知 code 领域 fixture，R07本地资源/语法/顺序/复制/字号测试 | `SUPPORTED`（本地已证实资源）；其余可读 fallback |
 | `type=3` image | `Extensions.kt::PbContent.picUrl` 与 `renders` raw 3；`PbContentRender.kt::PicContentRender` | `type#1=3`; candidates `originSrc#25,bigCdnSrc#9,bigSrc#6,dynamic#16,cdnSrc#8,cdnSrcActive#36,src#4`; size `bsize#5`; `originSize#27`, `showOriginalBtn#35` | 强制拆 `bsize`；坏值可崩；候选策略受 Android 设置影响；连续图片进入 waterfall | 正常、多候选、坏 URL、空字段、非正/越界/极端比例、多图及 idle/loading/rendered/fetch failure/decode failure/cancelled | `SUPPORTED`（只保留经验证 HTTPS candidate） |
 | `type=4` mention | `Extensions.kt::renders` raw 4；`PbContentRender.kt::PbContentText` user annotation | `type#1=4`, label `text#2`, `uid#15` int64 | 点击时直接 `toLong()` 导航；缺省 uid 为 0 且 Android 没有合法性 guard | uid 7301、uid 缺省 0、空 label 构造 | `DEGRADED`（保留 uid/label，阶段 08 不建 profile route） |
 | `type=5`, `src`、`link` 非空 | `Extensions.kt::renders` raw 5；`PbContentRender.kt::VideoContentRender` | `type#1=5`, web `text#2`, video `link#3`, thumbnail `src#4`, `bsize#5` | 构造 VideoPlayer；坏尺寸可崩 | player-shaped synthetic node | `DEGRADED`（thumbnail + 外链 intent，不播放） |
@@ -145,3 +145,11 @@ fixture 是人工合成、脱敏内容，只证明锁定 schema 的首楼正文 
 ## R06 渲染补充
 
 连续image节点在楼层Cell内形成TiebaMediaGrid；任意非image节点结束一组，node/media ID及服务端顺序不变。每组最多预览8图，保留尺寸比例，超过8图提示总数；Viewer intent仅包含当前组的可加载图片，initialMediaID仍为原节点。每张图片继续既有可取消加载/代次与迟到过滤，不通过Store或整表刷新传播加载状态。非图片渲染与官方表情fallback留待R07。子回复只按服务端顺序预览3条，更多入口走既有subposts route；回复/点赞操作只有本地未开放提示。
+
+## R07 内联表情（2026-09-23）
+
+当前 Live PBPage 的既有 mapper 将每个 PbContent.type=2 映射为独立 ThreadEmojiContent(text registry ID, c name)，无需改变 Proto 或端点。此结论是 CODE_EVIDENCE，合成 wire 测试不代表 Live 抓包。显示时将连续 text/emoji/link/mention 合成一个 TextKit 段，图片/其他节点仍形成分界；不增加顶层楼层项，不更改 node/row ID。
+
+官方资源与名称来源为 UI commit c5f1125f42498e49db4e4a9cb66313b8c8a285c7 的 EmoticonManager/EmoticonUtil；逐文件来源见 Resources/TIEBA_EMOTICONS_PROVENANCE.md。支持 Android `#(名称)`、web `(#名称)`，以及用户明确要求的裸 `#名称`（完整已知token，未知话题原样保留）。独立 node 优先使用真实 registry ID，不凭未知 ID 的名字猜资源；缺资源回退到原可读文字。DEFAULT 生气=61无本地资源，web 生气=31、明确 node 31 可显示；不以31冒充61。
+
+TiebaRichTextView 是唯一 inline renderer；ThreadReader正文、三条楼中楼预览和动态摘要已接入。文字可选择，附件复制还原输入token，VoiceOver语义为“名称表情”；未来 R08/R10/R11可复用相同 runs/builder，本阶段不实现那些页面。官方静态附件仅本地加载，原远程图片仍由 ProductionImageLoader 负责。
