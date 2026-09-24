@@ -9,7 +9,7 @@ struct ForumHomeView: View {
     var onDisplayed: (ForumSummary) async -> Void = { _ in }
     var onOpenSearch: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var composeRoute: ForumComposeRoute?
+    @State private var composeTarget: TextComposeTarget?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,7 +45,10 @@ struct ForumHomeView: View {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("搜索", systemImage: "magnifyingglass", action: onOpenSearch)
                     .accessibilityIdentifier("forum-home.search")
-                Button("发帖", systemImage: "plus") { composeRoute = ForumComposeRoute(forum: route) }
+                Button("发帖", systemImage: "plus") {
+                    guard let forum = store.state.displayedForum else { return }
+                    composeTarget = .init(kind: .thread, forumID: forum.forumID ?? 0, forumName: forum.name)
+                }
                     .accessibilityIdentifier("forum-home.compose")
                 Menu("更多", systemImage: "ellipsis") {
                     Button("重新加载", systemImage: "arrow.clockwise") {
@@ -57,18 +60,8 @@ struct ForumHomeView: View {
             }
             .tiebaFlatToolbarItem()
         }
-        .sheet(item: $composeRoute) { route in
-            NavigationStack {
-                ContentUnavailableView("发帖功能暂未开放", systemImage: "square.and.pencil",
-                                       description: Text("\(route.forum.forumName.rawValue)吧当前支持只读浏览。"))
-                    .accessibilityIdentifier("forum-home.compose.unavailable")
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("完成") { composeRoute = nil }
-                                .accessibilityIdentifier("forum-home.compose.close")
-                        }
-                    }
-            }
+        .textComposer(target: $composeTarget) { _ in
+            await (store.pageStore(for: store.selectedPage ?? .latest) ?? store).reload()
         }
     }
 
@@ -87,11 +80,6 @@ struct ForumHomeView: View {
         })
         .accessibilityIdentifier("forum-home.pager")
     }
-}
-
-struct ForumComposeRoute: Identifiable {
-    let forum: ForumRoute
-    var id: ForumRoute { forum }
 }
 
 @MainActor

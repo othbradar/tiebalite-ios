@@ -79,6 +79,7 @@ targets:
         excludes:
           - AGENTS.md
       - path: Sources/Features/Recommendations
+      - path: Sources/Features/Composer
       - path: Sources/Features/Subposts
       - path: Sources/Features/ThreadReader
       - path: Sources/Features/MediaViewer

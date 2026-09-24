@@ -53,6 +53,8 @@ struct AppSceneRoot: View {
                     .background(SemanticColor.background)
             }
         }
+        .environment(\.textComposer, compositionRoot.textComposer)
+        .modifier(TextComposerHost(service: compositionRoot.textComposer))
         .fullScreenCover(item: $mediaPresentation) { presentation in
             MediaViewer(
                 presentation: presentation,

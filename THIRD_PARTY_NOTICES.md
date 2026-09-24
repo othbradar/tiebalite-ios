@@ -153,3 +153,5 @@ Android's exact client asset URL rule. The local catalog now contains 132 images
 (399,224 bytes). Per-file source URLs and SHA-256 are recorded in
 Resources/TIEBA_EMOTICONS_PROVENANCE.md. All are bundled original artwork;
 production adds no remote downloader, cache, credentials or transport exception.
+
+R09 extends the same locked Android Protobuf source closure to AddPost and its verification/response dependencies (18 generated files); original source/license attribution above remains applicable. No additional runtime package is introduced.

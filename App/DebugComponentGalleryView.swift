@@ -50,6 +50,10 @@ struct DebugComponentGalleryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
+#if UITESTING
+                NavigationLink("文字编辑器") { DebugR09ComposerGallery() }
+                    .accessibilityIdentifier("r09.gallery.open")
+#endif
                 DebugAndroidParityGallery()
 
                 environmentSummary

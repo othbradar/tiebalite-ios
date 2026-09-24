@@ -34,6 +34,7 @@ enum PBPageDomainMapper {
             threadID: request.threadID,
             title: nonempty(data.thread.title, fallback: "无标题"),
             forumName: forumName(data),
+            forumID: data.forum.id > 0 ? data.forum.id : nil,
             forumAvatarResource: TiebaAvatarResource.forum(forumID: data.forum.id, avatar: data.forum.avatar),
             author: mapAuthor(data.thread.author),
             replyCount: max(0, data.thread.replyNum),

@@ -1,0 +1,48 @@
+import Foundation
+
+enum TextWriteAccountProtocol {
+    static func descriptor() throws -> EndpointDescriptor {
+        guard let id = EndpointID("write.accountMetadata") else { throw TextWriteFailure.authentication }
+        return try EndpointDescriptor(id: id, method: .post, host: "c.tieba.baidu.com", path: "/c/s/login",
+                                      fixedHeaders: ["User-Agent": "bdtb for Android 11.10.8.6", "Cookie": "ka=open"],
+                                      bodyCodec: .formURLEncoded, responseFamily: .json,
+                                      allowedResponseMIMETypes: TextWriteProtocol.jsonResponseMIMETypes,
+                                      authentication: .active, timeout: 30, responseBodyLimit: 1_024 * 1_024)
+    }
+
+    static func body(_ authorization: SessionAuthorization) -> EndpointRequestBody {
+        .formURLEncoded(TextWriteProtocol.signedFields([
+            "bdusstoken": authorization.bduss + "|null", "stoken": authorization.stoken,
+            "channel_id": "", "channel_uid": "", "authsid": "null",
+            "_client_version": "11.10.8.6", "_client_type": "2"
+        ]))
+    }
+
+    static func decode(_ data: Data) throws -> TextWriteAccount {
+        let response = try JSONDecoder().decode(AccountResponse.self, from: data)
+        guard response.errorCode == "0" else {
+            throw EndpointWireFailure.server(code: Int(response.errorCode ?? "") ?? -1)
+        }
+        guard let tbs = response.anti?.tbs, !tbs.isEmpty,
+              let uid = response.user?.id, let numericID = Int64(uid), numericID > 0 else {
+            throw TextWriteFailure.authentication
+        }
+        return TextWriteAccount(userID: uid, tbs: tbs)
+    }
+
+}
+
+private struct AccountResponse: Decodable {
+    struct Anti: Decodable { let tbs: String? }
+    struct User: Decodable { let id: String? }
+    let errorCode: String?
+    let anti: Anti?
+    let user: User?
+    enum CodingKeys: String, CodingKey { case errorCode = "error_code", anti, user }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        errorCode = try values.flexibleString(forKey: .errorCode)
+        anti = try values.decodeIfPresent(Anti.self, forKey: .anti)
+        user = try values.decodeIfPresent(User.self, forKey: .user)
+    }
+}

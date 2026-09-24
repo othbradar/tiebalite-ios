@@ -5,6 +5,7 @@ final class AppCompositionRoot {
     let authContextProvider: SessionAuthContextProvider
     let sessionStore: SessionStore
     let loginWebSession: LoginWebSession
+    let textComposer: TextComposerService
     private let followedForumsRepository: any FollowedForumsRepository
     private let forumHomeRepository: any ForumHomeRepository
     private let browsingHistoryRepository: any BrowsingHistoryRepository
@@ -43,6 +44,9 @@ final class AppCompositionRoot {
         switch environment.readingDataSourceMode {
 #if DEBUG
         case .fixture:
+            textComposer = TextComposerService(repository: FixtureTextWriteRepository(), currentContext: {
+                .active(.init(sessionID: .init(rawValue: 1), generation: 1))
+            })
             self.browsingHistoryRepository =
                 browsingHistoryRepository
                 ?? InMemoryBrowsingHistoryRepository()
@@ -59,6 +63,9 @@ final class AppCompositionRoot {
                 userProfileRepository ?? FixtureUserProfileRepository()
 #endif
         case .live:
+            textComposer = TextComposerService(repository: LiveTextWriteRepository(
+                client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
+                currentContext: { resolvedAuthContextProvider.context() })
             self.browsingHistoryRepository =
                 browsingHistoryRepository
                 ?? JSONBrowsingHistoryRepository.production()

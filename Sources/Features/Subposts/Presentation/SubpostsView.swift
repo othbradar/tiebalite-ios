@@ -7,7 +7,7 @@ struct SubpostsView: View {
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
-    @State private var replyIntent: SubpostReplyIntent?
+    @State private var composeTarget: TextComposeTarget?
     @State private var actionTask: Task<Void, Never>?
 
     var body: some View {
@@ -44,11 +44,7 @@ struct SubpostsView: View {
                 refreshToolbarItem
             }
         }
-        .alert("回复暂未开放", isPresented: Binding(get: { replyIntent != nil }, set: { if !$0 { replyIntent = nil } })) {
-            Button("知道了", role: .cancel) { replyIntent = nil }
-        } message: {
-            Text(replyIntent.map { "回复 \($0.author.displayName)。当前可阅读和复制回复内容。" } ?? "")
-        }
+        .textComposer(target: $composeTarget) { _ in await store.refresh() }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("app.route.subposts")
         .accessibilityValue("帖子 \(store.route.threadID.formatted())，楼层 \(store.route.postID.formatted())")
@@ -80,7 +76,9 @@ struct SubpostsView: View {
                 author: item.author, metadata: item.metadata, document: item.document,
                 isThreadAuthor: isThreadAuthor, imageLoader: imageLoader, readingTextSize: readingTextSize,
                 onOpenMedia: onOpenMedia, onOpenUser: onOpenUser, identifier: "subposts.reply.\(item.id)",
-                reply: { replyIntent = store.replyIntent(for: item) })
+                reply: {
+                    if let intent = store.replyIntent(for: item) { composeTarget = .reply(intent, document: item.document) }
+                })
         case .footer(let phase, let hasMore):
             footer(phase, hasMore: hasMore)
         }

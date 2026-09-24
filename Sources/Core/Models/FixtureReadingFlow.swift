@@ -194,6 +194,7 @@ struct ThreadReaderSnapshot: Equatable, Sendable {
     let threadID: Int64
     let title: String
     let forumName: String
+    let forumID: Int64?
     let forumAvatarResource: ImageResourceDescriptor?
     let author: ThreadReaderAuthor
     let replyCount: Int32
@@ -207,6 +208,7 @@ struct ThreadReaderSnapshot: Equatable, Sendable {
         threadID: Int64,
         title: String,
         forumName: String,
+        forumID: Int64? = nil,
         forumAvatarResource: ImageResourceDescriptor? = nil,
         author: ThreadReaderAuthor,
         replyCount: Int32,
@@ -219,6 +221,7 @@ struct ThreadReaderSnapshot: Equatable, Sendable {
         self.threadID = threadID
         self.title = title
         self.forumName = forumName
+        self.forumID = forumID
         self.forumAvatarResource = forumAvatarResource
         self.author = author
         self.replyCount = replyCount

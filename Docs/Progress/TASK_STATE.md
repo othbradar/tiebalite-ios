@@ -1,5 +1,13 @@
 # TASK_STATE
 
+- 2026-09-24 用户批准提交 R09 并进入 R10。已从正常应用移除 R09 验收入口，隔离自动化保留。提交检查 13 Unit、1 短 UI、lint/build/secret/diff 通过；首个 UI 配置拼写错误导致 exit 70，纠正后通过。R09 = USER_VISUALLY_APPROVED；真实主题回复已由用户验证，其余写入类型仍未单独 Live 验证。未自动发送、未推送。
+
+- 2026-09-24 R09主题回复 = LIVE_THREAD_REPLY_USER_VERIFIED：用户明确“我确实发送成功了”，提供原帖新增第9楼截图（Artifacts/VisualReview/R09/WritePreflight/user-confirmed-live-thread-reply.png）。该成功来自用户自行发送；AI没有自动发布。本次仅更新记录，diff check通过；未重跑测试/构建。新帖/指定楼层/楼中楼未单独Live验证，不扩大结论。R09未暂存/提交，未进入R10。
+
+- 2026-09-24 R09用户手动发送失败修订：确认账号元数据HTTP200/JSON/error_code0却带application/x-javascript，旧白名单拒绝后尚未进入发布；新增兼容并在完整App只读预检验证account-ready、零发布。复核原版完整拦截器链，纠正先前“multipart无需签名”的错误证据，补齐外层公共字段/签名/请求头；楼层目标映射不变。13项定向Unit、lint/build/secret/network/diff通过；临时诊断已移除，两台完整Live覆盖安装（hash230c885e…），iPhone停原“钢笔购买渠道”空白回复编辑器并显示屏幕键盘。READY_FOR_USER_VISUAL_REVIEW；真实发送仍待用户手动复核。完整失败与限制见R09_ACCEPTANCE.md最新修订，Artifacts/VisualReview/R09/WritePreflight。未暂存/提交，不进入R10。
+
+- 2026-09-24 R08按用户批准提交58a1060（feat: add full subpost reading），未推送。R09 = READY_FOR_USER_VISUAL_REVIEW（第一道布局门禁）：文字新帖/主题/楼层/楼中楼编辑器、会话草稿与typed write repository已实现；11项Unit、iPhone3项/iPad1项定向UI、lint/build/secret/network/diff通过。iPad转屏丢编辑器根因修正为稳定AppSceneRoot持有同一系统sheet，列表/导航/图片/Session基础未改。两台完整Live覆盖安装，二进制hash8f2a9f91…一致、登录态保留；iPhone已实际打开高通吧真实帖回复编辑器，交付截图时回到同一帖子，保留当前操作位置；四布局/Mock结果/宽度变化截图在Artifacts/VisualReview/R09/。Live发布尚未执行，HTTPS最小请求兼容性待用户第二道门禁亲自发送验证；细节、全部失败与限制见R09_ACCEPTANCE.md。R09未暂存/提交，不进入R10。
+
 - 2026-09-24 用户明确“可以了，提交R08进入R09”，R08 = USER_VISUALLY_APPROVED。提交前12项R08 Unit、iPhone原短Smoke 1/1、lint/build/secret/diff通过，证据Artifacts/VisualReview/R09/r08-approval-*。保留已记录资源缺口和历史失败；精确提交R08后按R09提示词开始文字编辑/发送状态，首轮停布局验收，自动化只用Mock，不执行Live发布。
 
 - 2026-09-24 R08表情修订 = READY_FOR_USER_VISUAL_REVIEW（有资源缺口）：匿名核实用户第6楼全部三页77条，缺失为shoubai_emoji_face族未注册；加入原图可用的04/大笑、07/笑哭、60/赞同、71/滑稽、72/捂脸，全目录132图，保留原ID/名称优先级及所有renderer/列表。368/绝两处官方源404；6处[图片]是服务端type0原文，无图可恢复。新回归三例先红后绿，18 Unit、iPhone1/iPad1短Smoke、lint/build/secret/diff通过，45保护文件不变。两台完整正常Live覆盖安装，hash35109570…一致、5新资源在包内、登录态保留。iPhone打开同一原帖子，CUA滚动未生效，需手动到第6楼；前后/固定样本截图及完整缺口见R08_ACCEPTANCE.md最新修订和Artifacts/VisualReview/R08/Emoticons。未暂存/提交、不进入R09。

@@ -13,6 +13,7 @@ struct ThreadReaderView: View {
 
     @State private var retryGeneration: UInt64 = 0
     @State private var showsUnavailableAction = false
+    @State private var composeTarget: TextComposeTarget?
 
     init(
         store: ThreadReaderStore,
@@ -42,7 +43,9 @@ struct ThreadReaderView: View {
         .toolbar { forumToolbar }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if store.state.snapshot != nil {
-                ThreadReaderReplyBar(imageLoader: imageLoader) { showsUnavailableAction = true }
+                ThreadReaderReplyBar(imageLoader: imageLoader, onAction: { showsUnavailableAction = true }, onCompose: {
+                    if let snapshot = store.state.snapshot { composeTarget = .reply(snapshot: snapshot) }
+                })
             }
         }
         .alert("功能暂未开放", isPresented: $showsUnavailableAction) {
@@ -50,6 +53,7 @@ struct ThreadReaderView: View {
         } message: {
             Text("当前支持只读浏览，评论、点赞等功能暂未开放。")
         }
+        .textComposer(target: $composeTarget) { _ in await store.reload() }
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(
@@ -133,6 +137,7 @@ struct ThreadReaderView: View {
                         onOpenUser: onOpenUser,
                         onOpenSubposts: onOpenSubposts,
                         onReadOnlyAction: { showsUnavailableAction = true },
+                        onReply: { post in composeTarget = .reply(snapshot: snapshot, post: post) },
                         requestNextPage: requestNextPage
                     )
                 }

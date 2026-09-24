@@ -38,9 +38,9 @@ final class R08SubpostsSmokeTests: XCTestCase {
         let reply = app.buttons["subposts.reply.10018.action"]
         reveal(reply, in: list)
         reply.tap()
-        XCTAssertTrue(app.alerts["回复暂未开放"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.alerts.staticTexts["回复 样本回复者18。当前可阅读和复制回复内容。"].exists)
-        app.alerts.buttons["知道了"].tap()
+        XCTAssertTrue(app.textViews["composer.body"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["composer.recipient"].label, "回复 样本回复者18")
+        app.buttons["composer.cancel"].tap()
         UITestHarness.attachSafeVisualEvidence(app: app, name: "R08 middle of second page")
         let last = app.buttons["subposts.reply.10030.author"]
         reveal(last, in: list)

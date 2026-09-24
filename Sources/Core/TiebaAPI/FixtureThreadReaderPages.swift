@@ -36,6 +36,7 @@ enum FixtureThreadReaderPages {
             threadID: seed.threadID,
             title: seed.title,
             forumName: seed.forumName,
+            forumID: 90,
             author: seed.author,
             replyCount: seed.replyCount,
             posts: [
@@ -68,6 +69,7 @@ enum FixtureThreadReaderPages {
             threadID: seed.threadID,
             title: seed.title,
             forumName: seed.forumName,
+            forumID: 90,
             author: seed.author,
             replyCount: seed.replyCount,
             posts: [fixturePost(

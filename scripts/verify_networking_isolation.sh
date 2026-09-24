@@ -68,7 +68,7 @@ proto_usage="$(
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(FRSPageProtocol|FRSPageMapping|GeneralTabProtocol|RecommendationFeedMapper|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PBFloorMapper|PBFloorProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|FRSPageMapping|GeneralTabProtocol|RecommendationFeedMapper|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PBFloorMapper|PBFloorProtocol|TextWriteProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then
@@ -387,7 +387,7 @@ if [[ -n "$generated_outside_allowlist" ]]; then
   fail generated-protobuf-location "$generated_outside_allowlist"
 fi
 generated_count="$(find Generated/Protobuf -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-if [[ "$generated_count" -ne 216 ]]; then
+if [[ "$generated_count" -ne 234 ]]; then
   fail generated-protobuf-count "$generated_count"
 fi
 
@@ -421,6 +421,8 @@ if [[ -n "$unchecked_usage" ]]; then
 fi
 expected_unchecked_files="$(
   printf '%s\n' \
+    'Generated/Protobuf/AddPost/AddPostRequestData.pb.swift' \
+    'Generated/Protobuf/AddPost/AddPostResponseData.pb.swift' \
     'Generated/Protobuf/AlaLiveInfo.pb.swift' \
     'Generated/Protobuf/AlaUserInfo.pb.swift' \
     'Generated/Protobuf/AnchorInfo.pb.swift' \
@@ -443,6 +445,7 @@ expected_unchecked_files="$(
     'Generated/Protobuf/PbPage/PbPageResponseData.pb.swift' \
     'Generated/Protobuf/Personalized.pb.swift' \
     'Generated/Protobuf/Post.pb.swift' \
+    'Generated/Protobuf/PostAntiInfo.pb.swift' \
     'Generated/Protobuf/PostInfoList.pb.swift' \
     'Generated/Protobuf/Profile/ProfileRequestData.pb.swift' \
     'Generated/Protobuf/Profile/ProfileResponseData.pb.swift' \
@@ -459,7 +462,7 @@ unchecked_count="$(
   rg -n '@unchecked[[:space:]]+Sendable' Generated/Protobuf | wc -l | tr -d ' '
 )"
 if [[ "$actual_unchecked_files" != "$expected_unchecked_files" ||
-      "$unchecked_count" -ne 31 ]]; then
+      "$unchecked_count" -ne 34 ]]; then
   fail generated-unchecked-sendable-allowlist "$actual_unchecked_files"
 fi
 

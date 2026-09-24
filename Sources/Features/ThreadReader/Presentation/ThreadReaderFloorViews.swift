@@ -9,6 +9,7 @@ struct ThreadReaderRowView: View {
     let onOpenUser: (UserProfileRoute) -> Void
     let onOpenSubposts: (ThreadContentSource) -> Void
     let onReadOnlyAction: () -> Void
+    var onReply: (ThreadReaderPostRowModel) -> Void = { _ in }
     let requestNextPage: () -> Void
 
     @ViewBuilder
@@ -18,7 +19,7 @@ struct ThreadReaderRowView: View {
             ThreadReaderPostView(
                 post: post, imageLoader: imageLoader, readingTextSize: readingTextSize,
                 onOpenMedia: onOpenMedia, onOpenUser: onOpenUser,
-                onOpenSubposts: onOpenSubposts, onReadOnlyAction: onReadOnlyAction
+                onOpenSubposts: onOpenSubposts, onReadOnlyAction: onReadOnlyAction, onReply: onReply
             )
         case let .pagination(pagination):
             ThreadReaderPaginationView(pagination: pagination, requestNextPage: requestNextPage)
@@ -58,6 +59,7 @@ private struct ThreadReaderPostView: View {
     let onOpenUser: (UserProfileRoute) -> Void
     let onOpenSubposts: (ThreadContentSource) -> Void
     let onReadOnlyAction: () -> Void
+    var onReply: (ThreadReaderPostRowModel) -> Void = { _ in }
 
     private var contentInset: CGFloat { post.floorNumber > 1 ? TiebaParityTokens.userAvatarSize + 8 : 0 }
 
@@ -87,7 +89,7 @@ private struct ThreadReaderPostView: View {
                 if !post.inlineSubposts.isEmpty || post.remainingSubpostCount > 0 {
                     subposts
                 }
-                Button("回复", action: onReadOnlyAction)
+                Button("回复") { onReply(post) }
                     .font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
                     .frame(minHeight: 44, alignment: .leading)
                     .accessibilityIdentifier("thread-reader.reply.p\(post.source.postID)")
@@ -182,13 +184,14 @@ private struct ThreadReaderSubpostPreview: View {
 struct ThreadReaderReplyBar: View {
     let imageLoader: any ImageLoading
     let onAction: () -> Void
+    var onCompose: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 0) {
             TiebaFlatDivider(inset: 0)
             HStack(spacing: 8) {
                 TiebaAvatarView(resource: nil, imageLoader: imageLoader, size: 28)
-                Button(action: onAction) {
+                Button(action: onCompose) {
                     Text("评论一番").font(Typography.font(.subheadline))
                         .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                         .padding(.horizontal, 8)
