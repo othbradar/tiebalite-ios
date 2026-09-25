@@ -1,5 +1,13 @@
 # TASK_STATE
 
+- 2026-09-25 用户明确授权“先提交然后进入R11，发布bug先不修”。当前提交范围为Forum首栏内容返回及发布审计记录；沿用已执行的定向验证，iPad转屏自动化超时和既有静态规则失败继续保留。发布后删除问题标记DEFERRED_BY_USER，未宣称修复。提交后仅进入R11消息页，完成后等待人工验收，不自动提交R11或进入R12。
+
+- 2026-09-25 发布问题补充 = SERVER_REMOVAL_USER_CONFIRMED / WRITE_MODERATION_CAUSE_UNKNOWN：用户确认同一账号在官方iOS贴吧/Android TiebaLite均可发布，本客户端所有新回复均收到系统删除通知，发送后编辑器停留。停止把问题仅当按钮/刷新故障处理；未修复、未确定删帖触发字段。本轮只检查源码并打开已有草稿观察，未发送/改草稿/改生产代码/改安装包，未提交；详细证据边界见WRITE_MODERATION_COMPARISON.md。
+
+- 2026-09-25 用户报告主题回复因“涉嫌异常行为”被删除，发布审计 = WRITE_MODERATION_CAUSE_UNKNOWN。与 Android 锁定协议/UI 参考核对，11文件及两个发布方法一致；iOS确定差异为发送前资料获取、显示名遗漏及裁剪的客户端上下文，新帖另有HTTPS差异。回复默认UA/版本与原版相同，无应用层自动重发循环。不能用历史即时可见证明后续审核可靠，也未确认具体删除触发项或账号封禁。仅更新审计/API证据/状态；未改生产代码或安装包，零Live请求/发布，不提交、不进入R11，Forum返回候选保留。详见Docs/Audits/WRITE_MODERATION_COMPARISON.md；静态比较exit0，Unit/build未重跑。
+
+- 2026-09-25 R10已提交3744d4b；用户新增吧首页首栏内容区右滑返回修复 = READY_FOR_USER_VISUAL_REVIEW（有保留的验证失败），不进入R11。原Fixture三次实际失败并记录Pager接管/系统content-pop失败；最小局部手势仲裁启用iOS26系统返回，非首栏仍分页，旧系统保留边缘返回。最终22项Unit、iPhone2项UI（含三次返回、其他栏、取消/位置）及既有Pager短回归通过；iPad三次返回通过，旧转屏UI等待空闲超时保留，手动转屏/标签正常。lint/build/secret/network/diff通过；forbidden命中未改的ComposerPhotoPreparation共享实例，隔离HEAD同样失败，未扩大修改。147保护文件hash不变。两台完整正常Live覆盖安装hash eb85c33e…一致，无卸载/清Keychain，停高通吧；Live右滑留用户手工检查。详见Docs/Audits/FORUM_CONTENT_BACK_GESTURE.md与ADR-0029，所有原始失败保留；本修复未暂存/提交。
+
 - 2026-09-24 R10 = USER_VISUALLY_APPROVED：用户确认图片和表情均正常并明确授权提交。用户自行完成高通吧单图加表情主题回复，第14/15楼截图已存 ignored Artifacts/VisualReview/R10/UserApproval/user-confirmed-live-image-emoticon-reply.png；未采集原始响应，其他写入目标、多图Live发布/重试不扩大结论。AI零Live上传/发布。本轮仅更新记录、执行定向提交门禁及精确提交，不再改UI，不推送、不进入R11。提交门禁11 Unit/13次执行、iPhone2短UI（54.436秒）、lint/build/secret/diff通过；Unit曾被系统粘贴权限提示阻塞，拒绝读取外部剪贴板后原测试继续通过，证据保留。正常完整App已恢复到iPhone，SHA dadbb284…与用户验收候选一致；44保护文件hash未变。
 
 - 2026-09-24 用户批准 R10 最小原生输入区域重设计后实施完成，READY_FOR_USER_VISUAL_REVIEW，未暂存/提交/进入R11。键盘与表情使用同一UITextView inputView，实际窗口宽度仅变化时同步，保留当前回调/选区/控制器和内联wire映射；撤下旧VStack面板。接入中多个UI失败完整保留（包括真实零宽证据），不归因UIKit缺陷；最终iPhone2/2（含原三轮开合/滚动与四图Mock失败重试）、iPad1/1（转屏/全宽/草稿）、9项定向Unit/11执行、lint/build/secret/diff通过。44保护文件hash未变。完整正常Live两台覆盖安装SHA dadbb284…一致，无卸载/清Keychain。iPhone原耐腐蚀艺术馆吧“最没用的非放射性元素是81”回复草稿已通过PhotosPicker选4张本地样图、点选笑眼/滑稽等多个内联表情，零自动上传/发送。证据 NativeInput/ 和 R10_ACCEPTANCE.md；所有历史失败/测试窗口appearance警告保留，真实上传仍UNKNOWN。

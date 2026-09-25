@@ -251,6 +251,7 @@ extension PagerContainer.Coordinator {
         from controller: UIPageViewController,
         clearChildren: Bool
     ) {
+        (controller as? NavigationAwarePagerController)?.removeNavigationBack()
         uninstallPagerPanObserver()
 #if DEBUG
         uninstallPagerContentOffsetObserver()

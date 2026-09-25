@@ -78,6 +78,7 @@
   invalidate，不能留下等待旧 input 的 context；显示 committed PageID 时还必须
   匹配当前缓存 host 对象，不能仅因 PageID 相同接受 stale controller。
 - 左边缘系统返回与内部横滑冲突时，系统返回优先，具体判定写入组件 ADR。
+- ADR-0029（用户 2026-09-25 要求）：仅吧首页启用首栏内容区返回。iOS 26+ 首栏向右由系统 content-pop 返回，其他栏向右仍翻到前一栏；取消返回保留 selection/offset，首栏向左及纵向滚动不受影响。局部 gate 只建立 failure requirements，不接管系统 delegate 或动画。iOS 18–25 保留系统边缘返回；MediaViewer 不启用此选项。
 
 ### 阶段 06 证据范围
 

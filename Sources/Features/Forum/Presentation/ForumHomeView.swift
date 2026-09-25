@@ -69,6 +69,7 @@ struct ForumHomeView: View {
         PagerContainer(
             pageIDs: store.pageIDs, selection: $store.selectedPage,
             backgroundColor: .systemBackground, reduceMotion: reduceMotion,
+            firstPageNavigationBackEnabled: true,
             externalSelectionGeneration: $store.selectionGeneration,
             contentGeneration: { _ in 0 },
             content: { pageID in

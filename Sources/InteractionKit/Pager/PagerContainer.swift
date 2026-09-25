@@ -36,6 +36,7 @@ where PageID: Hashable & Sendable, PageContent: View {
     let backgroundColor: UIColor
     let reduceMotion: Bool
     let pagingEnabled: Bool
+    let firstPageNavigationBackEnabled: Bool
     let mediaGestureOwnership: MediaGestureOwnershipController<PageID>?
     @Binding var externalSelectionGeneration: UInt64
     let contentGeneration: ((PageID) -> UInt64)?
@@ -57,6 +58,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         backgroundColor: UIColor,
         reduceMotion: Bool,
         pagingEnabled: Bool = true,
+        firstPageNavigationBackEnabled: Bool = false,
         mediaGestureOwnership: MediaGestureOwnershipController<PageID>? = nil,
         externalSelectionGeneration: Binding<UInt64> = .constant(0),
         contentGeneration: ((PageID) -> UInt64)? = nil,
@@ -78,6 +80,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         self.backgroundColor = backgroundColor
         self.reduceMotion = reduceMotion
         self.pagingEnabled = pagingEnabled
+        self.firstPageNavigationBackEnabled = firstPageNavigationBackEnabled
         self.mediaGestureOwnership = mediaGestureOwnership
         _externalSelectionGeneration = externalSelectionGeneration
         self.contentGeneration = contentGeneration
@@ -95,6 +98,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         backgroundColor: UIColor,
         reduceMotion: Bool,
         pagingEnabled: Bool = true,
+        firstPageNavigationBackEnabled: Bool = false,
         mediaGestureOwnership: MediaGestureOwnershipController<PageID>? = nil,
         externalSelectionGeneration: Binding<UInt64> = .constant(0),
         contentGeneration: ((PageID) -> UInt64)? = nil,
@@ -106,6 +110,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         self.backgroundColor = backgroundColor
         self.reduceMotion = reduceMotion
         self.pagingEnabled = pagingEnabled
+        self.firstPageNavigationBackEnabled = firstPageNavigationBackEnabled
         self.mediaGestureOwnership = mediaGestureOwnership
         _externalSelectionGeneration = externalSelectionGeneration
         self.contentGeneration = contentGeneration
@@ -320,10 +325,20 @@ extension PagerContainer {
     func makeUIViewController(
         context: Context
     ) -> UIPageViewController {
-        let controller = UIPageViewController(
-            transitionStyle: .scroll,
-            navigationOrientation: .horizontal
-        )
+        let controller: UIPageViewController
+        if firstPageNavigationBackEnabled {
+            let navigationPager = NavigationAwarePagerController(
+                transitionStyle: .scroll, navigationOrientation: .horizontal
+            )
+            navigationPager.isAtNavigationBoundary = { [weak coordinator = context.coordinator] in
+                guard let coordinator else { return false }
+                return coordinator.state.transition == nil
+                    && coordinator.state.committedID == coordinator.state.displayedOrder.first
+            }
+            controller = navigationPager
+        } else {
+            controller = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .horizontal)
+        }
         context.coordinator.install(on: controller)
         context.coordinator.synchronize(controller)
         return controller

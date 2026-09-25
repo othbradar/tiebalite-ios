@@ -895,6 +895,12 @@ RUNTIME_EVIDENCE补充：在完整Debug App中通过当前AuthContext和原HTTPC
 
 RUNTIME_EVIDENCE（用户手动发布，2026-09-24）：用户明确确认修订版主题回复发送成功，并提供原帖新增第9楼截图。此证据覆盖AddPost的threadReply路径；没有采集原始发布响应或服务端pid，不推定新帖/指定楼层/楼中楼均通过。截图留在ignored Artifacts/VisualReview/R09/WritePreflight/user-confirmed-live-thread-reply.png。所有AI操作均未触发Live发布。
 
+### 发布后删除通知与兼容性证据边界（2026-09-25）
+
+USER_REPORTED：用户报告经当前应用发布的一条主题回复收到“涉嫌异常行为”删除通知。`WRITE_MODERATION_CAUSE_UNKNOWN`；这证明有实际删帖反馈，不证明账号封禁或某个请求字段触发。R09/R10 的历史用户确认只覆盖当时发送/可见，不覆盖后续审核。
+
+CODE_EVIDENCE：重新检查锁定的 Android protocol/UI 两版，11个发布链相关文件和 addPostFlow/addThreadFlow 方法一致。当前 iOS 与原版的确定差异包括：每次发布前获取账号资料、缺少业务显示名、裁剪后的客户端公共上下文，以及新帖使用 HTTPS。默认 UA 和回复版本与原版默认相同；没有发现应用层自动重发循环。缺少这次即时发布响应及平台审核理由，不把差异当作删除根因，也不补造验证/设备信息。完整来源、静态检查范围和未验证项见 `Docs/Audits/WRITE_MODERATION_COMPARISON.md`；本轮无 Live 请求或生产实现变化。
+
 ## R10 图片上传（CODE_EVIDENCE + 用户手动端到端 RUNTIME_EVIDENCE）
 
 UI参考 c5f1125：`components/ImageUploader.kt::uploadSinglePicture` 分块512000，普通5MiB/原图10MiB；`api/retrofit/interfaces/OfficialTiebaApi.kt::uploadPicture` POST `/c/s/uploadPicture`，JSON。`RetrofitTiebaApi::OFFICIAL_TIEBA_API` 基址 c.tieba.baidu.com；采用HTTPS安全适配（用户单图主题回复验证见下文，未采集原始响应），_client_version=12.41.7.1，User-Agent同版本，BDUSS及公共字段由 CommonParamInterceptor 注入，multipart非文件字段由 SortAndSignInterceptor 签名，文件chunk不签；StParamInterceptor对multipart不增加遥测。接口删除Charset/_client_type请求头及naws_game_ver/sdk_ver表单；Cookie仅ka=open（不伪造BAIDUID）。不虚构设备/安装/追踪字段。
