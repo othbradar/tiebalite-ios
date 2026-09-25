@@ -17,9 +17,14 @@ final class SubpostsStore {
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var generation: UInt64 = 0
 
-    init(route: SubpostsRoute, repository: any SubpostsRepository) {
+    init(route: SubpostsRoute, repository: any SubpostsRepository, initialSnapshot: SubpostsPage? = nil) {
         self.route = route
         self.repository = repository
+        if let snapshot = initialSnapshot, snapshot.route == route {
+            self.snapshot = snapshot
+            phase = snapshot.items.isEmpty ? .empty : .loaded
+            rebuildRows()
+        }
     }
 
     func loadIfNeeded() async {

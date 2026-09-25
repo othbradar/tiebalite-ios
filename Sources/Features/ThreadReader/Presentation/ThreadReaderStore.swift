@@ -40,10 +40,16 @@ final class ThreadReaderStore {
 
     init(
         threadID: Int64,
-        repository: any ThreadReaderRepository
+        repository: any ThreadReaderRepository,
+        initialSnapshot: ThreadReaderSnapshot? = nil
     ) {
         self.threadID = threadID
         self.repository = repository
+        if let snapshot = initialSnapshot, snapshot.threadID == threadID {
+            state = .loaded(snapshot)
+            hasCompletedInitialLoad = true
+            listPresentation = ThreadReaderListPresentation(snapshot: snapshot, pagination: paginationState(for: snapshot))
+        }
     }
 
     func loadIfNeeded() async {

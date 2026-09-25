@@ -18,7 +18,7 @@ struct R02RootShellTests {
         #expect(AppNavigationState().selectedTab == .followedForums)
         #expect(AppTab.followedForums.rootID == .followedForums)
         #expect(AppTab.recommendations.rootID == .recommendations)
-        #expect(AppTab.notifications.rootID == nil)
+        #expect(AppTab.notifications.rootID == .notifications)
         #expect(AppTab.settings.rootID == nil)
     }
 

@@ -1,4 +1,6 @@
 struct FixtureFollowedForumsRepository: FollowedForumsRepository {
+    var additionalForumCount = 0
+
     func loadFollowedForums(
         authentication: AuthContext
     ) async throws -> [FollowedForum] {
@@ -6,7 +8,11 @@ struct FixtureFollowedForumsRepository: FollowedForumsRepository {
         guard case .active = authentication else {
             throw FollowedForumsRepositoryError.authenticationRequired
         }
-        return Self.forums
+        return Self.forums + (0..<additionalForumCount).map { index in
+            FollowedForum(forumID: Int64(14_000 + index), name: "长列表样本吧 \(index + 1)", avatarResourceID: nil,
+                          hotCount: index, memberCount: 0, threadCount: 0, levelID: nil, levelName: nil,
+                          isSignedToday: false)
+        }
     }
 
     private static let forums = [

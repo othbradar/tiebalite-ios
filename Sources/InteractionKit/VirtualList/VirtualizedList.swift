@@ -35,6 +35,12 @@ struct VirtualListDiagnostics: Equatable, Sendable {
 @MainActor
 final class VirtualizedTableView: UITableView {
     fileprivate(set) var virtualListDiagnostics = VirtualListDiagnostics()
+    fileprivate var onInitialAnchorLayout: (() -> Void)?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        onInitialAnchorLayout?()
+    }
 }
 
 @MainActor
@@ -113,6 +119,12 @@ where Item: Identifiable & Equatable & Sendable,
             self.tableView = tableView
             tableView.delegate = self
             tableView.prefetchDataSource = self
+            if pendingRestoredAnchor != nil {
+                tableView.onInitialAnchorLayout = { [weak self, weak tableView] in
+                    guard let tableView else { return }
+                    self?.restoreAnchorIfNeeded(in: tableView)
+                }
+            }
             tableView.register(
                 VirtualListHostingCell.self,
                 forCellReuseIdentifier: Self.reuseIdentifier
@@ -188,6 +200,7 @@ where Item: Identifiable & Equatable & Sendable,
             hostedCells.removeAllObjects()
             activeHostedCellIDs.removeAll(keepingCapacity: false)
             tableView.virtualListDiagnostics.activeHostedCellCount = 0
+            tableView.onInitialAnchorLayout = nil
             tableView.prefetchDataSource = nil
             tableView.delegate = nil
             tableView.dataSource = nil
@@ -329,14 +342,18 @@ where Item: Identifiable & Equatable & Sendable,
             }
         }
 
-        private func restoreAnchorIfNeeded(in tableView: UITableView) {
-            guard let restoredAnchor = pendingRestoredAnchor,
+        private func restoreAnchorIfNeeded(in tableView: VirtualizedTableView) {
+            // Snapshot completion can precede attachment and layout. Keep the one-shot
+            // anchor until UIKit has the real viewport, rather than scrolling a zero-size table.
+            guard tableView.window != nil, !tableView.bounds.isEmpty,
+                  let restoredAnchor = pendingRestoredAnchor,
                   let dataSource,
                   let indexPath = dataSource.indexPath(for: restoredAnchor)
             else {
                 return
             }
             pendingRestoredAnchor = nil
+            tableView.onInitialAnchorLayout = nil
             tableView.scrollToRow(
                 at: indexPath,
                 at: .top,

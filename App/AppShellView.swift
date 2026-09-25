@@ -95,21 +95,23 @@ private struct IPhoneAppShellView: View {
     let notificationCounts: any NotificationCountSource
 
     var body: some View {
-        TabView(selection: selectedTabBinding) {
-            content.rootStack(for: .followedForums)
-                .toolbar(.hidden, for: .tabBar)
-                .tag(AppTab.followedForums)
-            content.rootStack(for: .recommendations)
-                .toolbar(.hidden, for: .tabBar)
-                .tag(AppTab.recommendations)
-            NavigationStack { NotificationsRootView() }
-                .toolbar(.hidden, for: .tabBar)
-                .tag(AppTab.notifications)
-            content.personalStack
-                .toolbar(.hidden, for: .tabBar)
-                .tag(AppTab.settings)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // Reserve the selector's measured height in layout. TabView does not forward
+        // an outer safeAreaInset to the hosted navigation stacks on this SDK.
+        VStack(spacing: 0) {
+            TabView(selection: selectedTabBinding) {
+                content.rootStack(for: .followedForums)
+                    .toolbar(.hidden, for: .tabBar)
+                    .tag(AppTab.followedForums)
+                content.rootStack(for: .recommendations)
+                    .toolbar(.hidden, for: .tabBar)
+                    .tag(AppTab.recommendations)
+                content.rootStack(for: .notifications)
+                    .toolbar(.hidden, for: .tabBar)
+                    .tag(AppTab.notifications)
+                content.personalStack
+                    .toolbar(.hidden, for: .tabBar)
+                    .tag(AppTab.settings)
+            }
             if AppShellPresentation.showsPhoneTabSelector(in: content.navigation.state) {
                 PhoneTabSelector(
                     navigation: content.navigation,
@@ -162,7 +164,7 @@ private struct IPadAppShellView: View {
         case .followedForums:
             NavigationStack { content.rootContent(for: .followedForums, regular: true) }
         case .notifications:
-            NavigationStack { NotificationsRootView() }
+            NavigationStack { content.rootContent(for: .notifications, regular: true) }
         case .settings:
             NavigationStack { content.personalRoot }
         }

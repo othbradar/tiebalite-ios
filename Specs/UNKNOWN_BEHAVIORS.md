@@ -4,6 +4,14 @@
 
 Android 静态源码不是服务端或运行时证据。本文件集中记录所有 `UNKNOWN`，防止后续根据字段名、旧客户端实现或模型记忆补全协议。
 
+## R11 消息（2026-09-25）
+
+- 回复/提到/未读三个 HTTPS 接口已接入，真实回复、提到空态及准确主楼/楼中楼跳转已观察；旧式 `application/x-javascript` 响应仍按严格 JSON 解码。请求/来源见 API_EVIDENCE.md 的 R11 节。
+- 消息 replyer 没有可证实的等级字段，生产保持 nil。`quote_pid` 不用于推测父楼；楼中楼经 PB 的目标子回复定位返回真实父楼。
+- 当前 Live 未读为零，读取后非零到零的时点/跨端同步仍 UNKNOWN；客户端只重取服务端计数，无乐观清零。Fixture 覆盖前后读取竞态。
+- 当前账号提到页为空，非空样式及长文表情只用隔离 Fixture 补证；真实下一页 wire、删除消息错误 taxonomy 未单独采集。
+- 两台正常 App 已保留账号覆盖安装。CUA 无法移动 Live 回复列表，故中部停留和 Live 深滚动尚未确认；两台定向 UI 已验证 Fixture 第二页、标签/根入口/目标页往返位置。详见 Docs/VisualParity/R11_NOTIFICATIONS.md。
+
 ## 验证原则
 
 1. 先用构造 fixture 验证 mapper/state，再申请受控 live 验证。

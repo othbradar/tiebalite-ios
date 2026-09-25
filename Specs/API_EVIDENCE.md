@@ -910,3 +910,25 @@ UI参考 c5f1125：`components/ImageUploader.kt::uploadSinglePicture` 分块5120
 `ReplyPage` 最多9张，只在发送后upload，成功按顺序拼 `正文\n#(pic,picId,width,height)`；表情插入 `#(名称)`，复用 R07 目录。fixture为完全虚构 picID/尺寸，自动化不发送Live。对应 ADR-0028。Live最终发布只由用户本人进行。
 
 RUNTIME_EVIDENCE（用户手动上传并发布，2026-09-24）：用户确认“都正常，图片和表情包都正确，可以提交了”，并提供完整 Live App 的高通吧帖子第14/15楼截图；第15楼含文字、已渲染滑稽及一张 LOCAL PHOTO 4 图片。证据：ignored `Artifacts/VisualReview/R10/UserApproval/user-confirmed-live-image-emoticon-reply.png`。此记录只证明当前账号的一次单图加表情主题回复端到端成功；没有原始上传响应、picId 或发布响应采样，不将其推定为所有账号、四种写入目标、多图发布或 Live 重试全部通过。AI 未触发 Live 上传或发布。
+
+## R11 Replies / Mentions / unread counts (2026-09-25)
+
+- Sources (protocol `5545326`, UI `c5f1125`, relevant files identical):
+  `api/retrofit/interfaces/NewTiebaApi.kt::{replyMeFlow,atMeFlow,msgFlow}`,
+  `api/retrofit/RetrofitTiebaApi.kt::NEW_TIEBA_API`, `SortAndSignInterceptor`,
+  `api/models/{MessageListBean,MsgBean}.kt`, `api/adapters/MessageListAdapter.kt`,
+  `ui/page/main/notifications/list/{NotificationsListPage,NotificationsListViewModel}.kt`,
+  `services/NotifyJobService.kt`, `ui/page/main/MainPage.kt`.
+- POST form `/c/u/feed/replyme`, `/c/u/feed/atme`: refresh pn=0; next page=2 then +1 (Android refresh stores currentPage=1).
+  POST `/c/s/msg`: bookmark=1. Active session BDUSS, static `_client_type=2`, `_client_version=8.2.2`, `from=baidu_appstore`, sorted form signature.
+  iOS uses HTTPS on the same c.tieba.baidu.com host, never sends credentials over Android's legacy HTTP; no redirects/retries.
+  Device/CUID/IMEI and randomized st telemetry are omitted, not fabricated. Requiredness remains UNKNOWN until Live verification.
+- JSON error_code must explicitly equal 0. reply_list/at_list may be primitive/empty (MessageListAdapter); page.has_more and current_page control pagination. message.replyme + message.atme form unread total. Unknown fields ignored; malformed/transport/HTTP/server/auth distinct.
+- Stable ID: kind + post_id + replyer.id + time. Invalid thread/post identity cannot route. quote_pid is ambiguous and must not be treated as parent ID. Message replyer has no level field: absent.
+- Read behavior: Android MainPage clears its local badge when opening; no separate mark-read endpoint was found. iOS reads selected list then re-fetches `/c/s/msg`, reflects server result, never invents read mutation or clears the unopened tab.
+- Navigation: main row is_floor=1 resolves `/c/f/pb/floor` with pid=0, spid=post_id (`MixedTiebaApiImpl::pbFloorFlow`, `SubPostsPage::loadFromSubPost`); use returned parent ID/current page and require target child in response. Otherwise PBPage pid=post_id returns target page; validate target membership and thread identity before showing. Shared reader/list are unchanged; R11 uses a seed adapter.
+- Fixtures are synthetic, generated from documented response shape; no private Live messages, accounts or credential values retained.
+- Live 2026-09-25: HTTPS replies and msg return `application/x-javascript`. Initial allowlist rejected this before decode. R11 accepts this legacy JSON MIME while retaining strict JSONDecoder (no script/JSONP evaluation); fixture verifies JSON accepted and executable/JSONP text rejected. Only MIME/error-type metadata was recorded.
+- R11 interaction revision 2026-09-25 (explicit user requirement): quote/title opens the existing normal thread route with threadID only; reply body retains the postID/subpost locator above. Locked Android NotificationsListPage has separate quote hit handling but still supplies postId for ordinary thread quotes, so the new first-post entry behavior is user-directed, not attributed to that code. Live observation confirmed the same message's quote opens the thread's first post and body opens its exact floor; no endpoint/authentication changes.
+
+- R11 full-thread revision 2026-09-25 (explicit user clarification): body tap always opens the complete thread and scrolls to the primary reply. For `is_floor=1`, verified PBFloor `pid=0/spid=post_id` resolves the real parent; no Subposts screen is opened. Normal replies use their own post_id. The existing ThreadReaderRepository starts at page 0/pid 0, retains each ordinary next page through the target, and then mounts the native reader with a one-shot stable anchor. Target lookup does not interpret quote_pid or invent a floor index. This supersedes the earlier target-only snapshot adapter; no new endpoint/parameters/authentication changes.

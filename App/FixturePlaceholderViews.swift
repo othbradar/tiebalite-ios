@@ -141,7 +141,7 @@ struct FixtureRouteView: View {
                     EmptyView()
                 case .search:
                     EmptyView()
-                case .userProfile:
+                case .userProfile, .notification:
                     EmptyView()
                 }
             }
@@ -174,6 +174,8 @@ struct ForumRouteUnavailableView: View {
 private extension RootID {
     var title: String {
         switch self {
+        case .notifications:
+            "消息"
         case .recommendations:
             "推荐"
         case .followedForums:
@@ -183,6 +185,8 @@ private extension RootID {
 
     var message: String {
         switch self {
+        case .notifications:
+            "消息页面占位"
         case .recommendations:
             "固定占位用于验证独立导航路径，不接入贴吧数据。"
         case .followedForums:
@@ -192,6 +196,8 @@ private extension RootID {
 
     var systemImage: String {
         switch self {
+        case .notifications:
+            "bell"
         case .recommendations:
             "sparkles"
         case .followedForums:
@@ -201,6 +207,8 @@ private extension RootID {
 
     var accessibilityIdentifier: String {
         switch self {
+        case .notifications:
+            AppAccessibilityID.notificationsRoot
         case .recommendations:
             AppAccessibilityID.recommendationsRoot
         case .followedForums:
@@ -212,6 +220,8 @@ private extension RootID {
 private extension RouteIdentity {
     var title: String {
         switch self {
+        case .notification:
+            "消息目标"
         case let .forum(route):
             "吧占位：\(route.forumName.rawValue)"
         case .search:
@@ -231,6 +241,8 @@ private extension RouteIdentity {
 
     var systemImage: String {
         switch self {
+        case .notification:
+            "bell"
         case .forum:
             "rectangle.stack"
         case .search:
@@ -246,6 +258,8 @@ private extension RouteIdentity {
 
     var accessibilityIdentifier: String {
         switch self {
+        case .notification:
+            "notifications.destination"
         case .forum:
             AppAccessibilityID.routeForum
         case .search:

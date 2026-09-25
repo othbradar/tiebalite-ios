@@ -1,5 +1,13 @@
 # TASK_STATE
 
+- 2026-09-25 R11 = USER_VISUALLY_APPROVED：用户确认“我看了都改好了”，授权提交 R11、先不进入 R12。本轮仅更新验收记录和精确提交；生产代码保持已验收候选，沿用下述通过的定向 Unit、共享列表/图片复用及 iPhone/iPad Smoke 证据。提交前 make build、lint（0 violations）、secret-scan、diff check 全部通过，日志在 Artifacts/VisualReview/R11/UserApproval/；未重复 Unit/UI 或更换 Simulator 页面。用户原有 Prompt/skill 未跟踪文件不纳入，私人截图/Simulator/凭证不纳入；不推送，不开始 R12，发布审核问题继续暂缓。此前记录保留为历史状态。
+
+- 2026-09-25 R11 最新用户修订 = READY_FOR_USER_VISUAL_REVIEW：根底栏改按实际高度占位，修复末吧被挡；具体回复进入完整帖子并滚到对应一级楼，楼中楼只解析父楼、不打开二级。现有列表增加首次有效布局后一次性恢复锚点，修复零尺寸时过早消耗锚点的真实竞态；无列表/分页架构改写。34项相关Unit、10项锚点/Cell与图片复用回归通过（有重叠）；iPhone3项Smoke、iPad对应4项及横竖屏通过，lint/build/secret/diff通过。两台正常Live覆盖安装且主文件+debug dylib哈希一致，已实际确认普通消息带前文及楼中楼定位第6父楼；两台留在该父楼，iPhone前台。CUA拖动无效，Live末吧/上滚仍待手工复核，Fixture已通过。所有失败及证据见R11_NOTIFICATIONS.md最新节和Artifacts/VisualReview/R11/FullThreadAndBottom；未暂存/提交、不进入R12，发布问题继续暂缓。
+
+- 2026-09-25 R11 用户点击区域修订 = READY_FOR_USER_VISUAL_REVIEW：原引用整行按钮连续3次实际打开第7楼，新增普通帖子路由Unit先红；现分为引用→正常帖子入口、正文→原准确回复定位。只改消息行/接入/消息route及Debug主题样本，225个App/Sources核对仅4文件变化，共享承载/Store/协议不动。17项相关Unit、iPhone2/2（86.146秒）、iPad2/2（95.473秒，含横竖屏及各3轮区分点击）、lint/build/secret/diff通过；初始失败/缩进lint失败保留。两台完整Live覆盖安装hash e55cfe99…一致、账号保留；iPhone真实同条引用打开首楼正文图片，上方回复打开第4楼，均成功返回。截图/命令见R11_NOTIFICATIONS.md修订节与Artifacts/VisualReview/R11/ClickTargets/。App留真实回复首屏，未暂存/提交、不进入R12，发布问题仍暂缓。
+
+- 2026-09-25 前置工作已提交 `9c9d715`，未推送；R11 = READY_FOR_USER_VISUAL_REVIEW（Live中部停留待手动滚动）。真实回复/提到/未读接口、独立分页和消息导航已实现；29项定向Unit主轮、最终MIME修订后15项R11 Unit、iPhone/iPad各1短Smoke、lint/build/secret/diff通过，历史失败保留。两台完整正常Live覆盖安装，二进制SHA `b137ac5e…`一致，保留登录态；真实回复及主楼/楼中楼准确跳转已观察。“提到我的”实际为空，非空样式由隔离Fixture补证；真实未读为零，读后非零变零未Live验证；接口无等级字段不造数。CUA未移动Live列表，当前两端停回复首屏、iPhone前台；Fixture中部/两页/返回偏移已通过。所有文件、命令、截图及限制见R11_NOTIFICATIONS.md。R11未暂存/提交，不进入R12，发布删帖问题继续按用户要求暂缓。
+
 - 2026-09-25 用户明确授权“先提交然后进入R11，发布bug先不修”。当前提交范围为Forum首栏内容返回及发布审计记录；沿用已执行的定向验证，iPad转屏自动化超时和既有静态规则失败继续保留。发布后删除问题标记DEFERRED_BY_USER，未宣称修复。提交后仅进入R11消息页，完成后等待人工验收，不自动提交R11或进入R12。
 
 - 2026-09-25 发布问题补充 = SERVER_REMOVAL_USER_CONFIRMED / WRITE_MODERATION_CAUSE_UNKNOWN：用户确认同一账号在官方iOS贴吧/Android TiebaLite均可发布，本客户端所有新回复均收到系统删除通知，发送后编辑器停留。停止把问题仅当按钮/刷新故障处理；未修复、未确定删帖触发字段。本轮只检查源码并打开已有草稿观察，未发送/改草稿/改生产代码/改安装包，未提交；详细证据边界见WRITE_MODERATION_COMPARISON.md。

@@ -2,12 +2,15 @@ import Foundation
 
 enum RootID: String, CaseIterable, Codable, Hashable, Sendable {
     case recommendations
+    case notifications
     case followedForums = "followed-forums"
 
     var tab: AppTab {
         switch self {
         case .recommendations:
             .recommendations
+        case .notifications:
+            .notifications
         case .followedForums:
             .followedForums
         }
@@ -31,7 +34,9 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable, Sendable {
             .recommendations
         case .followedForums:
             .followedForums
-        case .notifications, .settings:
+        case .notifications:
+            .notifications
+        case .settings:
             nil
         }
     }
@@ -94,6 +99,7 @@ struct PostID: Codable, Hashable, Sendable {
 }
 
 enum RouteIdentity: Codable, Hashable, Sendable {
+    case notification(NotificationTarget)
     case forum(ForumRoute)
     case search
     case subposts(threadID: ThreadID, postID: PostID)
@@ -223,7 +229,31 @@ enum RouteGrammar {
             return isValidRecommendationsChain(routes)
         case .followedForums:
             return isValidFollowedForumsChain(routes)
+        case .notifications:
+            return isValidNotificationChain(routes)
         }
+    }
+
+    private static func isValidNotificationChain(_ routes: [RouteIdentity]) -> Bool {
+        let threadID: Int64
+        switch routes[0] {
+        case let .notification(target):
+            guard target.threadID > 0, target.postID > 0 else { return false }
+            threadID = target.threadID
+        case let .thread(thread):
+            threadID = thread.rawValue
+        default:
+            return false
+        }
+        if routes.count == 1 { return true }
+        if routes.count == 2 {
+            if case .userProfile = routes[1] { return true }
+            if case let .subposts(thread, _) = routes[1] { return thread.rawValue == threadID }
+        }
+        if routes.count == 3, case let .subposts(thread, _) = routes[1], case .userProfile = routes[2] {
+            return thread.rawValue == threadID
+        }
+        return false
     }
 
     private static func isValidRecommendationsChain(
@@ -300,7 +330,7 @@ enum RouteGrammar {
         switch subpostsRoute {
         case let .subposts(childThreadID, _):
             return threadID == childThreadID
-        case .forum, .search, .thread, .userProfile:
+        case .forum, .search, .thread, .userProfile, .notification:
             return false
         }
     }
@@ -403,7 +433,7 @@ enum SettingsRouteGrammar {
         switch first {
         case .forum, .thread, .userProfile:
             break
-        case .search, .subposts:
+        case .search, .subposts, .notification:
             return false
         }
         for (parent, child) in zip(routes, routes.dropFirst()) {

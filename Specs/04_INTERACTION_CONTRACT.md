@@ -112,7 +112,8 @@ Pager/MediaViewer 发布。
 ## Safe Area 与遮挡
 
 - 导航操作使用 toolbar。
-- 固定底栏使用 `safeAreaInset(edge: .bottom)`。
+- 固定底栏通常使用 `safeAreaInset(edge: .bottom)`。R11 根 TabView 经实际测量不传递外层 inset，根选择栏改为同级纵向布局，占用自身测量高度；保持 TabView 与独立导航栈实例，阅读页面隐藏后不保留空白。
+- 列表初始锚点状态：pending → 已挂入窗口且 viewport 非空、目标 ID 已入快照 → restore once → consumed。零尺寸快照完成不得消耗锚点；追加、图片完成及后续 layout 不重复恢复；dismantle 清理一次性布局回调。
 - 键盘出现时输入控件（若未来有搜索）可见，内容不被永久偏移。
 - Sheet/fullScreenCover 的展示状态归属明确，dismiss 后状态重置。
 - 透明 overlay 只能覆盖需要拦截的区域；不可无意吞掉列表或返回手势。

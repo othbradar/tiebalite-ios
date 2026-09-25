@@ -1,7 +1,9 @@
 @MainActor
 final class AppCompositionRoot {
     let environment: AppEnvironment
+    let notificationsStore: NotificationsStore
     let notificationCounts: any NotificationCountSource
+    private let notificationTargetRepository: any NotificationTargetRepository
     let authContextProvider: SessionAuthContextProvider
     let sessionStore: SessionStore
     let loginWebSession: LoginWebSession
@@ -18,7 +20,7 @@ final class AppCompositionRoot {
 
     init(
         environment: AppEnvironment,
-        notificationCounts: any NotificationCountSource = UnavailableNotificationCountSource(),
+        notificationCounts: (any NotificationCountSource)? = nil,
         authContextProvider: SessionAuthContextProvider? = nil,
         sessionStore: SessionStore? = nil,
         loginWebSession: LoginWebSession? = nil,
@@ -26,11 +28,11 @@ final class AppCompositionRoot {
         appSettingsRepository: (any AppSettingsRepository)? = nil,
         recommendationRepository: (any RecommendationRepository)? = nil,
         userProfileRepository: (any UserProfileRepository)? = nil,
+        followedForumsRepository: (any FollowedForumsRepository)? = nil,
         forumHomeRepository: (any ForumHomeRepository)? = nil,
         threadReaderRepository: (any ThreadReaderRepository)? = nil
     ) {
         self.environment = environment
-        self.notificationCounts = notificationCounts
         let resolvedAuthContextProvider =
             authContextProvider ?? SessionAuthContextProvider()
         let resolvedLoginWebSession = loginWebSession ?? LoginWebSession()
@@ -44,6 +46,8 @@ final class AppCompositionRoot {
         switch environment.readingDataSourceMode {
 #if DEBUG
         case .fixture:
+            notificationsStore = NotificationsStore(repository: FixtureNotificationsRepository())
+            notificationTargetRepository = FixtureNotificationTargetRepository()
             textComposer = TextComposerService(repository: FixtureTextWriteRepository(), currentContext: {
                 .active(.init(sessionID: .init(rawValue: 1), generation: 1))
             })
@@ -52,7 +56,7 @@ final class AppCompositionRoot {
                 ?? InMemoryBrowsingHistoryRepository()
             self.appSettingsRepository =
                 appSettingsRepository ?? InMemoryAppSettingsRepository()
-            followedForumsRepository = FixtureFollowedForumsRepository()
+            self.followedForumsRepository = followedForumsRepository ?? FixtureFollowedForumsRepository()
             self.forumHomeRepository = forumHomeRepository ?? FixtureForumHomeRepository()
             self.recommendationRepository =
                 recommendationRepository ?? FixtureRecommendationRepository()
@@ -63,6 +67,9 @@ final class AppCompositionRoot {
                 userProfileRepository ?? FixtureUserProfileRepository()
 #endif
         case .live:
+            notificationsStore = NotificationsStore(repository: LiveNotificationsRepository(
+                client: environment.httpClient, authContextProvider: resolvedAuthContextProvider))
+            notificationTargetRepository = LiveNotificationTargetRepository(client: environment.httpClient)
             textComposer = TextComposerService(repository: LiveTextWriteRepository(
                 client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
                 uploader: LiveComposerImageUploader(client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
@@ -73,7 +80,7 @@ final class AppCompositionRoot {
                 ?? JSONBrowsingHistoryRepository.production()
             self.appSettingsRepository =
                 appSettingsRepository ?? UserDefaultsAppSettingsRepository()
-            followedForumsRepository =
+            self.followedForumsRepository =
                 LiveFollowedForumsRepository(
                     client: environment.httpClient,
                     authContextProvider: resolvedAuthContextProvider
@@ -98,6 +105,12 @@ final class AppCompositionRoot {
                     client: environment.httpClient
                 )
         }
+        self.notificationCounts = notificationCounts ?? notificationsStore
+    }
+
+    func makeNotificationDestination(target: NotificationTarget) -> NotificationDestinationStore {
+        NotificationDestinationStore(target: target, repository: notificationTargetRepository,
+                                     threads: threadReaderRepository)
     }
 
     func makeBrowsingHistoryStore() -> BrowsingHistoryStore {

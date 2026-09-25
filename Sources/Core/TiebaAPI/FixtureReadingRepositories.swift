@@ -51,6 +51,7 @@ struct FixtureThreadReaderRepository: ThreadReaderRepository {
         _ request: ThreadReaderPageRequest
     ) async throws -> ThreadReaderSnapshot {
         try Task.checkCancellation()
+        if request.threadID == 8_001 { return try FixtureNotificationThreadPages.load(request) }
         guard let seed = FixtureReadingCatalog.allThreadSeeds.first(where: {
             $0.threadID == request.threadID
         }) else {
@@ -292,6 +293,10 @@ enum FixtureReadingCatalog {
             + forumThreadSeeds
             + iosForumThreadSeeds
             + openSourceForumThreadSeeds
+            + [FixtureThreadSeed(
+                threadID: 8_001, title: "一段可以返回的主题", forumName: "固定样本吧",
+                authorName: "示例主题作者", replyCount: 17, imageResources: []
+            )]
     }
 
     private static func remapForumThreadSeeds(

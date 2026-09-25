@@ -1,5 +1,8 @@
 @MainActor
 final class AppFeatureStoreRegistry {
+    let notificationsStore: NotificationsStore
+    private let makeNotificationDestination: (@MainActor (NotificationTarget) -> NotificationDestinationStore)?
+    private var notificationDestinations: [NotificationTarget: NotificationDestinationStore] = [:]
     let browsingHistoryStore: BrowsingHistoryStore
     let followedForumsStore: FollowedForumsStore
     let recommendationsStore: RecommendationsStore
@@ -26,8 +29,12 @@ final class AppFeatureStoreRegistry {
         makeForumHomeStore: @escaping @MainActor (ForumRoute) -> ForumHomeStore,
         makeUserProfileStore: @escaping @MainActor (UserProfileRoute) ->
             UserProfileStore,
-        makeSubpostsStore: (@MainActor (SubpostsRoute) -> SubpostsStore)? = nil
+        makeSubpostsStore: (@MainActor (SubpostsRoute) -> SubpostsStore)? = nil,
+        notificationsStore: NotificationsStore? = nil,
+        makeNotificationDestination: (@MainActor (NotificationTarget) -> NotificationDestinationStore)? = nil
     ) {
+        self.notificationsStore = notificationsStore ?? NotificationsStore(repository: UnavailableNotificationsRepository())
+        self.makeNotificationDestination = makeNotificationDestination
         self.browsingHistoryStore = browsingHistoryStore
         self.followedForumsStore = followedForumsStore
         self.recommendationsStore = recommendationsStore
@@ -49,7 +56,9 @@ final class AppFeatureStoreRegistry {
             makeThreadReaderStore: compositionRoot.makeThreadReaderStore,
             makeForumHomeStore: compositionRoot.makeForumHomeStore,
             makeUserProfileStore: compositionRoot.makeUserProfileStore,
-            makeSubpostsStore: compositionRoot.makeSubpostsStore
+            makeSubpostsStore: compositionRoot.makeSubpostsStore,
+            notificationsStore: compositionRoot.notificationsStore,
+            makeNotificationDestination: compositionRoot.makeNotificationDestination
         )
     }
 
@@ -114,7 +123,24 @@ final class AppFeatureStoreRegistry {
         return store
     }
 
+    func notificationDestination(for target: NotificationTarget) -> NotificationDestinationStore? {
+        if let existing = notificationDestinations[target] { return existing }
+        guard let store = makeNotificationDestination?(target) else { return nil }
+        notificationDestinations[target] = store
+        return store
+    }
+
     func retainFeatureStores(in navigationState: AppNavigationState) {
+        let targets = Set(navigationState.routes(for: .notifications).compactMap { route -> NotificationTarget? in
+            guard case let .notification(target) = route else { return nil }
+            return target
+        })
+        notificationDestinations = notificationDestinations.filter { target, store in
+            if targets.contains(target) { return true }
+            store.cancel()
+            return false
+        }
+
         let subpostKeys = Set(RootID.allCases.flatMap { root in
             navigationState.routes(for: root).compactMap { route -> SubpostsStoreKey? in
                 guard case let .subposts(thread, post) = route else { return nil }

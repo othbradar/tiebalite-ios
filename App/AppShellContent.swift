@@ -98,6 +98,13 @@ struct AppShellContent {
     @ViewBuilder
     func rootContent(for root: RootID, regular: Bool) -> some View {
         switch root {
+        case .notifications:
+            NotificationsView(store: featureStores.notificationsStore, imageLoader: environment.imageLoader,
+                              openLogin: onOpenLogin, openTarget: { open(.notification($0), in: root, regular: regular) },
+                              openThread: { rawID in
+                                  guard let threadID = ThreadID(rawID) else { return }
+                                  open(.thread(threadID), in: root, regular: regular)
+                              })
         case .recommendations:
             RecommendationsAppRootView(
                 store: featureStores.recommendationsStore,

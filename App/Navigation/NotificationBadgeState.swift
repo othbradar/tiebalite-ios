@@ -5,7 +5,7 @@ protocol NotificationCountSource {
     var unreadCount: Int { get }
 }
 
-/// Production remains empty until R11 connects a verified message-count source.
+/// An explicitly unavailable source remains useful for isolated shell previews.
 struct UnavailableNotificationCountSource: NotificationCountSource {
     let unreadCount = 0
 }
@@ -30,3 +30,5 @@ enum NotificationBadgePresentation {
         return count > 99 ? "99+" : String(count)
     }
 }
+
+extension NotificationsStore: NotificationCountSource {}

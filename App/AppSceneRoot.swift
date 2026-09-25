@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct AppSceneRoot: View {
+    @Environment(\.scenePhase) private var scenePhase
     private let compositionRoot: AppCompositionRoot
     private let harnessLabel: String?
 
@@ -81,6 +82,14 @@ struct AppSceneRoot: View {
         }
         .task {
             await sessionStore.restoreIfNeeded()
+            await updateNotifications()
+        }
+        .onChange(of: sessionStore.state) { _, _ in
+            compositionRoot.notificationsStore.updateContext(compositionRoot.authContextProvider.context())
+            Task { await compositionRoot.notificationsStore.refreshCounts() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await updateNotifications() } }
         }
         .task {
             await featureStores.settingsStore.loadIfNeeded()
@@ -94,6 +103,11 @@ struct AppSceneRoot: View {
         .onChange(of: navigationStore.state) { _, newState in
             featureStores.retainFeatureStores(in: newState)
         }
+    }
+
+    private func updateNotifications() async {
+        compositionRoot.notificationsStore.updateContext(compositionRoot.authContextProvider.context())
+        await compositionRoot.notificationsStore.refreshCounts()
     }
 
     private func presentMedia(_ intent: ThreadMediaIntent) {

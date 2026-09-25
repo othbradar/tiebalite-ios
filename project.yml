@@ -78,6 +78,7 @@ targets:
       - path: Sources/DesignSystem
         excludes:
           - AGENTS.md
+      - path: Sources/Features/Notifications
       - path: Sources/Features/Recommendations
       - path: Sources/Features/Composer
       - path: Sources/Features/Subposts

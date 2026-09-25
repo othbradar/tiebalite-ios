@@ -87,12 +87,17 @@ enum LaunchScenarioFactory {
                 sessionStore: sessionDependencies.store,
                 loginWebSession: sessionDependencies.loginWebSession,
                 recommendationRepository: recommendationRepository(for: scenario),
+                followedForumsRepository: followedForumsRepository(for: scenario),
                 forumHomeRepository: scenario == .forumHomeParity ? R05ForumFixture() : nil,
                 threadReaderRepository: scenario == .threadReaderParity ? R06ThreadFixtureRepository() : nil
             ),
             isolationCanary: LaunchScenarioRegistry.isolationCanary,
             displayProfile: displayProfile
         )
+    }
+
+    private static func followedForumsRepository(for scenario: LaunchScenarioID) -> (any FollowedForumsRepository)? {
+        scenario == .rootNavigationMixedMedia ? FixtureFollowedForumsRepository(additionalForumCount: 24) : nil
     }
 
     private static func notificationCounts(for scenario: LaunchScenarioID) -> NotificationBadgeState {

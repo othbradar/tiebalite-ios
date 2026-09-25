@@ -86,6 +86,10 @@ enum AppRouter {
         dependencies: AppRouteDependencies
     ) -> some View {
         switch route {
+        case let .notification(target):
+            if let store = dependencies.featureStores.notificationDestination(for: target) {
+                NotificationDestination(store: store, dependencies: dependencies, openRoute: openRoute)
+            }
         case .search:
             searchDestination(
                 scope: scope,

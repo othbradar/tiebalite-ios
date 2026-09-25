@@ -74,23 +74,3 @@ struct AppPersonalRootView: View {
         .accessibilityIdentifier(identifier)
     }
 }
-
-struct NotificationsRootView: View {
-    var body: some View {
-        VStack(spacing: Spacing.small) {
-            Text("消息待实现")
-                .font(Typography.font(.headline))
-            Text("回复我的、提到我的将在后续版本提供。")
-                .font(Typography.font(.body))
-                .foregroundStyle(SemanticColor.secondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .padding(Spacing.medium)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(SemanticColor.background)
-        .navigationTitle("消息")
-        .navigationBarTitleDisplayMode(.inline)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(AppAccessibilityID.notificationsRoot)
-    }
-}
