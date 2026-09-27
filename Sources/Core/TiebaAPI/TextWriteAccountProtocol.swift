@@ -30,6 +30,27 @@ enum TextWriteAccountProtocol {
         return TextWriteAccount(userID: uid, tbs: tbs)
     }
 
+    static func addingDisplayName(to account: TextWriteAccount, client: any HTTPClient) async throws -> TextWriteAccount {
+        guard let uid = Int64(account.userID),
+              let route = UserProfileRoute(userID: uid, fallbackDisplayName: "") else {
+            throw TextWriteFailure.authentication
+        }
+        let executor = EndpointExecutor(client: client, requestBuilder: .init(authorizer: AnonymousRequestAuthorizer()))
+        return try await executor.execute(
+            endpoint: ProfileProtocol.makeDescriptor(host: "tiebac.baidu.com"), authentication: .anonymous,
+            body: ProfileProtocol.makeRequestBody(route: route),
+            pipeline: .init(decode: ProfileProtocol.decode, map: { response in
+                guard response.hasData, response.data.hasUser, response.data.user.id == uid else {
+                    throw ProfileProtocolError.identityMismatch
+                }
+                var result = account
+                // The wire display name is distinct from login name and UI fallback labels.
+                // Android AddPost uses an empty string when this optional field is absent.
+                result.nameShow = response.data.user.nameShow
+                return result
+            }))
+    }
+
 }
 
 private struct AccountResponse: Decodable {

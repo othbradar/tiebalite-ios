@@ -6,6 +6,7 @@ import SwiftProtobuf
 struct TextWriteAccount: Sendable, CustomStringConvertible {
     let userID: String
     let tbs: String
+    var nameShow = ""
     var description: String { "TextWriteAccount(redacted)" }
 }
 
@@ -99,6 +100,7 @@ enum TextWriteProtocol {
         data.isPictxt = "0"
         data.isShowBless = 0
         data.isTwzhiboThread = "0"
+        data.nameShow = account.nameShow
         data.newVcode = "1"
         data.showCustomFigure = 0
         data.takephotoNum = "0"
@@ -125,6 +127,7 @@ enum TextWriteProtocol {
                              account: TextWriteAccount) -> [EndpointField] {
         signedFields([
             "BDUSS": authorization.bduss, "stoken": authorization.stoken, "tbs": account.tbs,
+            "name_show": account.nameShow,
             "_client_type": "2", "_client_version": "7.2.0.0", "from": "1021636m", "subapp_type": "mini",
             "content": request.draft.content, "title": request.draft.title,
             "fid": String(request.target.forumID), "kw": request.target.forumName,

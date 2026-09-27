@@ -18,8 +18,11 @@ struct LiveTextWriteRepository: TextWriteRepository {
                 pipeline: EndpointPipeline(decode: TextWriteAccountProtocol.decode, map: { $0 }))
             try Task.checkCancellation()
             _ = try await authContextProvider.authorization(for: context)
+            let namedAccount = try await TextWriteAccountProtocol.addingDisplayName(to: account, client: client)
+            try Task.checkCancellation()
+            _ = try await authContextProvider.authorization(for: context)
             let endpoint = try TextWriteProtocol.descriptor(for: request.target.kind, userID: account.userID)
-            let body = try TextWriteProtocol.body(request, authorization: authorization, account: account)
+            let body = try TextWriteProtocol.body(request, authorization: authorization, account: namedAccount)
             writeStarted = true
             let outcome = try await executor.execute(
                 endpoint: endpoint, authentication: context, body: body,

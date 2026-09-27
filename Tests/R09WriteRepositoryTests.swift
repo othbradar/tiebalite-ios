@@ -6,7 +6,7 @@ import Testing
 
 struct R09WriteProtocolTests {
     private let authorization = SessionAuthorization(bduss: "fixture-session", stoken: "fixture-token")
-    private let account = TextWriteAccount(userID: "42", tbs: "fixture-tbs")
+    private let account = TextWriteAccount(userID: "42", tbs: "fixture-tbs", nameShow: R09WriteFixture.displayName)
 
     @Test func replyMultipartIncludesAndroidInterceptorFieldsAndSignature() throws {
         let request = TextWriteRequest(target: R09WriteFixture.target(.threadReply), draft: .init(content: "固定文字"))
@@ -39,6 +39,9 @@ struct R09WriteProtocolTests {
             #expect(data.fid == "90")
             #expect(data.common.tbs == "fixture-tbs")
             #expect(data.common.clientVersion == "12.35.1.0")
+            #expect(data.nameShow == R09WriteFixture.displayName)
+            let decoded = try Tieba_AddPost_AddPostRequestData(serializedBytes: data.serializedData())
+            #expect(decoded.nameShow == R09WriteFixture.displayName)
             #expect(data.hasQuoteID == (kind != .threadReply))
             #expect(data.hasSubPostID == (kind == .subpostReply))
             if kind == .threadReply { #expect(data.postFrom == "13") }
@@ -62,6 +65,9 @@ struct R09WriteProtocolTests {
         let values = Dictionary(uniqueKeysWithValues: fields.map { ($0.name, $0.value) })
         #expect(values["is_ntitle"] == "0" && values["is_hide"] == "1")
         #expect(values["content"] == "正文 + & =")
+        #expect(values["name_show"] == R09WriteFixture.displayName)
+        #expect(values["sign"] == TextWriteProtocol.signedFields(values.filter { $0.key != "sign" })
+            .first { $0.name == "sign" }?.value)
         let signed = TextWriteProtocol.signedFields(["b": "two", "a": "one"])
         #expect(signed.first { $0.name == "sign" }?.value == "5b486b68f22cf877a0075c72f956338e")
         let noTitle = TextWriteProtocol.threadFields(
@@ -130,8 +136,19 @@ struct R09WriteRepositoryTests {
                                             headers: ["content-type": "application/x-javascript; charset=UTF-8"],
                                             body: R09WriteFixture.accountResponse.body)
         try await client.succeed(metadata.id, with: metadataResponse)
+        defer { task.cancel() }
+        try await client.waitForPendingCallCount(1)
+        let profile = try #require(await client.pendingCalls().first)
+        try #require(profile.request.url.path == "/c/u/user/profile")
+        #expect(profile.request.headers["Cookie"] == nil)
+        let profileBody = try #require(profile.request.body)
+        #expect(profileBody.range(of: Data("fixture-session".utf8)) == nil)
+        #expect(profileBody.range(of: Data("fixture-token".utf8)) == nil)
+        try await client.succeed(profile.id, with: R09WriteFixture.profileResponse())
         try await client.waitForPendingCallCount(1)
         let write = try #require(await client.pendingCalls().first)
+        let payload = try #require(write.request.body)
+        #expect(payload.range(of: Data(R09WriteFixture.displayName.utf8)) != nil)
         #expect(write.request.url.path == "/c/c/post/add")
         #expect(write.request.url.scheme == "https")
         #expect(write.request.headers["Cookie"] == nil)
@@ -144,6 +161,59 @@ struct R09WriteRepositoryTests {
         try await client.succeed(write.id, with: response)
         #expect(try await task.value == .init(threadID: 101, postID: 401))
         #expect(await client.pendingCalls().isEmpty)
+    }
+
+    @Test(arguments: ["identity-mismatch", "offline", "session-changed", "cancelled"])
+    func profileFailureCannotPublishWithAnotherNameOrStaleSession(_ failure: String) async throws {
+        let client = HarnessMockHTTPClient()
+        let auth = SessionAuthContextProvider()
+        auth.install(try #require(SessionCredential(bduss: "fixture-session", stoken: "fixture-token")))
+        let repository = LiveTextWriteRepository(client: client, authContextProvider: auth)
+        let request = TextWriteRequest(target: R09WriteFixture.target(.threadReply), draft: .init(content: "固定文字"))
+        let task = Task { try await repository.send(request, context: auth.context()) }
+        defer { task.cancel() }
+        try await client.waitForPendingCallCount(1)
+        let metadata = try #require(await client.pendingCalls().first)
+        try await client.succeed(metadata.id, with: R09WriteFixture.accountResponse)
+        try await client.waitForPendingCallCount(1)
+        let profile = try #require(await client.pendingCalls().first)
+        try #require(profile.request.url.path == "/c/u/user/profile")
+        switch failure {
+        case "identity-mismatch":
+            try await client.succeed(profile.id, with: R09WriteFixture.profileResponse(userID: 43))
+            await #expect(throws: TextWriteFailure.malformedResponse) { try await task.value }
+        case "offline":
+            try await client.fail(profile.id, with: .offline)
+            await #expect(throws: TextWriteFailure.network) { try await task.value }
+        case "session-changed":
+            auth.revoke()
+            try await client.succeed(profile.id, with: R09WriteFixture.profileResponse())
+            await #expect(throws: TextWriteFailure.authentication) { try await task.value }
+        default:
+            task.cancel()
+            await #expect(throws: CancellationError.self) { try await task.value }
+        }
+        #expect(await client.pendingCalls().isEmpty)
+        #expect(await client.events().filter { if case .started = $0 { return true }; return false }.count == 2)
+    }
+
+    @Test func missingDisplayNameDoesNotPublishLoginNameOrUIFallback() async throws {
+        let client = HarnessMockHTTPClient()
+        let account = TextWriteAccount(userID: "42", tbs: "fixture-tbs")
+        let task = Task { try await TextWriteAccountProtocol.addingDisplayName(to: account, client: client) }
+        defer { task.cancel() }
+        try await client.waitForPendingCallCount(1)
+        let profile = try #require(await client.pendingCalls().first)
+        var response = Tieba_Profile_ProfileResponse()
+        response.data.user.id = 42
+        response.data.user.name = "must-not-send-login-name"
+        let profileResponse = HTTPResponse(statusCode: 200,
+                                           headers: ["content-type": "application/octet-stream"],
+                                           body: try response.serializedData())
+        try await client.succeed(profile.id, with: profileResponse)
+        let result = try await task.value
+        #expect(result.nameShow.isEmpty)
+        #expect(result.description == "TextWriteAccount(redacted)")
     }
 
     @Test func changedLeaseAfterMetadataStopsBeforeWrite() async throws {
@@ -171,6 +241,17 @@ enum R09WriteFixture {
               recipient: kind == .floorReply || kind == .subpostReply
                 ? .init(rawUserID: 44, displayName: "样本作者", portrait: "fixture-portrait") : nil)
     }
+    static let displayName = "当前显示名 + & 🙂"
+
+    static func profileResponse(userID: Int64 = 42) throws -> HTTPResponse {
+        var response = Tieba_Profile_ProfileResponse()
+        response.data.user.id = userID
+        response.data.user.name = "fixture-login-name"
+        response.data.user.nameShow = displayName
+        return .init(statusCode: 200, headers: ["content-type": "application/octet-stream"],
+                     body: try response.serializedData())
+    }
+
     static var accountResponse: HTTPResponse {
         .init(statusCode: 200, headers: ["content-type": "application/json"],
               body: Data(#"{"error_code":"0","anti":{"tbs":"fixture-tbs"},"user":{"id":"42"}}"#.utf8))

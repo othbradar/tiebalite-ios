@@ -1,6 +1,6 @@
 # 发布后删除通知：与 Android TiebaLite 的差异审计
 
-日期：2026-09-25。状态：`DEFERRED_BY_USER / SERVER_REMOVAL_USER_CONFIRMED / WRITE_MODERATION_CAUSE_UNKNOWN`，未修复、未确认触发字段。
+日期：2026-09-25，更新于 2026-09-27。当前状态：`LIVE_REPLY_USER_VERIFIED / MODERATION_RETENTION_PENDING / WRITE_MODERATION_CAUSE_UNKNOWN`。用户已恢复排查；显示名遗漏已修，删除触发原因仍未确认。下列 9 月 25 日审计保留为历史，最新结果见末节。
 
 ## 目标与范围
 
@@ -50,3 +50,28 @@ Simulator 检查先看到帖子列表，没有发送错误；随后仅打开该�
 在没有因果证据前，不把显示名遗漏、客户端上下文缺口或网络环境任何一个定为根因，也不通过补造 Android 设备信息或验证数据宣称修复。普通协议缺陷可在独立、可验证的契约范围内纠正；客户端验证能力需要服务方支持的接入方式。
 
 审计完成时未提交、未进入R11。随后用户明确授权提交当前改动并进入R11，且要求本bug暂不修：只提交此已知问题记录，不输出修复通过、不再扩大发布排查。R11不更改发布协议。
+
+## 2026-09-27 用户恢复排查
+
+R13 已按用户验收独立提交 `8aec6e4`。本次范围是已确认的显示名数据链遗漏，预计仅修改 TextWriteAccountProtocol、TextWriteProtocol、LiveTextWriteRepository、对应 Unit/fixture 说明及证据记录；不改 Session、导航、列表或上传系统。已核对 Android `AccountUtil.fetchAccountFlow`：nameShow 来自用户资料，LoginBean.name 不是该字段。最小适配复用现有公开 ProfileProtocol 的原始字段并校验 uid，取值失败阻止发送；不引入新的账号初始化、遥测/验证字段或自动重发。
+
+先跑原 R09 定向基线，再运行“资料→同账号显示名→发送”的失败回归，随后修正并运行相邻 R09/R10/资料测试、lint/build/secret/diff。潜在代价是发送前多一次现有只读资料请求；不以公开展示名称的回退值填充协议字段。`WRITE_MODERATION_CAUSE_UNKNOWN` 保留，没有服务端因果证据，不宣称这一修正解决删帖。实际 Live 发布仍由用户手动完成。
+
+### 本次候选结果
+
+- 明确修正的是业务字段链：TextWriteAccount 原来没有 nameShow，发送器也从未赋值。现在每次发送前复用现有匿名 ProfileProtocol，校验资料用户与本次登录元数据同 uid，仅传原始 nameShow 到 AddPost Proto 和新帖签名表单。没有用登录名/显示回退字符串替代，也没有调整客户端验证、错误判断或重试。新增只读请求失败会保留草稿，属于额外的发送前网络依赖。
+- 取消、资料身份不符和读取期间 lease 变化都停止在发布之前；公开资料请求不含登录凭据。既有重复点击抑制、上传成功项复用和有效回执判断不变。无新增手势、动画、overlay 或依赖。
+- 基线：原 R09 协议/Repository/Composer 13 项通过。新同账号显示名回归先红（exit65），精确失败为预期资料读取时仍直接进入 `/c/c/post/add`；不是 Live 删帖复现。第一次修后构建因测试引用不存在的 hasNameShow 属性失败，lint 因参数缩进失败；改为断言真实 Proto 字符串及序列化往返、修正缩进，未降低显示名或身份断言。
+- 最终 R09/R10 上传与 Composer/资料相关 27 项、30 次参数执行全部通过（display-name-green2.xcresult）；make lint 0/372、make build、make secret-scan、make networking-isolation、make forbidden（0 error / 3 warning groups）、git diff --check 通过。没有运行全量 Unit、make quality 或长 UI 矩阵。原日志与全部失败均保留于 ignored Artifacts/Audits/WriteCompatibility20260927/。
+- 首次安装遇到 iPhone Simulator 为 Shutdown（simctl exit149），启动同一设备后重新覆盖安装成功。两台均为完整 Debug Live，无场景参数，主文件和 debug dylib 与候选哈希一致（live-install.json）；未卸载、erase 或清 Keychain，完整 App 的当前账户头像与真实关注吧已显示。
+- AI 没有点击发送、上传或重发。当前仅证明业务字段遗漏被纠正，不能证明服务端风控已解决。后续需用户自行检查实际发送结果及审核后的可见性；候选未暂存/提交，不以即时回执或 Mock 通过作为审核成功证据。
+
+### 用户确认本次 Live 回复成功（2026-09-27）
+
+USER_REPORTED + 用户截图：用户明确“这回发成功了”；所附完整 App 截图显示高通吧帖子新增第 3 楼，时间为 2026年9月27日15:45，正文及官方表情正常展示。私人截图仅保存在 ignored `Artifacts/Audits/WriteCompatibility20260927/user-confirmed-live-reply.png`，文档不复制账号名或正文。该证据覆盖这一次实际回复发送及当前可见性，未采集原始响应，不能证明后续不会删除或 name_show 是风控根因；其他写入目标亦未据此扩展为已验证。
+
+状态更新为 LIVE_REPLY_USER_VERIFIED / MODERATION_RETENTION_PENDING。AI 未发送、上传、重发或改动 App；候选代码/安装包与上一轮相同。本轮仅更新审计、API_EVIDENCE、UNKNOWN_BEHAVIORS、TASK_STATE，并执行 git diff --check 与轻量 secret-scan（结果见同目录 user-confirmation-checks.log）；不重复 Unit/build/UI，不暂存、不提交。后续观察是否再收到删除通知，不增加自动轮询。
+
+### 用户批准提交与发布（2026-09-27）
+
+用户明确授权提交此次修复、推送 GitHub 并发布新版 IPA。批准前最后一次 R09 协议/Repository/Composer 定向验证 15 项/18 次执行、0 失败/跳过，make lint（0/372）、make build、make secret-scan、git diff --check 全部通过；日志在 ignored Artifacts/Releases/v0.2.0-beta.1/。未修改候选生产行为或重复长 UI 矩阵。发布说明仅声明已纠正业务字段遗漏和本次用户发送成功，后续服务端审核仍待观察。

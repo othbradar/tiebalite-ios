@@ -1,5 +1,11 @@
 # TASK_STATE
 
+- 2026-09-27 用户明确批准提交显示名修复、以本机 SSH 推送 GitHub 并发布新版 IPA。修复提交检查 R09 定向 15 项/18 次执行、lint/build/secret/diff 全通过。精确纳入修复与证据文件，用户原有未跟踪 Prompt/skill、私人 Artifacts 均排除；随后独立准备 v0.2.0-beta.1 Release 真机未签名包，发布成功与否以后续记录为准。
+
+- 2026-09-27 发布候选 = LIVE_REPLY_USER_VERIFIED / MODERATION_RETENTION_PENDING：用户明确“这回发成功了”，截图可见新增第3楼（15:45）、文字和官方表情正常。仅确认本次发送及当前可见，风控根因和后续删除风险仍 UNKNOWN。私人图片保存在 ignored Artifacts/Audits/WriteCompatibility20260927/user-confirmed-live-reply.png。本轮只更新四份证据/进度文档并做 diff/secret 检查；未改代码/安装包、未重跑 Unit/build/UI、无 AI 发布/上传，无暂存/提交。R13 仍为已提交的 8aec6e4。
+
+- 2026-09-27 用户验收的 R13 已精确提交 `8aec6e4`（release: prepare visual parity beta），未 push/tag；提交前定向 10 项/12 次 Unit、instructions/secret/lint/build/diff 通过，用户原有未跟踪文件保留。随后独立恢复发布问题：确认并补齐同账号公开资料 nameShow→AddPost/新帖字段链，27 项/30 次相关 Unit、lint/build/secret/networking-isolation/forbidden/diff 通过。红回归、一次测试编译/格式失败和安装时设备 Shutdown 均保留；恢复后两台完整 Live 候选覆盖安装且 hash 相符、无卸载/Keychain 清理、无真实发送/上传。`WRITE_MODERATION_CAUSE_UNKNOWN`：只修明确协议遗漏，没有证明此字段导致删帖；候选未暂存/提交，等待用户实际使用结果。完整范围与证据见 Docs/Audits/WRITE_MODERATION_COMPARISON.md 最新条目。无新手势/动画/overlay/依赖。
+
 - 2026-09-27 用户最终批准 R13 并明确授权提交，随后恢复发帖风控排查。先精确提交已验收的 R13；此前全量/定向测试与 Live 证据沿用 R13_ACCEPTANCE.md，提交前只补必要检查，不重复长矩阵。后续发布问题单独处理，不推送、不自动发送真实回复。
 
 - 2026-09-27 R13 = READY_FOR_USER_FINAL_ACCEPTANCE：用户补图确认断网刷新失败仍保留原列表，并明确“重试能恢复我试过了”，最后一项 Live 网络检查已补证。其余 Live 页面、六屏 Android 对照、用户确认的分页/横滑与 iPad full/narrow/full 结果见 R13_ACCEPTANCE.md；软件键盘通过断开 Simulator 硬件键盘连接恢复。完整/定向自动化、干净 Debug/Release/隔离证据沿用，历史失败保留；本轮仅更新三份记录，diff check 通过、暂存区为空，未重跑测试/构建或改 App。完整 Live 与登录保留，等待最终验收批准；未提交 R13、无 tag/push/IPA，发帖风控仍 DEFERRED_BY_USER。
