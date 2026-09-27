@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct FollowedForumsAppRootView: View {
+    @Bindable var accountStore: CurrentAccountStore
     @Bindable var store: FollowedForumsStore
     @Bindable var sessionStore: SessionStore
     @Bindable var historyStore: BrowsingHistoryStore
@@ -15,6 +16,9 @@ struct FollowedForumsAppRootView: View {
             store: store,
             sessionAccess: sessionAccess,
             imageLoader: imageLoader,
+            accountAvatar: accountStore.profile.flatMap {
+                TiebaAvatarResource.user(userID: $0.userID.rawValue, portrait: $0.portraitResourceID)
+            },
             recentForums: RecentForum.project(historyStore.entries, followedForums: store.state.retainedForums),
             openLogin: openLogin,
             openSearch: { openRoute(.search) },
@@ -27,6 +31,10 @@ struct FollowedForumsAppRootView: View {
             openRecentForum: { openRoute(.forum($0)) }
         )
         .task { await historyStore.loadIfNeeded() }
+        .task(id: sessionStore.state) {
+            accountStore.updateContext(authContextProvider.context())
+            await accountStore.loadIfNeeded()
+        }
     }
 
     private var sessionAccess: FollowedForumsSessionAccess {

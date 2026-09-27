@@ -57,8 +57,8 @@ struct ContentSummaryCard<Supplementary: View>: View {
         }
         .padding(Spacing.medium)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
+        .background(SemanticColor.background)
+        .overlay(alignment: .bottom) { TiebaFlatDivider() }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
@@ -67,7 +67,7 @@ struct ContentSummaryCard<Supplementary: View>: View {
         _ value: String,
         systemImage: String
     ) -> some View {
-        Label(value, systemImage: systemImage)
+        Text(value)
             .font(Typography.font(.caption))
             .foregroundStyle(SemanticColor.secondaryText)
             .lineLimit(2)

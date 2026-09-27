@@ -13,6 +13,10 @@ struct AppShellContent {
 
     var personalRoot: some View {
         AppPersonalRootView(
+            accountStore: featureStores.currentAccountStore,
+            settingsStore: featureStores.settingsStore,
+            imageLoader: environment.imageLoader,
+            authContextProvider: authContextProvider,
             sessionStore: sessionStore,
             openLogin: onOpenLogin,
             openRoute: navigation.openSettingsRoute
@@ -131,6 +135,7 @@ struct AppShellContent {
             }
         case .followedForums:
             FollowedForumsAppRootView(
+                accountStore: featureStores.currentAccountStore,
                 store: featureStores.followedForumsStore,
                 sessionStore: sessionStore,
                 historyStore: featureStores.browsingHistoryStore,

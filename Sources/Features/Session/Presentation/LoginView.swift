@@ -97,26 +97,16 @@ struct SessionAccountView: View {
     let openLogin: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.medium) {
-            Label("账户", systemImage: "person.crop.circle")
-                .font(Typography.font(.headline))
-                .foregroundStyle(SemanticColor.primaryText)
-
+        HStack(spacing: Spacing.medium) {
             Text(stateText)
                 .font(Typography.font(.body))
                 .foregroundStyle(SemanticColor.secondaryText)
-                .accessibilityIdentifier(
-                    SessionAccessibilityID.accountState
-                )
-
-            actionButton
+                .accessibilityIdentifier(SessionAccessibilityID.accountState)
+            Spacer(minLength: Spacing.small)
+            actionButton.frame(minHeight: 44)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Spacing.medium)
-        .background(SemanticColor.surface)
-        .clipShape(
-            RoundedRectangle(cornerRadius: CornerRadius.medium)
-        )
+        .padding(.vertical, Spacing.small)
     }
 
     private var stateText: String {

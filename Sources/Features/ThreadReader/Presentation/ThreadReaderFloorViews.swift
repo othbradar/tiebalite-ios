@@ -183,6 +183,7 @@ private struct ThreadReaderSubpostPreview: View {
 
 struct ThreadReaderReplyBar: View {
     let imageLoader: any ImageLoading
+    var accountAvatar: ImageResourceDescriptor?
     let onAction: () -> Void
     var onCompose: () -> Void = {}
 
@@ -190,7 +191,7 @@ struct ThreadReaderReplyBar: View {
         VStack(spacing: 0) {
             TiebaFlatDivider(inset: 0)
             HStack(spacing: 8) {
-                TiebaAvatarView(resource: nil, imageLoader: imageLoader, size: 28)
+                TiebaAvatarView(resource: accountAvatar, imageLoader: imageLoader, size: 28)
                 Button(action: onCompose) {
                     Text("评论一番").font(Typography.font(.subheadline))
                         .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)

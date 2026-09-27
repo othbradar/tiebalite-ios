@@ -85,6 +85,7 @@ struct AppSceneRoot: View {
             await updateNotifications()
         }
         .onChange(of: sessionStore.state) { _, _ in
+            compositionRoot.currentAccountStore.updateContext(compositionRoot.authContextProvider.context())
             compositionRoot.notificationsStore.updateContext(compositionRoot.authContextProvider.context())
             Task { await compositionRoot.notificationsStore.refreshCounts() }
         }

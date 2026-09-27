@@ -75,10 +75,14 @@ struct AppSettingsRootView: View {
 #endif
             }
             .frame(maxWidth: .infinity)
-            .padding(Spacing.large)
+            .padding(.horizontal, TiebaParityTokens.horizontalInset)
+            .padding(.vertical, Spacing.medium)
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
         }
         .background(SemanticColor.background)
         .navigationTitle("设置")
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier(AppAccessibilityID.settingsRoot)
     }
 
@@ -111,12 +115,17 @@ struct SettingsRouteDestinationView: View {
         case .preferences:
             settingsPage()
         case .accountProfile:
-            Text("当前账户资料暂不可用")
-                .foregroundStyle(SemanticColor.secondaryText)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(SemanticColor.background)
-                .navigationTitle("个人资料")
-                .accessibilityIdentifier("personal.profile.unavailable")
+            if let profile = featureStores.currentAccountStore.profile,
+               let profileRoute = UserProfileRoute(userID: profile.userID.rawValue, fallbackDisplayName: profile.displayName,
+                                                   portraitResourceID: profile.portraitResourceID) {
+                UserProfileView(imageLoader: imageLoader,
+                                store: featureStores.userProfileStore(for: .settings, route: profileRoute),
+                                onDisplayed: { await featureStores.browsingHistoryStore.recordUser($0) })
+            } else {
+                EmptyStateView(title: "暂无账户资料", message: "请返回我的页重新加载。", systemImage: "info.circle")
+                    .background(SemanticColor.background)
+                    .accessibilityIdentifier("personal.profile.unavailable")
+            }
         case .about:
             AboutView {
                 navigation.pushSettingsRoute(.licenses)

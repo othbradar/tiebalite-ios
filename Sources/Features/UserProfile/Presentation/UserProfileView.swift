@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct UserProfileView: View {
+    let imageLoader: any ImageLoading
     @Bindable var store: UserProfileStore
     let onDisplayed: (UserProfile) async -> Void
 
@@ -20,7 +21,7 @@ struct UserProfileView: View {
                 EmptyStateView(
                     title: "暂无用户资料",
                     message: "该用户暂时没有可显示的公开资料。",
-                    systemImage: "person.crop.circle.badge.questionmark"
+                    systemImage: "info.circle"
                 )
             case let .loaded(profile):
                 profileContent(profile)
@@ -55,33 +56,15 @@ struct UserProfileView: View {
 
     private func profileContent(_ profile: UserProfile) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.large) {
-                HStack(spacing: Spacing.medium) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
-                        .foregroundStyle(SemanticColor.secondaryText)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: Spacing.xSmall) {
-                        Text(profile.displayName)
-                            .font(Typography.font(.title))
-                            .foregroundStyle(SemanticColor.primaryText)
-                            .accessibilityAddTraits(.isHeader)
-                    }
-                }
-
-                if let introduction = profile.introduction {
-                    Text(introduction)
-                        .font(Typography.font(.body))
-                        .foregroundStyle(SemanticColor.primaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
+            VStack(alignment: .leading, spacing: 0) {
+                ProfileSummaryView(profile: profile, title: profile.displayName, subtitle: nil, imageLoader: imageLoader)
+                ProfileStatisticsView(profile: profile)
                 profileFacts(profile)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(Spacing.large)
+            .padding(.horizontal, TiebaParityTokens.horizontalInset)
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
         }
         .accessibilityIdentifier(
             "user-profile.loaded.\(profile.userID.rawValue)"
@@ -93,26 +76,16 @@ struct UserProfileView: View {
             if let sex = profile.sex {
                 LabeledContent("性别", value: sex == .male ? "男" : "女")
             }
-            if let count = profile.followingCount {
-                LabeledContent("关注", value: "\(count)")
-            }
-            if let count = profile.followerCount {
-                LabeledContent("粉丝", value: "\(count)")
-            }
             if let count = profile.totalAgreeCount {
                 LabeledContent("获赞", value: "\(count)")
             }
             if let count = profile.threadCount {
                 LabeledContent("主题", value: "\(count)")
             }
-            if let count = profile.postCount {
-                LabeledContent("发言", value: "\(count)")
-            }
         }
         .font(Typography.font(.body))
-        .padding(Spacing.medium)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
+        .padding(.vertical, Spacing.medium)
+        .overlay(alignment: .top) { TiebaFlatDivider() }
         .accessibilityIdentifier(
             "user-profile.facts.\(profile.userID.rawValue)"
         )

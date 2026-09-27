@@ -10,6 +10,12 @@ struct AppRouteDependencies {
     let featureStores: AppFeatureStoreRegistry
     let imageLoader: any ImageLoading
     let onOpenMedia: (ThreadMediaIntent) -> Void
+
+    @MainActor var currentAccountAvatar: ImageResourceDescriptor? {
+        featureStores.currentAccountStore.profile.flatMap {
+            TiebaAvatarResource.user(userID: $0.userID.rawValue, portrait: $0.portraitResourceID)
+        }
+    }
 }
 
 @MainActor
@@ -103,6 +109,7 @@ enum AppRouter {
                     threadID: threadID
                 ),
                 imageLoader: dependencies.imageLoader,
+                accountAvatar: dependencies.currentAccountAvatar,
                 readingTextSize:
                     dependencies.featureStores.settingsStore.readingTextSize,
                 onOpenMedia: dependencies.onOpenMedia,
@@ -123,6 +130,7 @@ enum AppRouter {
             .ignoresSafeArea(.container, edges: .bottom)
         case let .userProfile(profileRoute):
             UserProfileView(
+                imageLoader: dependencies.imageLoader,
                 store: dependencies.featureStores.userProfileStore(
                     for: scope,
                     route: profileRoute

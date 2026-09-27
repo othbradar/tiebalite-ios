@@ -1,5 +1,13 @@
 # TASK_STATE
 
+- 2026-09-27 R12 = USER_VISUALLY_APPROVED：用户接受居中标题并确认返回方块已修复，明确授权“现在提交，进入R13”。保持已验收候选，精确提交 R12 代码/测试/记录，用户原有 Prompt/skill 和私人 Artifacts 不纳入。沿用最终定向 Unit/UI 证据；提交前复核 lint/build/secret/diff。原 iPad 横屏详情残留继续待 R13 集成检查；发布审核仍 DEFERRED_BY_USER。下列旧记录保留为历史，不代表当前批准状态。
+
+- 2026-09-27 R12 方块修订最终 = READY_FOR_USER_VISUAL_REVIEW：用户明确接受居中并确认问题修复，恢复 `.principal` 标题方案；只改首页/帖子两处 toolbar，原生返回手势保持。iPhone3/3（73.829s，包含三轮返回/取消/其他标签/标题固定）、iPad1/1（16.417s，竖屏标题固定）、lint 0/371、build/secret/diff通过。两台普通Live覆盖安装且主文件+dylib SHA一致，登录保留；iPhone留耐腐蚀艺术馆吧，iPad首页。详情在R12_NAVIGATION_BAR_REDESIGN.md末节、Artifacts/VisualReview/R12/BackButton；不实施UIKit备选，不再扩大修复，原iPad详情残留继续记录，无暂存/提交、不进入R13。
+
+- 2026-09-27 R12 返回按钮方块修订 = STOPPED_WITH_OPEN_VISUAL_REGRESSION：完整 Live 录屏确认首页文字/帖子吧 chip 在导航栏转场中变形为 back item；两个对照（SwiftUI 稳定 ID、principal 标题位置）分别仍复现/造成居中布局回归，均已撤回，原 R12 tracked diff 与本轮备份 cmp 完全相同。保留三次返回功能 Smoke（两轮均通过，不能作为瞬态视觉通过）和录屏。恢复构建、lint 0/371、secret/diff通过；无新生产修复、无提交。下一步最小 UIKit 导航栏身份适配方案见 R12_NAVIGATION_BAR_REDESIGN.md，未实施；iPad详情残留仍独立待处理，不进入R13。
+
+- 2026-09-27 R12 = READY_FOR_USER_VISUAL_REVIEW（有待定位 iPad 详情残留）：基线 9681d39；我的页接真实账户头像/统计，复用已证实账户元数据+Profile、已有 Loader，首页与帖子回复条共用；本人资料/主题/历史/设置/关于与平面行完成。19项定向Unit、iPhone3项Smoke、iPad4项Smoke、lint/build/secret/diff通过，迭代失败及两次转屏动画等待保留在R12_ACCEPTANCE.md。288保护文件与HEAD相同。两台完整正常Live覆盖安装、保留登录，真实头像/统计/资料入口已观察；iPhone前台我的，iPad横屏我的+本人资料，截图矩阵在Artifacts/VisualReview/R12/SCREENSHOTS.md。额外Live观察“已有帖子→横屏侧栏我的”时右侧残留旧帖子，点击本人头像可切换资料；未以旧构建判定来源、未改共享导航，保留待定位，不宣称全部行为无问题。无暂存/提交/推送，不进入R13，发布审核继续暂缓。
+
 - 2026-09-25 R11 = USER_VISUALLY_APPROVED：用户确认“我看了都改好了”，授权提交 R11、先不进入 R12。本轮仅更新验收记录和精确提交；生产代码保持已验收候选，沿用下述通过的定向 Unit、共享列表/图片复用及 iPhone/iPad Smoke 证据。提交前 make build、lint（0 violations）、secret-scan、diff check 全部通过，日志在 Artifacts/VisualReview/R11/UserApproval/；未重复 Unit/UI 或更换 Simulator 页面。用户原有 Prompt/skill 未跟踪文件不纳入，私人截图/Simulator/凭证不纳入；不推送，不开始 R12，发布审核问题继续暂缓。此前记录保留为历史状态。
 
 - 2026-09-25 R11 最新用户修订 = READY_FOR_USER_VISUAL_REVIEW：根底栏改按实际高度占位，修复末吧被挡；具体回复进入完整帖子并滚到对应一级楼，楼中楼只解析父楼、不打开二级。现有列表增加首次有效布局后一次性恢复锚点，修复零尺寸时过早消耗锚点的真实竞态；无列表/分页架构改写。34项相关Unit、10项锚点/Cell与图片复用回归通过（有重叠）；iPhone3项Smoke、iPad对应4项及横竖屏通过，lint/build/secret/diff通过。两台正常Live覆盖安装且主文件+debug dylib哈希一致，已实际确认普通消息带前文及楼中楼定位第6父楼；两台留在该父楼，iPhone前台。CUA拖动无效，Live末吧/上滚仍待手工复核，Fixture已通过。所有失败及证据见R11_NOTIFICATIONS.md最新节和Artifacts/VisualReview/R11/FullThreadAndBottom；未暂存/提交、不进入R12，发布问题继续暂缓。

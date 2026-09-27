@@ -1,6 +1,7 @@
 @MainActor
 final class AppFeatureStoreRegistry {
     let notificationsStore: NotificationsStore
+    let currentAccountStore: CurrentAccountStore
     private let makeNotificationDestination: (@MainActor (NotificationTarget) -> NotificationDestinationStore)?
     private var notificationDestinations: [NotificationTarget: NotificationDestinationStore] = [:]
     let browsingHistoryStore: BrowsingHistoryStore
@@ -30,9 +31,11 @@ final class AppFeatureStoreRegistry {
         makeUserProfileStore: @escaping @MainActor (UserProfileRoute) ->
             UserProfileStore,
         makeSubpostsStore: (@MainActor (SubpostsRoute) -> SubpostsStore)? = nil,
+        currentAccountStore: CurrentAccountStore? = nil,
         notificationsStore: NotificationsStore? = nil,
         makeNotificationDestination: (@MainActor (NotificationTarget) -> NotificationDestinationStore)? = nil
     ) {
+        self.currentAccountStore = currentAccountStore ?? CurrentAccountStore(repository: UnavailableCurrentAccountRepository())
         self.notificationsStore = notificationsStore ?? NotificationsStore(repository: UnavailableNotificationsRepository())
         self.makeNotificationDestination = makeNotificationDestination
         self.browsingHistoryStore = browsingHistoryStore
@@ -57,6 +60,7 @@ final class AppFeatureStoreRegistry {
             makeForumHomeStore: compositionRoot.makeForumHomeStore,
             makeUserProfileStore: compositionRoot.makeUserProfileStore,
             makeSubpostsStore: compositionRoot.makeSubpostsStore,
+            currentAccountStore: compositionRoot.currentAccountStore,
             notificationsStore: compositionRoot.notificationsStore,
             makeNotificationDestination: compositionRoot.makeNotificationDestination
         )
@@ -271,7 +275,7 @@ final class AppFeatureStoreRegistry {
     private func settingsProfileKeys(
         in state: AppNavigationState
     ) -> Set<UserProfileStoreKey> {
-        Set(settingsContentRoutes(in: state).compactMap { route in
+        var keys: Set<UserProfileStoreKey> = Set(settingsContentRoutes(in: state).compactMap { route in
             guard case let .userProfile(profileRoute) = route else {
                 return nil
             }
@@ -280,6 +284,10 @@ final class AppFeatureStoreRegistry {
                 userID: profileRoute.userID
             )
         })
+        if state.settingsPath.contains(.accountProfile), let userID = currentAccountStore.profile?.userID {
+            keys.insert(UserProfileStoreKey(scope: .settings, userID: userID))
+        }
+        return keys
     }
 }
 

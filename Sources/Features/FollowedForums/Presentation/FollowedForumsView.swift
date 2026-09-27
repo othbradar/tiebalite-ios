@@ -5,6 +5,7 @@ struct FollowedForumsView: View {
     @Bindable var store: FollowedForumsStore
     let sessionAccess: FollowedForumsSessionAccess
     let imageLoader: any ImageLoading
+    var accountAvatar: ImageResourceDescriptor?
     let recentForums: [RecentForum]
     let openLogin: () -> Void
     let openSearch: () -> Void
@@ -26,15 +27,15 @@ struct FollowedForumsView: View {
         .accessibilityIdentifier(FollowedForumsAccessibilityID.root)
         .task(id: sessionAccess) { await synchronizeStoreAcrossProjection() }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            // Keep title content out of the native back-button morphing transition.
+            ToolbarItem(placement: .principal) {
                 HStack(spacing: 12) {
-                    // Session currently exposes no verified account portrait.
-                    TiebaAvatarView(resource: nil, imageLoader: imageLoader, size: 32,
-                                    accessibilityLabel: "当前账户头像暂不可用")
+                    TiebaAvatarView(resource: accountAvatar, imageLoader: imageLoader, size: 32,
+                                    accessibilityLabel: "当前账户头像")
                     Text("首页").font(.title3.bold())
                         .accessibilityIdentifier("home.title")
                 }
-                .fixedSize(horizontal: true, vertical: false)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .tiebaFlatToolbarItem()
             if store.state.canReload {

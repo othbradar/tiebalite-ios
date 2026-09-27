@@ -23,7 +23,8 @@ struct BrowsingHistoryView: View {
             }
         }
         .background(SemanticColor.background)
-        .navigationTitle("浏览历史")
+        .navigationTitle("浏览记录")
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("history.screen")
         .toolbar {
             if store.canClearHistory {
@@ -68,7 +69,7 @@ struct BrowsingHistoryView: View {
             List {
                 if store.hasPersistenceFailure {
                     persistenceWarning
-                    .listRowBackground(SemanticColor.surface)
+                    .listRowBackground(SemanticColor.background)
                 }
                 ForEach(entries) { entry in
                     Button {
@@ -105,9 +106,10 @@ struct BrowsingHistoryView: View {
                             Task { await store.delete(entry.identity) }
                         }
                     }
-                    .listRowBackground(SemanticColor.surface)
+                    .listRowBackground(SemanticColor.background)
                 }
             }
+            .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(SemanticColor.background)
             .accessibilityIdentifier("history.list")
@@ -133,7 +135,7 @@ private extension BrowsingHistoryEntry {
         case .thread:
             "doc.text"
         case .user:
-            "person.crop.circle"
+            "text.alignleft"
         }
     }
 

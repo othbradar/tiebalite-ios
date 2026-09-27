@@ -2,6 +2,7 @@
 final class AppCompositionRoot {
     let environment: AppEnvironment
     let notificationsStore: NotificationsStore
+    let currentAccountStore: CurrentAccountStore
     let notificationCounts: any NotificationCountSource
     private let notificationTargetRepository: any NotificationTargetRepository
     let authContextProvider: SessionAuthContextProvider
@@ -46,6 +47,7 @@ final class AppCompositionRoot {
         switch environment.readingDataSourceMode {
 #if DEBUG
         case .fixture:
+            currentAccountStore = CurrentAccountStore(repository: FixtureCurrentAccountRepository())
             notificationsStore = NotificationsStore(repository: FixtureNotificationsRepository())
             notificationTargetRepository = FixtureNotificationTargetRepository()
             textComposer = TextComposerService(repository: FixtureTextWriteRepository(), currentContext: {
@@ -67,6 +69,8 @@ final class AppCompositionRoot {
                 userProfileRepository ?? FixtureUserProfileRepository()
 #endif
         case .live:
+            currentAccountStore = CurrentAccountStore(repository: LiveCurrentAccountRepository(
+                client: environment.httpClient, authContextProvider: resolvedAuthContextProvider))
             notificationsStore = NotificationsStore(repository: LiveNotificationsRepository(
                 client: environment.httpClient, authContextProvider: resolvedAuthContextProvider))
             notificationTargetRepository = LiveNotificationTargetRepository(client: environment.httpClient)

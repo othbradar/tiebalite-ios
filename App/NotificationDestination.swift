@@ -11,6 +11,7 @@ struct NotificationDestination: View {
             if let thread = store.thread {
                 ThreadReaderView(
                     store: thread, imageLoader: dependencies.imageLoader,
+                    accountAvatar: dependencies.currentAccountAvatar,
                     readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
                     onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) },
                     onDisplayed: { await dependencies.featureStores.browsingHistoryStore.recordThread($0) },

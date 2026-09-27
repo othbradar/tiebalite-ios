@@ -250,8 +250,8 @@ private struct ForumSearchResultCard: View {
         }
         .padding(Spacing.medium)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
+        .background(SemanticColor.background)
+        .overlay(alignment: .bottom) { TiebaFlatDivider() }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }

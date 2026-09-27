@@ -114,9 +114,8 @@ struct SettingsOptionsView: View {
             VStack(spacing: Spacing.small) {
                 content()
             }
-            .padding(Spacing.medium)
-            .background(SemanticColor.surface)
-            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
+            .padding(.vertical, Spacing.small)
+            TiebaFlatDivider()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

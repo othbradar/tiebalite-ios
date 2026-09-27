@@ -5,6 +5,7 @@ import UIKit
 struct ThreadReaderView: View {
     @Bindable var store: ThreadReaderStore
     let imageLoader: any ImageLoading
+    let accountAvatar: ImageResourceDescriptor?
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
@@ -18,6 +19,7 @@ struct ThreadReaderView: View {
     init(
         store: ThreadReaderStore,
         imageLoader: any ImageLoading,
+        accountAvatar: ImageResourceDescriptor? = nil,
         readingTextSize: ReadingTextSizePreference = .standard,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void,
         onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in },
@@ -26,6 +28,7 @@ struct ThreadReaderView: View {
     ) {
         self.store = store
         self.imageLoader = imageLoader
+        self.accountAvatar = accountAvatar
         self.readingTextSize = readingTextSize
         self.onOpenMedia = onOpenMedia
         self.onOpenUser = onOpenUser
@@ -43,7 +46,8 @@ struct ThreadReaderView: View {
         .toolbar { forumToolbar }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if store.state.snapshot != nil {
-                ThreadReaderReplyBar(imageLoader: imageLoader, onAction: { showsUnavailableAction = true }, onCompose: {
+                ThreadReaderReplyBar(imageLoader: imageLoader, accountAvatar: accountAvatar,
+                                     onAction: { showsUnavailableAction = true }, onCompose: {
                     if let snapshot = store.state.snapshot { composeTarget = .reply(snapshot: snapshot) }
                 })
             }
@@ -77,9 +81,11 @@ struct ThreadReaderView: View {
     }
 
     private var forumToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
+        // A title must not morph into the previous page's native back item.
+        ToolbarItem(placement: .principal) {
             if let snapshot = store.state.snapshot {
                 ThreadReaderForumChip(snapshot: snapshot, imageLoader: imageLoader)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

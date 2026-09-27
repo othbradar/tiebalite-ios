@@ -193,6 +193,7 @@ extension UITestHarness {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
+        openDebugToolsIfNeeded(identifier, in: app)
         let element = app.descendants(matching: .any)[identifier.rawValue]
         guard element.waitForExistence(timeout: 5) else {
             attachSafeFailureEvidence(app: app, expected: identifier)
@@ -321,6 +322,7 @@ extension UITestHarness {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
+        openDebugToolsIfNeeded(identifier, in: app)
         let element = app.descendants(matching: .any)[identifier.rawValue]
         guard element.waitForExistence(timeout: 5) else {
             attachSafeFailureEvidence(app: app, expected: identifier)
@@ -345,6 +347,15 @@ extension UITestHarness {
             )
             return
         }
+    }
+
+    @MainActor
+    private static func openDebugToolsIfNeeded(_ identifier: UITestElementID, in app: XCUIApplication) {
+        guard [.debugOpenGallery, .debugOpenInteractionLab, .debugOpenThreadContentRenderer].contains(identifier),
+              !app.descendants(matching: .any)[identifier.rawValue].exists else { return }
+        // R12 places developer tools inside Settings, leaving the production My page uncluttered.
+        let settings = app.buttons["personal.open-settings"]
+        if settings.exists && settings.isHittable { settings.tap() }
     }
 
     @MainActor

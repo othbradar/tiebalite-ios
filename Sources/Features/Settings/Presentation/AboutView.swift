@@ -6,22 +6,25 @@ struct AboutView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
-                EmptyStateView(
-                    title: "TiebaLite",
-                    message: "版本 \(AppVersionInfo.displayVersion)",
-                    systemImage: "app"
-                )
+                Text("TiebaLite").font(.title3.bold())
+                Text("版本 \(AppVersionInfo.displayVersion)")
+                    .font(.caption).foregroundStyle(SemanticColor.secondaryText)
+                TiebaFlatDivider()
                 Button("查看许可与来源", systemImage: "doc.text") {
                     openLicenses()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
+                .frame(minHeight: 44)
                 .accessibilityIdentifier("settings.open-licenses")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(Spacing.large)
+            .padding(TiebaParityTokens.horizontalInset)
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
         }
         .background(SemanticColor.background)
         .navigationTitle("关于")
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("settings.about")
     }
 }
@@ -45,9 +48,11 @@ struct OpenSourceLicensesView: View {
                     .font(Typography.font(.caption))
             }
         }
+        .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(SemanticColor.background)
         .navigationTitle("许可与来源")
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("settings.licenses")
     }
 }
