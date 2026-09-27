@@ -18,6 +18,16 @@ TiebaLite iOS 是一个非官方的 iOS/iPadOS 贴吧客户端，提供阅读、
 
 未实现签到、点赞、删除、私信、系统推送、收藏和离线下载。界面中的已有计数不代表具备对应写操作。项目没有获得百度官方认可，第三方资源及生成 Proto 的 App Store/商业二进制分发权利仍未完成确认。
 
+## 新版截图
+
+以下为 0.2.0 Beta 1 视觉验收时的 iPhone 实际界面，展示公开内容浏览与表情编辑。点击图片可查看原图。
+
+| 动态推荐 | 吧首页 |
+| --- | --- |
+| <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-feed.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-feed.png" alt="新版动态推荐：真实头像、平面信息流与紧凑图片布局" width="300"></a> | <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-forum.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-forum.png" alt="新版吧首页：吧资料、分类标签与帖子列表" width="300"></a> |
+| 表情编辑 | 贴吧搜索 |
+| <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-composer.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-composer.png" alt="新版回复编辑器：官方表情面板与正文内联显示" width="300"></a> | <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-search.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-search.png" alt="新版搜索：贴吧检索与结果列表" width="300"></a> |
+
 ## 系统与工具要求
 
 - macOS 26；

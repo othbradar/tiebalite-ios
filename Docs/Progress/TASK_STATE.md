@@ -1,5 +1,7 @@
 # TASK_STATE
 
+- 2026-09-27 按用户纠正将最新已验收代码合入主分支：确认 origin/main 是候选祖先（0/17），本机 main 快进至 `82ef4e0` 并经 SSH 推送成功，无强推或历史重写。随后按用户要求为 README 增加四张已目视检查的 R13 Live 原始 PNG（动态、吧首页、表情编辑、搜索），不含账号/我的/私人消息页或本人头像昵称；未公开其余 Artifacts。截图字节与验收原件一致；首轮严格元数据检查因存在 EXIF 停止，复核 EXIF 仅色彩空间/图片尺寸后通过，无文本/GPS/设备身份元数据。图片路径、diff/secret 检查通过；仅文档与图片更新，不重复 App 测试/构建。
+
 - 2026-09-27 v0.2.0-beta.1 = PUBLISHED_AND_VERIFIED：修复 `e479814`、发布源提交 `b8dc258` 已通过本机 SSH 推送；公开 GitHub Release ID 397563756，含新版真机 IPA 和 SHA256SUMS，两项远端大小/摘要均与本机一致。Release 标注新增功能、页面重制与未签名安装方式；正文及构建审计保留审核持续性 UNKNOWN。发布回执见 Docs/Audits/RELEASE_0_2_0_BETA_1.md。此次只补记文档，不改产物或标签；用户原有未跟踪文件原样保留。
 
 - 2026-09-27 v0.2.0-beta.1 = RELEASE_PREPARED：显示名修复已提交 `e479814`；0.2.0/Build 2 真机 arm64 未签名 Release archive、实际包隔离与 ZIP/版本/架构/SHA 检查通过，IPA 6,349,822 bytes。定向 Unit 15项/18次、lint/build/secret/diff 通过，未重复完整长矩阵。功能及页面重制说明在 Docs/Releases/v0.2.0-beta.1.md，精确检查在 Docs/Audits/RELEASE_0_2_0_BETA_1.md。用户已完成 GitHub 网页登录；随后按授权使用 SSH 推送与网页发布，当前条目不冒充远端已完成。
