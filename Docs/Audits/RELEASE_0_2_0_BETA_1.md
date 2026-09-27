@@ -40,3 +40,11 @@
 用户已手动确认一次文字加表情回复成功、当前可见；后续审核、长期留存及全部写入类型 Live 矩阵仍 UNKNOWN，未宣称彻底解决风控。本轮未执行真实贴吧发布或上传。
 
 本记录覆盖已完成的本机发布准备；远端分支、标签、Release 与附件上传以 GitHub 页面及后续发布回执为准。
+
+## 已完成发布回执
+
+- Git SSH 原子推送成功：`visual-parity-remediation` 和附注标签 `v0.2.0-beta.1`；远端标签解析到 `b8dc258559172ef7472d590c2311e6029eae1a6d`。未改写 main 或历史。
+- 用户自行完成 Safari 登录，Release 已公开：<https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0-beta.1>，ID `397563756`，`draft=false`、`prerelease=true`。
+- 公开 REST API 复核两项附件均 `uploaded`；IPA 6,349,822 bytes、SHA256SUMS 114 bytes，GitHub 返回的两项 SHA-256 均与本机文件完全一致。
+- 发布正文包含新增功能、页面重制、安装方式、限制及源提交。完整机器回执在 ignored `Artifacts/Releases/v0.2.0-beta.1/publication-receipt.json`。
+- 上传过程曾有一次原生文件选择器剪贴板超时；改用指定文件路径后上传成功，未上传其他文件。没有进行真实贴吧写操作。

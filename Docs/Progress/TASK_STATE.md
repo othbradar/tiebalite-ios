@@ -1,5 +1,7 @@
 # TASK_STATE
 
+- 2026-09-27 v0.2.0-beta.1 = PUBLISHED_AND_VERIFIED：修复 `e479814`、发布源提交 `b8dc258` 已通过本机 SSH 推送；公开 GitHub Release ID 397563756，含新版真机 IPA 和 SHA256SUMS，两项远端大小/摘要均与本机一致。Release 标注新增功能、页面重制与未签名安装方式；正文及构建审计保留审核持续性 UNKNOWN。发布回执见 Docs/Audits/RELEASE_0_2_0_BETA_1.md。此次只补记文档，不改产物或标签；用户原有未跟踪文件原样保留。
+
 - 2026-09-27 v0.2.0-beta.1 = RELEASE_PREPARED：显示名修复已提交 `e479814`；0.2.0/Build 2 真机 arm64 未签名 Release archive、实际包隔离与 ZIP/版本/架构/SHA 检查通过，IPA 6,349,822 bytes。定向 Unit 15项/18次、lint/build/secret/diff 通过，未重复完整长矩阵。功能及页面重制说明在 Docs/Releases/v0.2.0-beta.1.md，精确检查在 Docs/Audits/RELEASE_0_2_0_BETA_1.md。用户已完成 GitHub 网页登录；随后按授权使用 SSH 推送与网页发布，当前条目不冒充远端已完成。
 
 - 2026-09-27 用户明确批准提交显示名修复、以本机 SSH 推送 GitHub 并发布新版 IPA。修复提交检查 R09 定向 15 项/18 次执行、lint/build/secret/diff 全通过。精确纳入修复与证据文件，用户原有未跟踪 Prompt/skill、私人 Artifacts 均排除；随后独立准备 v0.2.0-beta.1 Release 真机未签名包，发布成功与否以后续记录为准。
