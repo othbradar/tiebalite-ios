@@ -1,23 +1,22 @@
 # TiebaLite iOS
 
-TiebaLite iOS 是一个非官方、只读的 iOS/iPadOS 贴吧客户端。本仓库当前状态为
-公开源码 Beta Release Candidate：核心阅读链路已实现并通过 Simulator 自动化与
-人工 smoke，但没有获得百度官方认可，也不代表包含第三方或生成 Proto 的 App
-Store/商业二进制分发权利已经清理完成。
+TiebaLite iOS 是一个非官方的 iOS/iPadOS 贴吧客户端，提供阅读、消息与发帖/回复编辑功能。当前正在进行 Android TiebaLite 视觉一致性 Beta 的最终集成验收（R13），尚未完成最终 Release 批准。实际门禁、截图与限制见 [R13 验收记录](Docs/VisualParity/R13_ACCEPTANCE.md)。
 
 ## 已实现
 
-- 用户可见的 WKWebView 登录、Keychain 会话保存和重启恢复；
-- 推荐流、关注的吧、吧首页和连续分页；
-- 帖子首楼、普通楼层、内联楼中楼预览和连续分页；
-- 生产图片加载、唯一 MediaViewer、多图切换、缩放、平移与旋转；
-- 贴吧/帖子搜索及已证实的帖子搜索分页；
-- 本地浏览历史、外观/阅读字号设置和基础用户资料；
-- iPhone/iPad 自适应布局、深色模式、大字体与 Reduce Motion；
-- Fixture 驱动的 Unit/UI 自动化、离线失败与重试场景。
+- 用户可见的 WKWebView 登录、Keychain 会话保存和冷启动恢复；
+- 最近浏览/关注的吧、动态推荐流、吧首页排序/分类及连续分页；
+- 帖子楼层、前三条子回复预览、独立完整楼中楼及分页；
+- 真实用户/吧头像、接口提供的等级、紧凑图片网格和官方表情内联；
+- 生产图片加载、唯一 MediaViewer、多图切换、缩放与平移；
+- 回复我的/提到我的、未读计数；引用打开主题，具体回复定位帖子中的一级楼层（楼中楼消息定位父楼）；
+- 新帖、主题回复、楼层回复和楼中楼回复编辑器，会话草稿、图片选择/上传与表情选择；
+- 贴吧/帖子搜索、本地历史、账户资料、外观与阅读字号设置；
+- iPhone/iPad 自适应、深色、大字体与 Reduce Motion，Fixture 驱动的离线自动化。
 
-项目刻意不实现签到、发帖、回复/发布评论、点赞、删除、私信、推送和离线下载。
-完整楼中楼独立页面也不在当前 Beta 范围内。
+**发布功能仍有未解决的服务端审核问题。** 用户曾确认文字及单图加表情回复成功，后来报告新回复被服务端以“涉嫌异常行为”删除。该问题由用户明确暂缓；编辑器和请求实现不代表回复能可靠保留或被其他账号看到。新帖、不同回复目标及多图实网发送的覆盖仍不完整。自动化只使用 Mock，不发送真实内容；Live 发送由用户自行决定。
+
+未实现签到、点赞、删除、私信、系统推送、收藏和离线下载。界面中的已有计数不代表具备对应写操作。项目没有获得百度官方认可，第三方资源及生成 Proto 的 App Store/商业二进制分发权利仍未完成确认。
 
 ## 系统与工具要求
 
@@ -88,6 +87,8 @@ make release-isolation
 make quality
 ```
 
+测试安装通过 Xcode 覆盖现有 App，不卸载、不 erase、不清 Keychain；Fixture 使用隔离的内存会话、历史和设置。
+
 `make quality` 是当前完整 RC 门禁，包含 Debug/Release 构建、Unit、iPhone/iPad
 UI smoke、Pager/Media interaction、静态策略、秘密扫描和 Release 隔离。
 
@@ -95,8 +96,9 @@ UI smoke、Pager/Media interaction、静态策略、秘密扫描和 Release 隔�
 
 - 这是非官方客户端，贴吧私有 API、字段和错误码可能变化；所有服务端错误码尚未
   覆盖。
-- 当前没有可证实的安全 HTTPS 头像合成规则，作者、用户和吧头像继续使用统一
-  占位。
+- 头像规则遵循已锁定 Android 源码；用户批准仅 `tb.himg.baidu.com/sys/portrait/item/` 使用原版 HTTP（ADR-0024），图片请求不带登录 Cookie。缺失或失败时使用中性占位。
+- 本地官方表情目录为 132 张；无法取得原图的表情和服务端仅返回的 `[图片]` 文本不能恢复为图片，未知 token 保留原文。
+- iPad 横屏深层阅读后切换我的曾出现旧详情残留；R13 复核结果以验收记录为准。
 - 动图只保证显示可用静态帧；没有 GIF 动画框架、视频、全尺寸图片瓦片、复杂
   image lease 或跨 View in-flight 请求合并。
 - 真机完整 VoiceOver、iOS 18.x runtime、完整设备/Stage Manager 矩阵尚未验证。
@@ -104,8 +106,7 @@ UI smoke、Pager/Media interaction、静态策略、秘密扫描和 Release 隔�
 - App Store、商标、服务条款、Proto 文件级来源以及商业二进制分发权利尚未完成
   独立确认。
 
-这些限制不阻塞公开源码 Beta RC，但阻塞任何“App Store ready”“生产认证”或
-“商业分发权利已清理完成”的声明。
+当前 R13 仍在集成验证；不会把未运行、失败或暂缓的项目描述为已通过。
 
 ## 许可与来源
 

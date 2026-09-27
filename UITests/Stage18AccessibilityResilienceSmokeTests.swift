@@ -13,7 +13,18 @@ extension AppShellSmokeTests {
             inside: .recommendationsList,
             in: app
         )
-        UITestHarness.tap(.recommendationsSelectedRow, in: app)
+        // XCTest's synthesized point can fall behind the enlarged fixture banner
+        // even when the row reports hittable. Tap the row's visible intersection once.
+        let row = UITestHarness.element(.recommendationsSelectedRow, in: app)
+        let list = UITestHarness.element(.recommendationsList, in: app)
+        let banner = UITestHarness.element(.shellScenario, in: app)
+        let visibleRow = row.frame.intersection(list.frame).intersection(app.frame)
+        let visibleTop = max(visibleRow.minY, banner.frame.maxY)
+        XCTAssertGreaterThan(visibleRow.maxY, visibleTop)
+        app.coordinate(withNormalizedOffset: CGVector(
+            dx: (visibleRow.midX - app.frame.minX) / app.frame.width,
+            dy: ((visibleTop + visibleRow.maxY) / 2 - app.frame.minY) / app.frame.height
+        )).tap()
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
         UITestHarness.scrollToHittable(
             .threadReaderImageSecondAction,

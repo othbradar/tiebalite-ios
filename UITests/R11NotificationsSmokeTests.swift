@@ -40,7 +40,6 @@ final class R11NotificationsSmokeTests: XCTestCase {
             XCTAssertLessThan(target.frame.minY, reader.frame.minY + 180, "Reply must scroll near the top")
             let firstPost = app.textViews["thread-reader.content.node.t8001.p18001.sfirstPost.n0"]
             for _ in 0..<5 {
-                if firstPost.exists { print("R11 first-post frame=\(firstPost.frame)") }
                 if firstPost.exists, !firstPost.frame.isEmpty, reader.frame.contains(firstPost.frame), firstPost.isHittable { break }
                 reader.swipeDown()
             }
@@ -146,7 +145,6 @@ final class R11NotificationsSmokeTests: XCTestCase {
 
     @MainActor private func reveal(_ row: XCUIElement, in list: XCUIElement) {
         for _ in 0..<14 {
-            if row.exists { print("R11 reveal frame=\(row.frame)") }
             if row.exists, !row.frame.isEmpty, list.frame.contains(row.frame), row.isHittable { return }
             list.swipeUp()
         }

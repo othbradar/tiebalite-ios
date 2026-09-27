@@ -63,12 +63,14 @@ reject_swift_matches \
   '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
   App Sources/Features Sources/DesignSystem Sources/InteractionKit
 
+# R11 approved Core adapter resolves notification subposts through the existing PBFloor contract.
+# Keep its exact file path here; no Feature or general Repository wildcard is permitted.
 proto_usage="$(
   rg -n --glob '*.swift' \
     '\b(SwiftProtobuf|GeneratedProtobuf|Tieba_[A-Za-z0-9_]+)\b' \
     App Sources 2>/dev/null |
     rg -v \
-      '^Sources/Core/TiebaAPI/(FRSPageProtocol|FRSPageMapping|GeneralTabProtocol|RecommendationFeedMapper|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PBFloorMapper|PBFloorProtocol|TextWriteProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
+      '^Sources/Core/TiebaAPI/(FRSPageProtocol|FRSPageMapping|GeneralTabProtocol|NotificationTargetRepository|RecommendationFeedMapper|ForumGuideProtocol|PBPageDomainMapper|PBPageProtocol|PBFloorMapper|PBFloorProtocol|TextWriteProtocol|PersonalizedProtocol|ProfileProtocol|ThreadContentProtoMapper|TiebaUserVisualMapper)\.swift:' ||
     true
 )"
 if [[ -n "$proto_usage" ]]; then

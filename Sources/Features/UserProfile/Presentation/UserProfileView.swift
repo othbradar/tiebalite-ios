@@ -72,20 +72,22 @@ struct UserProfileView: View {
     }
 
     private func profileFacts(_ profile: UserProfile) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.small) {
-            if let sex = profile.sex {
-                LabeledContent("性别", value: sex == .male ? "男" : "女")
+        VStack(spacing: 0) {
+            TiebaFlatDivider()
+            VStack(alignment: .leading, spacing: Spacing.small) {
+                if let sex = profile.sex {
+                    LabeledContent("性别", value: sex == .male ? "男" : "女")
+                }
+                if let count = profile.totalAgreeCount {
+                    LabeledContent("获赞", value: "\(count)")
+                }
+                if let count = profile.threadCount {
+                    LabeledContent("主题", value: "\(count)")
+                }
             }
-            if let count = profile.totalAgreeCount {
-                LabeledContent("获赞", value: "\(count)")
-            }
-            if let count = profile.threadCount {
-                LabeledContent("主题", value: "\(count)")
-            }
+            .font(Typography.font(.body))
+            .padding(.vertical, Spacing.medium)
         }
-        .font(Typography.font(.body))
-        .padding(.vertical, Spacing.medium)
-        .overlay(alignment: .top) { TiebaFlatDivider() }
         .accessibilityIdentifier(
             "user-profile.facts.\(profile.userID.rawValue)"
         )

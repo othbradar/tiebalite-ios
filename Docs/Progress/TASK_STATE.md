@@ -1,5 +1,11 @@
 # TASK_STATE
 
+- 2026-09-27 用户最终批准 R13 并明确授权提交，随后恢复发帖风控排查。先精确提交已验收的 R13；此前全量/定向测试与 Live 证据沿用 R13_ACCEPTANCE.md，提交前只补必要检查，不重复长矩阵。后续发布问题单独处理，不推送、不自动发送真实回复。
+
+- 2026-09-27 R13 = READY_FOR_USER_FINAL_ACCEPTANCE：用户补图确认断网刷新失败仍保留原列表，并明确“重试能恢复我试过了”，最后一项 Live 网络检查已补证。其余 Live 页面、六屏 Android 对照、用户确认的分页/横滑与 iPad full/narrow/full 结果见 R13_ACCEPTANCE.md；软件键盘通过断开 Simulator 硬件键盘连接恢复。完整/定向自动化、干净 Debug/Release/隔离证据沿用，历史失败保留；本轮仅更新三份记录，diff check 通过、暂存区为空，未重跑测试/构建或改 App。完整 Live 与登录保留，等待最终验收批准；未提交 R13、无 tag/push/IPA，发帖风控仍 DEFERRED_BY_USER。
+
+- 2026-09-27 R12 已按用户授权提交 `60ea8d6`，未推送；R13 = IN_PROGRESS。执行最终集成、完整门禁和干净 checkout Debug/Release；发现并复现 iPad 我的空详情残留（三轮均失败），最小系统 NavigationStack 边界修正后三轮通过。旧调试输出、图片准备 shared、测试读取系统剪贴板阻塞及 Release Fixture 编译输入问题已按实际门禁证据修正。保留完整历史失败，详情见 `Docs/VisualParity/R13_ACCEPTANCE.md`。真实发布审核继续 DEFERRED_BY_USER；自动化仅 Fixture，不发送或 logout，不卸载/erase/清 Keychain；R13 尚未完成最终人工验收，不暂存/提交/tag/发布。
+
 - 2026-09-27 R12 = USER_VISUALLY_APPROVED：用户接受居中标题并确认返回方块已修复，明确授权“现在提交，进入R13”。保持已验收候选，精确提交 R12 代码/测试/记录，用户原有 Prompt/skill 和私人 Artifacts 不纳入。沿用最终定向 Unit/UI 证据；提交前复核 lint/build/secret/diff。原 iPad 横屏详情残留继续待 R13 集成检查；发布审核仍 DEFERRED_BY_USER。下列旧记录保留为历史，不代表当前批准状态。
 
 - 2026-09-27 R12 方块修订最终 = READY_FOR_USER_VISUAL_REVIEW：用户明确接受居中并确认问题修复，恢复 `.principal` 标题方案；只改首页/帖子两处 toolbar，原生返回手势保持。iPhone3/3（73.829s，包含三轮返回/取消/其他标签/标题固定）、iPad1/1（16.417s，竖屏标题固定）、lint 0/371、build/secret/diff通过。两台普通Live覆盖安装且主文件+dylib SHA一致，登录保留；iPhone留耐腐蚀艺术馆吧，iPad首页。详情在R12_NAVIGATION_BAR_REDESIGN.md末节、Artifacts/VisualReview/R12/BackButton；不实施UIKit备选，不再扩大修复，原iPad详情残留继续记录，无暂存/提交、不进入R13。

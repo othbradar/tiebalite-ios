@@ -40,7 +40,7 @@ struct DebugR10ComposerGallery: View {
         }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("r10-sample-\(number).jpg")
         try bytes.write(to: url)
-        return try await ComposerPhotoPreparation.shared.prepare(file: ComposerPhotoFile(url: url))
+        return try await ComposerPhotoPreparation().prepare(file: ComposerPhotoFile(url: url))
     }
 }
 #endif

@@ -255,6 +255,9 @@ final class IPadAppShellSmokeTests: XCTestCase {
 
         UITestHarness.tap(.layoutControlRegular, in: app)
         device.orientation = .portrait
+        UITestHarness.requirePresent(.layoutCompact, in: app)
+        UITestHarness.requirePresent(.threadContentLabRoot, in: app)
+        device.orientation = .landscapeLeft
         UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.requirePresent(.threadContentLabRoot, in: app)
         UITestHarness.requireValue(

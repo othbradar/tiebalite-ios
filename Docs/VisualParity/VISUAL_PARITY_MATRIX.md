@@ -1,5 +1,7 @@
 # 视觉与功能一致性矩阵
 
+R13：`USER_VISUALLY_APPROVED`（2026-09-27），基线 R12 `60ea8d6`。自动化失败均定向转绿、原记录保留，干净 Debug/Release/隔离及静态通过。真实账号主要页面与六屏 Android 对照已完成，分页/横滑、iPad 我的清旧帖与 full/narrow/full 获用户确认；用户最后补图确认断网保留原列表，并明确联网重试成功。软件键盘断开 Simulator 硬件键盘连接后恢复，无 App 补丁。具体证据与历史边界见 `R13_ACCEPTANCE.md`。两台完整 Live 保留登录，用户已明确授权提交 R13，提交后单独恢复发帖风控排查。
+
 R12：`USER_VISUALLY_APPROVED`（2026-09-27）。用户明确授权提交 R12 并进入 R13。用户已明确接受标题居中并确认导航栏方块修复，最终采用两处 `.principal`；额外iPhone3项/iPad1项短Smoke、lint/build/secret/diff通过，两台完整Live覆盖安装且登录保留。过程见 `R12_NAVIGATION_BAR_REDESIGN.md`，UIKit备选无需实施。真实账户头部/统计、头像共用、本人资料和我的菜单、Settings/History/Search 平面布局已实现；19 Unit、iPhone3项/iPad4项短Smoke、lint/build/secret/diff通过。正常Live两台保留登录、截图矩阵与完整失败记录见 `R12_ACCEPTANCE.md`。额外Live发现iPad横屏从深层帖子切我的时右侧仍留原帖，点击本人头像后正常打开资料，未定位来源、未扩大导航修改。已获用户验收与提交授权，已知 iPad 问题留待 R13 复核。
 
 R01：`USER_VISUALLY_APPROVED`（2026-09-23）。共用头像、等级、分割线、元数据、1–8 图网格与平面 skeleton 已实现，字段链路及图片复用定向测试通过；截图和限制见 `R01_ACCEPTANCE.md`。iPhone/iPad 完整组件截图已保存；重新打开 iPhone Gallery 后，用户回复“行可以”，确认视觉通过。未提交；完整页面仍按下表后续阶段处理。

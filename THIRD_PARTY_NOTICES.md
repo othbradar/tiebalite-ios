@@ -69,7 +69,7 @@ Their source rectangles are recorded in `Docs/VisualParity/R01_ACCEPTANCE.md`.
 They are not Live account data. The existing `Debug*.swift` Release source
 exclusion applies to the Gallery and its embedded samples.
 
-The generated Swift Proto closure currently contains eight roots and 207 locked
+The generated Swift Proto closure currently contains 14 roots and 234 locked
 inputs read directly from the pinned submodule. Paths, hashes, and import roots
 are recorded in `Config/Protobuf/Personalized.inputs.tsv`. The `.proto` files do
 not have uniform file-level provenance headers. Publishing this source
@@ -157,3 +157,21 @@ production adds no remote downloader, cache, credentials or transport exception.
 R09 extends the same locked Android Protobuf source closure to AddPost and its verification/response dependencies (18 generated files); original source/license attribution above remains applicable. No additional runtime package is introduced.
 
 R10 upload wire contract and emoticon picker behavior are traced to TiebaLite Android UI reference c5f1125f42498e49db4e4a9cb66313b8c8a285c7: ImageUploader.kt, UploadPictureResultBean.kt, OfficialTiebaApi.kt, RetrofitTiebaApi.kt, ReplyPage.kt and request interceptors. This phase reuses the previously attributed official emoticon resources; no new remote artwork or third-party library is added.
+
+### R11–R13 visual parity integration
+
+R11 notifications and R12 account presentation follow the locked UI reference
+`c5f1125f42498e49db4e4a9cb66313b8c8a285c7`:
+`ui/page/main/notifications/NotificationsPage.kt`, its `list` views, and
+`ui/page/main/user/UserPage.kt` / `UserViewModel.kt`.
+R13 retains those native SwiftUI implementations and the user-approved centered
+system navigation title. No new Android artwork, dependency, or remote asset
+source is introduced. Protocol mappings remain traced in `Specs/API_EVIDENCE.md`.
+
+The final local emoticon inventory is 132 original files / 399,224 bytes:
+51 Android WebP files and 81 official PNG files. The per-file source URLs,
+SHA-256 hashes and acquisition history in `Resources/TIEBA_EMOTICONS_PROVENANCE.md`
+are authoritative; earlier counts above describe historical revisions.
+Unknown/unavailable artwork is not replaced with invented images. Debug screenshot
+extracts and synthetic fixtures are excluded from Release; the official emoticons
+and attributed root navigation vectors are intentional production resources.

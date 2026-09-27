@@ -1,7 +1,4 @@
 import Observation
-#if DEBUG
-import OSLog
-#endif
 
 @MainActor
 @Observable
@@ -73,10 +70,6 @@ final class NotificationsStore {
             } catch {
                 guard let self, self.generation == token else { return }
                 self.countFailure = NotificationsListStore.failure(error)
-#if DEBUG
-                Logger(subsystem: "dev.local.tiebaliteios", category: "Notifications")
-                    .notice("Count failure: \(String(describing: self.countFailure), privacy: .public)")
-#endif
             }
             guard let self, self.generation == token else { return }
             self.countTask = nil
@@ -180,10 +173,6 @@ final class NotificationsListStore {
             } catch {
                 guard let self, self.generation == token else { return }
                 self.error = Self.failure(error)
-#if DEBUG
-                Logger(subsystem: "dev.local.tiebaliteios", category: "Notifications")
-                    .notice("List failure: \(String(describing: self.error), privacy: .public)")
-#endif
                 self.phase = self.hasLoaded ? (page == 0 ? .refreshFailure : .nextPageFailure) : .initialFailure
             }
             guard let self, self.generation == token else { return }

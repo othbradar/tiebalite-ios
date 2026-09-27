@@ -157,7 +157,7 @@ enum UITestElementID: String, CaseIterable {
     case tabRecommendations = "app.tab.recommendations"
     case tabSettings = "app.tab.settings"
     case threadContentAfterUnknown =
-        "thread-reader.content.node.t91001.p92001.sfirstPost.n22"
+        "thread-reader.content.node.t91001.p92001.sfirstPost.n19"
     case threadContentExternalIntent =
         "thread-reader.renderer-lab.external-link"
     case threadContentImageDecodeFailureAction =

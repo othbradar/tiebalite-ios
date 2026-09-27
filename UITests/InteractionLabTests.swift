@@ -190,6 +190,10 @@ final class InteractionLabTests: XCTestCase {
 
         UITestHarness.swipeSystemBack(
             in: app,
+            returningTo: .settingsRoot
+        )
+        UITestHarness.swipeSystemBack(
+            in: app,
             returningTo: .personalRoot
         )
         device.orientation = .portrait

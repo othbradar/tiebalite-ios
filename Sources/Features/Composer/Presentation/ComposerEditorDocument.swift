@@ -62,6 +62,7 @@ struct ComposerEditorDocument {
 
 final class ComposerEditableTextView: UITextView {
     var emoticonInputController: ComposerEmoticonInputController?
+    var pasteboard: UIPasteboard = .general
     var document: ComposerEditorDocument { .init(attributed: attributedText ?? NSAttributedString()) }
 
     override func layoutSubviews() {
@@ -79,7 +80,7 @@ final class ComposerEditableTextView: UITextView {
 
     override func copy(_ sender: Any?) {
         guard selectedRange.length > 0 else { return }
-        UIPasteboard.general.string = ComposerEditorDocument(
+        pasteboard.string = ComposerEditorDocument(
             attributed: attributedText.attributedSubstring(from: selectedRange)).wireText
     }
 
@@ -90,7 +91,7 @@ final class ComposerEditableTextView: UITextView {
     }
 
     override func paste(_ sender: Any?) {
-        guard isEditable, let text = UIPasteboard.general.string else { return }
+        guard isEditable, let text = pasteboard.string else { return }
         insertText(text)
     }
 }

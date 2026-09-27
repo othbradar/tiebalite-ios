@@ -162,6 +162,10 @@ extension IPadAppShellSmokeTests {
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
         UITestHarness.requirePresent(.threadReaderImageSecondAction, in: app)
         UITestHarness.tap(.layoutControlRegular, in: app)
+        // R05 keeps portrait full-width even when regular width is available.
+        UITestHarness.requirePresent(.layoutCompact, in: app)
+        UITestHarness.requirePresent(.threadReaderScreen, in: app)
+        device.orientation = .landscapeLeft
         UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
     }

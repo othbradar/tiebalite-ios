@@ -55,6 +55,7 @@ struct TextComposerView: View {
     @State private var showsEmoticons = false
     @State private var importGeneration = 0
     @State private var pickedPhotos: [PhotosPickerItem] = []
+    @State private var photoPreparation = ComposerPhotoPreparation()
 
     init(target: TextComposeTarget, service: TextComposerService, onSuccess: @escaping (TextWriteReceipt) -> Void) {
         self.service = service
@@ -187,7 +188,7 @@ struct TextComposerView: View {
                 guard let imported = try await item.loadTransferable(type: ComposerPickedPhoto.self) else {
                     throw ImageUploadFailure.invalidImage
                 }
-                let photo = try await ComposerPhotoPreparation.shared.prepare(file: imported.file)
+                let photo = try await photoPreparation.prepare(file: imported.file)
                 try Task.checkCancellation()
                 store.appendPhoto(photo)
             }

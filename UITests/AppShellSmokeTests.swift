@@ -152,7 +152,7 @@ final class AppShellSmokeTests: XCTestCase {
         )
         UITestHarness.requireLabel(
             .threadContentImageSuccessAction,
-            equals: "合成图片，第 1 张，共 5 张",
+            equals: "合成图片，第 1 张，共 4 张",
             in: app
         )
         let successFrame = UITestHarness.element(
@@ -165,22 +165,21 @@ final class AppShellSmokeTests: XCTestCase {
             XCTAssertEqual(successFrame.height, frame.height, accuracy: 1)
         }
 
-        UITestHarness.tap(.threadContentImageSuccessAction, in: app)
+        UITestHarness.tapRendererImageClearOfFixtureBanner(in: app)
         UITestHarness.requireLabelNotEqual(
             .threadContentMediaIntent,
             to: "Media intent: none",
             in: app
         )
         UITestHarness.requirePresent(.mediaViewerPager, in: app)
-        MediaViewerProductionAssertions.requirePosition("1 / 5", in: app)
+        MediaViewerProductionAssertions.requirePosition("1 / 4", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)
         UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)
         UITestHarness.requirePresent(.threadContentLabRoot, in: app)
 
         UITestHarness.scrollToHittable(.threadContentUnknown, in: app)
         UITestHarness.requirePresent(.threadContentUnknown, in: app)
-        UITestHarness.scrollToHittable(.threadContentAfterUnknown, in: app)
-        UITestHarness.requirePresent(.threadContentAfterUnknown, in: app)
+        UITestHarness.scrollRendererTailIntoView(in: app)
         UITestHarness.attachSafeVisualEvidence(
             app: app,
             name: "Thread content dark large type reduced motion fixture"
@@ -334,21 +333,21 @@ final class AppShellSmokeTests: XCTestCase {
             requireNonRenderedImageState(
                 state: .threadContentImageLoadingState,
                 action: .threadContentImageLoadingAction,
-                label: "合成图片，第 2 张，共 5 张",
+                label: "合成图片，第 2 张，共 4 张",
                 value: "正在加载",
                 in: app
             ),
             requireNonRenderedImageState(
                 state: .threadContentImageFailureState,
                 action: .threadContentImageFailureAction,
-                label: "合成图片，第 3 张，共 5 张",
+                label: "合成图片，第 3 张，共 4 张",
                 value: "加载失败",
                 in: app
             ),
             requireNonRenderedImageState(
                 state: .threadContentImageDecodeFailureState,
                 action: .threadContentImageDecodeFailureAction,
-                label: "不可解码图片，第 4 张，共 5 张",
+                label: "不可解码图片，第 4 张，共 4 张",
                 value: "加载失败",
                 in: app
             )

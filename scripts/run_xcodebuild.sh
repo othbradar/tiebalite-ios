@@ -31,22 +31,6 @@ source scripts/project.env
 : "${DERIVED_DATA_PATH:=.build/DerivedData}"
 : "${RESULTS_DIR:=Artifacts/TestResults}"
 
-app_bundle_identifier="$(
-  awk -F= '
-    /^[[:space:]]*TIEBALITE_APP_BUNDLE_IDENTIFIER[[:space:]]*=/ {
-      value = $2
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-      print value
-      exit
-    }
-  ' Config/Shared.xcconfig
-)"
-if [[ -z "$app_bundle_identifier" ]]; then
-  echo "ERROR: TIEBALITE_APP_BUNDLE_IDENTIFIER is missing." >&2
-  exit 66
-fi
-ui_test_runner_bundle_identifier="${app_bundle_identifier}.uitests.xctrunner"
-
 if [[ ! -e "$CONTAINER_PATH" ]]; then
   echo "ERROR: generated container is missing: $CONTAINER_PATH" >&2
   exit 66
@@ -103,59 +87,12 @@ run_build() {
   return "$status"
 }
 
-reset_project_ui_test_install() {
+prepare_project_ui_test_device() {
   local simulator_udid="$1"
+  # Xcode installs the candidate over the existing app. Keep user data and Keychain intact.
+  # Scenario configuration supplies isolated stores; uninstalling is not test isolation.
   xcrun simctl boot "$simulator_udid" >/dev/null 2>&1 || true
   xcrun simctl bootstatus "$simulator_udid" -b >/dev/null
-  uninstall_project_bundle_if_present \
-    "$simulator_udid" \
-    "$ui_test_runner_bundle_identifier"
-  uninstall_project_bundle_if_present \
-    "$simulator_udid" \
-    "$app_bundle_identifier"
-}
-
-project_bundle_is_installed() {
-  local simulator_udid="$1"
-  local bundle_identifier="$2"
-  local installed_apps
-  if ! installed_apps="$(xcrun simctl listapps "$simulator_udid")"; then
-    echo "ERROR: unable to inspect installed Simulator applications." >&2
-    return 2
-  fi
-  printf '%s\n' "$installed_apps" \
-    | rg -F "CFBundleIdentifier = \"$bundle_identifier\";" >/dev/null
-}
-
-uninstall_project_bundle_if_present() {
-  local simulator_udid="$1"
-  local bundle_identifier="$2"
-  local status=0
-
-  project_bundle_is_installed \
-    "$simulator_udid" \
-    "$bundle_identifier" || status=$?
-  case "$status" in
-    0)
-      xcrun simctl uninstall "$simulator_udid" "$bundle_identifier"
-      ;;
-    1)
-      return
-      ;;
-    *)
-      return "$status"
-      ;;
-  esac
-
-  status=0
-  project_bundle_is_installed \
-    "$simulator_udid" \
-    "$bundle_identifier" || status=$?
-  if [[ "$status" -eq 0 ]]; then
-    echo "ERROR: project bundle remains installed: $bundle_identifier" >&2
-    return 1
-  fi
-  [[ "$status" -eq 1 ]]
 }
 
 common=(
@@ -187,7 +124,7 @@ case "$mode" in
     ;;
   ui-smoke)
     ui_iphone_udid="$(iphone_udid)"
-    reset_project_ui_test_install "$ui_iphone_udid"
+    prepare_project_ui_test_device "$ui_iphone_udid"
     result="$RESULTS_DIR/${stamp}-ui-smoke.xcresult"
     run_build ui-smoke "${common[@]}" \
       -destination "platform=iOS Simulator,id=$ui_iphone_udid" \
@@ -200,7 +137,7 @@ case "$mode" in
     ;;
   ui-smoke-ipad)
     ui_ipad_udid="$(ipad_udid)"
-    reset_project_ui_test_install "$ui_ipad_udid"
+    prepare_project_ui_test_device "$ui_ipad_udid"
     result="$RESULTS_DIR/${stamp}-ui-smoke-ipad.xcresult"
     run_build ui-smoke-ipad "${common[@]}" \
       -destination "platform=iOS Simulator,id=$ui_ipad_udid" \
@@ -210,7 +147,7 @@ case "$mode" in
     ;;
   ui-renderer)
     renderer_iphone_udid="$(iphone_udid)"
-    reset_project_ui_test_install "$renderer_iphone_udid"
+    prepare_project_ui_test_device "$renderer_iphone_udid"
     result="$RESULTS_DIR/${stamp}-ui-renderer.xcresult"
     run_build ui-renderer "${common[@]}" \
       -destination "platform=iOS Simulator,id=$renderer_iphone_udid" \
@@ -220,7 +157,7 @@ case "$mode" in
     ;;
   ui-renderer-ipad)
     renderer_ipad_udid="$(ipad_udid)"
-    reset_project_ui_test_install "$renderer_ipad_udid"
+    prepare_project_ui_test_device "$renderer_ipad_udid"
     result="$RESULTS_DIR/${stamp}-ui-renderer-ipad.xcresult"
     run_build ui-renderer-ipad "${common[@]}" \
       -destination "platform=iOS Simulator,id=$renderer_ipad_udid" \
@@ -230,7 +167,7 @@ case "$mode" in
     ;;
   ui-interaction)
     interaction_iphone_udid="$(iphone_udid)"
-    reset_project_ui_test_install "$interaction_iphone_udid"
+    prepare_project_ui_test_device "$interaction_iphone_udid"
     result="$RESULTS_DIR/${stamp}-ui-interaction.xcresult"
     run_build ui-interaction "${common[@]}" \
       -destination "platform=iOS Simulator,id=$interaction_iphone_udid" \
@@ -240,7 +177,7 @@ case "$mode" in
     ;;
   ui-interaction-ipad)
     interaction_ipad_udid="$(ipad_udid)"
-    reset_project_ui_test_install "$interaction_ipad_udid"
+    prepare_project_ui_test_device "$interaction_ipad_udid"
     result="$RESULTS_DIR/${stamp}-ui-interaction-ipad.xcresult"
     run_build ui-interaction-ipad "${common[@]}" \
       -destination "platform=iOS Simulator,id=$interaction_ipad_udid" \
@@ -250,7 +187,7 @@ case "$mode" in
     ;;
   tests)
     tests_iphone_udid="$(iphone_udid)"
-    reset_project_ui_test_install "$tests_iphone_udid"
+    prepare_project_ui_test_device "$tests_iphone_udid"
     result="$RESULTS_DIR/${stamp}-tests.xcresult"
     run_build tests "${common[@]}" \
       -destination "platform=iOS Simulator,id=$tests_iphone_udid" \

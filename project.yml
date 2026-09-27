@@ -116,9 +116,9 @@ targets:
         PRODUCT_NAME: TiebaLite
       configs:
         Debug:
-          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift"
+          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift R04FeedFixture.swift R05ForumFixture.swift"
         Release:
-          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Debug*.swift InteractionLab*.swift Harness*.swift LaunchScenario*.swift FixturePlaceholderViews.swift FixtureFollowedForumsRepository.swift FixtureForumHomeRepository.swift FixtureReadingImageLoader.swift FixtureReadingRepositories.swift FixtureSearchRepository.swift FixtureThreadReaderPages.swift"
+          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Debug*.swift InteractionLab*.swift Harness*.swift LaunchScenario*.swift R04FeedFixture.swift R05ForumFixture.swift FixturePlaceholderViews.swift FixtureFollowedForumsRepository.swift FixtureForumHomeRepository.swift FixtureReadingImageLoader.swift FixtureReadingRepositories.swift FixtureSearchRepository.swift FixtureThreadReaderPages.swift FixtureComposerImageUploader.swift FixtureNotificationsRepository.swift FixtureSubpostsRepository.swift FixtureTextWriteRepository.swift"
         UITesting:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG UITESTING"
 

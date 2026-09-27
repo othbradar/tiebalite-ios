@@ -5,8 +5,6 @@ import UniformTypeIdentifiers
 
 /// Photo import owns files, not a second image cache. ImageIO work stays off the main actor.
 actor ComposerPhotoPreparation {
-    static let shared = ComposerPhotoPreparation()
-
     func prepare(file: ComposerPhotoFile) throws -> ComposerPhoto {
         try Task.checkCancellation()
         let size = try file.url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0

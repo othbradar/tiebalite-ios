@@ -229,29 +229,31 @@ private struct ForumSearchResultCard: View {
     let row: ForumSearchRowModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.small) {
-            Label(row.title, systemImage: "rectangle.stack.fill")
-                .font(Typography.font(.headline))
-                .foregroundStyle(SemanticColor.primaryText)
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: Spacing.small) {
+                Label(row.title, systemImage: "rectangle.stack.fill")
+                    .font(Typography.font(.headline))
+                    .foregroundStyle(SemanticColor.primaryText)
 
-            if let summary = row.summary {
-                Text(summary)
-                    .font(Typography.font(.body))
-                    .foregroundStyle(SemanticColor.secondaryText)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(3)
-            }
+                if let summary = row.summary {
+                    Text(summary)
+                        .font(Typography.font(.body))
+                        .foregroundStyle(SemanticColor.secondaryText)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(3)
+                }
 
-            if let statistics = row.statistics {
-                Text(statistics)
-                    .font(Typography.font(.caption))
-                    .foregroundStyle(SemanticColor.secondaryText)
+                if let statistics = row.statistics {
+                    Text(statistics)
+                        .font(Typography.font(.caption))
+                        .foregroundStyle(SemanticColor.secondaryText)
+                }
             }
+            .padding(Spacing.medium)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            TiebaFlatDivider()
         }
-        .padding(Spacing.medium)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .background(SemanticColor.background)
-        .overlay(alignment: .bottom) { TiebaFlatDivider() }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }

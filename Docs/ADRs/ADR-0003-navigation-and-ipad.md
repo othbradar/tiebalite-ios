@@ -196,3 +196,10 @@ detail NavigationStack；不得回退为独立 iPad path 或自定义全局导�
 
 若 resize 导致 route 丢失/重复、跨 root Store 串用，或修复需要自定义全局
 push/pop，回滚容器投影到最后绿色版本，保留 canonical route 模型。
+
+
+### R13 我的空详情投影修订（2026-09-27）
+
+当前 iPadOS 26.5 基线连续三次复现：从竖屏 Forum→Thread 旋转横屏，再选择我的，中列正确而右列仍显示并可点击前一根的 Thread。canonical selectedTab 已切换，settingsPath 为空；旧实现此时从显式 NavigationStack 变为裸 Text，让 SplitView 详情承载保留了前一栈的已推入目的页。
+
+我的 detail 始终使用绑定 settingsDetailTailBinding 的系统 NavigationStack，包括空态；空路径明确投影为空栈，不清理其他 root 的 canonical routes。相同三次场景通过且切回首页仍为原 Thread。无 root id/reset、导航树重建、自定义转场或新状态副本。该局部修订补全上述 Settings detail 约定，不改变列表/Pager/MediaViewer。完整门禁和 Live 复核见 R13_ACCEPTANCE.md。

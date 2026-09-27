@@ -7,8 +7,8 @@
 - `reference_integrity.sh`: require the Android reference to stay clean and match its audited lock SHA when present.
 - `find_simulator.py`: choose an available iPhone/iPad simulator UDID.
 - `run_xcodebuild.sh`: shared build/test runner after Stage 03 fills
-  `project.env`; UI modes reinstall only TiebaLite and its test runner so a
-  Simulator clone cannot reuse a stale bundle.
+  `project.env`; UI modes boot the selected device and let Xcode install current
+  products over the existing app without uninstalling or clearing user data.
 - `verify_project_generation.sh`: generate twice in a temporary directory and require byte-identical Xcode projects.
 - `forbidden_patterns.sh`: fail on known interaction/state anti-patterns and warn on suspicious patterns.
 - `swift_source_policy.sh`: enforce logging, concurrency and deterministic-test source boundaries.
@@ -24,9 +24,9 @@
 - `collect_bug_context.sh`: collect non-sensitive environment/Git context for a bug report.
 - `interaction_inventory.sh`: inventory animation, gesture, presentation, scrolling, navigation and identity call sites for audits.
 
-Scripts do not modify unrelated user data. UI modes remove only the configured
-TiebaLite app and its UI-test runner from the selected test Simulator before
-reinstalling current build products; other apps and containers are untouched.
+Scripts do not uninstall apps, erase Simulators or clear Keychain. Fixture launch
+scenarios supply isolated stores and transports; removing user data is not part
+of test isolation. Xcode handles installation of the current test products.
 Project-specific values belong in the ignored `scripts/project.env`, generated
 from the committed example. The unit, UI smoke, renderer-lab, interaction-lab
 and full-test modes all use the canonical `TiebaLite` test plan and explicit

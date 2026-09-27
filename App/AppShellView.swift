@@ -175,16 +175,18 @@ private struct IPadAppShellView: View {
         if let root = content.navigation.state.selectedTab.rootID {
             RegularDetailColumn(content: content, root: root)
         } else if content.navigation.state.selectedTab == .settings {
-            if let first = content.navigation.state.settingsPath.first {
-                NavigationStack(path: settingsDetailTailBinding) {
+            NavigationStack(path: settingsDetailTailBinding) {
+                if let first = content.navigation.state.settingsPath.first {
                     content.personalDestination(for: first)
                         .navigationDestination(for: SettingsRoute.self) { route in
                             content.personalDestination(for: route)
                         }
+                } else {
+                    // Keep an explicit empty stack so the split column cannot retain
+                    // a pushed destination from the previously selected business root.
+                    Text("选择资料、浏览历史或设置")
+                        .foregroundStyle(SemanticColor.secondaryText)
                 }
-            } else {
-                Text("选择资料、浏览历史或设置")
-                    .foregroundStyle(SemanticColor.secondaryText)
             }
         } else {
             // A message placeholder must never project the personal tab's path.

@@ -42,6 +42,11 @@ struct OpenSourceLicensesView: View {
                         + "第三方/Proto、App Store 与商业二进制分发权利仍待确认。"
                 )
             }
+            Section("官方表情资源") {
+                Text("132 张本地原图；沿用 TiebaLite Android 映射与贴吧官方资源。")
+                Text("逐文件来源见仓库 Resources/TIEBA_EMOTICONS_PROVENANCE.md；素材权利归原权利人。")
+                    .font(Typography.font(.caption))
+            }
             Section("参考项目") {
                 Text("TiebaLite Android reference")
                 Text("来源与许可记录见仓库 Docs/Audits/SOURCE_AND_LICENSE_NOTES.md。")

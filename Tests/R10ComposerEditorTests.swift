@@ -76,10 +76,10 @@ struct R10ComposerEditorTests {
         #expect(selection == NSRange(location: 3, length: 0))
         view.selectedRange = NSRange(location: 3, length: 1)
         #expect(selection == NSRange(location: 3, length: 5))
-        let pasteboard = UIPasteboard.general.items
-        defer { UIPasteboard.general.items = pasteboard }
+        view.pasteboard = UIPasteboard.withUniqueName()
+        defer { UIPasteboard.remove(withName: view.pasteboard.name) }
         view.copy(nil)
-        #expect(UIPasteboard.general.string == "#(笑眼)")
+        #expect(view.pasteboard.string == "#(笑眼)")
         view.cut(nil)
         #expect(text == "甲😀乙")
         view.paste(nil)

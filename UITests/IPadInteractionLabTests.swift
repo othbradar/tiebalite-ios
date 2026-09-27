@@ -268,6 +268,8 @@ private extension IPadInteractionLabTests {
         childSequence: String,
         coordinatorSequence: String
     ) {
+        device.orientation = .portrait
+        UITestHarness.requirePresent(.layoutCompact, in: app)
         let beforeLandscape = settledSnapshots.label
         device.orientation = .landscapeLeft
         requireSettledPagerProjection(
@@ -314,6 +316,8 @@ private extension IPadInteractionLabTests {
             .interactionPagerProjection,
             in: app
         ).label
+        // R05 uses the compact projection in portrait; exercise regular in landscape.
+        device.orientation = .landscapeLeft
         UITestHarness.tap(.layoutControlRegular, in: app)
         UITestHarness.requirePresent(.layoutRegular, in: app)
         UITestHarness.requireLabelNotEqual(

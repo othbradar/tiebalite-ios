@@ -1,5 +1,7 @@
 # Official Tieba emoticon provenance
 
+Current R13 inventory: **132 files / 399,224 bytes** (51 WebP, 81 PNG). Every bundled file matches its source SHA-256 and byte count recorded below. Earlier totals are historical. R13 adds no artwork; unavailable Shoubai 368 and plain `[图片]` text retain the R08 fallback boundary.
+
 Copied byte-for-byte from TiebaLite Android UI reference c5f1125f42498e49db4e4a9cb66313b8c8a285c7.
 Source repository: https://github.com/zzc10086/TiebaLite.git
 Android repository GPL-3.0; asset-specific/service artwork rights remain unresolved for binary/commercial distribution.

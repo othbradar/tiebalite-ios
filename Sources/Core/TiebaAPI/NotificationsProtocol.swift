@@ -1,7 +1,4 @@
 import Foundation
-#if DEBUG
-import OSLog
-#endif
 
 enum NotificationsProtocol {
     static func descriptor(kind: NotificationKind?) throws -> EndpointDescriptor {
@@ -51,20 +48,7 @@ enum NotificationsProtocol {
     }
 
     private static func decodeResponse(_ data: Data) throws -> NotificationResponse {
-        do { return try JSONDecoder().decode(NotificationResponse.self, from: data) } catch {
-#if DEBUG
-            let path: String
-            switch error {
-            case let DecodingError.typeMismatch(_, context), let DecodingError.valueNotFound(_, context),
-                 let DecodingError.keyNotFound(_, context), let DecodingError.dataCorrupted(context):
-                path = context.codingPath.map(\.stringValue).joined(separator: ".")
-            default: path = "envelope"
-            }
-            Logger(subsystem: "dev.local.tiebaliteios", category: "Notifications")
-                .notice("Decode failure at field: \(path, privacy: .public)")
-#endif
-            throw error
-        }
+        try JSONDecoder().decode(NotificationResponse.self, from: data)
     }
 
     private static func validate(_ response: NotificationResponse) throws {

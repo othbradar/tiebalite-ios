@@ -84,13 +84,15 @@ enum Stage16BUITestSupport {
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> XCUIElement {
-        let candidate = element(identifier, in: app)
         let container = requirePresent(
             containerIdentifier,
             in: app,
             file: file,
             line: line
         )
+        // iPad can show My and Settings together, each with a history entry.
+        // Resolve the requested control inside the page being scrolled.
+        let candidate = container.descendants(matching: .any)[identifier]
         for _ in 0..<16 {
             if candidate.exists, candidate.isHittable {
                 return candidate
