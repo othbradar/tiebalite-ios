@@ -1,5 +1,7 @@
 # TASK_STATE
 
+- 2026-09-27 v0.2.0-beta.1 = RELEASE_PREPARED：显示名修复已提交 `e479814`；0.2.0/Build 2 真机 arm64 未签名 Release archive、实际包隔离与 ZIP/版本/架构/SHA 检查通过，IPA 6,349,822 bytes。定向 Unit 15项/18次、lint/build/secret/diff 通过，未重复完整长矩阵。功能及页面重制说明在 Docs/Releases/v0.2.0-beta.1.md，精确检查在 Docs/Audits/RELEASE_0_2_0_BETA_1.md。用户已完成 GitHub 网页登录；随后按授权使用 SSH 推送与网页发布，当前条目不冒充远端已完成。
+
 - 2026-09-27 用户明确批准提交显示名修复、以本机 SSH 推送 GitHub 并发布新版 IPA。修复提交检查 R09 定向 15 项/18 次执行、lint/build/secret/diff 全通过。精确纳入修复与证据文件，用户原有未跟踪 Prompt/skill、私人 Artifacts 均排除；随后独立准备 v0.2.0-beta.1 Release 真机未签名包，发布成功与否以后续记录为准。
 
 - 2026-09-27 发布候选 = LIVE_REPLY_USER_VERIFIED / MODERATION_RETENTION_PENDING：用户明确“这回发成功了”，截图可见新增第3楼（15:45）、文字和官方表情正常。仅确认本次发送及当前可见，风控根因和后续删除风险仍 UNKNOWN。私人图片保存在 ignored Artifacts/Audits/WriteCompatibility20260927/user-confirmed-live-reply.png。本轮只更新四份证据/进度文档并做 diff/secret 检查；未改代码/安装包、未重跑 Unit/build/UI、无 AI 发布/上传，无暂存/提交。R13 仍为已提交的 8aec6e4。
