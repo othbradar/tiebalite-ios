@@ -87,7 +87,7 @@ struct ForumRoute: Codable, Hashable, Sendable {
     }
 }
 
-struct ForumSummary: Equatable, Sendable {
+struct ForumSummary: Codable, Equatable, Sendable {
     let forumID: Int64?
     let name: String
     let slogan: String?

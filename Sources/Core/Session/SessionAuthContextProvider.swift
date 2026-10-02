@@ -1,3 +1,5 @@
+import Observation
+
 struct SessionAuthorization: Equatable, Sendable,
     CustomStringConvertible, CustomDebugStringConvertible {
     let bduss: String
@@ -30,7 +32,15 @@ protocol AuthContextProviding: SessionProviding {
 }
 
 @MainActor
+@Observable
 final class SessionAuthContextProvider: AuthContextProviding {
+    private(set) var contentCacheContext = ContentCacheContext.anonymous
+    private let cacheNamespaceStore: any ContentCacheAccountNamespaceStoring
+
+    init(cacheNamespaceStore: any ContentCacheAccountNamespaceStoring = LocalContentCacheAccountNamespace()) {
+        self.cacheNamespaceStore = cacheNamespaceStore
+    }
+
     private var status: SessionStatus = .signedOut
     private var revision: UInt64 = 0
     private var nextSessionID: UInt64 = 0
@@ -68,12 +78,15 @@ final class SessionAuthContextProvider: AuthContextProviding {
     }
 
     @discardableResult
-    func install(_ credential: SessionCredential) -> ProtectedDataLease {
+    func install(_ credential: SessionCredential, restoring: Bool = false) -> ProtectedDataLease {
         nextSessionID &+= 1
         revision &+= 1
         let lease = ProtectedDataLease(
             sessionID: SessionID(rawValue: nextSessionID),
             generation: revision
+        )
+        contentCacheContext = ContentCacheContext(
+            namespace: restoring ? cacheNamespaceStore.restored() : cacheNamespaceStore.newAccount(), revision: revision
         )
         self.credential = credential
         activeLease = lease
@@ -90,6 +103,8 @@ final class SessionAuthContextProvider: AuthContextProviding {
         revision &+= 1
         credential = nil
         activeLease = nil
+        cacheNamespaceStore.revoke()
+        contentCacheContext = ContentCacheContext(namespace: nil, revision: revision)
         status = .expired
         return true
     }
@@ -98,6 +113,8 @@ final class SessionAuthContextProvider: AuthContextProviding {
         revision &+= 1
         credential = nil
         activeLease = nil
+        cacheNamespaceStore.revoke()
+        contentCacheContext = ContentCacheContext(namespace: "anonymous", revision: revision)
         status = .signedOut
     }
 }

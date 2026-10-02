@@ -1,7 +1,7 @@
 import Foundation
 
 /// Public display fields only. Identity belongs to the existing business model.
-struct TiebaUserVisuals: Equatable, Sendable {
+struct TiebaUserVisuals: Codable, Equatable, Sendable {
     let rawUserID: Int64
     let displayName: String
     let portrait: String?

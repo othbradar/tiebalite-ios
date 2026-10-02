@@ -57,7 +57,7 @@ final class SessionStore {
                     return
                 }
                 if let credential {
-                    self.authContextProvider.install(credential)
+                    self.authContextProvider.install(credential, restoring: true)
                     self.state = .signedIn
                 } else {
                     self.authContextProvider.revoke()

@@ -9,6 +9,7 @@ struct ForumHomeView: View {
     var onDisplayed: (ForumSummary) async -> Void = { _ in }
     var onOpenSearch: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @State private var composeTarget: TextComposeTarget?
 
     var body: some View {
@@ -32,6 +33,11 @@ struct ForumHomeView: View {
             let operation = Task { @MainActor in await store.synchronize(with: route) }
             await operation.value
         }
+        .onDisappear { Task { await store.saveReadingPosition() } }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { Task { await store.saveReadingPosition() } }
+        }
+        .task(id: store.cacheContext) { await store.synchronize(with: route) }
         .task(id: store.preferredLatestSort) {
             await store.synchronize(with: route)
         }
@@ -117,6 +123,7 @@ struct ForumThreadPageView: View {
                     Task { await store.loadNextPage() }
                 },
                 onScrollSettled: store.setScrollAnchor,
+                onRefresh: { await store.reload() },
                 rowContent: { row in
                 ForumHomeRowView(row: row, imageLoader: imageLoader, onOpenThread: onOpenThread,
                                  requestReload: { Task { await store.reload() } },
@@ -127,6 +134,9 @@ struct ForumThreadPageView: View {
                 Task { await store.reload() }
             }
             .accessibilityIdentifier(ForumHomeAccessibilityID.failure)
+        } else if store.isCheckingCache {
+            SemanticColor.background.frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("forum-home.cache.restoring")
         } else {
             InitialLoadingView(title: "正在加载吧首页")
                 .accessibilityIdentifier(ForumHomeAccessibilityID.initialLoading)

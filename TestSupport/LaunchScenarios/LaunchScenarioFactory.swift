@@ -54,7 +54,8 @@ enum LaunchScenarioFactory {
             sessionStatus = .signedOut
             safeLabel = "Harness: Session signed out"
             imageLoader = HarnessFixtureImageLoader(fixtures: [:])
-        case .sessionSignedInFixture, .rootNavigationMixedMedia, .dynamicFeedParity, .forumHomeParity, .threadReaderParity:
+        case .sessionSignedInFixture, .rootNavigationMixedMedia, .dynamicFeedParity,
+             .forumHomeParity, .forumContentCache, .threadReaderParity:
             networkMode = .controlled
             httpBehavior = .controlled
             sessionStatus = .signedIn
@@ -69,12 +70,8 @@ enum LaunchScenarioFactory {
         }
 
         let sessionDependencies = makeSessionDependencies(status: sessionStatus)
-        let environment = makeEnvironment(
-            scenario: scenario,
-            httpBehavior: httpBehavior,
-            session: sessionDependencies.authContextProvider,
-            imageLoader: imageLoader
-        )
+        let environment = makeEnvironment(scenario: scenario, httpBehavior: httpBehavior,
+                                          session: sessionDependencies.authContextProvider, imageLoader: imageLoader)
 
         return LaunchScenarioDescriptor(
             scenario: scenario,
@@ -88,12 +85,20 @@ enum LaunchScenarioFactory {
                 loginWebSession: sessionDependencies.loginWebSession,
                 recommendationRepository: recommendationRepository(for: scenario),
                 followedForumsRepository: followedForumsRepository(for: scenario),
-                forumHomeRepository: scenario == .forumHomeParity ? R05ForumFixture() : nil,
+                forumHomeRepository: forumHomeRepository(for: scenario), forumHomeCache: forumHomeCache(for: scenario),
                 threadReaderRepository: scenario == .threadReaderParity ? R06ThreadFixtureRepository() : nil
             ),
             isolationCanary: LaunchScenarioRegistry.isolationCanary,
             displayProfile: displayProfile
         )
+    }
+
+    private static func forumHomeRepository(for scenario: LaunchScenarioID) -> (any ForumHomeRepository)? {
+        [.forumHomeParity, .forumContentCache].contains(scenario) ? R05ForumFixture(tracksRefreshes: scenario == .forumContentCache) : nil
+    }
+
+    private static func forumHomeCache(for scenario: LaunchScenarioID) -> ContentPageCache? {
+        scenario == .forumContentCache ? ContentPageCache(directory: nil) : nil
     }
 
     private static func followedForumsRepository(for scenario: LaunchScenarioID) -> (any FollowedForumsRepository)? {
@@ -110,6 +115,7 @@ enum LaunchScenarioFactory {
         switch scenario {
         case .threadReaderParity: "Harness: Thread parity"
         case .forumHomeParity: "Harness: Forum parity"
+        case .forumContentCache: "Harness: Forum cache"
         case .dynamicFeedParity: "Harness: Dynamic parity"
         case .rootNavigationMixedMedia: "Harness: Mixed-size root media"
         default: "Harness: Session signed in fixture"
@@ -119,7 +125,7 @@ enum LaunchScenarioFactory {
     private static func signedInImageLoader(for scenario: LaunchScenarioID) -> any ImageLoading {
         switch scenario {
         case .threadReaderParity: R06ThreadFixtureImages()
-        case .dynamicFeedParity, .forumHomeParity: R04FeedFixtureImages()
+        case .dynamicFeedParity, .forumHomeParity, .forumContentCache: R04FeedFixtureImages()
         case .rootNavigationMixedMedia: HarnessMixedSizeImageLoader()
         default: FixtureReadingImageLoader()
         }

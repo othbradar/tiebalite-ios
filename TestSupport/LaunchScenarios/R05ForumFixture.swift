@@ -7,6 +7,9 @@ import Foundation
 #if UITESTING || TEST_SUPPORT
 actor R05ForumFixture: ForumHomeRepository {
     private var requests: [ForumHomePageRequest] = []
+    private let tracksRefreshes: Bool
+
+    init(tracksRefreshes: Bool = false) { self.tracksRefreshes = tracksRefreshes }
 
     func loadForumHomePage(_ request: ForumHomePageRequest) async throws -> ForumHomeSnapshot {
         try Task.checkCancellation()
@@ -18,6 +21,8 @@ actor R05ForumFixture: ForumHomeRepository {
         case let .good(id): "精华\(id)"
         case let .category(category, sort): "\(category.title)\(sort)"
         }
+        let refreshCount = requests.filter { $0.pageNumber == 1 && $0.query == request.query }.count
+        let refreshMarker = tracksRefreshes ? "刷新\(refreshCount) · " : ""
         let forum = ForumSummary(
             forumID: base.forum.forumID, name: base.forum.name, slogan: nil,
             avatarResourceID: "https://fixture.invalid/forum.png",
@@ -34,7 +39,7 @@ actor R05ForumFixture: ForumHomeRepository {
             let id = thread.threadID + Int64((request.pageNumber - 1) * 100)
             let count = index == 2 ? 8 : index == 3 ? 1 : 0
             return ForumThreadSummary(
-                itemID: id - 100, threadID: id, title: marker + " · " + thread.title,
+                itemID: id - 100, threadID: id, title: refreshMarker + marker + " · " + thread.title,
                 summary: "这是用于分类切换与阅读位置验证的固定摘要。", forumName: thread.forumName,
                 authorName: thread.authorName, replyCount: thread.replyCount, viewCount: 123,
                 isPinned: request.pageNumber == 1 && index < 2 && request.query == .latest(.lastReply),

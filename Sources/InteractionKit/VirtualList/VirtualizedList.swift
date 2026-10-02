@@ -72,6 +72,7 @@ where Item: Identifiable & Equatable & Sendable,
     let restoredAnchor: Item.ID?
     let onPrefetch: ([Item.ID]) -> Void
     let onScrollSettled: (Item.ID?) -> Void
+    let onRefresh: (@MainActor () async -> Void)?
     @ViewBuilder let rowContent: (Item) -> RowContent
 
     init(
@@ -81,6 +82,7 @@ where Item: Identifiable & Equatable & Sendable,
         restoredAnchor: Item.ID? = nil,
         onPrefetch: @escaping ([Item.ID]) -> Void = { _ in },
         onScrollSettled: @escaping (Item.ID?) -> Void = { _ in },
+        onRefresh: (@MainActor () async -> Void)? = nil,
         @ViewBuilder rowContent: @escaping (Item) -> RowContent
     ) {
         self.items = items
@@ -89,6 +91,7 @@ where Item: Identifiable & Equatable & Sendable,
         self.restoredAnchor = restoredAnchor
         self.onPrefetch = onPrefetch
         self.onScrollSettled = onScrollSettled
+        self.onRefresh = onRefresh
         self.rowContent = rowContent
     }
 
@@ -105,6 +108,7 @@ where Item: Identifiable & Equatable & Sendable,
         var pendingItems: [Item]?
         var isApplyingSnapshot = false
         var hasAppliedSnapshot = false
+        private var refreshTask: Task<Void, Never>?
         private var pendingRestoredAnchor: Item.ID?
         private var activeHostedCellIDs: Set<ObjectIdentifier> = []
         private let hostedCells = NSHashTable<VirtualListHostingCell>
@@ -117,6 +121,12 @@ where Item: Identifiable & Equatable & Sendable,
 
         func install(on tableView: VirtualizedTableView) {
             self.tableView = tableView
+            if parent.onRefresh != nil {
+                let control = UIRefreshControl()
+                control.accessibilityIdentifier = parent.accessibilityIdentifier + ".refresh"
+                control.addTarget(self, action: #selector(refresh), for: .valueChanged)
+                tableView.refreshControl = control
+            }
             tableView.delegate = self
             tableView.prefetchDataSource = self
             if pendingRestoredAnchor != nil {
@@ -188,7 +198,20 @@ where Item: Identifiable & Equatable & Sendable,
             applyPendingSnapshotIfNeeded()
         }
 
+        @objc private func refresh() {
+            guard refreshTask == nil, let onRefresh = parent.onRefresh else { return }
+            refreshTask = Task { @MainActor [weak self] in
+                await onRefresh()
+                self?.tableView?.refreshControl?.endRefreshing()
+                self?.refreshTask = nil
+            }
+        }
+
         func dismantle() {
+            refreshTask?.cancel()
+            refreshTask = nil
+            tableView?.refreshControl?.removeTarget(self, action: #selector(refresh), for: .valueChanged)
+            tableView?.refreshControl = nil
             guard let tableView else {
                 return
             }
@@ -376,7 +399,10 @@ where Item: Identifiable & Equatable & Sendable,
         }
 
         private func emitCurrentAnchorIfAvailable() {
+            // A transient zero-size table can report its first row without ever displaying it.
+            // Ignore that teardown so it cannot replace a restored reading position with top.
             guard let tableView,
+                  !tableView.bounds.isEmpty,
                   let dataSource,
                   let topVisible = tableView.indexPathsForVisibleRows?
                     .sorted()
@@ -415,6 +441,9 @@ where Item: Identifiable & Equatable & Sendable,
         }
     }
 
+}
+
+extension VirtualizedList {
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
     }

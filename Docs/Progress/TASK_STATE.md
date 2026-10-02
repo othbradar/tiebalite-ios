@@ -1,5 +1,48 @@
 # TASK_STATE
 
+## 2026-10-02 U02 — USER_ACCEPTED（删除提示、重进自动刷新）
+
+- 用户明确回复“行，现在推送U02并进入U03”，批准当前已验收候选并授权提交、推送及仅继续 U03。生产代码自上一轮验收后未变，复用 SilentRefresh 最终构建/定向测试/双端 Live 结果；按 APPROVE_CURRENT_PHASE 只复核 diff、secret scan 与精确 staged 文件。下方“未提交/不进入 U03”为交付时历史状态，现由本次授权覆盖；完整提交与推送结果在 U03 记录补记。
+- 用户明确否决“有新内容，点击更新”顶部提示，要求重进自动刷新或手动下拉刷新；本节覆盖下方 U02 历史记录中的提示行/新鲜命中零请求设计，仍不提交、不进入 U03。基线 HEAD 保持 `2d89ad00fa89a813d8288b565bc517eaead6c0ca`，现有未提交工作及用户 Prompt/skill 保留。
+- 修改范围：ForumHomeStore/View 删除可见的新内容/缓存失败提示与按钮接线；Core 的 ForumHomeCacheAccess/CachedForumHomeRepository 删除不再调用的 revalidation helper；U02 状态/UI 测试、R05 fixture 的可选刷新序号、LaunchScenarioFactory、ADR-0030、交互/状态规格、本记录。共享 VirtualizedList/Pager/图片/签名/依赖本次不改。
+- 状态：新 Store 先读缓存并恢复位置，再请求一次最新首屏（包括 60 秒内的缓存）；同 Store 重复 synchronize 不追加请求。在顶部自动应用并建立新分页链；深处静默暂存，滚回顶部时应用，旧后页不拼进新快照。下拉刷新直接请求；自动更新失败保持旧内容，手动失败沿用现有保留内容错误状态。无需顶部提示、替代入口或新 overlay。
+- 定向证据（ignored `Artifacts/VisualReview/U02/SilentRefresh/`）：改动前 `baseline.xcresult` U02 8项/10次 PASS。新增新鲜/过期重进显示新帖测试 `red.xcresult` 两个参数均 FAIL，旧代码仍显示旧首帖。实现后 `green.xcresult` U02 + R05 Store 12项/15次 PASS，含新帖自动显示与持久化、同 Store 去重、深处保持/到顶应用、返回顶部磁盘记忆、失败保留、排序/账号/清理隔离及迟到排序。旧“零请求/等待按钮”断言按本次明确产品修改更新，缓存快照恢复与位置断言保留。
+- `make lint` 初次因新增 Fake 参数对齐 FAIL（2条），仅修缩进后 `lint-final.log` 382文件 0 violation。`make secret-scan`、`git diff --check` PASS。iPhone `ui-iphone.xcresult` 深处/顶部两项 PASS，新自动刷新测试确认重进“刷新2”后，下拉 `swipeDown(.slow)` 未触发“刷新3”而 FAIL。测试改为顶部 15%→90% 的明确下拉手势（未改生产控件、未加重试/延时、未放宽刷新序号），`ui-pull.xcresult` 1/1 PASS（21.485s），真实观察刷新1→重进刷新2→下拉刷新3且提示不存在。失败包导出过早时 Info.plist 尚未生成而报错，完成后成功导出但无匹配附件；后续测试加 fixture 安全截图。iPad `ui-ipad.xcresult` 3/3 PASS、0 skipped（含更新序号、无提示、深处位置、回顶重进）。`make lint` 最终 lint-delivery.log 382文件0 violation；`make build`（build.log）PASS；`scripts/visual_review_build_install.sh U02`（visual-install.log）PASS，完整正常 Debug .app 覆盖安装 iPhone，并同包覆盖 iPad。签名/entitlements 通过，双端已安装 executable/debug dylib SHA256 与本次完整产物一致，未 uninstall/erase/清 Keychain。
+- Live：双端正常账号头像、关注列表保留，实际进入高通吧，首屏已自动显示新列表；iPhone 最新发布、iPad 最新回复排序保留。目视确认标签栏下直接是吧规/置顶与帖子，无更新提示行、无原提示的占位空白。截图 `20261002-135841-iphone-live-no-banner.png`、`20261002-135941-ipad-live-no-banner.png` 位于 ignored SilentRefresh 目录。iPhone 留在前台吧首页，iPad 同样停在生产吧首页。
+- 工具/未覆盖边界：CUA 切窗口时一次元素过期，重新读取后成功；两次 iPhone 坐标返回被 windowNotFound 拒绝（未送达 App），没有把这两次操作计为 Live 返回成功。自动重进/下拉刷新请求计数由双端 Fixture UI 证明，Live 只记录实际进入后的更新和无提示目视结果。本次未执行全量 quality/性能/旋转/真机/Live 断网；图片持久化仍留 U06。没有新动画、业务手势、overlay 或依赖，原虚拟列表保持。U02 未暂存/提交，不进入 U03，等待用户检查。
+
+## 2026-10-02 U02 — READY_FOR_USER_VISUAL_REVIEW（顶部位置修订）
+
+- 用户回归反馈：滑回吧首页顶部后退出重进仍恢复旧位置。按当前 U02 延续修复，不另起阶段、不提交。
+- 根因（状态更新遗漏）：VirtualizedList 正常上报当前顶部行；ForumHomeStore.setScrollAnchor 只接受 thread，忽略顶部吧规行，旧 anchor 被 checkpoint 再次落盘。无吧规的首条帖子也应明确表示默认顶部，而不是保留强制恢复行身份。
+- 本次最小差异：ForumHomeStore 将当前 presentation 第一行转换为 nil/top，忽略临时 nil 与未知行；VirtualizedList 仅补销毁时非空 viewport 检查，拒绝未布局临时表的虚假首行，不改变正常离场锚点或一次性恢复。Pager/图片/缓存策略不变。补 U02ForumCacheTests 参数化磁盘回归、U02ForumRefreshControlTests 零尺寸/有效尺寸销毁回归、U02ForumCacheSmokeTests 两轮滚回顶部再进入、交互规格及记录。
+- 红绿证据（ignored `Artifacts/VisualReview/U02/TopPosition/`）：`red.xcresult` 新用例三个参数轮次全部 FAIL，观察旧锚点 140108/首条 140001 未被清除；同场其余7项 PASS。修正后 `green.xcresult` 缓存与 R05 Store 11项/13次执行全 PASS，涵盖有吧规/无吧规、临时 nil/未知行、磁盘重建仍为顶部且页面缓存保留、网络请求数不增加。`make lint` PASS（382文件0 violation）。
+- 相邻回归与因果证据：`ui-iphone.xcresult` 顶部两轮 PASS、深处返回 FAIL；`ui-deep-evidence.xcresult` 即使等可见状态 5 秒仍 FAIL，截图确认回到顶部（目标行 frame 为零），不是断言过早。仅在 UITESTING 暂时记录布局与锚点，`trace.xcresult` 再现相同 FAIL：恢复 140007 后，一个 bounds=(0,0,0,0) 的临时表 dismantle 上报 rule 覆盖锚点；真实离场表 window 同样为空但 bounds 非零，应保留其回调。临时追踪代码已全部移除，未在真实账号运行。
+- 直接红绿：`viewport-red.xcresult` 零尺寸 teardown 错误上报首行 [1] FAIL，有尺寸及刷新控件用例 PASS。加 `!bounds.isEmpty` 后 `unit-final.xcresult` 12项/15次执行 PASS、0 skipped，含两种 teardown、缓存全部用例及原 Cell 不提前清空/释放检查；未跑千条压力套件。最终 `lint-delivery.log` 382文件 0 violation。`ui-iphone-final.xcresult` 2/2 PASS（71.349s）、`ui-ipad-final.xcresult` 2/2 PASS，分别覆盖深处第二页重进/排序/刷新和两轮滑回顶部重进。`make build`（build-final.log）、`make secret-scan`（secret-final.log）、`git diff --check` PASS。`scripts/visual_review_build_install.sh U02` PASS（visual-install-final.log），同一正常 Debug 完整 .app 覆盖安装 iPad，签名/entitlements 校验通过。两台已安装 executable 和 debug dylib SHA256 与最终产物一致，无卸载/erase/清登录态。
+- 本次 Live 验证：iPhone 原账户头像/关注列表可见，进入高通吧先恢复旧深处位置；AX Scroll Up 实际滚至吧规/置顶，返回首页再进入仍在顶部。随后正常 terminate/launch 并再次进入，仍恢复顶部、原最新发布排序保留。iPad 原账号与最新回复排序保留，完整 App 实际进入高通吧顶部。最终 iPhone 置前、双端停在生产吧首页。截图 `20261002-133251-iphone-live-top-reentry.png`、`20261002-133347-iphone-live-top-after-relaunch.png`、`20261002-133347-ipad-live-final.png` 均仅留 ignored TopPosition 目录。
+- 本次修订无新增动画/手势/overlay/依赖；既有虚拟列表与缓存容量/TTL 不变。未重复全量 quality/压力/真机矩阵、未做 Live 断网；深处按稳定行恢复附近而非逐像素偏移。U02 未暂存/提交，等待本轮用户复验，不进入 U03。
+
+- 目标与范围：用户批准 U01 并明确授权“现在提交并进入U02”。U01 已精确提交 `2d89ad00fa89a813d8288b565bc517eaead6c0ca`（`feat: remember forum sort preferences`），未 push；本轮仅 U02，以该真实 HEAD 为基线。原有未跟踪 Prompt/skill 保留。采用 COMMON 轻量验证，不建立额外准备/审计阶段，不进入 U03。
+- 修改文件：AppCompositionRoot；Core/Models 的 ForumContentCache 与必要 Codable 领域字段；Core/Persistence/ContentPageCache；Core/TiebaAPI/CachedForumHomeRepository；SessionAuthContextProvider、ContentCacheAccountNamespace、SessionStore；ForumHomeStore/View；VirtualizedList 可选系统刷新接口；LaunchScenario/UITestLaunchContracts；U02ForumCacheTests、U02ForumRefreshControlTests、U02ForumCacheSmokeTests；ADR-0030、ADR-0008 相关例外、状态/交互规格及本记录。
+- 关键设计/状态转换：保留导航路径内 registry 的现有实例，pop 后恢复有界页面 DTO/连续分页链/锚点；按账号本地槽位 + canonical ID/别名 + tab/category/sort + 页/游标 + 快照代次隔离。60 秒 fresh 零新增请求，stale 先读旧内容、一次后台检查；新首屏等待用户点击“有新内容”，失败保留旧内容；明确下拉走网络。清理 epoch、账号 revision 和 query 校验拒绝旧结果，锚点仅页面完成/离开/后台保存。无新增 API/Proto 或依赖锁修改。
+- 动画、手势、overlay、依赖：无新自定义动画、业务 DragGesture、overlay、第三方依赖。为实际下拉刷新需求，仅给共享 VirtualizedList 增加默认关闭的 UIRefreshControl 回调；防并发、dismantle 取消及解绑有定向测试。原 diffable/UITableView/UIHostingConfiguration、Pager/MediaViewer/图片链路保留。
+- 命令与结果（原始日志/xcresult 在 ignored `Artifacts/VisualReview/U02/`）：
+  - 定向 Unit 首轮 `targeted.xcresult` 编译 FAIL：actor epoch 访问处的 `&&` autoclosure 隔离错误，拆成显式 await 后修正。
+  - `targeted-2.xcresult`：26 PASS/1 FAIL，别名用例期待 ID 命中，但 name-only 基础 Fixture 没有返回 ID；补齐 U02 Fake 的 canonical ID 响应后通过，未弱化断言。
+  - `targeted-3.xcresult` 编译 FAIL：新增 UI 场景缺少 UITestLaunchScenario 对应声明；补齐安全标签与场景声明后修正。
+  - `xcodebuild test ... -only-test-configuration Unit` 定向 U02 缓存/刷新、U01 排序、R05 Store、Stage12 Session Store：`targeted-4.xcresult` 29/29 PASS、0 skipped。补充 query 续页校验和过期副本清理后的 `cache-final.xcresult` U02 8/8 PASS。
+  - iPad 首轮 `ui-ipad.xcresult` FAIL：枚举所有复用行时，XCTest 对屏外 t140204 的 hittability 报 invalid activation point。测试改为先过滤非空且在视口中的行再查询 hittability；未改生产代码或降低返回位置断言。
+  - iPhone 隔离设备 `UI Smoke` / U02ForumCacheSmokeTests：`ui-iphone.xcresult` 1/1 PASS（32.822s），第二页附近返回重进、无整页 loading、切排序、下拉刷新。
+  - `make lint` 中间因函数/类型长度与长行 FAIL；仅拆分同文件 helper/extension 和换行，未降低门槛。最终 `lint-delivery.log` 382 文件 0 violation。
+  - iPad 修正后的 `ui-ipad-2.xcresult` 同一短流程 1/1 PASS（34.771s）；最后 production query/清理代码均已包含。
+  - `make build` PASS（build.log，普通 Debug 完整 Simulator 应用），SwiftProtobuf 锁未变。最终 `make lint`、`make secret-scan`、`git diff --check` PASS；未运行 test-unit/quality-fast/quality 全套。
+  - `scripts/visual_review_build_install.sh U02` PASS（visual-install.log），codesign/Simulator entitlements 通过；同一正常 Debug .app 覆盖安装 iPad。两台已安装主文件/debug dylib SHA256 与最终产物相同。无 uninstall/erase/Keychain 清理，无 Fixture 启动参数。
+  - Live：iPhone 原账号头像、关注列表与历史保留，已打开高通吧“最新发布”，AX Scroll Down 实际滚动，沙盒仅检查元数据确认缓存页码 [1,2]。初次坐标 drag 未移动、scroll API 报 windowNotFound，改用明确暴露的 AX Scroll Down 成功；随后 Mac 锁定，CUA 要求人工解锁；用户回复“已解锁”后继续以下检查。未记录真实正文到日志或仓库。
+- Live 解锁后验证：iPhone 从已加载多页的高通吧返回首页，再进入恢复到原帖子附近；旧副本已过期，出现“有新内容，点击更新”，未替换当前阅读列表。退后台保存后 `simctl terminate` / 正常 `launch`，再次进入仍恢复同一帖子附近，原登录与最新发布排序保留。iPad 原账号关注列表和高通吧生产入口已目视确认，保留原最新回复排序。iPad 坐标返回操作两次被 CUA windowNotFound 拒绝（未送达 App）；双端返回重进验证仍有上述 Fixture UI 通过证据。最终 iPhone 前台停在缓存恢复位置及更新提示，iPad 停高通吧。截图为 `20261002-130029-iphone-live-retained-update.png`、`20261002-130134-iphone-live-restored-after-relaunch.png`、`20261002-130324-ipad-live-forum.png`（均在 ignored U02 目录，未提交）。本次解锁续验未修改生产代码/重建 App，只补记证据。
+- 回归覆盖：磁盘重建后连续两页及锚点、fresh 零新增请求、stale 一次更新与主动应用、失败保留及显式刷新、排序/精华/账号/别名隔离、错误 query 游标拒绝、clear 迟到结果/checkpoint 不回填、账号槽位恢复/换凭据/新登录/失效、磁盘预算/损坏/7 天过期、刷新控件默认关闭/并发/解绑；U01/R05/Session 相关既有回归保留。
+- 未覆盖/边界：未执行全量 quality/长列表压力矩阵；没有真实账号退出/清缓存操作，未切断设备真实网络。离线读取/更新失败保留以 Fake source 失败及磁盘重建的确定性测试为证，未冒充 Live 离线验收。图片磁盘持久化留待 U06，文本缓存不能宣称整页图片完全离线。缓存目录可被系统清理；重建按稳定行恢复附近位置，不承诺逐像素还原行内偏移。
+- 下一阶段前置条件：完整 App 已安装并留在生产页面，等待用户 U02 视觉验收；U02 未暂存/提交，未进入 U03。后续提交与下一阶段仍需用户明确授权。
+
 ## 2026-10-02 U01 — USER_ACCEPTED
 
 - 目标与范围：仅 U01；本机基线 HEAD `2849d89f4b342345350eb8cfa84c6ab105bb0b9b`。采用 NextIteration/COMMON 轻量验证；原有未跟踪 Prompts/skill 原样保留，不暂存/提交，不进入 U02。

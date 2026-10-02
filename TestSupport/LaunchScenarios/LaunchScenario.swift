@@ -19,6 +19,7 @@ enum LaunchScenarioID: String, CaseIterable, Equatable, Sendable {
     case sessionSignedInFixture = "session.signed-in-fixture"
     case rootNavigationMixedMedia = "root.mixed-media"
     case forumHomeParity = "forum.parity"
+    case forumContentCache = "forum.cache"
     case threadReaderParity = "thread.parity"
     case dynamicFeedParity = "dynamic.parity"
     case sessionSignedOut = "session.signed-out"

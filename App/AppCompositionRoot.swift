@@ -1,3 +1,5 @@
+import Foundation
+
 @MainActor
 final class AppCompositionRoot {
     let environment: AppEnvironment
@@ -32,6 +34,7 @@ final class AppCompositionRoot {
         userProfileRepository: (any UserProfileRepository)? = nil,
         followedForumsRepository: (any FollowedForumsRepository)? = nil,
         forumHomeRepository: (any ForumHomeRepository)? = nil,
+        forumHomeCache: ContentPageCache? = nil,
         threadReaderRepository: (any ThreadReaderRepository)? = nil
     ) {
         self.environment = environment
@@ -60,7 +63,11 @@ final class AppCompositionRoot {
             self.appSettingsRepository =
                 appSettingsRepository ?? InMemoryAppSettingsRepository()
             self.followedForumsRepository = followedForumsRepository ?? FixtureFollowedForumsRepository()
-            self.forumHomeRepository = forumHomeRepository ?? FixtureForumHomeRepository()
+            let forumSource = forumHomeRepository ?? FixtureForumHomeRepository()
+            self.forumHomeRepository = forumHomeCache.map {
+                CachedForumHomeRepository(source: forumSource, cache: $0, clock: environment.clock,
+                                          context: { resolvedAuthContextProvider.contentCacheContext })
+            } ?? forumSource
             self.recommendationRepository =
                 recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
@@ -90,9 +97,7 @@ final class AppCompositionRoot {
                     client: environment.httpClient,
                     authContextProvider: resolvedAuthContextProvider
                 )
-            self.forumHomeRepository = LiveForumHomeRepository(
-                client: environment.httpClient
-            )
+            self.forumHomeRepository = Self.cachedForumRepository(environment, forumHomeCache, resolvedAuthContextProvider)
             self.recommendationRepository =
                 recommendationRepository ?? LiveRecommendationRepository(
                     client: environment.httpClient,
@@ -111,6 +116,16 @@ final class AppCompositionRoot {
                 )
         }
         self.notificationCounts = notificationCounts ?? notificationsStore
+    }
+
+    private static func cachedForumRepository(
+        _ environment: AppEnvironment, _ cache: ContentPageCache?, _ auth: SessionAuthContextProvider
+    ) -> CachedForumHomeRepository {
+        let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("TiebaLiteContent-v1", isDirectory: true)
+        return CachedForumHomeRepository(source: LiveForumHomeRepository(client: environment.httpClient),
+                                         cache: cache ?? ContentPageCache(directory: directory), clock: environment.clock,
+                                         context: { auth.contentCacheContext })
     }
 
     func makeNotificationDestination(target: NotificationTarget) -> NotificationDestinationStore {
@@ -168,7 +183,9 @@ final class AppCompositionRoot {
 
     static func production() -> AppCompositionRoot {
         let httpClient = URLSessionHTTPClient.production()
-        let authContextProvider = SessionAuthContextProvider()
+        let authContextProvider = SessionAuthContextProvider(
+            cacheNamespaceStore: LocalContentCacheAccountNamespace(defaults: .standard)
+        )
         let loginWebSession = LoginWebSession()
         let sessionStore = SessionStore(
             credentialStore: KeychainSessionCredentialStore(),

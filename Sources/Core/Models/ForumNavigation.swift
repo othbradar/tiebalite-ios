@@ -7,30 +7,30 @@ enum ForumSortOrder: Int32, Codable, CaseIterable, Sendable {
     var title: String { self == .lastReply ? "最新回复" : "最新发布" }
 }
 
-struct ForumCategory: Hashable, Sendable, Identifiable {
+struct ForumCategory: Codable, Hashable, Sendable, Identifiable {
     let id: Int32
     let title: String
     let isDefault: Int32
     let sorts: [ForumCategorySort]
 }
 
-struct ForumCategorySort: Hashable, Sendable, Identifiable {
+struct ForumCategorySort: Codable, Hashable, Sendable, Identifiable {
     let id: Int32
     let title: String
 }
 
-struct ForumGoodCategory: Equatable, Sendable, Identifiable {
+struct ForumGoodCategory: Codable, Equatable, Sendable, Identifiable {
     let id: Int32
     let title: String
 }
 
-struct ForumNavigation: Equatable, Sendable {
+struct ForumNavigation: Codable, Equatable, Sendable {
     var categories: [ForumCategory] = []
     var goodCategories: [ForumGoodCategory] = []
     var ruleTitle: String?
 }
 
-struct ForumMembership: Equatable, Sendable {
+struct ForumMembership: Codable, Equatable, Sendable {
     let currentScore: Int
     let levelUpScore: Int
     let isFollowed: Bool
@@ -62,7 +62,7 @@ enum ForumThreadQuery: Equatable, Sendable {
     case category(ForumCategory, sort: Int32)
 }
 
-struct ForumThreadMetadata: Equatable, Sendable {
+struct ForumThreadMetadata: Codable, Equatable, Sendable {
     var showsTitle = true
     var timeUnixSeconds: UInt32?
     var agreeCount: Int64?

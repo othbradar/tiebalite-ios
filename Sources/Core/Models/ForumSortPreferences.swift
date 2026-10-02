@@ -74,13 +74,13 @@ protocol ForumSortPreferenceProviding: AnyObject {
 }
 
 /// Content identity only. Future personalized caches must additionally include an account/session scope.
-struct ForumQueryIdentity: Hashable, Sendable {
-    enum Forum: Hashable, Sendable {
+struct ForumQueryIdentity: Codable, Hashable, Sendable {
+    enum Forum: Codable, Hashable, Sendable {
         case id(Int64)
         case name(String)
     }
 
-    enum Selection: Hashable, Sendable {
+    enum Selection: Codable, Hashable, Sendable {
         case latest(ForumSortOrder)
         case good(Int32)
         case category(id: Int32, sort: Int32)
