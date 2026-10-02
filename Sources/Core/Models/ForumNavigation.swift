@@ -1,10 +1,10 @@
 import Foundation
 
-enum ForumSortOrder: Int32, CaseIterable, Sendable {
+enum ForumSortOrder: Int32, Codable, CaseIterable, Sendable {
     case lastReply = 0
     case creation = 1
 
-    var title: String { self == .lastReply ? "按最后回复" : "按发帖时间" }
+    var title: String { self == .lastReply ? "最新回复" : "最新发布" }
 }
 
 struct ForumCategory: Hashable, Sendable, Identifiable {

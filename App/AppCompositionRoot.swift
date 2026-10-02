@@ -12,6 +12,7 @@ final class AppCompositionRoot {
     private let followedForumsRepository: any FollowedForumsRepository
     private let forumHomeRepository: any ForumHomeRepository
     private let browsingHistoryRepository: any BrowsingHistoryRepository
+    private lazy var sharedSettingsStore = SettingsStore(repository: appSettingsRepository)
     private let appSettingsRepository: any AppSettingsRepository
     private let recommendationRepository: any RecommendationRepository
     private let searchRepository: any SearchRepository
@@ -125,7 +126,7 @@ final class AppCompositionRoot {
     }
 
     func makeSettingsStore() -> SettingsStore {
-        SettingsStore(repository: appSettingsRepository)
+        sharedSettingsStore
     }
 
     func makeRecommendationsStore() -> RecommendationsStore {
@@ -147,7 +148,7 @@ final class AppCompositionRoot {
     }
 
     func makeForumHomeStore(route: ForumRoute) -> ForumHomeStore {
-        ForumHomeStore(route: route, repository: forumHomeRepository)
+        ForumHomeStore(route: route, repository: forumHomeRepository, sortPreferences: sharedSettingsStore)
     }
 
     func makeThreadReaderStore(threadID: Int64) -> ThreadReaderStore {

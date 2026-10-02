@@ -64,6 +64,8 @@ struct R05ForumStoreTests {
         await store.synchronize(with: route)
         let stale = Task { await store.changeQuery(.latest(.creation)) }
         try await repository.started.wait()
+        #expect(store.state.snapshot == nil)
+        #expect(store.listPresentation == nil)
         await store.changeQuery(.latest(.lastReply))
         repository.release.succeed(initial)
         await stale.value

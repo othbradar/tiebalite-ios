@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 @Observable
-final class SettingsStore {
+final class SettingsStore: ForumSortPreferenceProviding {
     private(set) var settings: AppSettingsSnapshot = .defaults
     private(set) var isLoaded = false
     private(set) var persistenceFailed = false
@@ -52,6 +52,26 @@ final class SettingsStore {
         }
         settings.readingTextSize = value
         persistCurrentSettings()
+    }
+
+    var forumSortPreferences: ForumSortPreferences { settings.forumSort }
+    var defaultForumSort: ForumSortOrder { settings.forumSort.defaultOrder }
+
+    func setDefaultForumSort(_ order: ForumSortOrder) {
+        guard settings.forumSort.defaultOrder != order else { return }
+        settings.forumSort.defaultOrder = order
+        persistCurrentSettings()
+    }
+
+    func updateForumSort(_ order: ForumSortOrder?, for route: ForumRoute) {
+        settings.forumSort.set(order, for: route)
+        persistCurrentSettings()
+    }
+
+    func associateForumSort(route: ForumRoute, forumID: Int64, canonicalName: String) {
+        let previous = settings.forumSort
+        settings.forumSort.associate(route: route, forumID: forumID, canonicalName: canonicalName)
+        if previous != settings.forumSort { persistCurrentSettings() }
     }
 
     func waitForPendingSave() async {

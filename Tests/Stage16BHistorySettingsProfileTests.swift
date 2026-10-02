@@ -211,7 +211,7 @@ struct Stage16BSettingsTests {
             appearance: .dark,
             readingTextSize: .large
         )
-        await first.save(expected)
+        try await first.save(expected)
 
         let rebuilt = UserDefaultsAppSettingsRepository(suiteName: suiteName)
         #expect(await rebuilt.load() == expected)

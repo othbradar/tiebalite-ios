@@ -12,6 +12,7 @@ final class ForumHomeStore {
     var selectionGeneration: UInt64 = 0
     private(set) var tabStores: [ForumPageID: ForumHomeStore] = [:]
     private var knownForum: ForumSummary?
+    private let sortPreferences: (any ForumSortPreferenceProviding)?
 
     private let repository: any ForumHomeRepository
     @ObservationIgnored private var hasCompletedLoad = false
@@ -27,12 +28,14 @@ final class ForumHomeStore {
     init(
         route: ForumRoute,
         repository: any ForumHomeRepository,
-        query: ForumThreadQuery = .latest(.lastReply),
-        knownForum: ForumSummary? = nil
+        query: ForumThreadQuery? = nil,
+        knownForum: ForumSummary? = nil,
+        sortPreferences: (any ForumSortPreferenceProviding)? = nil
     ) {
         self.route = route
         self.repository = repository
-        self.query = query
+        self.query = query ?? .latest(sortPreferences?.forumSortPreferences.order(for: route) ?? .lastReply)
+        self.sortPreferences = sortPreferences
         self.knownForum = knownForum
     }
 
@@ -42,7 +45,7 @@ final class ForumHomeStore {
             tabStores = [:]
             selectedPage = .latest
             knownForum = nil
-            query = .latest(.lastReply)
+            query = .latest(sortPreferences?.forumSortPreferences.order(for: route) ?? .lastReply)
             cancelCurrentLoad()
             self.route = route
             state = .initialLoading
@@ -52,6 +55,18 @@ final class ForumHomeStore {
             hasCompletedLoad = false
         }
 
+        if let sortPreferences, case .latest = query {
+            await sortPreferences.loadIfNeeded()
+            guard self.route == route, !Task.isCancelled else { return }
+            if let id = route.forumID?.rawValue {
+                sortPreferences.associateForumSort(route: route, forumID: id, canonicalName: route.forumName.rawValue)
+            }
+            let preferred = ForumThreadQuery.latest(preferredLatestSort)
+            if query != preferred {
+                await applyQuery(preferred)
+                return
+            }
+        }
         guard !hasCompletedLoad,
               activeGeneration == nil else {
             return
@@ -105,7 +120,7 @@ final class ForumHomeStore {
     }
 
     var pageIDs: [ForumPageID] {
-        [.latest, .good] + (state.displayedForum?.navigation.categories ?? []).map { .category($0.id) }
+        [.latest, .good] + (displayedForum?.navigation.categories ?? []).map { .category($0.id) }
     }
 
     func pageStore(for id: ForumPageID) -> ForumHomeStore? {
@@ -123,11 +138,15 @@ final class ForumHomeStore {
         await page.synchronize(with: route)
     }
 
-    func changeQuery(_ query: ForumThreadQuery) async {
+    private func applyQuery(_ query: ForumThreadQuery) async {
         guard self.query != query else { return }
+        cancelCurrentLoad()
         self.query = query
         scrollAnchor = nil
-        await reload()
+        state = .initialLoading
+        listPresentation = nil
+        hasCompletedLoad = false
+        await replaceInitialLoad(previous: nil)
     }
 
     private func configureTabs(_ forum: ForumSummary) {
@@ -252,6 +271,9 @@ final class ForumHomeStore {
         switch result {
         case let .success(snapshot):
             knownForum = snapshot.forum
+            if let id = snapshot.forum.forumID {
+                sortPreferences?.associateForumSort(route: route, forumID: id, canonicalName: snapshot.forum.name)
+            }
             configureTabs(snapshot.forum)
             state = snapshot.threads.isEmpty
                 ? .empty(snapshot.forum)
@@ -332,6 +354,44 @@ final class ForumHomeStore {
         loadTask = nil
         cancellationPresentation = nil
     }
+}
+
+extension ForumHomeStore {
+    var displayedForum: ForumSummary? { state.displayedForum ?? knownForum }
+
+    private var preferenceRoute: ForumRoute {
+        guard let id = knownForum?.forumID,
+              let resolved = ForumRoute(forumID: id, forumName: route.forumName.rawValue) else { return route }
+        return resolved
+    }
+
+    var preferredLatestSort: ForumSortOrder {
+        sortPreferences?.forumSortPreferences.order(for: preferenceRoute) ?? {
+            if case let .latest(order) = query { return order }
+            return .lastReply
+        }()
+    }
+
+    var hasRememberedSort: Bool {
+        sortPreferences?.forumSortPreferences.override(for: preferenceRoute) != nil
+    }
+
+    var queryIdentity: ForumQueryIdentity {
+        ForumQueryIdentity(route: preferenceRoute, query: query, preferences: sortPreferences?.forumSortPreferences ?? .init())
+    }
+
+    func changeQuery(_ query: ForumThreadQuery) async {
+        if case let .latest(order) = query {
+            sortPreferences?.updateForumSort(order, for: preferenceRoute)
+        }
+        await applyQuery(query)
+    }
+
+    func followGlobalSort() async {
+        sortPreferences?.updateForumSort(nil, for: preferenceRoute)
+        await applyQuery(.latest(preferredLatestSort))
+    }
+
 }
 
 private extension ForumHomeState {

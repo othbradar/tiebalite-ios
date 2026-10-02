@@ -30,6 +30,22 @@ struct SettingsOptionsView: View {
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("settings.reading-text-size")
+                LabeledContent("吧内默认排序") {
+                    Picker("吧内默认排序", selection: Binding(
+                        get: { store.defaultForumSort },
+                        set: { store.setDefaultForumSort($0) }
+                    )) {
+                        ForEach(ForumSortOrder.allCases, id: \.self) { order in
+                            Text(order.title).tag(order)
+                        }
+                    }
+                    .labelsHidden()
+                    .accessibilityIdentifier("settings.forum-default-sort")
+                }
+                .frame(minHeight: 44)
+                Text("各吧会记住你主动选择的排序；可在吧内恢复跟随全局。")
+                    .font(Typography.font(.caption))
+                    .foregroundStyle(SemanticColor.secondaryText)
             }
 
             settingsGroup(title: "历史与隐私") {

@@ -10,21 +10,35 @@ struct ForumTabsView: View {
                     tab("最新", id: .latest)
                     Menu {
                         ForEach(ForumSortOrder.allCases, id: \.rawValue) { order in
-                            Button(order.title) {
+                            Button {
                                 store.selectPage(.latest)
                                 Task { await store.changeQuery(.latest(order)) }
+                            } label: {
+                                if store.query == .latest(order) {
+                                    Label(order.title, systemImage: "checkmark")
+                                } else {
+                                    Text(order.title)
+                                }
                             }
                             .accessibilityIdentifier("forum-home.sort.\(order.rawValue)")
                         }
+                        Divider()
+                        Button("恢复跟随全局") {
+                            store.selectPage(.latest)
+                            Task { await store.followGlobalSort() }
+                        }
+                        .disabled(!store.hasRememberedSort)
+                        .accessibilityIdentifier("forum-home.sort.follow-global")
                     } label: {
                         Image(systemName: "chevron.down").font(.caption2)
                             .frame(width: 28, height: 44)
                     }
                     .accessibilityLabel("最新排序")
+                    .accessibilityValue(store.query == .latest(.creation) ? "最新发布" : "最新回复")
                     .accessibilityIdentifier("forum-home.sort")
                 }
                 tab("精华", id: .good)
-                ForEach(store.state.displayedForum?.navigation.categories ?? []) { category in
+                ForEach(store.displayedForum?.navigation.categories ?? []) { category in
                     HStack(spacing: 0) {
                         tab(category.title, id: .category(category.id))
                         if !category.sorts.isEmpty {

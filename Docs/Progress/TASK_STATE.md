@@ -1,5 +1,28 @@
 # TASK_STATE
 
+## 2026-10-02 U01 — USER_ACCEPTED
+
+- 目标与范围：仅 U01；本机基线 HEAD `2849d89f4b342345350eb8cfa84c6ab105bb0b9b`。采用 NextIteration/COMMON 轻量验证；原有未跟踪 Prompts/skill 原样保留，不暂存/提交，不进入 U02。
+- 修改文件：App/AppCompositionRoot.swift；Core/Models 的 AppSettings、ForumNavigation、新增 ForumSortPreferences；Core/Persistence/AppSettingsRepository；Forum 的 ForumHomeStore/View、ForumTabsView；SettingsStore/SettingsOptionsView；Tests/U01ForumSortMemoryTests、R05ForumStoreTests、Stage16BHistorySettingsProfileTests；UITests/U01ForumSortSmokeTests；Specs/STATE_MACHINES 与本记录。
+- 关键设计/状态转换：场景原有设置恢复门槛与共享 SettingsStore 接线，创建 Store 和首请求使用每吧覆盖 → 全局默认 → 最新回复。UserDefaults 新增普通偏好键，name→ID 保守迁移且冲突不串吧；主动点选当前排序也记忆，恢复跟随全局移除覆盖。换 query 取消旧分页、清当前列表/anchor、pn=1，吧头/其他标签保留；旧响应不提交。新增 ForumQueryIdentity，仅预留内容查询身份，不建缓存。
+- 动画、手势、overlay、依赖：均无新增；复用现有系统 Menu/Picker。VirtualizedList/Pager/MediaViewer、DesignSystem、图片模块、Android submodule、工程/依赖锁无修改。
+- 执行命令与结果（证据目录 `Artifacts/VisualReview/U01/`，均本机忽略产物）：
+  - Git status/diff/stat/HEAD 与相关规则/源码检查完成；Xcode 26.6，iOS 26.5 Simulator。
+  - `xcodebuild test ... -only-test-configuration Unit -only-testing:TiebaLiteTests/R05ForumStoreTests` 基线 3 项 PASS（baseline.xcresult）。初次附加单方法映射 selector 未匹配，不计入基线；后续 R05ForumMappingTests 整类实际 4 项执行通过。
+  - 先给 R05 迟到排序回归增加“切换期间不可显示旧 query 列表”断言：red-query-switch.xcresult FAIL（预期红灯），实施后同用例 PASS。
+  - `xcodebuild test ...` 定向 U01ForumSortMemoryTests / R05ForumStoreTests / R05ForumMappingTests / Stage16BSettingsTests：18 项 PASS；随后增强迁移持久化及 registry 重建测试，U01 7 项 PASS（final-memory.xcresult）。合计 19 个不同逻辑测试覆盖，0 skipped。
+  - `xcodebuild test ... -only-test-configuration 'UI Smoke' -only-testing:TiebaLiteUITests/U01ForumSortSmokeTests`：隔离 Tieba-Perf-Test iPhone 1/1 PASS（41.345s）；`test-without-building` 同 selector 于隔离 U01-Forum-Sort-iPad 1/1 PASS（42.471s）。只在 Fixture 设备执行自动化，未用账号设备跑测试。
+  - `make lint` 初轮因 ForumHomeStore type_body_length 超限 FAIL；将排序方法移到同文件 extension 后 PASS，最终 375 文件 0 violation。未调整 lint 门槛。
+  - `make build` PASS；截图发现默认排序 Picker 隐藏标题，补 LabeledContent 后 `make lint` / `make build` 再次 PASS（build-final.log），iPhone 正常 Live 设置页已目视确认标题。
+  - `make secret-scan`、`git diff --check` PASS。未执行 test-unit/quality-fast/quality 全套。
+  - `scripts/visual_review_build_install.sh U01` 初轮及标题修订后均 PASS，最终 Debug 完整 .app 已覆盖安装 iPhone；同一签名 .app 经 `simctl install` 安装 iPad。脚本的 codesign / Simulator entitlements 校验通过，两台已安装 executable/debug dylib 摘要与最终产物一致，无卸载/erase/清 Keychain。
+  - 操作检查中的失败：新建隔离 iPad 首次缺少设备类型 12GB 后缀返回 146，查实际 devicetypes 后创建成功；开机前 get_app_container 返回 Shutdown，开机后正常；覆盖安装前后数据容器路径 cmp 返回 1（Simulator 重分配路径），不把路径变化当作数据丢失。iPhone Live 设置仍显示已登录和原浏览记录，iPad 原关注列表可见。
+- 回归覆盖：持久化恢复、两吧独立、显式相同排序覆盖、全局/恢复跟随、name→ID 迁移与冲突、typed identity、首请求/registry 重建、旧分页/旧排序迟到、精华/分类互不污染、设置序列写入；UI 覆盖菜单实际结果、返回重进、切 Tab、设置入口和恢复跟随全局。
+- 未解决风险/UNKNOWN：未跑全量压力/旋转/真机矩阵；未操作真实账号的退出或清缓存。偏好与内容/图片缓存分离有代码证据，本阶段不实现内容缓存。Live 双吧全局变更组合留给用户验收；最终默认排序标签只做增量 build + Live 目视复核，未重复整个 UI 测试。
+- Live 手工结果：iPhone 高通吧由最新回复切到最新发布，观察结果变化；terminate/正常 relaunch 后重新进入，菜单仍勾选最新发布。最终 iPhone 前台、iPad 均停在高通吧排序菜单；capture 脚本截图为 `Artifacts/VisualReview/U01/*-iphone-live-sort-menu.png` 和 `*-ipad-live-sort-menu.png`。iPad 保留兼容默认最新回复，未修改其排序。
+- 用户验收：2026-10-02 用户明确回复“可以，现在提交并进入U02”，批准 U01 并授权仅继续 U02。验收后生产代码未变化，复用上述构建/定向结果；提交前只复核 diff、secret scan 和精确 staged 清单。完整提交 SHA 在随后 U02 记录中补记。
+
+
 - 2026-09-27 按用户纠正将最新已验收代码合入主分支：确认 origin/main 是候选祖先（0/17），本机 main 快进至 `82ef4e0` 并经 SSH 推送成功，无强推或历史重写。随后按用户要求为 README 增加四张已目视检查的 R13 Live 原始 PNG（动态、吧首页、表情编辑、搜索），不含账号/我的/私人消息页或本人头像昵称；未公开其余 Artifacts。截图字节与验收原件一致；首轮严格元数据检查因存在 EXIF 停止，复核 EXIF 仅色彩空间/图片尺寸后通过，无文本/GPS/设备身份元数据。图片路径、diff/secret 检查通过；仅文档与图片更新，不重复 App 测试/构建。
 
 - 2026-09-27 v0.2.0-beta.1 = PUBLISHED_AND_VERIFIED：修复 `e479814`、发布源提交 `b8dc258` 已通过本机 SSH 推送；公开 GitHub Release ID 397563756，含新版真机 IPA 和 SHA256SUMS，两项远端大小/摘要均与本机一致。Release 标注新增功能、页面重制与未签名安装方式；正文及构建审计保留审核持续性 UNKNOWN。发布回执见 Docs/Audits/RELEASE_0_2_0_BETA_1.md。此次只补记文档，不改产物或标签；用户原有未跟踪文件原样保留。

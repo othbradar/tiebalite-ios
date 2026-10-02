@@ -13,7 +13,7 @@ struct ForumHomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if let forum = store.state.displayedForum {
+            if let forum = store.displayedForum {
                 ForumHeaderView(forum: forum, imageLoader: imageLoader)
                 ForumTabsView(store: store)
                 TiebaFlatDivider(inset: 0)
@@ -32,12 +32,15 @@ struct ForumHomeView: View {
             let operation = Task { @MainActor in await store.synchronize(with: route) }
             await operation.value
         }
+        .task(id: store.preferredLatestSort) {
+            await store.synchronize(with: route)
+        }
         .task(id: store.selectedPage) {
             let operation = Task { @MainActor in await store.activateSelectedPage() }
             await operation.value
         }
-        .task(id: store.state.displayedForum?.forumID) {
-            guard let forum = store.state.displayedForum, let id = forum.forumID,
+        .task(id: store.displayedForum?.forumID) {
+            guard let forum = store.displayedForum, let id = forum.forumID,
                   store.claimDisplayedForum(id) else { return }
             await onDisplayed(forum)
         }
@@ -46,7 +49,7 @@ struct ForumHomeView: View {
                 Button("搜索", systemImage: "magnifyingglass", action: onOpenSearch)
                     .accessibilityIdentifier("forum-home.search")
                 Button("发帖", systemImage: "plus") {
-                    guard let forum = store.state.displayedForum else { return }
+                    guard let forum = store.displayedForum else { return }
                     composeTarget = .init(kind: .thread, forumID: forum.forumID ?? 0, forumName: forum.name)
                 }
                     .accessibilityIdentifier("forum-home.compose")
@@ -92,7 +95,7 @@ struct ForumThreadPageView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if pageID == .good, let forum = store.state.displayedForum {
+            if pageID == .good, let forum = store.displayedForum {
                 ForumGoodChips(store: store, categories: forum.navigation.goodCategories)
             }
             content

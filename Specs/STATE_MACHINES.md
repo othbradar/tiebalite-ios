@@ -150,6 +150,19 @@ taxonomy 仍是 `UNKNOWN`，普通网络/解码错误不得转成 `expired`。
 
 ## 吧首页 / FRS
 
+### U01 排序记忆（2026-10-02，用户授权的当前增量）
+
+`CODE_EVIDENCE`：现有 FRS builder 的 latest 0/1 与精华 -1 参数保持；本节补充现行多标签 Store，以下阶段 14P 描述只保留历史。
+
+- 场景先恢复同一 SettingsStore，再创建 ForumHomeStore；首个请求排序为每吧主动选择 → 全局默认 → 兼容 latest/lastReply。
+- 普通偏好沿用 UserDefaults 设置设施，与内容/图片缓存及 Session 凭据分离。按 forumID 保存；仅名路由使用 trim + Unicode NFC + 固定 locale 小写别名，不删除“吧”后缀。响应确认 ID 后迁移；名称对应不同 ID 时停止名称关联，不能合并 ID 偏好。
+- 主动选择（包括选择当前值）建立吧覆盖；“恢复跟随全局”只移除当前覆盖。全局变化影响未覆盖的已保留 Store 和后续 Store；精华、分类、推荐不继承 latest 排序。
+- 换 query：取消旧首屏/分页、增加 generation、清当前列表/anchor → initialLoading → 新 query 的 pn=1。保留吧头、Pager 和其他标签页；失败不显示另一 query 的旧列表，迟到响应不能提交。普通同 query 刷新/分页仍保留原列表与 offset。
+- ForumQueryIdentity 使用稳定吧 ID（未解析时规范名）+ latest 排序 / 精华分类 / 普通分类及排序。只定义 identity，不实现缓存；后续个人化缓存必须另外带账号/会话 scope。
+- 迁移仅新增 settings.forum-sort.v1，旧外观/字号键不变。回滚实现可忽略新键，不清空用户偏好或凭据。
+- 回归：U01ForumSortMemoryTests、R05ForumStoreTests、R05ForumMappingTests、Stage16BSettingsTests、U01ForumSortSmokeTests；运行结果见 TASK_STATE 的 U01 条目。
+
+
 Android 静态证据（`CODE_EVIDENCE`）：
 
 - `ForumViewModel.Load` 获取吧 header/tab。
