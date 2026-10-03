@@ -1,5 +1,12 @@
 # TASK_STATE
 
+## 2026-10-03 v0.2.0beta2 — RELEASE_PREPARED
+
+- U06 已验收代码精确37文件提交 `a509d44dfe68fdcca934808db3b0e10803f8f9a4` 并推送 `origin/main`，远端回读一致；U03/U04/U05 已提交历史一并正常快进推送。用户原有文件、Android submodule、Artifacts、凭证保持排除。
+- App 版本0.2.0 / Build 3，真机 arm64 Release 未签名 archive 与 IPA 检查通过；6,734,035 bytes，SHA256 `02bf64d510a3f97fb72527ad7d2d762af501db32f1f29a6b868affb80513855a`。不是 Simulator 包，需用户自行签名，未改变现有 Simulator 安装、账号、签名、Bundle ID 或 Keychain。
+- 复用验收过的定向 Unit/UI；本次 generate、lint、secret scan、diff check、设备 archive、实际 Release 隔离与包完整性均通过，未重跑完整 gate。说明见 Docs/Releases/v0.2.0beta2.md，精确构建证据见 Docs/Audits/RELEASE_0_2_0_BETA_2.md。GitHub CLI 未登录，已有 Safari 登录可用于发布；远端发布状态待回执，不提前宣称已完成。
+- U03 iPad旋转进入分栏回首楼仍是已知失败，真机相册未验收、Development Team 未配置。只发布当前已验收范围，不进入 U07。
+
 ## 2026-10-03 U06 — USER_ACCEPTED，授权提交并发布 v0.2.0beta2
 
 - 用户已确认当前 Viewer 修订与张数居中满意，明确授权提交、推送 GitHub，并构建发布 `v0.2.0beta2` IPA。本次授权覆盖下方历史记录的“不提交/不推送”；不进入 U07。
