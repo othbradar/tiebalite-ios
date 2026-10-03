@@ -23,35 +23,63 @@ struct VirtualListSnapshotPlan<ID: Hashable> {
 }
 
 struct VirtualListDiagnostics: Equatable, Sendable {
-    fileprivate(set) var itemCount = 0
-    fileprivate(set) var snapshotApplyCount = 0
-    fileprivate(set) var createdCellCount = 0
-    fileprivate(set) var reuseCount = 0
-    fileprivate(set) var peakVisibleCellCount = 0
-    fileprivate(set) var activeHostedCellCount = 0
-    fileprivate(set) var peakActiveHostedCellCount = 0
+    var itemCount = 0
+    var snapshotApplyCount = 0
+    var createdCellCount = 0
+    var reuseCount = 0
+    var peakVisibleCellCount = 0
+    var activeHostedCellCount = 0
+    var peakActiveHostedCellCount = 0
+    var isRestoringInitialReadingPosition = false
+    var initialReadingAdjustmentCount = 0
+    var viewportAdjustmentCount = 0
 }
 
 @MainActor
 final class VirtualizedTableView: UITableView {
-    fileprivate(set) var virtualListDiagnostics = VirtualListDiagnostics()
-    fileprivate var onInitialAnchorLayout: (() -> Void)?
+    var virtualListDiagnostics = VirtualListDiagnostics()
+    var onInitialAnchorLayout: (() -> Void)?
+    var onViewportLayout: (() -> Void)?
+    var isPerformingLayout = false
+    var hasInitialAnchorLayout: Bool { onInitialAnchorLayout != nil }
+
+    #if UITESTING
+    override var accessibilityValue: String? {
+        get { virtualListDiagnostics.isRestoringInitialReadingPosition ? "initial-restoration:active" : "initial-restoration:idle" }
+        set { super.accessibilityValue = newValue }
+    }
+    #endif
 
     override func layoutSubviews() {
+        guard onViewportLayout != nil else {
+            super.layoutSubviews()
+            onInitialAnchorLayout?()
+            return
+        }
+        guard !isPerformingLayout else { return }
+        isPerformingLayout = true
+        defer { isPerformingLayout = false }
         super.layoutSubviews()
         onInitialAnchorLayout?()
+        onViewportLayout?()
     }
 }
 
 @MainActor
-private final class VirtualListHostingCell: UITableViewCell {
+final class VirtualListHostingCell: UITableViewCell {
     var hasHostedContent = false
+    var rowID: AnyHashable?
+    var isDisplayed = false
+    var hasCurrentConfiguration: (() -> Bool)?
     var onPrepareForReuse: (() -> Void)?
 
     override func prepareForReuse() {
         super.prepareForReuse()
         onPrepareForReuse?()
         onPrepareForReuse = nil
+        rowID = nil
+        isDisplayed = false
+        hasCurrentConfiguration = nil
         contentConfiguration = nil
         accessibilityIdentifier = nil
     }
@@ -70,6 +98,7 @@ where Item: Identifiable & Equatable & Sendable,
     let backgroundColor: UIColor
     let accessibilityIdentifier: String
     let restoredAnchor: Item.ID?
+    let initialRestorationScope: AnyHashable?
     let onPrefetch: ([Item.ID]) -> Void
     let onScrollSettled: (Item.ID?) -> Void
     let onRefresh: (@MainActor () async -> Void)?
@@ -80,6 +109,7 @@ where Item: Identifiable & Equatable & Sendable,
         backgroundColor: UIColor,
         accessibilityIdentifier: String,
         restoredAnchor: Item.ID? = nil,
+        initialRestorationScope: AnyHashable? = nil,
         onPrefetch: @escaping ([Item.ID]) -> Void = { _ in },
         onScrollSettled: @escaping (Item.ID?) -> Void = { _ in },
         onRefresh: (@MainActor () async -> Void)? = nil,
@@ -89,6 +119,7 @@ where Item: Identifiable & Equatable & Sendable,
         self.backgroundColor = backgroundColor
         self.accessibilityIdentifier = accessibilityIdentifier
         self.restoredAnchor = restoredAnchor
+        self.initialRestorationScope = initialRestorationScope
         self.onPrefetch = onPrefetch
         self.onScrollSettled = onScrollSettled
         self.onRefresh = onRefresh
@@ -109,7 +140,12 @@ where Item: Identifiable & Equatable & Sendable,
         var isApplyingSnapshot = false
         var hasAppliedSnapshot = false
         private var refreshTask: Task<Void, Never>?
-        private var pendingRestoredAnchor: Item.ID?
+        var pendingRestoredAnchor: Item.ID?
+        let initialScope: AnyHashable?
+        var readingRestoration: InitialReadingRestoration<Item.ID>?
+        var viewportAnchor: ReadingViewportAnchor<Item.ID>?
+        var isAdjustingReadingPosition = false
+        var userScrollInProgress = false
         private var activeHostedCellIDs: Set<ObjectIdentifier> = []
         private let hostedCells = NSHashTable<VirtualListHostingCell>
             .weakObjects()
@@ -117,10 +153,15 @@ where Item: Identifiable & Equatable & Sendable,
         init(parent: VirtualizedList) {
             self.parent = parent
             pendingRestoredAnchor = parent.restoredAnchor
+            initialScope = parent.initialRestorationScope
+            if parent.initialRestorationScope != nil, let target = parent.restoredAnchor {
+                readingRestoration = .init(target: target)
+            }
         }
 
         func install(on tableView: VirtualizedTableView) {
             self.tableView = tableView
+            tableView.virtualListDiagnostics.isRestoringInitialReadingPosition = readingRestoration?.isActive == true
             if parent.onRefresh != nil {
                 let control = UIRefreshControl()
                 control.accessibilityIdentifier = parent.accessibilityIdentifier + ".refresh"
@@ -133,6 +174,12 @@ where Item: Identifiable & Equatable & Sendable,
                 tableView.onInitialAnchorLayout = { [weak self, weak tableView] in
                     guard let tableView else { return }
                     self?.restoreAnchorIfNeeded(in: tableView)
+                }
+            }
+            if initialScope != nil {
+                tableView.onViewportLayout = { [weak self, weak tableView] in
+                    guard let tableView else { return }
+                    self?.maintainReadingViewport(in: tableView)
                 }
             }
             tableView.register(
@@ -173,9 +220,9 @@ where Item: Identifiable & Equatable & Sendable,
                 }
                 self.markHostedContentStarted(for: cell)
                 let content = parent.rowContent(item)
-                cell.contentConfiguration = UIHostingConfiguration {
-                    content
-                }
+                cell.rowID = AnyHashable(itemID)
+                cell.hasCurrentConfiguration = { [weak self] in self?.itemsByID[itemID] == item }
+                cell.contentConfiguration = UIHostingConfiguration { content }
                 .margins(.all, 0)
                 .background {
                     Color.clear
@@ -192,6 +239,7 @@ where Item: Identifiable & Equatable & Sendable,
             guard let tableView else {
                 return
             }
+            invalidateChangedReadingScope()
             tableView.backgroundColor = parent.backgroundColor
             tableView.accessibilityIdentifier = parent.accessibilityIdentifier
             pendingItems = parent.items
@@ -216,14 +264,20 @@ where Item: Identifiable & Equatable & Sendable,
                 return
             }
             emitCurrentAnchorIfAvailable()
+            stopReadingRestoration(permitsProgress: false)
             for cell in hostedCells.allObjects {
                 cell.contentConfiguration = nil
                 cell.onPrepareForReuse = nil
+                cell.hasCurrentConfiguration = nil
+                cell.rowID = nil
+                cell.isDisplayed = false
             }
             hostedCells.removeAllObjects()
             activeHostedCellIDs.removeAll(keepingCapacity: false)
             tableView.virtualListDiagnostics.activeHostedCellCount = 0
             tableView.onInitialAnchorLayout = nil
+            tableView.onViewportLayout = nil
+            viewportAnchor = nil
             tableView.prefetchDataSource = nil
             tableView.delegate = nil
             tableView.dataSource = nil
@@ -257,6 +311,7 @@ where Item: Identifiable & Equatable & Sendable,
             guard let tableView = tableView as? VirtualizedTableView else {
                 return
             }
+            (cell as? VirtualListHostingCell)?.isDisplayed = true
             tableView.virtualListDiagnostics.peakVisibleCellCount = max(
                 tableView.virtualListDiagnostics.peakVisibleCellCount,
                 tableView.visibleCells.count
@@ -268,8 +323,29 @@ where Item: Identifiable & Equatable & Sendable,
             didEndDisplaying cell: UITableViewCell,
             forRowAt indexPath: IndexPath
         ) {
-            // Self-sizing and bounce can show this cell again before reuse.
+            (cell as? VirtualListHostingCell)?.isDisplayed = false
         }
+
+        func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            userScrollInProgress = true
+            viewportAnchor = nil
+            stopReadingRestoration(permitsProgress: true)
+        }
+
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            guard initialScope != nil, let table = tableView,
+                  !isAdjustingReadingPosition, !table.isPerformingLayout else { return }
+            // An explicit offset change outside layout takes precedence over the old viewport.
+            viewportAnchor = nil
+            if readingRestoration?.isActive == true { stopReadingRestoration(permitsProgress: true) }
+        }
+
+        func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
+            scrollViewWillBeginDragging(scrollView)
+            return true
+        }
+
+        func scrollViewDidScrollToTop(_ scrollView: UIScrollView) { emitSettledAnchor() }
 
         func scrollViewDidEndDragging(
             _ scrollView: UIScrollView,
@@ -315,6 +391,14 @@ where Item: Identifiable & Equatable & Sendable,
                 return incoming != applied
             }
 
+            if let anchor = viewportAnchor,
+               !incomingIDs.contains(anchor.rowID) ||
+                VirtualListSnapshotPlan(currentIDs: currentIDs, incomingIDs: incomingIDs).requiresFullReplacement {
+                viewportAnchor = nil
+            }
+            if let target = readingRestoration?.target, !incomingIDs.contains(target), hasAppliedSnapshot {
+                stopReadingRestoration(permitsProgress: false)
+            }
             itemsByID = uniqueItemsByID
             tableView.virtualListDiagnostics.itemCount = incomingIDs.count
             if hasAppliedSnapshot,
@@ -365,55 +449,6 @@ where Item: Identifiable & Equatable & Sendable,
             }
         }
 
-        private func restoreAnchorIfNeeded(in tableView: VirtualizedTableView) {
-            // Snapshot completion can precede attachment and layout. Keep the one-shot
-            // anchor until UIKit has the real viewport, rather than scrolling a zero-size table.
-            guard tableView.window != nil, !tableView.bounds.isEmpty,
-                  let restoredAnchor = pendingRestoredAnchor,
-                  let dataSource,
-                  let indexPath = dataSource.indexPath(for: restoredAnchor)
-            else {
-                return
-            }
-            pendingRestoredAnchor = nil
-            tableView.onInitialAnchorLayout = nil
-            tableView.scrollToRow(
-                at: indexPath,
-                at: .top,
-                animated: false
-            )
-        }
-
-        private func emitSettledAnchor() {
-            guard let tableView,
-                  let dataSource else {
-                parent.onScrollSettled(nil)
-                return
-            }
-            let topVisible = tableView.indexPathsForVisibleRows?
-                .sorted()
-                .first
-            parent.onScrollSettled(
-                topVisible.flatMap { dataSource.itemIdentifier(for: $0) }
-            )
-        }
-
-        private func emitCurrentAnchorIfAvailable() {
-            // A transient zero-size table can report its first row without ever displaying it.
-            // Ignore that teardown so it cannot replace a restored reading position with top.
-            guard let tableView,
-                  !tableView.bounds.isEmpty,
-                  let dataSource,
-                  let topVisible = tableView.indexPathsForVisibleRows?
-                    .sorted()
-                    .first,
-                  let itemID = dataSource.itemIdentifier(for: topVisible)
-            else {
-                return
-            }
-            parent.onScrollSettled(itemID)
-        }
-
         private func markHostedContentStarted(for cell: UITableViewCell) {
             guard let tableView else {
                 return
@@ -436,23 +471,16 @@ where Item: Identifiable & Equatable & Sendable,
                 activeHostedCellIDs.count
         }
 
-        private static var reuseIdentifier: String {
-            "VirtualListHostingCell"
-        }
+        private static var reuseIdentifier: String { "VirtualListHostingCell" }
     }
 
 }
 
 extension VirtualizedList {
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
-    }
+    func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
     func makeUIView(context: Context) -> VirtualizedTableView {
-        let tableView = VirtualizedTableView(
-            frame: .zero,
-            style: .plain
-        )
+        let tableView = VirtualizedTableView(frame: .zero, style: .plain)
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 180
         tableView.separatorStyle = .none

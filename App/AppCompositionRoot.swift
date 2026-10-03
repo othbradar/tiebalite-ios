@@ -48,6 +48,9 @@ final class AppCompositionRoot {
             authContextProvider: resolvedAuthContextProvider,
             websiteDataCleaner: resolvedLoginWebSession
         )
+        let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("TiebaLiteContent-v1", isDirectory: true)
+        let contentCache = forumHomeCache ?? ContentPageCache(directory: directory)
         switch environment.readingDataSourceMode {
 #if DEBUG
         case .fixture:
@@ -57,24 +60,22 @@ final class AppCompositionRoot {
             textComposer = TextComposerService(repository: FixtureTextWriteRepository(), currentContext: {
                 .active(.init(sessionID: .init(rawValue: 1), generation: 1))
             })
-            self.browsingHistoryRepository =
-                browsingHistoryRepository
-                ?? InMemoryBrowsingHistoryRepository()
-            self.appSettingsRepository =
-                appSettingsRepository ?? InMemoryAppSettingsRepository()
+            self.browsingHistoryRepository = browsingHistoryRepository ?? InMemoryBrowsingHistoryRepository()
+            self.appSettingsRepository = appSettingsRepository ?? InMemoryAppSettingsRepository()
             self.followedForumsRepository = followedForumsRepository ?? FixtureFollowedForumsRepository()
             let forumSource = forumHomeRepository ?? FixtureForumHomeRepository()
             self.forumHomeRepository = forumHomeCache.map {
                 CachedForumHomeRepository(source: forumSource, cache: $0, clock: environment.clock,
                                           context: { resolvedAuthContextProvider.contentCacheContext })
             } ?? forumSource
-            self.recommendationRepository =
-                recommendationRepository ?? FixtureRecommendationRepository()
+            self.recommendationRepository = recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
-            subpostsRepository = FixtureSubpostsRepository()
-            self.threadReaderRepository = threadReaderRepository ?? FixtureThreadReaderRepository()
-            self.userProfileRepository =
-                userProfileRepository ?? FixtureUserProfileRepository()
+            let reading = Self.readingRepositories(
+                threads: threadReaderRepository ?? FixtureThreadReaderRepository(), subposts: FixtureSubpostsRepository(),
+                cache: forumHomeCache, environment: environment, auth: resolvedAuthContextProvider)
+            subpostsRepository = reading.subposts
+            self.threadReaderRepository = reading.threads
+            self.userProfileRepository = userProfileRepository ?? FixtureUserProfileRepository()
 #endif
         case .live:
             currentAccountStore = CurrentAccountStore(repository: LiveCurrentAccountRepository(
@@ -87,29 +88,28 @@ final class AppCompositionRoot {
                 uploader: LiveComposerImageUploader(client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
                 imageLoader: environment.imageLoader,
                 currentContext: { resolvedAuthContextProvider.context() })
-            self.browsingHistoryRepository =
-                browsingHistoryRepository
-                ?? JSONBrowsingHistoryRepository.production()
-            self.appSettingsRepository =
-                appSettingsRepository ?? UserDefaultsAppSettingsRepository()
+            self.browsingHistoryRepository = browsingHistoryRepository ?? JSONBrowsingHistoryRepository.production()
+            self.appSettingsRepository = appSettingsRepository ?? UserDefaultsAppSettingsRepository()
             self.followedForumsRepository =
                 LiveFollowedForumsRepository(
                     client: environment.httpClient,
                     authContextProvider: resolvedAuthContextProvider
                 )
-            self.forumHomeRepository = Self.cachedForumRepository(environment, forumHomeCache, resolvedAuthContextProvider)
+            self.forumHomeRepository = CachedForumHomeRepository(
+                source: LiveForumHomeRepository(client: environment.httpClient), cache: contentCache,
+                clock: environment.clock, context: { resolvedAuthContextProvider.contentCacheContext })
             self.recommendationRepository =
                 recommendationRepository ?? LiveRecommendationRepository(
                     client: environment.httpClient,
                     authContextProvider: resolvedAuthContextProvider
                 )
-            searchRepository = LiveSearchRepository(
-                client: environment.httpClient
-            )
-            subpostsRepository = LiveSubpostsRepository(client: environment.httpClient)
-            self.threadReaderRepository = LiveThreadReaderRepository(
-                client: environment.httpClient
-            )
+            searchRepository = LiveSearchRepository(client: environment.httpClient)
+            let reading = CachedReadingRepository(
+                threads: LiveThreadReaderRepository(client: environment.httpClient),
+                subposts: LiveSubpostsRepository(client: environment.httpClient), cache: contentCache,
+                clock: environment.clock, context: { resolvedAuthContextProvider.contentCacheContext })
+            subpostsRepository = reading
+            self.threadReaderRepository = reading
             self.userProfileRepository =
                 userProfileRepository ?? LiveUserProfileRepository(
                     client: environment.httpClient
@@ -118,14 +118,14 @@ final class AppCompositionRoot {
         self.notificationCounts = notificationCounts ?? notificationsStore
     }
 
-    private static func cachedForumRepository(
-        _ environment: AppEnvironment, _ cache: ContentPageCache?, _ auth: SessionAuthContextProvider
-    ) -> CachedForumHomeRepository {
-        let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("TiebaLiteContent-v1", isDirectory: true)
-        return CachedForumHomeRepository(source: LiveForumHomeRepository(client: environment.httpClient),
-                                         cache: cache ?? ContentPageCache(directory: directory), clock: environment.clock,
-                                         context: { auth.contentCacheContext })
+    private static func readingRepositories(
+        threads: any ThreadReaderRepository, subposts: any SubpostsRepository, cache: ContentPageCache?,
+        environment: AppEnvironment, auth: SessionAuthContextProvider
+    ) -> (threads: any ThreadReaderRepository, subposts: any SubpostsRepository) {
+        guard let cache else { return (threads, subposts) }
+        let adapter = CachedReadingRepository(threads: threads, subposts: subposts, cache: cache,
+                                              clock: environment.clock, context: { auth.contentCacheContext })
+        return (adapter, adapter)
     }
 
     func makeNotificationDestination(target: NotificationTarget) -> NotificationDestinationStore {

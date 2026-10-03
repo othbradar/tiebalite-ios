@@ -7,6 +7,23 @@ import Testing
 @MainActor
 struct Stage15ThreadReadingTests {
     @Test
+    func refreshFailureKeepsAllLoadedPagesAndReadingAnchor() async throws {
+        let source = FixtureThreadReaderRepository()
+        let store = ThreadReaderStore(threadID: 140_006, repository: source)
+        await store.loadIfNeeded()
+        await store.loadNextPage()
+        await store.loadNextPage()
+        let retained = try #require(store.state.snapshot)
+        let anchor = ThreadReaderRowID.post(threadID: 140_006, postID: retained.posts.last?.id.postID ?? 0)
+        let failing = ThreadReaderStore(threadID: 140_006, repository: U03UnavailableThreadRepository(), initialSnapshot: retained)
+        failing.setReadAnchor(anchor)
+        await failing.reload()
+        #expect(failing.state.snapshot == retained)
+        #expect(failing.readAnchor == anchor)
+        #expect(failing.listPresentation?.postRowCount == retained.posts.count)
+    }
+
+    @Test
     func nextPageRequestCarriesEvidenceLockedPageAndPostCursor() throws {
         let input = try PBPageRequestInput(
             threadID: 8_001,
@@ -298,6 +315,12 @@ struct Stage15ThreadReadingTests {
         #expect(store.state.snapshot?.posts.count == 32)
         #expect(root.environment.imageLoader is FixtureReadingImageLoader)
         #expect(await client.events().isEmpty)
+    }
+}
+
+private struct U03UnavailableThreadRepository: ThreadReaderRepository {
+    func loadPage(_ request: ThreadReaderPageRequest) async throws -> ThreadReaderSnapshot {
+        throw EndpointExecutionError.transport(.offline)
     }
 }
 

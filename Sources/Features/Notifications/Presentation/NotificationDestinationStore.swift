@@ -52,7 +52,7 @@ final class NotificationDestinationStore {
             guard case let .loaded(snapshot) = store.state else { throw ThreadReaderLoadFailure.unavailable }
             if let anchor = store.listPresentation?.rows.first(where: { $0.post?.source.postID == postID })?.id {
                 // Mount the existing list only once the contiguous prefix and its initial anchor are ready.
-                store.setReadAnchor(anchor)
+                store.setInitialReadAnchor(anchor)
                 return store
             }
             guard snapshot.hasMore else { throw ThreadReaderLoadFailure.unavailable }

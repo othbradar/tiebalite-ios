@@ -126,7 +126,7 @@ extension RecommendationRepository {
 
 typealias ThreadReaderAuthor = TiebaUserVisuals
 
-struct ThreadReaderSubpost: Identifiable, Equatable, Sendable {
+struct ThreadReaderSubpost: Identifiable, Equatable, Sendable, Codable {
     let parentPostID: Int64
     let author: ThreadReaderAuthor
     let replyToDisplayName: String?
@@ -155,7 +155,7 @@ struct ThreadReaderSubpost: Identifiable, Equatable, Sendable {
     }
 }
 
-struct ThreadReaderPost: Identifiable, Equatable, Sendable {
+struct ThreadReaderPost: Identifiable, Equatable, Sendable, Codable {
     let floorNumber: Int
     let author: ThreadReaderAuthor
     let metadata: String
@@ -190,7 +190,7 @@ struct ThreadReaderPost: Identifiable, Equatable, Sendable {
     }
 }
 
-struct ThreadReaderSnapshot: Equatable, Sendable {
+struct ThreadReaderSnapshot: Equatable, Sendable, Codable {
     let threadID: Int64
     let title: String
     let forumName: String

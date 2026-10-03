@@ -7,6 +7,7 @@ struct SubpostsView: View {
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    @Environment(\.scenePhase) private var scenePhase
     @State private var composeTarget: TextComposeTarget?
     @State private var actionTask: Task<Void, Never>?
 
@@ -24,6 +25,7 @@ struct SubpostsView: View {
                         }
                     },
                     onScrollSettled: store.setReadAnchor,
+                    onRefresh: { await store.refresh() },
                     rowContent: { row in
                         rowContent(row)
                     })
@@ -48,7 +50,11 @@ struct SubpostsView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("app.route.subposts")
         .accessibilityValue("帖子 \(store.route.threadID.formatted())，楼层 \(store.route.postID.formatted())")
-        .task { await store.loadIfNeeded() }
+        .onDisappear { Task { await store.saveReadingPosition() } }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { Task { await store.saveReadingPosition() } }
+        }
+        .task(id: store.cacheContext) { await store.loadIfNeeded() }
     }
 
     private var refreshToolbarItem: some ToolbarContent {
@@ -87,12 +93,12 @@ struct SubpostsView: View {
     @ViewBuilder
     private func footer(_ phase: SubpostsPhase, hasMore: Bool) -> some View {
         if phase == .refreshFailure {
-            Button("刷新失败，重试", action: refresh).frame(maxWidth: .infinity, minHeight: 44)
+            Button("正在显示已缓存内容，刷新失败，重试", action: refresh).frame(maxWidth: .infinity, minHeight: 44)
                 .accessibilityIdentifier("subposts.refresh-retry")
         } else if phase == .loadingNextPage || phase == .refreshing {
             PaginationFooter(state: .loading, retry: {})
         } else if phase == .nextPageFailure || hasMore {
-            Button(phase == .nextPageFailure ? "加载失败，重试" : "加载更多") {
+            Button(phase == .nextPageFailure ? "已保留内容，加载失败，重试" : (store.isShowingCachedContent ? "已缓存内容 · 加载更多" : "加载更多")) {
                 guard actionTask == nil else { return }
                 actionTask = Task {
                     await store.loadNextPage()
@@ -101,7 +107,7 @@ struct SubpostsView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 44).accessibilityIdentifier("subposts.more")
         } else {
-            Text(store.snapshot?.items.isEmpty == true ? "暂无回复" : "已经到底了")
+            Text(store.snapshot?.items.isEmpty == true ? "暂无回复" : (store.isShowingCachedContent ? "已缓存内容 · 已经到底了" : "已经到底了"))
                 .font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
                 .frame(maxWidth: .infinity, minHeight: 44).accessibilityIdentifier("subposts.end")
         }

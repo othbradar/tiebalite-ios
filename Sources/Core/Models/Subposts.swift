@@ -5,7 +5,7 @@ struct SubpostsRoute: Codable, Hashable, Sendable {
     let postID: Int64
 }
 
-struct Subpost: Identifiable, Equatable, Sendable {
+struct Subpost: Identifiable, Equatable, Sendable, Codable {
     let author: TiebaUserVisuals
     let document: ThreadContentDocument
     let createdAt: UInt32?
@@ -17,7 +17,7 @@ struct Subpost: Identifiable, Equatable, Sendable {
     }
 }
 
-struct SubpostsPage: Equatable, Sendable {
+struct SubpostsPage: Equatable, Sendable, Codable {
     let route: SubpostsRoute
     let parent: ThreadReaderPost?
     let threadAuthorID: Int64

@@ -74,6 +74,8 @@ struct ThreadReaderPostRowModel: Equatable, Sendable {
 
 enum ThreadReaderPaginationRowState: Equatable, Sendable {
     case end
+    case refreshFailure
+    case cached(hasMore: Bool, nextPage: Int)
     case failure(nextPage: Int)
     case loadMore(nextPage: Int)
     case loading(nextPage: Int)
@@ -196,6 +198,10 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
     ) -> ThreadReaderRowModel {
         let rowID: ThreadReaderRowID
         switch state {
+        case let .cached(hasMore, nextPage):
+            rowID = hasMore ? .loadMore(threadID: threadID, page: nextPage) : .end(threadID: threadID)
+        case .refreshFailure:
+            rowID = .end(threadID: threadID)
         case .end:
             rowID = .end(threadID: threadID)
         case let .failure(nextPage):

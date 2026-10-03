@@ -1,7 +1,7 @@
 import Foundation
 
-struct ThreadContentSource: Hashable, Sendable {
-    enum Scope: String, Hashable, Sendable {
+struct ThreadContentSource: Hashable, Sendable, Codable {
+    enum Scope: String, Hashable, Sendable, Codable {
         case firstPost
         case post
         case subPost
@@ -12,7 +12,7 @@ struct ThreadContentSource: Hashable, Sendable {
     let scope: Scope
 }
 
-struct ThreadContentNodeID: Hashable, Sendable {
+struct ThreadContentNodeID: Hashable, Sendable, Codable {
     let source: ThreadContentSource
     let ordinal: Int
 
@@ -21,13 +21,13 @@ struct ThreadContentNodeID: Hashable, Sendable {
     }
 }
 
-struct ThreadContentNode: Identifiable, Equatable, Sendable {
+struct ThreadContentNode: Identifiable, Equatable, Sendable, Codable {
     let id: ThreadContentNodeID
     let rawType: Int32
     let payload: ThreadContentPayload
 }
 
-enum ThreadContentPayload: Equatable, Sendable {
+enum ThreadContentPayload: Equatable, Sendable, Codable {
     case emoji(ThreadEmojiContent)
     case image(ThreadImageContent)
     case link(ThreadLinkContent)
@@ -47,21 +47,21 @@ enum ThreadContentPayload: Equatable, Sendable {
     }
 }
 
-struct ThreadTextContent: Equatable, Sendable {
+struct ThreadTextContent: Equatable, Sendable, Codable {
     let value: String
 }
 
-enum ThreadWebScheme: String, Equatable, Sendable {
+enum ThreadWebScheme: String, Equatable, Sendable, Codable {
     case http
     case https
 }
 
-struct ValidatedWebDestination: Hashable, Sendable {
+struct ValidatedWebDestination: Hashable, Sendable, Codable {
     let absoluteString: String
     let scheme: ThreadWebScheme
 }
 
-enum ThreadURLRejection: Error, Equatable, Sendable {
+enum ThreadURLRejection: Error, Equatable, Sendable, Codable {
     case empty
     case malformed
     case notAbsolute
@@ -69,19 +69,19 @@ enum ThreadURLRejection: Error, Equatable, Sendable {
     case unsupportedScheme
 }
 
-struct ExternalLinkIntent: Equatable, Sendable {
+struct ExternalLinkIntent: Equatable, Sendable, Codable {
     let sourceNodeID: ThreadContentNodeID
     let label: String
     let destination: ValidatedWebDestination
 }
 
-struct ThreadLinkContent: Equatable, Sendable {
+struct ThreadLinkContent: Equatable, Sendable, Codable {
     let label: String
     let intent: ExternalLinkIntent?
     let rejection: ThreadURLRejection?
 }
 
-struct ThreadEmojiContent: Equatable, Sendable {
+struct ThreadEmojiContent: Equatable, Sendable, Codable {
     let registryKey: String
     let code: String
 
@@ -90,12 +90,12 @@ struct ThreadEmojiContent: Equatable, Sendable {
     }
 }
 
-struct ThreadMentionContent: Equatable, Sendable {
+struct ThreadMentionContent: Equatable, Sendable, Codable {
     let userID: Int64?
     let label: String
 }
 
-enum ThreadImageCandidateRole: String, Equatable, Sendable {
+enum ThreadImageCandidateRole: String, Equatable, Sendable, Codable {
     case activeCDN
     case big
     case bigCDN
@@ -105,12 +105,12 @@ enum ThreadImageCandidateRole: String, Equatable, Sendable {
     case source
 }
 
-struct ThreadImageCandidate: Hashable, Sendable {
+struct ThreadImageCandidate: Hashable, Sendable, Codable {
     let role: ThreadImageCandidateRole
     let destination: ValidatedWebDestination
 }
 
-struct ThreadImageRequestDescriptor: Hashable, Sendable {
+struct ThreadImageRequestDescriptor: Hashable, Sendable, Codable {
     let resourceID: String
     let candidates: [ThreadImageCandidate]
 
@@ -167,7 +167,7 @@ struct ThreadImageRequestDescriptor: Hashable, Sendable {
     }
 }
 
-enum ThreadMediaDimensionFallback: Equatable, Sendable {
+enum ThreadMediaDimensionFallback: Equatable, Sendable, Codable {
     case extremeAspectRatio
     case malformed
     case missing
@@ -175,7 +175,7 @@ enum ThreadMediaDimensionFallback: Equatable, Sendable {
     case outOfRange
 }
 
-enum ThreadMediaDimensions: Equatable, Sendable {
+enum ThreadMediaDimensions: Equatable, Sendable, Codable {
     case fallback(ThreadMediaDimensionFallback)
     case known(width: Int, height: Int)
 
@@ -191,7 +191,7 @@ enum ThreadMediaDimensions: Equatable, Sendable {
     }
 }
 
-struct ThreadMediaID: Hashable, Sendable {
+struct ThreadMediaID: Hashable, Sendable, Codable {
     let sourceNodeID: ThreadContentNodeID
 
     var stableKey: String {
@@ -199,7 +199,7 @@ struct ThreadMediaID: Hashable, Sendable {
     }
 }
 
-struct ThreadImageContent: Equatable, Sendable {
+struct ThreadImageContent: Equatable, Sendable, Codable {
     let rawType: Int32
     let mediaID: ThreadMediaID
     let request: ThreadImageRequestDescriptor
@@ -209,7 +209,7 @@ struct ThreadImageContent: Equatable, Sendable {
     let showsOriginalControlHint: Bool
 }
 
-struct ThreadVideoContent: Equatable, Sendable {
+struct ThreadVideoContent: Equatable, Sendable, Codable {
     let thumbnail: ThreadImageRequestDescriptor?
     let dimensions: ThreadMediaDimensions
     let videoTarget: ValidatedWebDestination?
@@ -220,12 +220,12 @@ struct ThreadVideoContent: Equatable, Sendable {
     }
 }
 
-struct ThreadVoiceContent: Equatable, Sendable {
+struct ThreadVoiceContent: Equatable, Sendable, Codable {
     let resourceID: String?
     let durationSeconds: UInt32
 }
 
-enum ThreadUnsupportedField: String, Equatable, Sendable {
+enum ThreadUnsupportedField: String, Equatable, Sendable, Codable {
     case image
     case link
     case memeInfo = "meme-info"
@@ -233,7 +233,7 @@ enum ThreadUnsupportedField: String, Equatable, Sendable {
     case voice
 }
 
-struct ThreadUnsupportedContent: Equatable, Sendable {
+struct ThreadUnsupportedContent: Equatable, Sendable, Codable {
     let rawType: Int32
     let presentFields: [ThreadUnsupportedField]
 
@@ -245,29 +245,29 @@ struct ThreadUnsupportedContent: Equatable, Sendable {
     }
 }
 
-enum ThreadContentUnavailableReason: Equatable, Sendable {
+enum ThreadContentUnavailableReason: Equatable, Sendable, Codable {
     case blocked
     case deletedFirstPost(rawFlag: Int32)
     case folded(message: String?)
 }
 
-enum ThreadContentAvailability: Equatable, Sendable {
+enum ThreadContentAvailability: Equatable, Sendable, Codable {
     case available
     case unavailable(ThreadContentUnavailableReason)
 }
 
-enum ThreadPollMode: Equatable, Sendable {
+enum ThreadPollMode: Equatable, Sendable, Codable {
     case multiple
     case single
     case unknown(rawValue: Int32)
 }
 
-struct ThreadPollOptionID: Hashable, Sendable {
+struct ThreadPollOptionID: Hashable, Sendable, Codable {
     let source: ThreadContentSource
     let ordinal: Int
 }
 
-struct ThreadPollOption: Identifiable, Equatable, Sendable {
+struct ThreadPollOption: Identifiable, Equatable, Sendable, Codable {
     let id: ThreadPollOptionID
     let rawOptionID: Int32
     let text: String
@@ -276,7 +276,7 @@ struct ThreadPollOption: Identifiable, Equatable, Sendable {
     let imageWasPresent: Bool
 }
 
-struct ThreadReadOnlyPoll: Equatable, Sendable {
+struct ThreadReadOnlyPoll: Equatable, Sendable, Codable {
     let rawType: Int32
     let mode: ThreadPollMode
     let title: String
@@ -290,7 +290,7 @@ struct ThreadReadOnlyPoll: Equatable, Sendable {
     let lastTime: UInt32
     let options: [ThreadPollOption]
 
-    let isReadOnly = true
+    var isReadOnly: Bool { true }
 }
 
 struct ThreadMediaItem: Equatable, Sendable {
@@ -306,7 +306,7 @@ struct ThreadMediaIntent: Equatable, Sendable {
     let items: [ThreadMediaItem]
 }
 
-struct ThreadContentDocument: Equatable, Sendable {
+struct ThreadContentDocument: Equatable, Sendable, Codable {
     let source: ThreadContentSource
     let availability: ThreadContentAvailability
     let nodes: [ThreadContentNode]

@@ -12,6 +12,7 @@ struct ThreadReaderView: View {
     let onDisplayed: (ThreadReaderSnapshot) async -> Void
     let onOpenSubposts: (ThreadContentSource) -> Void
 
+    @Environment(\.scenePhase) private var scenePhase
     @State private var retryGeneration: UInt64 = 0
     @State private var showsUnavailableAction = false
     @State private var composeTarget: TextComposeTarget?
@@ -63,6 +64,11 @@ struct ThreadReaderView: View {
         .accessibilityIdentifier(
             ThreadReaderAccessibilityID.screen(store.threadID)
         )
+        .onDisappear { Task { await store.saveReadingPosition() } }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { Task { await store.saveReadingPosition() } }
+        }
+        .task(id: store.cacheContext) { await loadStoreAcrossProjection() }
         .task(id: loadTaskID) {
             await loadStoreAcrossProjection()
         }
@@ -125,6 +131,8 @@ struct ThreadReaderView: View {
                 accessibilityIdentifier:
                     ThreadReaderAccessibilityID.scroll(snapshot.threadID),
                 restoredAnchor: store.readAnchor,
+                initialRestorationScope: AnyHashable(ThreadReaderRestorationScope(
+                    threadID: store.threadID, context: store.cacheContext)),
                 onPrefetch: { rowIDs in
                     guard rowIDs.contains(where: {
                         presentation.prefetchRowIDs.contains($0)
@@ -134,6 +142,7 @@ struct ThreadReaderView: View {
                     requestNextPage()
                 },
                 onScrollSettled: store.setReadAnchor,
+                onRefresh: { await store.reload() },
                 rowContent: { configuredRow in
                     ThreadReaderRowView(
                         row: configuredRow.row,
@@ -173,7 +182,7 @@ struct ThreadReaderView: View {
 
     private func requestNextPage() {
         Task { @MainActor in
-            await store.loadNextPage()
+            if store.refreshFailed { await store.reload() } else { await store.loadNextPage() }
         }
     }
 
@@ -218,6 +227,21 @@ struct ThreadReaderPaginationView: View {
     @ViewBuilder
     var body: some View {
         switch pagination.state {
+        case let .cached(hasMore, _):
+            if hasMore {
+                Button("已缓存内容 · 加载更多", action: requestNextPage)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .accessibilityIdentifier(ThreadReaderAccessibilityID.loadMore(pagination.threadID))
+            } else {
+                Text("已缓存内容 · 已经到底了")
+                    .font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+        case .refreshFailure:
+            Button("正在显示已缓存内容，刷新失败，点此重试", action: requestNextPage)
+                .font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .accessibilityIdentifier("thread-reader.refresh-retry")
         case .end:
             PaginationFooter(state: .end, retry: {})
         case .failure:
@@ -270,4 +294,9 @@ enum ThreadReaderAccessibilityID {
     static func scroll(_ threadID: Int64) -> String {
         "thread-reader.scroll.t\(threadID)"
     }
+}
+
+private struct ThreadReaderRestorationScope: Hashable {
+    let threadID: Int64
+    let context: ContentCacheContext
 }

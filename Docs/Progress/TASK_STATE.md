@@ -1,5 +1,62 @@
 # TASK_STATE
 
+## 2026-10-03 U03 — USER_ACCEPTED
+
+- 用户批准按已验证范围提交 U03，沿用下方同一候选的定向 Unit/UI、缓存重进、初始恢复自动结束、新阅读位置保存、Live 进程重开及规定范围 iPad 重进结果。验收后未改变代码，只复核差异、secret scan 与精确暂存清单。
+- iPad 旋转进入分栏后回首楼仍未修复；失败用例与 ignored 证据保留，不标记通过。用户明确允许此已知缺陷不阻塞 U04，U04 不修改导航或旋转恢复。
+- 精确提交标题为 `feat: cache thread reading and restore reading position`；用户原有 Prompt/skill、Artifacts、凭证、IDE 文件及 Android submodule 排除。不推送；确认提交成功后才开始 U04，SHA 在随后 U04 记录补记。
+
+## 2026-10-03 U03 — READY_FOR_USER_VISUAL_REVIEW（首次定位/视口保持分离；额外 iPad 旋转问题保留）
+
+- 用户明确授权替换本轮新增的首次恢复等待协议。本轮仅修改 `InitialReadingRestoration.swift`、`VirtualizedList.swift`、新增同组件 `VirtualizedList+Reading.swift`，以及直接 Unit/UI 回归和本记录。现有 ThreadReader 的 thread/account scope 接线继续使用；缓存、Repository、Store、Subposts、用户草稿保持。本机 HEAD 仍为 `9248f2dc68a0610076178f2189a329d4a8bc5c6d`，无暂存/提交/推送，不进入 U04。
+- 根因与修订：原协议将曾创建的前置行加入等待，依赖不保证逐配置触发的 SwiftUI 几何回调，既不能可靠退出，也不能证明后续首次测量已完成。现删除 awaitingMeasurements/predecessors/adopted 及恢复专用 fixedSize/onGeometryChange；恢复前后 hosted Row 的布局修饰相同。首次定位只等待窗口/尺寸、已应用 snapshot 和稳定业务 ID，一次 scrollToRow；校验实际已显示 Cell 的 ID、当前内容配置、窗口及有效视口相交后，把实际几何交给当前视口记录，释放历史目标，结束初始回调并允许正常进度。
+- 后续只在 opt-in 表格布局边界维护当前 RowID/relativeY/尺寸，按新 rowMinY、adjusted top inset 与当前实际 offset 计算剩余修正并限幅。UIKit 已补偿时不重复移动；几何读取与状态修改分开，布局/程序滚动防重入。拖动/惯性期间清除旧记录，停稳后捕获新楼层；主动滚动和回顶部优先；账号、目标、拆除、无效 snapshot 或不同尺寸不沿用旧几何。分页、footer、图片完成不重启历史定位；程序补偿不报告用户进度，正常离场仍保存实际位置，U02 零尺寸保护保留。无新动画、手势、overlay、依赖、轮询、固定延迟、重复 scrollToRow、全表 reload 或全量 Cell 测量。
+- 组件证据（ignored `Artifacts/VisualReview/U03/Viewport/`）：首次 `component.xcresult` 编译 FAIL，原因是拆出扩展时冗余 `internal(set)` 被严格构建拒绝，移除后 `component-fixed.xcresult` 4 项/10 次 PASS。最终 `unit-final.xcresult` **14 项/21 次 PASS，0 skipped**：包括原退出失败组件、实际退出后新进度/分页/footer/晚到高度更新、立即拖动及账号/目标/拆除取消、UIKit 无/完整/部分补偿三种真实表格几何结果、U02 刷新/零尺寸与 R11 通知目标 Unit。已完成恢复的 target 为 nil，初始回调已解除；Cell 创建数小于总楼层数。未重复缓存读写测试。
+- iPhone：`reader-ui.xcresult` 原 UI 流程 PASS，自然滚动保存 420001，退出/新位置/图片往返全部通过。为固定验证 430001，补充真实列表手势定位；`iphone-final.xcresult` 的 U02 深处、顶部、自动/下拉刷新 3 项及通知具体楼层 1 项 PASS，但新增固定目标步骤在定位前因 430001 已离屏而 FAIL。`exact-target.xcresult` 同样因离屏 frame 为空 FAIL；`exact-visible-target.xcresult` 因过短手势落入点击而未建立目标 FAIL，均未改生产实现。改为先滚入视口，再把目标行部分置于视口顶部，实际验证首个可见 ID：最终 **`exact-floor.xcresult` PASS（88.559s）**，保存/恢复 **430001**，无需拖动即可 idle；后续实际保存/恢复 **470001**，旧目标不回拉。目标可见与新位置保存断言未放宽。
+- iPad：`ipad.xcresult` 和 `ipad-final.xcresult` 的图片往返、第三页重进、自动退出、新位置再重进均通过，均在末尾额外的旋转断言 FAIL；等待实际可见条件后仍失败。录屏显示竖屏转分栏后详情回到首楼，保留 `ipad-rotation-failure.png`。**这是仍未解决的尺寸/导航切换限制，未宣称通过，也未扩改导航容器。** 将原旋转断言原样保留为 `testIPadRotationKeepsNewReadingPosition`，与用户要求的重进短用例分开。最终只运行规定的重进方法：`ipad-reentry.xcresult` **1/1 PASS，0 skipped**。本轮不运行旋转矩阵或另起阶段。
+- 轻量检查：前两轮 lint 因类型长度/空行 FAIL，将恢复方法归入同组件扩展并修空行，最终 `lint-delivery.log` PASS；`make build`（`build.log`）、`make secret-scan`（`secret.log`）、`git diff --check` PASS。未运行全量 Unit、quality-fast、quality 或千楼压力矩阵。上述失败包均保留，不以通过的子步骤冒充整包通过。
+- 安装与 Live：`scripts/visual_review_build_install.sh U03` PASS（`visual-install.log`），完整正常 Debug Simulator App 覆盖安装账号 iPhone，无卸载/erase/清 Keychain。已安装主程序和 dylib 与本轮产物 SHA256 相同（`installed-candidate.json`），不是旧 Live。已登录、原关注/历史可见，未修改排序。实际缓存帖子中部返回重进成功；继续滚到第 28 楼正文，返回重进仍显示同楼。随后正常 terminate/launch，经保留的历史入口重开，同一第 28 楼仍可见，未观察到恢复后再次上跳。只读缓存 manifest 元数据确认 `postID=153988156596`、页 `[0,2,3]`，不导出正文/URL/凭证。截图 `live-before-reentry`、`live-new-position`、`live-new-position-restored`、`live-after-process-restart` 在本目录；最终 App 留在帖子页。一次坐标滚动被工具拒绝、两次历史入口索引过期，改用已暴露的原生滚动动作及即时读取入口后完成，未将失败动作计入成功。
+- 交付边界：首次定位和当前视口保持的要求范围通过，额外 iPad 旋转问题仍保留为失败回归；不承诺行内像素一致。等待用户视觉验收，不暂存、不提交、不推送、不进入 U04。
+
+## 2026-10-02 U03 继续修正退出条件 — INCOMPLETE（退出断言仍失败）
+
+- 本轮仅调查并修改首次恢复完成条件及直接回归，不新增阶段。HEAD 仍为 `9248f2dc68a0610076178f2189a329d4a8bc5c6d`；全部原有 U03 缓存、Repository、Store 与用户草稿保留，无暂存/提交/推送，不进入 U04。本节覆盖下方旧状态。
+- 唯一组件失败的具体原因：首次定位分支原先直接 return，未在该入口执行结束判断；移除该 return 后，仍因必要前置行缺少 SwiftUI `onGeometryChange` 回调而不能结束。`entry-unit.xcresult` 中目标 29 已可见，required 为 `[1,24,25,26,27,28]`，其中 24–28 仍待测；这些 ID 仍在当前 snapshot，实际 Cell/configuration generation 为 1，已挂窗，cell/content bounds 均为 390×117。原等待状态并未建立可靠的配置测量代次对应，不能只凭行 ID 判定测量已完成。`adopted=false`、`isActive=true`、`permitsProgress=false`，布局回调仍存在，确实继续保留自动补偿和抑制阅读进度，并非调试标签未同步。
+- 尺寸口径核对：已收到的 hosted content 与 UIKit fitting 高度相同，未发现靠增大容差即可解释的差值。尝试用 UIKit fitting 回调替代内容几何回调后，组件结束回归通过，但原 UI 目标可见回归失败。`layout-diagnostic.xcresult` 中 430001 在 y≈5393/offset≈5393 时过早结束；随后实际行布局变为 y≈5026.33，offset 不补偿，目标离开视口。`generation-diagnostic.xcresult` 只有一次 snapshot；结束后仍发生目标 Cell 的实际绑定，以及首次无障碍层级读取期间此前未显示行的绑定/测量。因此一次 fitting 结果不能证明本次定位所需布局工作已经完成；不能依赖“所有布局最终完成”，也不能立即结束而忽略后续首次测量。
+- 已撤回造成目标漂移的 fitting 替换、代次接线及所有临时日志，试验副本保存在 ignored `Artifacts/VisualReview/U03/Exit/fitted-candidate/`。最终保留原目标几何补偿、首次定位入口尝试结束判断、统一结束清理调用，以及真实补偿次数/回调生命周期的测试观测。新增断言检查实际退出、允许新进度、旧补偿停止和更新后不重启，未删除目标可见或事务退出断言；不声称这些断言现已全部通过。没有新增动画、手势、overlay、依赖、全量 Cell 测量、固定等待或长期纠偏机制。
+- 执行结果（均在 ignored `Artifacts/VisualReview/U03/Exit/`）：`diagnostic-unit.xcresult`、`diagnostic-entry.xcresult`、`entry-unit.xcresult` 均 FAIL 于退出；`fitting-unit.xcresult` 退出成功但旧绝对 offset 断言 FAIL，确认原回调已解除后将该内部断言改为实际补偿次数和新进度检查，`component.xcresult` 4 项/8 次 PASS，仅代表已撤回的试验。`reader-ui.xcresult`、`reader-natural-height.xcresult`、`layout-diagnostic.xcresult`、`generation-diagnostic.xcresult` 均 FAIL 于目标可见，未把试验组件通过当作修复成功。
+- 最终 `final-targeted.xcresult`：**15 个逻辑测试，13 PASS / 2 FAIL，0 skipped**。同时选择 Unit/UI Smoke 配置使所选测试在两配置各执行一次，共 40 次执行，36 PASS / 4 FAIL；不是额外扩大测试范围。失败分别是实际表自动退出组件用例和原 U03 UI 自动退出断言；原目标可见断言通过，新阅读位置 UI 链在退出失败处停止，不能认定新位置保存已通过。U02 刷新/临时零尺寸组件及 R11 通知定位 Unit 通过；U02 深处/顶部 UI、通知 UI 和 iPad 重进未继续运行。测试期间一次 Simulator 启动 RequestDenied 后工具自动恢复并完成；未另行重跑。未重复已通过缓存读写测试或运行全量 Unit/quality-fast/quality/压力矩阵。
+- 轻量检查：早期 `lint.log` 因长度/对齐 FAIL，调整格式后最终 `make lint`（`final-lint.log`，388 文件 0 violation）、`make build`（`final-build.log`）、`make secret-scan`（`final-secret.log`）、`git diff --check` 均 PASS。最终未同时满足保持目标与自动退出，按此前授权边界停止扩大修改。
+- 本轮未覆盖安装正常 Live App，未执行新位置返回重进/进程重开验收；设备保留的旧 Live 版本不能证明本轮候选。账号、排序、历史、缓存与 Keychain 未清理。无 READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-02 U03 续修 — INCOMPLETE（目标可见，初始恢复事务未可靠结束）
+
+- 本次用户明确批准“初始恢复事务”最小重设计。HEAD 仍为 `9248f2dc68a0610076178f2189a329d4a8bc5c6d`；此前未提交 U03 缓存、模型、Repository、Store、测试及用户草稿全部保留，无暂存/提交/推送，无 U04 或独立阶段。下方旧记录是此前交付状态，本节覆盖当前状态。
+- 本轮仅修改 VirtualizedList 的可选首次恢复生命周期、ThreadReader 的 thread/account scope 接线、直接回归与交互契约。新增 InitialReadingRestoration、U03InitialReadingRestorationTests；原 U03 UI 的业务目标行可见断言保留，并增加事务必须退出的断言。没有改变业务行 ID、Pager、MediaViewer、图片 Loader、网络或缓存预算，也没有新增动画、手势、overlay、依赖、全表 reload、全量创建 Cell、延时或重复 scrollToRow。
+- 根因仍为已证实的首次自适应高度改变目标 minY，而原一次性定位未保持目标相对视口位置。候选以稳定 ID 只首次定位一次，之后补偿目标 minY 的实际变化；用户开始拖动、身份/目标改变或 teardown 使事务失效；恢复中的程序滚动不报告进度。完成条件尝试由已创建且位于目标之前的行报告内容尺寸、表格采用尺寸、目标可见共同决定。**当前候选仍在工作树，未达到生产验收条件，不能视为已完成修复。**
+- 直接证据均在 ignored `Artifacts/VisualReview/U03/Restoration/`：`red.xcresult` 再次复现旧故障，保存目标 430001 重进不可见。首次候选 `transaction.xcresult` 因缺少显式 initializer 编译失败，补齐后 `transaction-ui.xcresult` 因 UIKit 几何查询同步进入 Cell provider、与事务 mutating access 冲突而崩溃；将几何读取移至事务写入前后消除该实现错误。
+- `transaction-ui-fixed.xcresult` 原目标可见断言通过，但新增结束断言失败。`transaction-diagnostic.xcresult` 记录目标 minY/offset 从约 5573 一起变至 5188.33，待测集合最后仍有目标 430001；测量 observer 按原业务 ID 隔离后 `transaction-identity.xcresult` 仍未退出。进一步将结束等待范围限定为目标之前的实际创建行后，**最终 `transaction-final-ui.xcresult` 仍 FAIL**：postID **430001** 存在、可点击且与视口相交的原断言通过，`initial-restoration:idle` 断言超时（整条 60.573s）。不得仅凭“可见”宣称完成，事务可能长期保留布局回调；剩余无法收敛的具体 UIKit/SwiftUI 测量来源为 UNKNOWN。临时几何 print 已移除，UITESTING 只保留无正文的活动状态供断言。
+- Unit：`transaction-unit.xcresult` 4 项中 2 FAIL（恢复未退出；另一个 teardown 空表 offset 应为 0 的测试夹具断言错误，已修正）。最终 `targeted-unit.xcresult` **20 项，19 PASS / 1 FAIL；25 次执行，24 PASS / 1 FAIL，0 skipped**。U02ForumRefreshControlTests（包括临时零尺寸保护）、R11NotificationTargetTests、Stage17AdaptiveLayoutTests 通过；新事务的几何补偿模型、拖动立即退出、不写程序进度、账号/目标/销毁失效通过；实际表的恢复退出用例仍失败。没有重复缓存读写测试。末尾曾仅尝试调整未运行的 Unit 挂载夹具，已撤回该未验证的三行调整，最终测试源码对应上述执行版本。
+- 轻量检查：`make generate` PASS；`make lint` 曾因类型长度、尾闭包、空行 FAIL，修正结构/格式后 `lint-final.log` PASS；`make build`（`build-final.log`）PASS；`make secret-scan`（`secret-final.log`）PASS；`git diff --check` PASS。未运行全量 Unit、quality-fast、quality 或压力矩阵。
+- 按用户“方案仍不能通过则记录实际差异并停止扩大修改”收口。本轮未继续 U02 深处/顶部 UI、iPad 重进或 Live 进程重启检查，因此不能宣称 U02 全部 UI 无回归。失败候选未覆盖安装到保留账号设备；账号、历史、排序、缓存、Keychain 未清理。CUA 确认原正常 Live App 仍停在已缓存帖子第 27–31 楼附近；这不是本次候选的成功验收。无 READY_FOR_USER_VISUAL_REVIEW，等待后续用户指令，不进入 U04。
+
+## 2026-10-02 U03 — INCOMPLETE（缓存已接通，重进定位 UI 未通过）
+
+- 目标与范围：用户授权“推送U02并进入U03”。U02 已精确提交 `9248f2dc68a0610076178f2189a329d4a8bc5c6d`（`feat: cache forum pages with retained refresh`），`git push origin main` 成功，`git ls-remote origin refs/heads/main` 回读同一 SHA。本轮以该 HEAD 为基线，仅 U03，未提交/推送 U03，未进入 U04。用户未跟踪 Prompt/skill 保留。
+- 修改文件：AppCompositionRoot；Core/Models 的 ReadingContentCache、ThreadContent、FixtureReadingFlow、Subposts、ForumContentCache；ImageLoading 的资源 Codable；Core/TiebaAPI/CachedReadingRepository；ThreadReader Store/View/ListPresentation；Subposts Store/View；NotificationDestinationStore 的预定位调用；Stage15ThreadReadingTests、U03ReadingCacheTests、U03ThreadCacheSmokeTests；ADR-0031、STATE_MACHINES、本记录。最终 VirtualizedList、Stage17AdaptiveLayoutTests 与 HEAD 完全相同，两个共享列表候选均已仅撤回自己的差异。
+- 关键设计/状态转换：生产 Debug/Release 共用同一个 ContentPageCache 实例，吧首页/帖子/楼中楼共享预算；页键含本地账号 namespace、thread/parent/query/pn/pid，manifest 只写页引用与最小 ReadingPosition。加载页保存完整领域节点，停稳/离开/后台不重编码正文。缓存恢复实际连续范围，缺前页不顺序联网追赶；保留 wire hasMore/cursor。5 分钟新鲜期，过期先显示再刷新阅读页；刷新成功保留其他页，失败保留正文。通知预定位不写进度，现有展示历史入口不变。账号 revision/cache epoch 拒绝迟到请求与 checkpoint；明确 HTTP/auth 拒绝及领域删首楼标记失效副本，未知 wire code 不猜为权限问题。
+- 动画/手势/overlay/依赖：无新增自定义动画、手势、overlay 或依赖。线程/楼中楼接入既有可选系统下拉刷新；已缓存/失败文字仅在原页尾，不加顶部通知。两个首次定位候选未保留，最终仍沿用原一次性初始定位组件。
+- 执行命令与结果（ignored `Artifacts/VisualReview/U03/`）：
+  - 基线 `xcodebuild test` / Stage15ThreadReadingTests + R08SubpostsStoreTests：`baseline.xcresult` 15/15 PASS。新增刷新失败保留三页回归首次方法 selector 未带 Swift Testing 方法括号，`red.xcresult` 实际 0 项，不计通过；随后整类 `red-state.xcresult` 11 PASS/1 FAIL，确认原 reload 清空内容。
+  - 首轮实现 `make build`（build-first.log）PASS；`targeted.xcresult` U03 + Stage15 + R08 + Stage17：29 项/30 次 PASS。新增确定性删首楼失效、通知不写进度、补齐会话检查后最终 `final-unit.xcresult`：38 项/39 次 PASS、0 skipped（含 U03 8 项/9 次、Stage15、R08、Stage17、R11NotificationTargetTests）。原组件的一次性定位/保留 offset 单测通过，不能替代下述真实异高行 UI 故障。
+  - iPhone 隔离设备 `UI Smoke` / U03ThreadCacheSmokeTests：`ui-iphone.xcresult` FAIL（63.47s）。图片打开/返回、加载至第三页均成功；重进后指定首个可见 postID 不在视口，失败断言保留。`ui-diagnostic.xcresult` 再次复现；仅 UITESTING 临时日志证明停稳和回读同为 postID 430001。候选一等待初始 diffable apply 完成并 layoutIfNeeded：`ui-layout.xcresult` FAIL。`ui-geometry.xcresult` 仅观测，发现初始目标 row 28 的 minY 为 5393，前三次布局正确；第 4 次自适应行高更新使其 minY 变成 5026.33，而 contentOffset 仍为 5393，视口移至 row 30。候选二改等原生 push 转场结束：`ui-transition.xcresult` 仍 FAIL。全部日志/视频/附件保留 ignored；临时日志代码已移除。
+  - 按 COMMON“两次无效尝试后停止堆补丁”停止继续调整共享组件，撤回两个候选及试验断言，没有削弱失败的 U03 UI 断言。最终核心回归通过；UI 未通过，不能宣称 U03 完成，不能输出 READY_FOR_USER_VISUAL_REVIEW。
+  - `make lint` 前几次因 initializer/type 长度、三元 tuple、测试嵌套/对齐 FAIL；拆小型 helper/命名结构并修排版，未降低门槛。最终 `lint-final.log` 386 文件 0 violation。`make build`（build-final.log）、`make secret-scan`（secret.log）、`git diff --check` PASS。未运行全量 quality/quality-fast。
+  - `scripts/visual_review_build_install.sh U03`（visual-install-final.log）PASS：最终不含列表试验的完整正常 Debug Simulator App 已覆盖安装 iPhone，签名和 entitlements 校验成功，无 uninstall/erase/清 Keychain。第一次中间安装结果由最终覆盖替代。
+- Live 范围：最终候选原账户头像、关注列表及高通吧最新发布排序保留。中间候选真实帖子图片打开/关闭成功；最终覆盖安装/进程重启后重开同帖直接显示旧第 17–20 楼附近，继续滚到第 31 楼。仅检查缓存 manifest 元数据确认请求页 [0,2,3]（pn=0 响应第一页），位置页为 2；没有导出真实正文/凭证。最终停在该生产帖子，截图 `20261002-152338-iphone-live-cached-third-page.png`。未完成最终版本图片再往返、第三页后的完整返回/重启、Live 断网或 iPad 矩阵；不以 Fixture 冒充这些验收。
+- 未解决风险/UNKNOWN：新 UITableView 的异高行初始恢复约偏移两楼，后续自适应行高改变已恢复目标的位置；持久化本身保存/读回的是同一 postID。当前首屏/刷新失败不丢内容，精确回到锚点的 UI 仍失败。图片字节离线持久化属于 U06，缓存缺早期页只恢复现存连续范围。
+- 最小后续方案与前置条件：先定义并用失败 UI/几何样本验证“初始恢复事务”的结束条件：仅在新表首次自适应测量期间维持同一稳定行，用户开始拖动即结束；分页、图片完成和同实例更新不能重新开启恢复。需有针对异高首楼的组件回归再替代当前一次性 scrollToRow，不能继续叠固定延时/多次 scrollTo 或扩大到导航/图片重构。本轮已停止该问题的补丁尝试；U03 尚未达到阶段出口，U04 不启动。
+
 ## 2026-10-02 U02 — USER_ACCEPTED（删除提示、重进自动刷新）
 
 - 用户明确回复“行，现在推送U02并进入U03”，批准当前已验收候选并授权提交、推送及仅继续 U03。生产代码自上一轮验收后未变，复用 SilentRefresh 最终构建/定向测试/双端 Live 结果；按 APPROVE_CURRENT_PHASE 只复核 diff、secret scan 与精确 staged 文件。下方“未提交/不进入 U03”为交付时历史状态，现由本次授权覆盖；完整提交与推送结果在 U03 记录补记。

@@ -75,7 +75,7 @@ struct ImageTargetPixelSize: Equatable, Hashable, Sendable {
     }
 }
 
-struct ImageResourceDescriptor: Equatable, Hashable, Sendable {
+struct ImageResourceDescriptor: Equatable, Hashable, Sendable, Codable {
     private static let maximumResourceIDLength = 512
     private static let maximumURLLength = 2_048
 

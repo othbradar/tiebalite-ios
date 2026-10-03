@@ -738,3 +738,12 @@ Keychain/session/cache midpoint crash、rollback 完整/不完整、cleanup-ledg
 requestID 更新、重复/竞态 reauthentication 的 accepted/rejected receipt
 不会遗留 launch key、safe dismiss 不复活旧 lease、Keychain/cleanup
 failure 与 cleanup retry。
+
+### U03：帖子与楼中楼缓存恢复（覆盖首屏清空式 reload）
+
+- registry 仍优先保留已有 Store；新实例先读共享内容缓存。命中后直接 loaded/empty 并恢复一次稳定 postID，5 分钟内无需网络；过期保留可见内容并重查当前页。
+- ThreadReader 的 reload 保留 snapshot/listPresentation；失败维持正文并提供原页尾刷新重试。成功替换当前页，保留其他已加载页及分页参数。楼中楼遵循同一行为，父 postID 是缓存身份的一部分。
+- ReadingPosition 仅在真实展示、滚动停稳、离开或后台写入；通知预定位和页预取不写位置或浏览历史。
+- 缺页只恢复含锚点的实际连续范围，不按楼层计算页码、不顺序下载旧页。末页 hasMore/cursor 始终来自成功响应；失败不能假报读完。
+- 账号变化丢弃旧可见状态；清缓存 epoch 与账号 revision 同时保护迟到响应和进度写入。未知错误保留内容；明确权限拒绝、会话无效或删除响应失效副本并进入原错误态。
+- 已缓存/刷新失败文案仅出现在既有页尾；不新增顶部提示条。复用 VirtualizedList 的系统下拉刷新和一次性初始布局恢复。

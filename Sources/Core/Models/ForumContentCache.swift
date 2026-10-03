@@ -10,7 +10,7 @@ struct ContentCachePolicy: Sendable {
 }
 
 /// Runtime authorization identity. Never encoded into cached content.
-struct ContentCacheContext: Equatable, Sendable {
+struct ContentCacheContext: Equatable, Hashable, Sendable {
     let namespace: String?
     let revision: UInt64
     static let anonymous = ContentCacheContext(namespace: "anonymous", revision: 0)
