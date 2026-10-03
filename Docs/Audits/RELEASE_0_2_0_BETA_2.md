@@ -50,3 +50,11 @@ xcodebuild archive -project TiebaLite.xcodeproj -scheme TiebaLite \
 - 平台接口及发布后审核持续性仍未知，未进行额外真实贴吧写操作。
 
 远端标签、Release 与附件的最终状态以完成后的发布回执为准；本记录当前证明本机产物检查已完成。
+
+## 远端进度：标签已推送，附件尚未发布
+
+- `git push --atomic origin main refs/tags/v0.2.0beta2` exit 0；分支与标签解析均为 `5c9b3a8dda71d0deef8adfa685a7900d623b5b83`，已通过 `git ls-remote` 复核。
+- 本次 archive 的生产/测试源码与 U06 精确提交清单哈希相同，仅发布版本号改为 Build 3；见 `pre-publication-proof.json`。
+- 公开 REST `releases/tags/v0.2.0beta2` 返回404，**Release 与附件均未完成**。
+- Safari 表单可以打开，但网页标题/正文的 AX 设置、点击输入未生效；内置浏览器与 Chrome 连接超时。`gh api user` 因 CLI 未登录返回 exit 4。已请求用户正常登录 GitHub CLI 后继续上传，没有提取浏览器 Cookie/token 或改变安全设置。
+- `release-notes.md` 和两项附件已在上述 ignored 目录准备；未上传 xcarchive、dSYM 或任何私人数据。

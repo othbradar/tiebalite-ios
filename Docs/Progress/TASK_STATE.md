@@ -1,5 +1,12 @@
 # TASK_STATE
 
+## 2026-10-03 v0.2.0beta2 — TAG_PUSHED，Release 等待 GitHub CLI 登录
+
+- 发布源提交 `5c9b3a8dda71d0deef8adfa685a7900d623b5b83` 与附注标签 `v0.2.0beta2` 已原子推送到 `origin/main`；远端分支和标签解析均回读同一提交。U06 所有生产/测试源码哈希与已验收提交一致。
+- 真机 IPA 与 SHA256SUMS 已构建核验，位置 `Artifacts/Releases/v0.2.0beta2/`；构建后 `make build`、secret scan、diff check 也通过。未签名安装方式和已知限制已写入发布说明。
+- **GitHub Release 尚未发布，附件尚未上传**：公开 tag Release API 返回404。`gh` 未登录（查询 exit 4），Safari 虽已登录且能打开发布表单，但网页标题/正文输入无实际写入；内置浏览器及 Chrome 连接超时。未读取或提取浏览器凭证，未绕过认证。
+- 已请求用户在本机执行 `gh auth login --hostname github.com --web`；无需发送密码或 token。后续直接用 `Artifacts/Releases/v0.2.0beta2/release-notes.md` 和两个已核验附件发布现有标签的 pre-release，并复核远端附件大小/摘要。当前状态不能称为 PUBLISHED。
+
 ## 2026-10-03 v0.2.0beta2 — RELEASE_PREPARED
 
 - U06 已验收代码精确37文件提交 `a509d44dfe68fdcca934808db3b0e10803f8f9a4` 并推送 `origin/main`，远端回读一致；U03/U04/U05 已提交历史一并正常快进推送。用户原有文件、Android submodule、Artifacts、凭证保持排除。
