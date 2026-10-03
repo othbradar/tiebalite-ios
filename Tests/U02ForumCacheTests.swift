@@ -18,6 +18,8 @@ struct U02ForumCacheTests {
         if stale { await clock.advance(61) }
         let reopened = ForumHomeStore(route: route, repository: repository)
         await reopened.synchronize(with: route)
+        #expect(reopened.pendingRefreshCommit?.takeRows(.settled(isAtTop: true)) != nil)
+        await reopened.saveReadingPosition()
         #expect(reopened.state.snapshot?.threads.first?.threadID == 199_001)
         #expect(reopened.scrollAnchor == nil)
         #expect(await source.count == 2)
@@ -57,6 +59,7 @@ struct U02ForumCacheTests {
             #expect(cached.snapshot == store.state.snapshot)
             let rebuilt = ForumHomeStore(route: route, repository: rebuiltRepository, query: query)
             await rebuilt.synchronize(with: route)
+            #expect(rebuilt.pendingRefreshCommit?.takeRows(.settled(isAtTop: true)) != nil)
             #expect(rebuilt.scrollAnchor == nil)
             #expect(rebuilt.state.snapshot?.currentPage == 1)
             #expect(rebuilt.state.snapshot?.threads == cached.pages.first?.page.snapshot.threads)
@@ -115,6 +118,8 @@ struct U02ForumCacheTests {
         await load.value
         #expect(reopened.state.snapshot == previous)
         reopened.setScrollAnchor(try #require(reopened.listPresentation?.rows.first?.id))
+        #expect(reopened.state.snapshot == previous) // An anchor alone no longer authorizes replacement.
+        #expect(reopened.pendingRefreshCommit?.takeRows(.settled(isAtTop: true)) != nil)
         #expect(reopened.state.snapshot?.currentPage == 1)
         #expect(reopened.state.snapshot?.threads.first?.threadID == 199_001)
         #expect(reopened.scrollAnchor == nil)

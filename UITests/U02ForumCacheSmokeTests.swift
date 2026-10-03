@@ -38,9 +38,18 @@ final class U02ForumCacheSmokeTests: XCTestCase {
         let firstRow = app.buttons["forum-home.row.t140001"]
         let created = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "发帖排序"), object: firstRow)
         XCTAssertEqual(XCTWaiter.wait(for: [created], timeout: 5), .completed)
-        list.swipeDown()
+        list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
+            .press(forDuration: 0, thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)))
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "U06P1 full pull after sort")
+        waitForRefresh(2, row: firstRow)
         XCTAssertTrue(firstRow.isHittable)
         XCTAssertTrue(firstRow.label.contains("发帖排序"))
+        let topInset = firstRow.frame.minY - list.frame.minY
+        UITestHarness.tapSystemBack(in: app, returningTo: .followedForumsFirstRow)
+        tap("followed-forums.row.f13001", in: app)
+        waitForRefresh(3, row: firstRow)
+        XCTAssertEqual(firstRow.frame.minY - list.frame.minY, topInset, accuracy: 12)
+        XCTAssertFalse(app.buttons["forum-home.cache.new-content"].exists)
         UITestHarness.attachSafeVisualEvidence(app: app, name: "U02 creation sort after pull refresh")
     }
 

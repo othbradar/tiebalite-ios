@@ -126,6 +126,7 @@ struct ForumThreadPageView: View {
                 },
                 onScrollSettled: store.setScrollAnchor,
                 onRefresh: { await store.reload() },
+                pendingRefresh: store.pendingRefreshCommit,
                 rowContent: { row in
                 ForumHomeRowView(row: row, imageLoader: imageLoader, onOpenThread: onOpenThread,
                                  requestReload: { Task { await store.reload() } },

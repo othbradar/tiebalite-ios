@@ -40,6 +40,7 @@ final class VirtualizedTableView: UITableView {
     var virtualListDiagnostics = VirtualListDiagnostics()
     var onInitialAnchorLayout: (() -> Void)?
     var onViewportLayout: (() -> Void)?
+    var onRefreshViewportChange: ((Bool) -> Void)?
     var isPerformingLayout = false
     var hasInitialAnchorLayout: Bool { onInitialAnchorLayout != nil }
 
@@ -51,6 +52,7 @@ final class VirtualizedTableView: UITableView {
     #endif
 
     override func layoutSubviews() {
+        defer { onRefreshViewportChange?(false) }
         guard onViewportLayout != nil else {
             super.layoutSubviews()
             onInitialAnchorLayout?()
@@ -62,6 +64,16 @@ final class VirtualizedTableView: UITableView {
         super.layoutSubviews()
         onInitialAnchorLayout?()
         onViewportLayout?()
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        onRefreshViewportChange?(true)
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        onRefreshViewportChange?(true)
     }
 }
 
@@ -102,6 +114,7 @@ where Item: Identifiable & Equatable & Sendable,
     let onPrefetch: ([Item.ID]) -> Void
     let onScrollSettled: (Item.ID?) -> Void
     let onRefresh: (@MainActor () async -> Void)?
+    let pendingRefresh: VirtualListRefreshCommit<Item>?
     @ViewBuilder let rowContent: (Item) -> RowContent
 
     init(
@@ -113,6 +126,7 @@ where Item: Identifiable & Equatable & Sendable,
         onPrefetch: @escaping ([Item.ID]) -> Void = { _ in },
         onScrollSettled: @escaping (Item.ID?) -> Void = { _ in },
         onRefresh: (@MainActor () async -> Void)? = nil,
+        pendingRefresh: VirtualListRefreshCommit<Item>? = nil,
         @ViewBuilder rowContent: @escaping (Item) -> RowContent
     ) {
         self.items = items
@@ -123,6 +137,7 @@ where Item: Identifiable & Equatable & Sendable,
         self.onPrefetch = onPrefetch
         self.onScrollSettled = onScrollSettled
         self.onRefresh = onRefresh
+        self.pendingRefresh = pendingRefresh
         self.rowContent = rowContent
     }
 
@@ -140,6 +155,8 @@ where Item: Identifiable & Equatable & Sendable,
         var isApplyingSnapshot = false
         var hasAppliedSnapshot = false
         private var refreshTask: Task<Void, Never>?
+        var refreshCommitTask: Task<Void, Never>?
+        var lastRefreshViewport: VirtualListRefreshViewport?
         var pendingRestoredAnchor: Item.ID?
         let initialScope: AnyHashable?
         var readingRestoration: InitialReadingRestoration<Item.ID>?
@@ -242,8 +259,12 @@ where Item: Identifiable & Equatable & Sendable,
             invalidateChangedReadingScope()
             tableView.backgroundColor = parent.backgroundColor
             tableView.accessibilityIdentifier = parent.accessibilityIdentifier
+            tableView.onRefreshViewportChange = parent.pendingRefresh == nil ? nil : { [weak self] force in
+                self?.refreshViewportChanged(force: force)
+            }
             pendingItems = parent.items
             applyPendingSnapshotIfNeeded()
+            refreshViewportChanged(force: true)
         }
 
         @objc private func refresh() {
@@ -256,6 +277,9 @@ where Item: Identifiable & Equatable & Sendable,
         }
 
         func dismantle() {
+            refreshCommitTask?.cancel()
+            refreshCommitTask = nil
+            tableView?.onRefreshViewportChange = nil
             refreshTask?.cancel()
             refreshTask = nil
             tableView?.refreshControl?.removeTarget(self, action: #selector(refresh), for: .valueChanged)
@@ -330,9 +354,11 @@ where Item: Identifiable & Equatable & Sendable,
             userScrollInProgress = true
             viewportAnchor = nil
             stopReadingRestoration(permitsProgress: true)
+            refreshViewportChanged()
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            refreshViewportChanged()
             guard initialScope != nil, let table = tableView,
                   !isAdjustingReadingPosition, !table.isPerformingLayout else { return }
             // An explicit offset change outside layout takes precedence over the old viewport.
@@ -345,7 +371,10 @@ where Item: Identifiable & Equatable & Sendable,
             return true
         }
 
-        func scrollViewDidScrollToTop(_ scrollView: UIScrollView) { emitSettledAnchor() }
+        func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+            emitSettledAnchor()
+            refreshViewportChanged()
+        }
 
         func scrollViewDidEndDragging(
             _ scrollView: UIScrollView,
@@ -354,99 +383,17 @@ where Item: Identifiable & Equatable & Sendable,
             if !decelerate {
                 emitSettledAnchor()
             }
+            refreshViewportChanged()
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             emitSettledAnchor()
+            refreshViewportChanged()
         }
 
         func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
             emitSettledAnchor()
-        }
-
-        private func applyPendingSnapshotIfNeeded() {
-            guard !isApplyingSnapshot,
-                  let dataSource,
-                  let tableView,
-                  let incomingItems = pendingItems else {
-                return
-            }
-            pendingItems = nil
-
-            var incomingIDs: [Item.ID] = []
-            var uniqueItemsByID: [Item.ID: Item] = [:]
-            for item in incomingItems where uniqueItemsByID[item.id] == nil {
-                incomingIDs.append(item.id)
-                uniqueItemsByID[item.id] = item
-            }
-
-            let currentIDs = dataSource.snapshot().itemIdentifiers
-            let currentIDSet = Set(currentIDs)
-            let changedRetainedIDs = incomingIDs.filter { itemID in
-                guard currentIDSet.contains(itemID),
-                      let incoming = uniqueItemsByID[itemID],
-                      let applied = appliedItemsByID[itemID] else {
-                    return false
-                }
-                return incoming != applied
-            }
-
-            if let anchor = viewportAnchor,
-               !incomingIDs.contains(anchor.rowID) ||
-                VirtualListSnapshotPlan(currentIDs: currentIDs, incomingIDs: incomingIDs).requiresFullReplacement {
-                viewportAnchor = nil
-            }
-            if let target = readingRestoration?.target, !incomingIDs.contains(target), hasAppliedSnapshot {
-                stopReadingRestoration(permitsProgress: false)
-            }
-            itemsByID = uniqueItemsByID
-            tableView.virtualListDiagnostics.itemCount = incomingIDs.count
-            if hasAppliedSnapshot,
-               currentIDs == incomingIDs,
-               changedRetainedIDs.isEmpty {
-                appliedItemsByID = uniqueItemsByID
-                restoreAnchorIfNeeded(in: tableView)
-                return
-            }
-
-            var snapshot: NSDiffableDataSourceSnapshot<
-                VirtualListSection,
-                Item.ID
-            >
-            if currentIDs == incomingIDs,
-               dataSource.snapshot().sectionIdentifiers == [.content] {
-                snapshot = dataSource.snapshot()
-            } else {
-                snapshot = NSDiffableDataSourceSnapshot<
-                    VirtualListSection,
-                    Item.ID
-                >()
-                snapshot.appendSections([.content])
-                snapshot.appendItems(incomingIDs, toSection: .content)
-            }
-            if !changedRetainedIDs.isEmpty {
-                snapshot.reconfigureItems(changedRetainedIDs)
-            }
-
-            isApplyingSnapshot = true
-            tableView.virtualListDiagnostics.snapshotApplyCount += 1
-            dataSource.apply(
-                snapshot,
-                animatingDifferences: false
-            ) { [weak self, weak tableView] in
-                Task { @MainActor in
-                    guard let self else {
-                        return
-                    }
-                    self.appliedItemsByID = uniqueItemsByID
-                    self.hasAppliedSnapshot = true
-                    self.isApplyingSnapshot = false
-                    if let tableView {
-                        self.restoreAnchorIfNeeded(in: tableView)
-                    }
-                    self.applyPendingSnapshotIfNeeded()
-                }
-            }
+            refreshViewportChanged()
         }
 
         private func markHostedContentStarted(for cell: UITableViewCell) {

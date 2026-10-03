@@ -1,5 +1,23 @@
 # TASK_STATE
 
+## 2026-10-03 U06P1 — USER_ACCEPTED，授权提交并进入 U06P2
+
+- 用户已验收并明确授权提交 U06P1 后进入 U06P2。当前10个源码/规格/测试文件与已安装、通过检查的候选 SHA256 全部一致；沿用下方8项定向 Unit、iPhone/iPad 短 UI 和轻量门禁结果，仅复核 diff、secret scan、精确暂存清单。
+- 仅提交 U06P1 的11个代码、测试和必要记录文件，提交信息 `fix: defer forum refresh while scrolling`。排除用户原有 Prompt/skill、Artifacts、凭证及 Android submodule；不推送、不打 tag、不发版。提交成功后才读取并实施 U06P2，两个批次不混入同一提交。
+- 下方 READY 记录的“未提交/等待验收”属于此前交付状态；本条更新授权。真机及 Live 延迟网络竞态未验证，U03 iPad 旋转进入分栏回首楼仍未修复，不将该缺陷标为通过。
+
+## 2026-10-03 U06P1 — READY_FOR_USER_VISUAL_REVIEW
+
+- 实际基线 HEAD `1dac48bfb72f26017f088788fbca9fee96a5100f`。只执行 `U06P/U06P1_REFRESH_DURING_SCROLL.md`，先读两级 COMMON；未展开后续提示词或旧审计。用户原有未跟踪 Prompt/skill 保留，无暂存、提交、推送、发版，未进入 U06P2/U07。
+- 当前源码的确定性失败：缓存两页且锚点为 nil 时，调用真实列表 Coordinator 的拖动开始入口，再通过 continuation 释放自动首屏响应，Store 提前换成首屏。`baseline.xcresult` 原用例 1/1 FAIL；这是 Fixture/组件证据，不是 Live 网络复现。
+- 最小修复：ForumHomeStore 暂存带 route/query/context/generation/intent 的首屏，不再由历史 scrollAnchor 授权替换。仅吧首页接入可选 `VirtualListRefreshCommit`：现有 delegate/布局/触摸结束边界发合并通知，实际 diffable 提交前在 MainActor 重读 tracking/dragging/decelerating、有效窗口/尺寸、snapshot/恢复状态及 `offsetY + adjustedTopInset`。自动更新只在静止几何顶部提交，显式刷新可在其他静止有效位置完成，spinning 不作为阻塞条件；Store 变更和新行 snapshot 间没有 await，旧后页不拼接。新响应/排序/账号/取消使旧回调失效，首次无缓存加载仍直接显示并沿用原持久化完成语义。
+- 修改边界：ForumHomeStore/View；VirtualizedList 可选接线及新增 Refresh 扩展；原 snapshot 方法原样提取到 Snapshot 扩展以满足 lint 长度限制，方法体仅增加完成后的通知入口。`VirtualizedList+Reading`、InitialReadingRestoration、缓存/Repository/预载、Pager、MediaViewer、图片系统、Session、iPad 导航、Android submodule 均未改。无新手势、动画、overlay、依赖、计时等待或强制滚顶。
+- 定向验证：`direct-unit-2.xcresult` 8 个逻辑用例全通过、0 skip（含新4项、U02 自动/深处回顶2项、原刷新控件/零尺寸保护2项）。受控源请求共3次＝首次首屏＋第二页＋重进自动检查；拖动/惯性/深处仍保留2页，回顶才替换1页，旧后页 ID 消失。覆盖排队后再拖动、顶部静止自动提交、手动成功/失败、刷新控件 inset、排序/账号/取消及一次性消费。复用并增强同一条 U02 短 UI：iPhone `phone-ui-2.xcresult` 1/1 PASS（45.389s），iPad `ipad-ui.xcresult` 1/1 PASS；深处重进、切排序、实际下拉刷新、顶部重进自动更新与无横条均通过。
+- 中间失败如实保留：`fix-unit.xcresult` 测试误用不存在的 selectSort 方法导致编译失败，改为现有 changeQuery；`direct-unit.xcresult` 6/8 PASS，修正首次无缓存保存应保持原 await 完成语义，以及测试将 UIRefreshControl 增加 inset 后的位置误认成顶部。首次 lint 的两处参数对齐和类型长度已修正。`phone-ui.xcresult` 在新增刷新标记断言失败：原 swipeDown 合成行程200pt，未出现刷新标记；改为复用现有 U02 用例的完整下拉手势后通过，没有改业务阈值、降低断言或操作速度。
+- 轻量门禁：`make lint` 421 文件0 violation；`make build` PASS；`make secret-scan` PASS；`git diff --check` PASS。未执行全量 Unit、quality-fast、quality 或无关长矩阵。证据仅在 ignored `Artifacts/VisualReview/U06P1/`；`candidate-files.json` 的10个源码/规格/测试哈希在安装后复核未变。
+- 正常 Live 交付：`scripts/visual_review_build_install.sh U06P1` PASS，完整正常 Debug App 覆盖 iPhone `70D93841-1FEB-445A-8FAD-B1C29B981D5D`，codesign/Simulator entitlements 验证通过，无 uninstall/erase/清账号或 Keychain。安装主程序 SHA256 `803bd3c467fa2d23975e196b4522284e17081b172c0000130447b76702f2ed1d`、debug dylib `304f04772e653082710ef85e9acad8ee67fc99379e44909da865248c1032431e` 与本轮候选一致，见 `installed-binary-proof.json`。原账户头像、关注吧与历史入口仍显示；经生产入口打开真实高通吧，保留“最新发布”排序，留在吧首页供用户操作。截图 `20261003-215100-forum-home-review.png`。
+- 剩余限制：Live 仅确认正常安装、登录态保留和真实入口可读；没有人为延迟真实网络来复现同一竞态，没有测量或宣称 FPS。U03 iPad 旋转进入分栏回首楼仍是已知失败，未在本批修复或标为通过；真机未验证。本批等待用户视觉验收，不进入下一批。
+
 ## 2026-10-03 v0.2.0beta2 — PUBLISHED_AND_VERIFIED
 
 - 用户指定使用 Chrome，并澄清 Safari 未登录 GitHub；此前基于 Safari 页面控件作出的登录判断不作为认证证据。按用户要求使用本机 Chrome 的现有 GitHub 会话，经原生 UI 完成发布，无需 CLI 登录或读取浏览器凭证。

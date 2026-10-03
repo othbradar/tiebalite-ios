@@ -15,7 +15,7 @@ final class ForumHomeStore {
     private(set) var isCheckingCache = false
     @ObservationIgnored private var checkpointTask: Task<Void, Never>?
     private var cachedReading: ForumCachedReading?
-    private var pendingReading: ForumCachedReading?
+    private var pendingRefresh: PendingForumRefresh?
     private var contentContext: ContentCacheContext = .anonymous
     private let sortPreferences: (any ForumSortPreferenceProviding)?
 
@@ -54,7 +54,7 @@ final class ForumHomeStore {
             tabStores.values.forEach { $0.cancel() }
             tabStores = [:]
             cachedReading = nil
-            pendingReading = nil
+            pendingRefresh = nil
             contentContext = cacheContext
             selectedPage = .latest
             knownForum = nil
@@ -89,10 +89,15 @@ final class ForumHomeStore {
 
     func reload() async {
         prefetch?.cancel()
+        pendingRefresh = nil
+        let request = ForumHomePageRequest(route: route, query: query)
+        let context = cacheContext
+        let generation = nextGeneration
         if let cache = repository as? any ForumHomeCacheAccess {
-            await cache.invalidatePrefetch(.init(route: route, query: query))
+            await cache.invalidatePrefetch(request)
         }
-        pendingReading = nil
+        guard route == request.route, query == request.query, context == cacheContext,
+              generation == nextGeneration, !Task.isCancelled else { return }
         let previous = state.snapshot
         hasCompletedLoad = false
         await replaceInitialLoad(previous: previous)
@@ -110,6 +115,7 @@ final class ForumHomeStore {
 
     func cancel() {
         prefetch?.cancel()
+        pendingRefresh = nil
         checkpointReading()
         tabStores.values.forEach { $0.cancel() }
         guard activeGeneration != nil else {
@@ -128,7 +134,6 @@ final class ForumHomeStore {
         // The leading row may be the forum rule, not a thread. Persist an explicit top position.
         if rowID == presentation.rows.first?.id {
             scrollAnchor = nil
-            applyPendingContentAtTop()
             return
         }
         guard case let .thread(threadID) = rowID,
@@ -187,7 +192,7 @@ final class ForumHomeStore {
         cancelCurrentLoad()
         self.query = query
         cachedReading = nil
-        pendingReading = nil
+        pendingRefresh = nil
         scrollAnchor = nil
         state = .initialLoading
         listPresentation = nil
@@ -305,6 +310,56 @@ final class ForumHomeStore {
         loadTask = nil
         cancellationPresentation = nil
     }
+
+    // The coordinator invokes this only at the actual snapshot boundary, with fresh
+    // UIKit geometry. The returned rows and Store change are one synchronous commit.
+    var pendingRefreshCommit: VirtualListRefreshCommit<ForumHomeRowModel>? {
+        guard let pendingRefresh else { return nil }
+        let generation = pendingRefresh.generation
+        return VirtualListRefreshCommit { [weak self] viewport in
+            guard let self, let pending = self.pendingRefresh, pending.generation == generation,
+                  pending.route == self.route, pending.query == self.query,
+                  pending.context == self.cacheContext, self.contentContext == self.cacheContext,
+                  case let .settled(isAtTop) = viewport,
+                  !pending.automatic || isAtTop else { return nil }
+            self.cancelCurrentLoad()
+            self.pendingRefresh = nil
+            self.cachedReading = pending.reading
+            self.scrollAnchor = nil
+            self.displaySnapshot(pending.snapshot)
+            self.hasCompletedLoad = true
+            self.checkpointReading()
+            return self.listPresentation?.rows
+        }
+    }
+
+    private func receiveFirstPage(_ snapshot: ForumHomeSnapshot, reading: ForumCachedReading?,
+                                  previous: ForumHomeSnapshot?, generation: UInt64, automatic: Bool) {
+        guard activeGeneration == generation else { return }
+        if previous != nil {
+            pendingRefresh = PendingForumRefresh(snapshot: snapshot, reading: reading, route: route, query: query,
+                                                 context: contentContext, generation: generation, automatic: automatic)
+            state = cancellationState
+            listPresentation = cancellationPresentation
+            hasCompletedLoad = true
+            finishOperation(generation: generation)
+        } else {
+            // No readable content yet: the initial page must not wait for a table.
+            cachedReading = reading
+            scrollAnchor = nil
+            finishInitial(generation: generation, previous: nil, result: .success(snapshot))
+        }
+    }
+}
+
+private struct PendingForumRefresh {
+    let snapshot: ForumHomeSnapshot
+    let reading: ForumCachedReading?
+    let route: ForumRoute
+    let query: ForumThreadQuery
+    let context: ContentCacheContext
+    let generation: UInt64
+    let automatic: Bool
 }
 
 private extension ForumHomeStore {
@@ -345,19 +400,14 @@ private extension ForumHomeStore {
                     try Task.checkCancellation()
                     guard let self, self.activeGeneration == generation, self.contentContext == self.cacheContext,
                           let snapshot = reading.snapshot else { return }
-                    if restored, self.scrollAnchor != nil, retained?.threads.isEmpty == false {
-                        self.pendingReading = reading
-                        self.finishOperation(generation: generation)
-                    } else {
-                        self.cachedReading = reading
-                        self.scrollAnchor = nil
-                        self.finishInitial(generation: generation, previous: retained, result: .success(snapshot))
-                        await self.saveReadingPosition()
-                    }
+                    self.receiveFirstPage(snapshot, reading: reading, previous: retained,
+                                          generation: generation, automatic: restored)
+                    if retained == nil { await self.saveReadingPosition() }
                 } else {
                     let snapshot = try await repository.loadForumHomePage(request)
                     try Task.checkCancellation()
-                    self?.finishInitial(generation: generation, previous: retained, result: .success(snapshot))
+                    self?.receiveFirstPage(snapshot, reading: nil, previous: retained,
+                                           generation: generation, automatic: restored)
                 }
             } catch is CancellationError {
                 self?.finishCancellation(generation: generation)
@@ -490,18 +540,6 @@ extension ForumHomeStore {
             await previous?.value
             await cache.saveReading(reading, request: request)
         }
-    }
-
-    private func applyPendingContentAtTop() {
-        guard scrollAnchor == nil, let reading = pendingReading, reading.context == cacheContext,
-              let snapshot = reading.snapshot else { return }
-        cancelCurrentLoad()
-        cachedReading = reading
-        pendingReading = nil
-        scrollAnchor = nil
-        displaySnapshot(snapshot)
-        hasCompletedLoad = true
-        checkpointReading()
     }
 
     private func displaySnapshot(_ snapshot: ForumHomeSnapshot) {

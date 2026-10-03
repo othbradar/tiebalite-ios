@@ -8,6 +8,8 @@
 
 U02 吧首页缓存补充（CODE_EVIDENCE，ADR-0030）：按 2026-10-02 用户修订：重建页面时先检查当前账号/query 的缓存，无论新鲜与否都先 loaded/empty，再自动请求一次首屏，同一 Store 重复 synchronize 不重复请求。成功且位于顶部时直接应用；深处静默暂存，滚回顶部时应用并使旧后页失效。无顶部新内容/失败提示行，自动更新失败保留旧内容。显式 reload 不走新鲜命中捷径，失败仍保留旧列表。账号 revision 变化清除当前个性化显示并按新 scope 重新加载，覆盖下述历史“session 不销毁公开内容”规则在吧首页的适用范围。清缓存 epoch 变化禁止旧请求/checkpoint 回填。测试见 U02ForumCacheTests。
 
+U06P1 刷新提交补充：已有内容时 `response → pending(snapshot, reading, route, query, context, generation, intent)`，显示状态恢复为原内容。当前表格在实际 diffable 提交边界同步检查身份及真实视口：自动 intent 要求 settled + 几何顶部，手动 intent 要求 settled；tracking/dragging/decelerating、布局或初始恢复未完成均继续 pending。提交一次消费结果、取消旧分页、建立新首屏分页链并保存阅读信息。旧回调捕获的 generation 不能消费更新的 pending；切 query/账号/路由、显式新刷新和取消清除旧 pending。无缓存首屏直接显示并沿用原持久化完成语义。定向证据见 U06P1ForumRefreshTests、U06P1RefreshViewportTests 及 U02 短回归。
+
 所有 P0 异步列表采用同一代数状态：
 
 ```text
