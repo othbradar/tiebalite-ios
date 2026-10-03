@@ -76,11 +76,13 @@ where MediaID: Hashable & Sendable {
         gestureSessionID: UInt64,
         generation: UInt64,
         mediaID: MediaID,
-        evidence: MediaGestureBeginEvidence
+        evidence: MediaGestureBeginEvidence,
+        allowsZoomedPaging: Bool = true
     ) -> Self {
         let decision = decision(
             capability: evidence.capability,
-            intent: evidence.intent
+            intent: evidence.intent,
+            allowsZoomedPaging: allowsZoomedPaging
         )
         return Self(
             gestureSessionID: gestureSessionID,
@@ -139,7 +141,8 @@ where MediaID: Hashable & Sendable {
 
     private static func decision(
         capability: MediaPageCapability,
-        intent: MediaHorizontalIntent
+        intent: MediaHorizontalIntent,
+        allowsZoomedPaging: Bool
     ) -> (owner: MediaGestureOwner, reason: MediaGestureDecisionReason) {
         if capability.atMinimumZoom {
             guard intent != .verticalOrAmbiguous else {
@@ -148,6 +151,7 @@ where MediaID: Hashable & Sendable {
             return (.pager, .minimumZoomHorizontal)
         }
 
+        guard allowsZoomedPaging else { return (.mediaPan, .zoomedMediaPan) }
         switch (capability.horizontalBoundary, intent) {
         case (.both, .towardNext),
              (.both, .towardPrevious),
@@ -271,6 +275,13 @@ where MediaID: Hashable & Sendable {
         init(_ scrollView: MediaZoomScrollView) {
             self.scrollView = scrollView
         }
+    }
+
+    private let allowsZoomedPaging: Bool
+
+    init(allowsZoomedPaging: Bool = true) {
+        self.allowsZoomedPaging = allowsZoomedPaging
+        super.init()
     }
 
     private var zoomScrollViews: [MediaID: WeakZoomReference] = [:]
@@ -464,7 +475,8 @@ where MediaID: Hashable & Sendable {
                 translation: translation,
                 capability: capability,
                 intent: intent
-            )
+            ),
+            allowsZoomedPaging: allowsZoomedPaging
         )
         nextSessionID &+= 1
         activeSession = session

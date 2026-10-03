@@ -8,7 +8,7 @@ actor ProductionImageLoader: ImageLoading {
     static let defaultMemoryCostLimit = 96 * 1_024 * 1_024
     static let defaultSourcePixelLimit: UInt64 = 120_000_000
 
-    private final class CachedImage {
+    private final class CachedImage: Sendable {
         let image: UIImage
         let mediaType: String
         let pixelSize: ImageTargetPixelSize
@@ -33,6 +33,7 @@ actor ProductionImageLoader: ImageLoading {
     private let responseByteLimit: Int
     private let sourcePixelLimit: UInt64
     private let cache: NSCache<NSString, CachedImage>
+    private let decoding = ImageWorkPool<CachedImage>(limit: 2)
     private var memoryWarningTask: Task<Void, Never>?
 
     init(
@@ -57,9 +58,7 @@ actor ProductionImageLoader: ImageLoading {
 
     static func production() -> ProductionImageLoader {
         let imageLoader = ProductionImageLoader(
-            loader: URLSessionDataLoader(
-                configuration: makeURLSessionConfiguration()
-            )
+            loader: ImageResourceStore.shared
         )
         Task {
             await imageLoader.startMemoryWarningObservation()
@@ -73,10 +72,7 @@ actor ProductionImageLoader: ImageLoading {
         configuration.httpCookieStorage = nil
         configuration.httpShouldSetCookies = false
         configuration.urlCredentialStorage = nil
-        configuration.urlCache = URLCache(
-            memoryCapacity: 32 * 1_024 * 1_024,
-            diskCapacity: 0
-        )
+        configuration.urlCache = nil
         configuration.requestCachePolicy = .useProtocolCachePolicy
         configuration.waitsForConnectivity = false
         return configuration
@@ -88,8 +84,12 @@ actor ProductionImageLoader: ImageLoading {
               !request.candidateURLs.isEmpty else {
             throw ImageLoadingError.invalidRequest
         }
-        let key = request.stableCacheKey as NSString
-        if let cached = cache.object(forKey: key) {
+        let resourceEpoch = await (loader as? ImageResourceStore)?.epoch ?? 0
+        let key = "\(resourceEpoch)|\(request.stableCacheKey)" as NSString
+        let permitsDecodedCache = !(loader is ImageResourceStore) || request.candidateURLs.allSatisfy {
+            ImageResourceStore.permitsPersistence(URL(string: $0))
+        }
+        if permitsDecodedCache, let cached = cache.object(forKey: key) {
             return ImagePayload(
                 decodedImage: cached.image,
                 mediaType: cached.mediaType,
@@ -109,14 +109,13 @@ actor ProductionImageLoader: ImageLoading {
             do {
                 let decoded = try await loadCandidate(
                     candidate,
-                    request: request
+                    request: request, epoch: resourceEpoch
                 )
                 try Task.checkCancellation()
-                cache.setObject(
-                    decoded,
-                    forKey: key,
-                    cost: Self.memoryCost(of: decoded.image)
-                )
+                guard await (loader as? ImageResourceStore)?.epoch ?? 0 == resourceEpoch else { throw CancellationError() }
+                if permitsDecodedCache {
+                    cache.setObject(decoded, forKey: key, cost: Self.memoryCost(of: decoded.image))
+                }
                 return ImagePayload(
                     decodedImage: decoded.image,
                     mediaType: decoded.mediaType,
@@ -146,6 +145,17 @@ actor ProductionImageLoader: ImageLoading {
         cache.removeAllObjects()
     }
 
+    func clearImageCache() async {
+        cache.removeAllObjects()
+        await decoding.cancelAll()
+        await (loader as? ImageResourceStore)?.clear()
+    }
+
+    func imageCacheDiagnostics() async -> ImageResourceDiagnostics {
+        await (loader as? ImageResourceStore)?.diagnostics()
+            ?? ImageResourceDiagnostics(diskHits: 0, networkRequests: 0, merged: 0, diskBytes: 0)
+    }
+
     private func startMemoryWarningObservation() {
         guard memoryWarningTask == nil else {
             return
@@ -164,7 +174,7 @@ actor ProductionImageLoader: ImageLoading {
 
     private func loadCandidate(
         _ url: URL,
-        request: ImageRequest
+        request: ImageRequest, epoch: UInt64
     ) async throws -> CachedImage {
         var urlRequest = URLRequest(
             url: url,
@@ -191,17 +201,28 @@ actor ProductionImageLoader: ImageLoading {
         if let responseMIME, !responseMIME.hasPrefix("image/") {
             throw ImageLoadingError.invalidMIME
         }
-        return try decode(data: data, responseMIME: responseMIME, request: request)
+        let limit = sourcePixelLimit
+        let key = "\(epoch)|\(url.absoluteString)|\(request.stableCacheKey)"
+        return try await decoding.value(for: key, foreground: Task.currentPriority != .utility) {
+            try await ImageDecodeExecutor.run {
+                try Self.decode(data: data, responseMIME: responseMIME, request: request, sourcePixelLimit: limit)
+            }
+        }
     }
 
-    private func decode(data: Data, responseMIME: String?, request: ImageRequest) throws -> CachedImage {
+}
+
+extension ProductionImageLoader {
+    nonisolated private static func decode(
+        data: Data, responseMIME: String?, request: ImageRequest, sourcePixelLimit: UInt64
+    ) throws -> CachedImage {
         guard let source = CGImageSourceCreateWithData(
             data as CFData,
             [kCGImageSourceShouldCache: false] as CFDictionary
         ) else {
             throw ImageLoadingError.decodingFailed
         }
-        let sourceSize = try sourcePixelSize(source)
+        let sourceSize = try sourcePixelSize(source, limit: sourcePixelLimit)
         let thumbnailMaximum = Self.thumbnailMaximumDimension(
             source: sourceSize,
             target: request.targetPixelSize,
@@ -248,8 +269,8 @@ actor ProductionImageLoader: ImageLoading {
         )
     }
 
-    private func sourcePixelSize(
-        _ source: CGImageSource
+    nonisolated private static func sourcePixelSize(
+        _ source: CGImageSource, limit: UInt64
     ) throws -> SourcePixelSize {
         guard let properties = CGImageSourceCopyPropertiesAtIndex(
             source,
@@ -269,7 +290,7 @@ actor ProductionImageLoader: ImageLoading {
         let (pixelCount, overflow) = UInt64(width).multipliedReportingOverflow(
             by: UInt64(height)
         )
-        guard !overflow, pixelCount <= sourcePixelLimit else {
+        guard !overflow, pixelCount <= limit else {
             throw ImageLoadingError.sourceDimensionsTooLarge
         }
         let orientation = Self.integerProperty(
@@ -383,7 +404,10 @@ extension ProductionImageLoader {
         if let cached = cache.object(forKey: key) { decoded = cached } else {
             let data = try Data(contentsOf: photo.file.url, options: .mappedIfSafe)
             guard data.count <= responseByteLimit else { throw ImageLoadingError.responseTooLarge(limit: responseByteLimit) }
-            decoded = try decode(data: data, responseMIME: "image/jpeg", request: request)
+            let limit = sourcePixelLimit
+            decoded = try await ImageDecodeExecutor.run {
+                try Self.decode(data: data, responseMIME: "image/jpeg", request: request, sourcePixelLimit: limit)
+            }
             try Task.checkCancellation()
             cache.setObject(decoded, forKey: key, cost: Self.memoryCost(of: decoded.image))
         }

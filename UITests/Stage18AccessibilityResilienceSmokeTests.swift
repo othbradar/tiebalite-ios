@@ -60,22 +60,12 @@ extension AppShellSmokeTests {
             equals: "关闭图片查看器",
             in: app
         )
-        UITestHarness.requireLabel(
-            .mediaViewerPrevious,
-            equals: "上一张图片",
-            in: app
-        )
-        UITestHarness.requireLabel(
-            .mediaViewerNext,
-            equals: "下一张图片",
-            in: app
-        )
+        UITestHarness.requireAbsent(.mediaViewerPrevious, in: app)
+        UITestHarness.requireAbsent(.mediaViewerNext, in: app)
+        XCTAssertEqual(app.staticTexts["media-viewer.position"].label, "2 / 3")
 
         XCTAssertFalse(
             app.descendants(matching: .any)["media-viewer.root"].exists
-        )
-        XCTAssertFalse(
-            app.descendants(matching: .any)["media-viewer.position"].exists
         )
         UITestHarness.tap(.mediaViewerClose, in: app)
         UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)

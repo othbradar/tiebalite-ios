@@ -9,16 +9,24 @@ final class SettingsStore: ForumSortPreferenceProviding {
     private(set) var persistenceFailed = false
 
     private(set) var contentRequestDiagnostics = ""
+    private(set) var imageRequestDiagnostics = ""
+    private(set) var imageCacheBytes = 0
+    private(set) var clearingImages = false
+    private let imageCache: ProductionImageLoader?
     private let contentScheduler: ContentLoadScheduler?
     private let contentCache: ContentPageCache?
     private let repository: any AppSettingsRepository
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var pendingSave: AppSettingsSnapshot?
 
-    init(repository: any AppSettingsRepository, contentScheduler: ContentLoadScheduler? = nil, contentCache: ContentPageCache? = nil) {
+    init(
+        repository: any AppSettingsRepository, contentScheduler: ContentLoadScheduler? = nil,
+        contentCache: ContentPageCache? = nil, imageCache: ProductionImageLoader? = nil
+    ) {
         self.repository = repository
         self.contentScheduler = contentScheduler
         self.contentCache = contentCache
+        self.imageCache = imageCache
     }
 
     var appearance: AppAppearancePreference {
@@ -71,6 +79,21 @@ final class SettingsStore: ForumSortPreferenceProviding {
     func setContentPrefetch(_ mode: ContentPrefetchMode) {
         settings.contentPrefetch = mode
         persistCurrentSettings()
+    }
+
+    func refreshImageCacheUsage() async {
+        guard let imageCache else { return }
+        let counts = await imageCache.imageCacheDiagnostics()
+        imageCacheBytes = counts.diskBytes
+        imageRequestDiagnostics = "images disk=\(counts.diskHits) network=\(counts.networkRequests) merged=\(counts.merged)"
+    }
+
+    func clearImageCache() async {
+        guard !clearingImages, let imageCache else { return }
+        clearingImages = true
+        await imageCache.clearImageCache()
+        await refreshImageCacheUsage()
+        clearingImages = false
     }
 
     var forumSortPreferences: ForumSortPreferences { settings.forumSort }

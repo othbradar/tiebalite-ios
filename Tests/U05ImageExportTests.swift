@@ -92,17 +92,49 @@ struct U05ImageExportTests {
         #expect(store.shareFile == nil)
     }
 
-    @Test func fallbackIsExplicitAndUsesReturnedCandidateOnly() async throws {
+    @Test func savingDoesNotFallBackToPreviewWhenOriginalFails() async throws {
         let fixture = try ExportTestFixture()
         await fixture.transport.setFailOriginal(true)
         let store = fixture.store()
         store.start(request(2), action: .save)
         await store.waitForOperation()
-        #expect(store.state == .saved)
+        #expect(store.state == .failed)
+        #expect(store.failure == .download)
+        #expect(await fixture.writer.writtenIDs.isEmpty)
+        #expect(await fixture.transport.requests.compactMap { $0.url?.path } == ["/original-2"])
+    }
+
+    @Test func missingOriginalNeverSavesPreviewOrGuessesAnOriginalURL() async throws {
+        let fixture = try ExportTestFixture()
+        let available = request(2)
+        let original = available.descriptor.originalOnly.imageRequest(
+            purpose: .mediaViewer, targetPixelSize: .init(width: 100, height: 100))
+        #expect(original.candidateURLs.count == 1)
+        #expect(original.candidateURLs[0].hasSuffix("/original-2"))
+        let preview = ThreadImageRequestDescriptor(resourceID: available.descriptor.resourceID,
+                                                   candidates: available.descriptor.candidates.filter { $0.role != .original })
+        #expect(preview.originalOnly.candidates.isEmpty)
+        let store = fixture.store()
+        store.start(.init(mediaID: available.mediaID, position: 2, descriptor: preview), action: .save)
+        await store.waitForOperation()
+        #expect(store.failure == .originalUnavailable)
+        #expect(await fixture.transport.requests.isEmpty)
+        #expect(await fixture.writer.writtenIDs.isEmpty)
+    }
+
+    @Test func shareFallbackIsExplicitAndUsesReturnedCandidateOnly() async throws {
+        let fixture = try ExportTestFixture()
+        await fixture.transport.setFailOriginal(true)
+        let store = fixture.store()
+        store.start(request(2), action: .share)
+        await store.waitForOperation()
+        #expect(store.state == .readyToShare)
         #expect(store.isAvailableVersion)
         #expect(store.statusText.contains("非原图"))
         let paths = await fixture.transport.requests.compactMap { $0.url?.path }
         #expect(paths == ["/original-2", "/preview-2"])
+        store.shareFinished(completed: false)
+        await store.waitForOperation()
     }
 
     @Test func closingBeforeSharePresentationRemovesUnclaimedFile() async throws {

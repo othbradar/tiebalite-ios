@@ -7,6 +7,18 @@
 
 2026-10-02：用户授权的 U02 **内容页面**持久化由 ADR-0030 单独规定；本 ADR 的图片磁盘缓存限制保持不变。
 
+## 2026-10-03 U06 授权更新
+
+- 用户明确授权在既有 ProductionImageLoader 下补持久化、合并与高清，替代本 ADR 早期对磁盘/decoded 的 Proposed 限制；不引入第三方图片库或第二套 Viewer。
+- 使用已有匿名 HTTPDataLoading 边界，关闭 URLCache。已使用的公开图片 host（imgsrc/imgsa/tiebapic.baidu.com、既有 tb.himg.baidu.com 头像例外）且无 token/sign/auth/secret 等 query 的候选可落盘；未知 host、带权限参数候选及响应 private/no-store 不落盘。不删除 query、不猜新地址、不带会话。
+- 编码文件：完整 URL + anonymous namespace + schema-v1 的 SHA256；512 MiB、4096 项上限，单资源24 MiB，二进制 plist 保留原 Data 与 MIME/checksum。有界索引懒加载、原子写入、LRU、损坏淘汰；磁盘操作在独立 actor，不在主线程解码或全目录扫描。索引损坏仅重建本版本图片目录。
+- 下载最多4个，解码最多2个；同键消费者独立取消、最后一个取消底层，运行槽等实际任务退出才释放。前台在排队任务中优先。不同 URL/query 不合并；decoded key 继续包含资源候选、尺寸、purpose、fit/fill。decoded NSCache 96 MiB，UIImage 不加 unchecked Sendable。
+- clear 先递增 epoch、拒绝清理期间新工作、取消旧消费者，再清文件；旧完成不能回填。公开匿名图片无需跨账号共享受保护身份；未知/带权限参数的候选也不进入 decoded NSCache。不支持认证图片磁盘缓存。
+- Viewer 只允许当前图和相邻一张屏幕尺寸订阅；高清明确点击，最长边最多4096像素、source120MP安全限制，沿用完整原图候选，失败保留旧图。同 MediaID/重置代次时可选替换图像并复用现有几何布局保存倍率和中心；其他调用默认行为不变。不改变 ownership/手势。
+- U05 导出复制编码 Data 到导出独占临时目录，缓存淘汰/清理不能提前删除系统分享或相册写入中的文件。
+- 设置仅接出图片缓存清理。当前内容缓存把位置和分页清单关联保存；为遵守本轮不修改 U03 恢复/U04 策略的要求，不接出会丢位置的内容清空入口。内容清理与永久位置分离不在本轮实现。
+- 回滚条件：若合并取消、epoch 或高清保持回归，禁用该新增入口/持久层，保留既有下采样与导出字节路径，不删除用户数据。直接验证及 Simulator/真机边界见 TASK_STATE 本轮记录。
+
 ## 背景
 
 列表与 MediaViewer 需要去重请求、取消、占位稳定和资源释放。当前没有性能

@@ -124,6 +124,7 @@ struct DebugMediaFixture: Identifiable, Equatable, Sendable {
 struct MediaZoomImageView: UIViewRepresentable {
     let mediaID: String
     let image: UIImage
+    let preservesViewportOnImageChange: Bool
     let resetGeneration: UInt64
     let reduceMotion: Bool
     let ownershipController: MediaGestureOwnershipController<String>?
@@ -131,6 +132,7 @@ struct MediaZoomImageView: UIViewRepresentable {
     let surfaceAccessibilityLabel: String?
     let surfaceAccessibilityValue: String?
     let surfaceAccessibilityHint: String?
+    let onLongPress: (() -> Void)?
     let onSingleTap: () -> Void
     let onCapabilityChanged: (MediaPageCapability, Double) -> Void
     let onInputMetricsChanged: (MediaInputMetrics) -> Void
@@ -139,6 +141,7 @@ struct MediaZoomImageView: UIViewRepresentable {
     init(
         mediaID: String,
         image: UIImage,
+        preservesViewportOnImageChange: Bool = false,
         resetGeneration: UInt64 = 0,
         reduceMotion: Bool = false,
         ownershipController: MediaGestureOwnershipController<String>? = nil,
@@ -146,6 +149,7 @@ struct MediaZoomImageView: UIViewRepresentable {
         surfaceAccessibilityLabel: String? = nil,
         surfaceAccessibilityValue: String? = nil,
         surfaceAccessibilityHint: String? = nil,
+        onLongPress: (() -> Void)? = nil,
         onSingleTap: @escaping () -> Void,
         onCapabilityChanged: @escaping (
             MediaPageCapability,
@@ -160,6 +164,7 @@ struct MediaZoomImageView: UIViewRepresentable {
     ) {
         self.mediaID = mediaID
         self.image = image
+        self.preservesViewportOnImageChange = preservesViewportOnImageChange
         self.resetGeneration = resetGeneration
         self.reduceMotion = reduceMotion
         self.ownershipController = ownershipController
@@ -168,6 +173,7 @@ struct MediaZoomImageView: UIViewRepresentable {
         self.surfaceAccessibilityLabel = surfaceAccessibilityLabel
         self.surfaceAccessibilityValue = surfaceAccessibilityValue
         self.surfaceAccessibilityHint = surfaceAccessibilityHint
+        self.onLongPress = onLongPress
         self.onSingleTap = onSingleTap
         self.onCapabilityChanged = onCapabilityChanged
         self.onInputMetricsChanged = onInputMetricsChanged
@@ -214,6 +220,7 @@ struct MediaZoomImageView: UIViewRepresentable {
         var parent: MediaZoomImageView
 
         private weak var scrollView: MediaZoomScrollView?
+        private var imageActions: MediaImageActionGesture?
         private var singleTapRecognizer: UITapGestureRecognizer?
         private var doubleTapRecognizer: UITapGestureRecognizer?
         private var registeredMediaID: String?
@@ -261,6 +268,9 @@ struct MediaZoomImageView: UIViewRepresentable {
                     )
                 }
             }
+            if parent.onLongPress != nil {
+                imageActions = MediaImageActionGesture(on: scrollView) { [weak self] in self?.parent.onLongPress?() }
+            }
             singleTapRecognizer = singleTap
             doubleTapRecognizer = doubleTap
             synchronizeRegistration(on: scrollView)
@@ -296,7 +306,10 @@ struct MediaZoomImageView: UIViewRepresentable {
         func synchronizeContent(on scrollView: MediaZoomScrollView) {
             let imageChanged = scrollView.mediaImageView.image
                 !== parent.image
-            if scrollView.mediaID != parent.mediaID || imageChanged {
+            let preservesImageChange = parent.preservesViewportOnImageChange
+                && scrollView.mediaID == parent.mediaID
+                && scrollView.appliedResetGeneration == parent.resetGeneration
+            if scrollView.mediaID != parent.mediaID || (imageChanged && !preservesImageChange) {
                 scrollView.configure(
                     image: parent.image,
                     mediaID: parent.mediaID,
@@ -311,6 +324,7 @@ struct MediaZoomImageView: UIViewRepresentable {
                         parent.surfaceAccessibilityHint
                 )
             } else {
+                if imageChanged { scrollView.replaceImagePreservingViewport(parent.image) }
                 scrollView.applyResetGeneration(parent.resetGeneration)
                 scrollView.configureAccessibility(
                     identifier: parent.surfaceAccessibilityIdentifier
@@ -340,6 +354,8 @@ struct MediaZoomImageView: UIViewRepresentable {
                 self,
                 action: #selector(panChanged(_:))
             )
+            imageActions?.dismantle()
+            imageActions = nil
             scrollView.onLayoutMetricsChanged = nil
             scrollView.delegate = nil
             singleTapRecognizer = nil

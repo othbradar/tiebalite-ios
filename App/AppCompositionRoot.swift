@@ -18,7 +18,8 @@ final class AppCompositionRoot {
     private let browsingHistoryRepository: any BrowsingHistoryRepository
     private let contentCache: ContentPageCache
     private lazy var sharedSettingsStore = SettingsStore(repository: appSettingsRepository,
-                                                         contentScheduler: contentScheduler, contentCache: contentCache)
+                                                         contentScheduler: contentScheduler, contentCache: contentCache,
+                                                         imageCache: environment.imageLoader as? ProductionImageLoader)
     private let appSettingsRepository: any AppSettingsRepository
     private let recommendationRepository: any RecommendationRepository
     private let searchRepository: any SearchRepository

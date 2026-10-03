@@ -309,9 +309,9 @@ final class IPadAppShellSmokeTests: XCTestCase {
         MediaViewerProductionAssertions.openRendererLab(in: app)
         MediaViewerProductionAssertions.openMultiple(in: app)
 
-        UITestHarness.tap(.mediaViewerNext, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
         MediaViewerProductionAssertions.requirePosition("2 / 6", in: app)
-        UITestHarness.tap(.mediaViewerNext, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
         MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
         let image = MediaViewerProductionAssertions.requireImage(at: 2, in: app)
         image.doubleTap()

@@ -9,6 +9,7 @@ struct SettingsOptionsView: View {
     let runtimeModeDescription: String?
 
     @State private var confirmsHistoryClear = false
+    @State private var confirmsImageCacheClear = false
 
     var body: some View {
         VStack(spacing: Spacing.medium) {
@@ -63,6 +64,14 @@ struct SettingsOptionsView: View {
 
             settingsGroup(title: "历史与隐私") {
                 settingsButton(
+                    title: store.clearingImages ? "正在清理图片缓存…" : "清理图片缓存",
+                    value: ByteCountFormatter.string(fromByteCount: Int64(store.imageCacheBytes), countStyle: .file),
+                    systemImage: "photo",
+                    accessibilityIdentifier: "settings.clear-image-cache",
+                    action: { confirmsImageCacheClear = true }
+                )
+                .disabled(store.clearingImages)
+                settingsButton(
                     title: "浏览历史",
                     value: "\(historyStore.count) 条",
                     systemImage: "clock",
@@ -97,6 +106,11 @@ struct SettingsOptionsView: View {
                     action: openAbout
                 )
 #if DEBUG
+                if !store.imageRequestDiagnostics.isEmpty {
+                    Text(store.imageRequestDiagnostics)
+                        .font(Typography.font(.caption))
+                        .accessibilityIdentifier("settings.debug.image-requests")
+                }
                 if !store.contentRequestDiagnostics.isEmpty {
                     Text(store.contentRequestDiagnostics)
                         .font(Typography.font(.caption))
@@ -112,6 +126,7 @@ struct SettingsOptionsView: View {
         }
         .task {
             await historyStore.loadIfNeeded()
+            await store.refreshImageCacheUsage()
 #if DEBUG
             await store.refreshContentDiagnostics()
 #endif
@@ -123,6 +138,14 @@ struct SettingsOptionsView: View {
             }
         } message: {
             Text("这只会删除本 App 保存的浏览记录。")
+        }
+        .alert("清理图片缓存？", isPresented: $confirmsImageCacheClear) {
+            Button("取消", role: .cancel) {}
+            Button("清理", role: .destructive) {
+                Task { await store.clearImageCache() }
+            }
+        } message: {
+            Text("保留登录、排序、历史、阅读位置与草稿；正在保存或分享的图片文件不受影响。")
         }
     }
 

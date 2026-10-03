@@ -94,7 +94,7 @@ Pager/MediaViewer 发布。
 ## MediaViewer
 
 - 单击切换 chrome；双击按点击位置缩放；捏合缩放；缩放后平移。
-- `zoomScale > minimumZoomScale` 时，横向手势优先用于图片平移；仅达到边界并满足明确阈值时才允许翻页。
+- U06 用户修订：生产 Viewer 仅在 minimum zoom 时左右翻页；放大后单指/双指自由二维平移，不开启方向锁，边缘拖动也不翻页。双指捏合继续由原 UIScrollView 管理。
 - 每次触摸只能在 recognizer begin 时依据当前 MediaID、
   `zoomScale`、`contentOffset`、水平边界与初始方向选择一个
   owner：`pager`、`mediaPan` 或 `none`。owner 在
@@ -102,18 +102,19 @@ Pager/MediaViewer 发布。
   Pager 和图片平移。
 - minimum zoom 且明确水平时可由 Pager 拥有；缩放后的
   interior 手势由 `mediaPan` 拥有；同一手势到达边界不移交。
-  只有下一次从已有边界明确朝外开始的水平手势才可交给
-  Pager；minimum zoom 下的垂直或模糊方向为 `none`。
+  生产 Viewer 禁止缩放边缘向 Pager 移交；旧组件实验的边缘策略保留为默认兼容选项。
+  minimum zoom 下的垂直或模糊方向为 `none`。
 - 页面或 MediaID 切换、session 取消或失败后，旧 session
   不得提交页面变化；Reduce Motion 不改变 owner 决策。
 - 翻页完成后新页面使用自身 zoom 状态；离开后复用必须重置。
 - 图片加载/失败期间保持页面尺寸和背景，不能露白。
 - 关闭返回帖子后，原图片单元和帖子滚动位置保持。
 - 首版不实现下滑关闭，除非通过独立 ADR 和冲突测试。
-- U05：现有 chrome 底部提供保存图片、分享／存文件，正文点击仍进入唯一 Viewer，未新增长按或缩放手势。
-  动作捕获点击时的 MediaID、资源描述与序号；切图不改变进行中的导出，忙时禁止重复任务。状态显示捕获的图片序号。
-  仅点击保存申请 Photos addOnly，实际写入完成才报成功；拒绝、下载、准备文件、写入或格式失败可重试。
-  分享用拥有独立生命周期的真实文件，popover 锚定分享按钮；关闭系统操作后清理文件并保留 Viewer 当前页。
+- U06 用户修订：顶部只保留关闭与张数，VoiceOver 继续通过 adjustable action 翻页。未放大时长按实际图片显示系统菜单的保存图片、分享／存文件；放大时不显示菜单，不拦截捏合和平移。
+  菜单打开时捕获 MediaID、资源描述、序号；选择动作后不再查询当前页，忙时不重复导出。菜单取消无副作用，关闭 Viewer 解绑长按 recognizer。
+  加载原图只使用已证实的 original 候选；失败保留旧图并可重试，成功隐藏按钮，同 ID 的替换保留倍率/中心。
+  保存只取得 original 候选编码文件，原图缺失/失败不降级保存缩略图；分享仍可明确标注可用版本。仅保存申请 Photos addOnly，实际写入完成才报成功。
+  分享使用独占文件，持久 presenter 与 chrome/菜单显隐独立，iPad 在 Viewer 内锚定；系统操作完成/取消后才清理文件。无常驻保存/分享底栏，仅操作期间显示状态和可关闭结果。
 
 ## Safe Area 与遮挡
 

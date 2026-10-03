@@ -460,10 +460,10 @@ enum DebugThreadContentRendererFixtures {
             request: ThreadImageRequestDescriptor(
                 resourceID: resourceID,
                 candidates: [ThreadImageCandidate(
-                    role: .source,
+                    role: .original,
                     destination: ValidatedWebDestination(
                         absoluteString:
-                            "https://fixture.invalid/media/\(ordinal).png",
+                            "https://fixture.invalid/media/original/\(ordinal).png",
                         scheme: .https
                     )
                 )]

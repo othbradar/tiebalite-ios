@@ -10,6 +10,10 @@ struct MediaViewer: View {
     let imageLoader: any ImageLoading
     let close: () -> Void
 
+    @State private var highDefinitionByID: [String: UInt64] = [:]
+    @State private var qualityByID: [String: MediaViewerQualityStatus] = [:]
+    @State private var viewportDiagnosticsByID: [String: String] = [:]
+    @State private var imageDiagnosticsByID: [String: String] = [:]
     @State private var currentID: String?
     @State private var externalSelectionGeneration: UInt64 = 0
     @State private var chromeVisible = true
@@ -18,8 +22,10 @@ struct MediaViewer: View {
     @State private var resetGenerationByID: [String: UInt64] = [:]
     @State private var transitionSourceID: String?
     @State private var ownershipController =
-        MediaGestureOwnershipController<String>()
+        MediaGestureOwnershipController<String>(allowsZoomedPaging: false)
     @State private var isClosing = false
+    @State private var exportMenuRequest: ImageExportRequest?
+    @State private var presentsExportMenu = false
     @State private var exportStore: MediaExportStore?
 
     init(
@@ -65,6 +71,19 @@ struct MediaViewer: View {
             }
         }
         .background(SemanticColor.mediaBackground)
+        .background {
+            if let exportStore {
+                ImageFileSharePresenter(file: exportStore.shareFile, began: exportStore.shareDidPresent,
+                                        completion: exportStore.shareFinished)
+            }
+        }
+        .confirmationDialog("图片操作", isPresented: $presentsExportMenu, titleVisibility: .hidden,
+                            presenting: exportMenuRequest) { request in
+            Button("保存图片") { exportStore?.start(request, action: .save) }
+                .accessibilityIdentifier("media-viewer.export.save")
+            Button("分享／存文件") { exportStore?.start(request, action: .share) }
+                .accessibilityIdentifier("media-viewer.export.share")
+        }
         .onAppear {
             ownershipController.mediaDidChange(to: currentID)
         }
@@ -85,50 +104,28 @@ struct MediaViewer: View {
 private extension MediaViewer {
     var chrome: some View {
         VStack {
-            HStack(spacing: Spacing.small) {
-                Button(action: closeViewer) {
-                    Image(systemName: "xmark")
-                        .frame(
-                            minWidth: 44,
-                            minHeight: 44
-                        )
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(MediaViewerCopy.close)
-                .accessibilityIdentifier(MediaViewerAccessibilityID.close)
-
-                Spacer(minLength: Spacing.small)
-
+            ZStack {
                 Text(positionText)
                     .font(Typography.font(.headline))
-                    .accessibilityHidden(true)
+                    .accessibilityIdentifier("media-viewer.position")
+                    .accessibilityValue((viewportDiagnosticsByID[currentID ?? ""] ?? "")
+                        + " " + (imageDiagnosticsByID[currentID ?? ""] ?? ""))
 
-                Spacer(minLength: Spacing.small)
+                HStack {
+                    Button(action: closeViewer) {
+                        Image(systemName: "xmark")
+                            .frame(
+                                minWidth: 44,
+                                minHeight: 44
+                            )
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(MediaViewerCopy.close)
+                    .accessibilityIdentifier(MediaViewerAccessibilityID.close)
 
-                Button {
-                    moveMedia(by: -1)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
+                    Spacer(minLength: Spacing.small)
                 }
-                .buttonStyle(.plain)
-                .disabled(!canMoveMedia(by: -1))
-                .accessibilityLabel(MediaViewerCopy.previous)
-                .accessibilityIdentifier(MediaViewerAccessibilityID.previous)
-
-                Button {
-                    moveMedia(by: 1)
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(!canMoveMedia(by: 1))
-                .accessibilityLabel(MediaViewerCopy.next)
-                .accessibilityIdentifier(MediaViewerAccessibilityID.next)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, Spacing.small)
@@ -137,8 +134,22 @@ private extension MediaViewer {
             .accessibilityIdentifier(MediaViewerAccessibilityID.chrome)
 
             Spacer()
+            if currentQuality != .high, exportRequest?.descriptor.originalOnly.isLoadable == true {
+                Button {
+                    guard let currentID else { return }
+                    highDefinitionByID[currentID, default: 0] &+= 1
+                } label: {
+                    Text(currentQuality.title).frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .disabled(currentQuality == .loading)
+                .accessibilityHint("加载当前图片的原始资源，保持当前缩放位置")
+                .accessibilityIdentifier("media-viewer.quality")
+                .accessibilityValue(imageDiagnosticsByID[currentID ?? ""] ?? "")
+            }
             if let exportStore {
-                MediaExportControls(store: exportStore, request: exportRequest)
+                MediaExportControls(store: exportStore)
             }
         }
         .safeAreaPadding(.top, Spacing.small)
@@ -159,9 +170,22 @@ private extension MediaViewer {
             MediaViewerPage(
                 item: item,
                 imageLoader: imageLoader,
+                isCurrent: mediaID == currentID,
+                shouldLoad: mediaID == currentID || mediaID == adjacentPreloadID,
+                highDefinitionGeneration: highDefinitionByID[mediaID] ?? 0,
+                onQualityChanged: { qualityByID[mediaID] = $0 },
+                onImageDiagnostics: { imageDiagnosticsByID[mediaID] = $0 },
+                onViewportDiagnostics: { viewportDiagnosticsByID[mediaID] = $0 },
                 resetGeneration: resetGenerationByID[mediaID] ?? 0,
                 reduceMotion: reduceMotion || reductionOverride,
                 ownershipController: ownershipController,
+                onLongPress: {
+                    guard mediaID == currentID, let exportStore, !exportStore.isBusy,
+                          let request = exportRequest else { return }
+                    exportMenuRequest = request
+                    chromeVisible = true
+                    presentsExportMenu = true
+                },
                 onSingleTap: {
                     chromeVisible.toggle()
                 },
@@ -180,6 +204,14 @@ private extension MediaViewer {
         } else {
             SemanticColor.mediaBackground
         }
+    }
+
+    var currentQuality: MediaViewerQualityStatus { qualityByID[currentID ?? ""] ?? .screen }
+
+    var adjacentPreloadID: String? {
+        guard let index = presentation.items.firstIndex(where: { $0.id == currentID }), presentation.items.count > 1 else { return nil }
+        let adjacent = index + 1 < presentation.items.count ? index + 1 : index - 1
+        return presentation.items[adjacent].id
     }
 
     var positionText: String {
@@ -210,16 +242,6 @@ private extension MediaViewer {
         @unknown default:
             return
         }
-    }
-
-    func canMoveMedia(by offset: Int) -> Bool {
-        guard let currentID,
-              let index = presentation.items.firstIndex(where: {
-                  $0.id == currentID
-              }) else {
-            return false
-        }
-        return presentation.items.indices.contains(index + offset)
     }
 
     func moveMedia(by offset: Int) {

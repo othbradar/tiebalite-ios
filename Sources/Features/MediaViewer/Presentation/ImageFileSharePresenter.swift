@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// A non-interactive presenter anchored to the existing share button, including on iPad.
+/// A non-interactive presenter anchored inside the Viewer independently of its chrome/menu, including on iPad.
 struct ImageFileSharePresenter: UIViewControllerRepresentable {
     let file: ImageExportFile?
     let began: () -> Void
@@ -62,7 +62,7 @@ final class ImageShareAnchorController: UIViewController, UIAdaptivePresentation
         }
         if let popover = activity.popoverPresentationController {
             popover.sourceView = view
-            popover.sourceRect = view.bounds
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
             popover.permittedArrowDirections = [.up, .down]
         }
         activity.presentationController?.delegate = self

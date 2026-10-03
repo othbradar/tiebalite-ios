@@ -54,7 +54,7 @@ final class MediaZoomScrollView: UIScrollView {
         bouncesZoom = true
         alwaysBounceHorizontal = false
         alwaysBounceVertical = false
-        isDirectionalLockEnabled = true
+        isDirectionalLockEnabled = false
         showsHorizontalScrollIndicator = false
         showsVerticalScrollIndicator = false
         delaysContentTouches = false
@@ -150,6 +150,14 @@ final class MediaZoomScrollView: UIScrollView {
         contentOffset = .zero
         retainedFocalPoint = CGPoint(x: 0.5, y: 0.5)
         isUpdatingResizeLayout = false
+        setNeedsLayout()
+    }
+
+    func replaceImagePreservingViewport(_ image: UIImage) {
+        // Capture from the old geometry before changing the image's intrinsic dimensions.
+        retainedFocalPoint = normalizedVisibleCenter(viewportSize: bounds.size)
+        mediaImageView.image = image
+        requiresBaseGeometryUpdate = true
         setNeedsLayout()
     }
 

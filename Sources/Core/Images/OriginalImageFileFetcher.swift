@@ -2,7 +2,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// No bitmap decode, display cache, authentication, or persistent image cache.
+/// Copies encoded bytes to an export-owned file; cache eviction cannot remove an active share/save.
 actor OriginalImageFileFetcher: ImageFileFetching {
     private let loader: any HTTPDataLoading
     private let maximumByteCount: Int
@@ -13,8 +13,7 @@ actor OriginalImageFileFetcher: ImageFileFetching {
     }
 
     static func production() -> OriginalImageFileFetcher {
-        OriginalImageFileFetcher(loader: URLSessionDataLoader(
-            configuration: URLSessionHTTPClient.makeEphemeralConfiguration()))
+        OriginalImageFileFetcher(loader: ImageResourceStore.shared)
     }
 
     func fetch(_ request: ImageExportRequest) async throws -> ImageExportFile {

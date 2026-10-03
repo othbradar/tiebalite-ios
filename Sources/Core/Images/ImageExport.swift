@@ -16,6 +16,7 @@ struct ImageExportFile: Equatable, Sendable {
 }
 
 enum ImageExportFailure: Error, Equatable, Sendable {
+    case originalUnavailable
     case permissionDenied
     case download
     case filePreparation
@@ -24,6 +25,7 @@ enum ImageExportFailure: Error, Equatable, Sendable {
 
     var message: String {
         switch self {
+        case .originalUnavailable: "原图不可用，未保存缩略图；可以分享可用版本"
         case .permissionDenied: "没有添加照片的权限，请在设置中允许后重试"
         case .download: "图片下载失败，请重试"
         case .filePreparation: "无法准备图片文件，请检查可用空间后重试"
@@ -42,4 +44,11 @@ protocol PhotoLibraryWriting: Sendable {
     func authorizeAddOnly() async throws
     /// Returns only after the photo library has finished using the file.
     func write(_ file: ImageExportFile) async throws
+}
+
+// Uses only original roles supplied by the mapper; never synthesizes a CDN address.
+extension ThreadImageRequestDescriptor {
+    var originalOnly: Self {
+        Self(resourceID: resourceID, candidates: candidates.filter { $0.role == .original })
+    }
 }

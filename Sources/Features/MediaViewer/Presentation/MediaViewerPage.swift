@@ -5,15 +5,24 @@ import UIKit
 struct MediaViewerPage: View {
     let item: MediaViewerItem
     let imageLoader: any ImageLoading
+    let isCurrent: Bool
+    let shouldLoad: Bool
+    let highDefinitionGeneration: UInt64
+    let onQualityChanged: (MediaViewerQualityStatus) -> Void
+    let onImageDiagnostics: (String) -> Void
+    let onViewportDiagnostics: (String) -> Void
     let resetGeneration: UInt64
     let reduceMotion: Bool
     let ownershipController: MediaGestureOwnershipController<String>
+    let onLongPress: () -> Void
     let onSingleTap: () -> Void
     let onCapabilityChanged: (MediaPageCapability, Double) -> Void
 
     @Environment(\.displayScale) private var displayScale
-    @State private var phase = MediaViewerImagePhase.idle
-    @State private var image: UIImage?
+    @State private var imageState = MediaViewerImageState()
+    private var phase: MediaViewerImagePhase { imageState.phase }
+    private var image: UIImage? { imageState.image }
+    @State private var completedOriginalGeneration: UInt64 = 0
     @State private var reloadGeneration: UInt64 = 0
     @State private var requestGeneration: UInt64 = 0
     @State private var targetPixelSize: ImageTargetPixelSize?
@@ -42,8 +51,9 @@ struct MediaViewerPage: View {
             mediaID: item.id,
             request: item.request,
             targetPixelSize: targetPixelSize,
-            reloadGeneration: reloadGeneration
-        )) {
+            reloadGeneration: reloadGeneration,
+            highDefinitionGeneration: highDefinitionGeneration, shouldLoad: shouldLoad, isCurrent: isCurrent
+        ), priority: isCurrent ? .userInitiated : .utility) {
             await loadImage()
         }
         .onChange(of: resetGeneration) { _, _ in
@@ -75,6 +85,7 @@ struct MediaViewerPage: View {
                 MediaZoomImageView(
                     mediaID: item.id,
                     image: image,
+                    preservesViewportOnImageChange: true,
                     resetGeneration: resetGeneration,
                     reduceMotion: reduceMotion,
                     ownershipController: ownershipController,
@@ -84,14 +95,25 @@ struct MediaViewerPage: View {
                     surfaceAccessibilityValue:
                         MediaViewerCopy.zoomAccessibilityValue(zoomScale),
                     surfaceAccessibilityHint: MediaViewerCopy.zoomHint,
+                    onLongPress: onLongPress,
                     onSingleTap: onSingleTap,
                     onCapabilityChanged: { capability, scale in
                         if zoomScale != scale {
                             zoomScale = scale
                         }
                         onCapabilityChanged(capability, scale)
+                    },
+                    onViewportMetricsChanged: { metrics in
+#if UITESTING
+                        onViewportDiagnostics(String(
+                            format: "x=%.2f y=%.2f zoom=%.2f",
+                            metrics.contentOffsetX, metrics.contentOffsetY, metrics.zoomScale))
+#endif
                     }
                 )
+                .accessibilityAction(named: Text("图片操作")) {
+                    if zoomScale <= 1.01 { onLongPress() }
+                }
             }
         case .failedToFetch:
             failureContent(
@@ -144,44 +166,56 @@ struct MediaViewerPage: View {
     private func loadImage() async {
         requestGeneration &+= 1
         let generation = requestGeneration
-        image = nil
-        zoomScale = 1
-        onCapabilityChanged(.minimumZoom, 1)
-        phase = .loading
+        guard shouldLoad, let targetPixelSize else { return }
+        guard isCurrent || image == nil else { return }
+        let highDefinition = highDefinitionGeneration > 0 && isCurrent
+        if highDefinition, image != nil, completedOriginalGeneration == highDefinitionGeneration { return }
         guard item.request.isLoadable else {
-            phase = .failedToFetch
+            imageState.apply(.init(phase: .failedToFetch, image: nil))
             return
         }
-        guard let targetPixelSize else {
-            phase = .idle
-            return
+        imageState.begin()
+        if image == nil {
+            zoomScale = 1
+            onCapabilityChanged(.minimumZoom, 1)
         }
+        if highDefinition { onQualityChanged(.loading) }
         do {
             let outcome = try await MediaViewerImageLoad.resolve(
-                request: item.request.imageRequest(
+                request: (highDefinition ? item.request.originalOnly : item.request).imageRequest(
                     purpose: .mediaViewer,
-                    targetPixelSize: targetPixelSize
-                ),
-                using: imageLoader
-            )
-            guard requestGeneration == generation,
-                  !Task.isCancelled else {
-                return
+                    targetPixelSize: highDefinition ? ImageCachePolicy.highDefinitionSize : targetPixelSize
+                ), using: imageLoader)
+            guard requestGeneration == generation, !Task.isCancelled else { return }
+            imageState.apply(outcome)
+            if highDefinition {
+                if outcome.image != nil { completedOriginalGeneration = highDefinitionGeneration }
+                onQualityChanged(outcome.image == nil ? .failed : .high)
             }
-            image = outcome.image
-            phase = outcome.phase
-        } catch is CancellationError {
-            guard requestGeneration == generation else {
-                return
-            }
-            phase = .cancelled
+#if DEBUG
+            await publishDiagnostics(outcome, generation: generation)
+#endif
         } catch {
-            guard requestGeneration == generation else {
-                return
-            }
-            phase = .failedToFetch
+            // A disappearing page releases its subscription; a cache clear may cancel an otherwise active request.
+            guard requestGeneration == generation, !Task.isCancelled else { return }
+            let phase: MediaViewerImagePhase = error is CancellationError ? .cancelled : .failedToFetch
+            imageState.apply(.init(phase: phase, image: nil))
+            if highDefinition { onQualityChanged(.failed) }
         }
     }
+
+#if DEBUG
+    private func publishDiagnostics(_ outcome: MediaViewerImageLoadOutcome, generation: UInt64) async {
+        guard let loader = imageLoader as? ProductionImageLoader else { return }
+        let counts = await loader.imageCacheDiagnostics()
+        guard requestGeneration == generation, !Task.isCancelled else { return }
+        let width = Int((outcome.image?.size.width ?? 0) * (outcome.image?.scale ?? 1))
+        let height = Int((outcome.image?.size.height ?? 0) * (outcome.image?.scale ?? 1))
+        onImageDiagnostics("pixels=\(width)x\(height) disk=\(counts.diskHits)"
+            + " network=\(counts.networkRequests) merged=\(counts.merged)")
+    }
+#endif
+
 }
 
 private struct MediaViewerImageTaskID: Hashable {
@@ -189,6 +223,9 @@ private struct MediaViewerImageTaskID: Hashable {
     let request: ThreadImageRequestDescriptor
     let targetPixelSize: ImageTargetPixelSize?
     let reloadGeneration: UInt64
+    let highDefinitionGeneration: UInt64
+    let shouldLoad: Bool
+    let isCurrent: Bool
 }
 
 enum MediaViewerCopy {

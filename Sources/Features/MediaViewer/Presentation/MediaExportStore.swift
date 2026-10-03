@@ -58,6 +58,12 @@ final class MediaExportStore {
         start(capturedRequest, action: .share)
     }
 
+    func dismissFeedback() {
+        guard !isBusy else { return }
+        state = .idle
+        failure = nil
+    }
+
     func cancel() {
         closed = true
         operation?.cancel()
@@ -89,11 +95,15 @@ final class MediaExportStore {
             if action == .save { try await writer.authorizeAddOnly() }
             try Task.checkCancellation()
             state = .downloading
-            let file = try await fetcher.fetch(request)
+            let descriptor = action == .save ? request.descriptor.originalOnly : request.descriptor
+            guard descriptor.isLoadable else { throw ImageExportFailure.originalUnavailable }
+            let source = ImageExportRequest(mediaID: request.mediaID, position: request.position, descriptor: descriptor)
+            let file = try await fetcher.fetch(source)
             ownedFile = file
             try Task.checkCancellation()
             isAvailableVersion = !file.isOriginal
             if action == .save {
+                guard file.isOriginal else { throw ImageExportFailure.originalUnavailable }
                 state = .writing
                 try await writer.write(file)
                 await fetcher.remove(file)

@@ -243,10 +243,12 @@ final class AppShellSmokeTests: XCTestCase {
         MediaViewerProductionAssertions.requireZoomed(third)
         third.swipeLeft()
         MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
+        third.doubleTap()
+        MediaViewerProductionAssertions.requireOriginalSize(third)
 
-        UITestHarness.tap(.mediaViewerPrevious, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeRight()
         MediaViewerProductionAssertions.requirePosition("2 / 6", in: app)
-        UITestHarness.tap(.mediaViewerNext, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
         MediaViewerProductionAssertions.requirePosition("3 / 6", in: app)
         let revisited = MediaViewerProductionAssertions.requireImage(
             at: 2,
@@ -266,7 +268,7 @@ final class AppShellSmokeTests: XCTestCase {
         )
         assertFullMediaCoverage(loading, in: app)
 
-        UITestHarness.tap(.mediaViewerNext, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
         MediaViewerProductionAssertions.requirePosition("5 / 6", in: app)
         let fetchFailure = MediaViewerProductionAssertions.requireState(
             at: 4,
@@ -275,7 +277,7 @@ final class AppShellSmokeTests: XCTestCase {
         )
         assertFullMediaCoverage(fetchFailure, in: app)
 
-        UITestHarness.tap(.mediaViewerNext, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
         MediaViewerProductionAssertions.requirePosition("6 / 6", in: app)
         let decodeFailure = MediaViewerProductionAssertions.requireState(
             at: 5,
@@ -547,9 +549,9 @@ extension AppShellSmokeTests {
         UITestHarness.tap(.threadReaderImageSecondAction, in: app)
         UITestHarness.requirePresent(.mediaViewerPager, in: app)
         MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
-        UITestHarness.tap(.mediaViewerNext, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeLeft()
         MediaViewerProductionAssertions.requirePosition("3 / 3", in: app)
-        UITestHarness.tap(.mediaViewerPrevious, in: app)
+        UITestHarness.element(.mediaViewerPager, in: app).swipeRight()
         MediaViewerProductionAssertions.requirePosition("2 / 3", in: app)
         UITestHarness.tap(.mediaViewerClose, in: app)
         UITestHarness.waitUntilAbsent(.mediaViewerPager, in: app)

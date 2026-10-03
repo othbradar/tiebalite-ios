@@ -418,7 +418,7 @@ MediaPageCapability =
   已接受 presentation 的 initial/current 后续消失时显示 unavailable，不按旧
   index 指向其他图。
 - `page(direction)`：手势开始时依据当前 `MediaPageCapability` 固定 owner；
-  同一手势到达边界不半途交给 pager，下一次朝外拖才可翻页。
+  U06 用户修订：生产 Viewer 仅在最小倍率翻页；放大后含边缘的所有拖动归图片，不移交 pager。
 - `pinch/doubleTap/pan`：精确 zoomScale/contentOffset 只由当前 MediaID 的
   UIScrollView coordinator 持有；Store 只接收离散 capability，不保存第二份
   transform。
@@ -427,7 +427,7 @@ MediaPageCapability =
   关闭取消可取消的下载；已经提交 PhotoKit 的写入保留文件到系统回调，关闭后不发布成功状态。
   尚未展示分享面板时关闭 Viewer 立即清理文件；分享期间文件由系统操作持有，完成/取消/拆除回调幂等释放，不因用户切图而换文件。
   源文件通道使用已证实的 Viewer 候选顺序、匿名有界传输（24 MiB），不读取显示位图。
-  ImageIO 只识别编码元数据；不裁切、转码或解码整张位图。降级候选明确标为可用版本（非原图）。
+  ImageIO 只识别编码元数据；不裁切、转码或解码整张位图。U06 修订：save 仅 original，缺失/失败不保存预览；share 可降级并明确标为可用版本（非原图）。
 - `loadItem/retryItem`：占位尺寸与黑底保持。
 - `reachBoundary`：阶段 09 固定 intent 边界不发请求；边界 Repository 留到有
   live/cursor 证据的后续独立阶段。
@@ -765,3 +765,11 @@ failure 与 cleanup retry。
 - 网络策略、账号、页面查询和刷新撤销候选；缓存 epoch 与查询刷新 revision 拒绝旧完成。关闭预载不影响前台读取。
 - 预载不持有 visible snapshot、readAnchor 或历史写接口；吧 prepared 页不覆盖 reading manifest，线程页写入保留后页和阅读位置。U02 自动重进检查/深处静默/回顶应用与 U03 阅读恢复契约继续成立。
 - 直接验证：U04ContentSchedulerTests、U04ContentPrefetchTests、U04ContentPrefetchSmokeTests。实现决定见 ADR-0032。
+
+
+## U06 图片资源与高清（2026-10-03 用户授权）
+
+- 编码资源：disk lookup → hit / bounded shared download → validate → atomic disk write。请求全 URL 身份；每消费者独立取消，零消费者撤销任务，前台优先、下载4/解码2上限。不同尺寸解码独立，同资源原始下载共用。
+- clear：先 epoch++ / admission closed → 取消旧任务 → 删除本图片目录的索引资源 → admission open；迟到结果拒绝，不触碰内容缓存、登录、排序、历史、阅读位置、草稿或导出临时文件。
+- Viewer：screen → 用户点击加载原图 → upgrading（旧图保持）→ high（隐藏入口）/ upgradeFailed（旧图保持、可重试）。仅使用 original 候选，不将 fallback 报为原图；同页面同成功代次不重复升级。固定 MediaID、不重置倍率/观察中心，不重建 Pager；切页取消过时订阅。仅当前和相邻一张的屏幕尺寸预载；高清仅当前图显式请求。
+- 文件资源与显示位图独立：高清显示最长边4096安全预算，不能据显示尺寸判断“原图”；保存/分享始终使用取得的原始编码 Data，复制的临时文件按 U05 系统完成/取消生命周期清理。
