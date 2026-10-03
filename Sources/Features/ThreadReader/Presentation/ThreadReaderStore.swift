@@ -40,6 +40,7 @@ final class ThreadReaderStore {
     @ObservationIgnored private var contentContext: ContentCacheContext
     @ObservationIgnored private var refreshing = false
     @ObservationIgnored private var restoring = false
+    private let prefetch: ContentPrefetchSession?
     private let repository: any ThreadReaderRepository
     @ObservationIgnored private var hasCompletedInitialLoad = false
     @ObservationIgnored private var loadTask: Task<Void, Never>?
@@ -50,8 +51,10 @@ final class ThreadReaderStore {
     init(
         threadID: Int64,
         repository: any ThreadReaderRepository,
-        initialSnapshot: ThreadReaderSnapshot? = nil
+        initialSnapshot: ThreadReaderSnapshot? = nil,
+        prefetch: ContentPrefetchSession? = nil
     ) {
+        self.prefetch = prefetch
         self.threadID = threadID
         self.repository = repository
         contentContext = (repository as? any ReadingContentCacheAccess)?.cacheContext ?? .anonymous
@@ -105,6 +108,7 @@ final class ThreadReaderStore {
     }
 
     func reload() async {
+        prefetch?.cancel()
         guard let retained = state.snapshot else { await replaceInitialLoad(); return }
         loadTask?.cancel()
         refreshing = true
@@ -145,14 +149,6 @@ final class ThreadReaderStore {
         )
     }
 
-    func prepareRetry() {
-        guard activeGeneration == nil else {
-            return
-        }
-        hasCompletedInitialLoad = false
-        state = .initialLoading
-    }
-
     func setReadAnchor(_ rowID: ThreadReaderRowID?) {
         guard let rowID, rowID.isPost, listPresentation?.rows.contains(where: { $0.id == rowID }) == true else { return }
         let stablePostID = rowID
@@ -174,6 +170,7 @@ final class ThreadReaderStore {
     }
 
     func cancel() {
+        prefetch?.cancel()
         checkpointReading()
         restoring = false
         refreshing = false
@@ -487,5 +484,23 @@ extension ThreadReaderStore {
               author: metadata.author, replyCount: metadata.replyCount, posts: posts,
               currentPage: pagination.currentPage, totalPage: pagination.totalPage,
               hasMore: pagination.hasMore, nextPostID: pagination.nextPostID)
+    }
+}
+
+// Prefetch only supplies repository data; it cannot mutate the current reader snapshot or anchor.
+extension ThreadReaderStore {
+    func prepareRetry() {
+        guard activeGeneration == nil else {
+            return
+        }
+        hasCompletedInitialLoad = false
+        state = .initialLoading
+    }
+
+    func prefetchNextPage() {
+        guard let snapshot = state.snapshot, snapshot.hasMore, let postID = snapshot.nextPostID else { return }
+        prefetch?.followingThreadPage(.init(
+            threadID: threadID, pageNumber: snapshot.currentPage + 1, postID: postID,
+            loadedPostIDs: Set(snapshot.posts.map(\.document.source.postID))))
     }
 }

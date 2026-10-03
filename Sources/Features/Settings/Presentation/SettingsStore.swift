@@ -8,12 +8,17 @@ final class SettingsStore: ForumSortPreferenceProviding {
     private(set) var isLoaded = false
     private(set) var persistenceFailed = false
 
+    private(set) var contentRequestDiagnostics = ""
+    private let contentScheduler: ContentLoadScheduler?
+    private let contentCache: ContentPageCache?
     private let repository: any AppSettingsRepository
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var pendingSave: AppSettingsSnapshot?
 
-    init(repository: any AppSettingsRepository) {
+    init(repository: any AppSettingsRepository, contentScheduler: ContentLoadScheduler? = nil, contentCache: ContentPageCache? = nil) {
         self.repository = repository
+        self.contentScheduler = contentScheduler
+        self.contentCache = contentCache
     }
 
     var appearance: AppAppearancePreference {
@@ -51,6 +56,20 @@ final class SettingsStore: ForumSortPreferenceProviding {
             return
         }
         settings.readingTextSize = value
+        persistCurrentSettings()
+    }
+
+    func refreshContentDiagnostics() async {
+        guard let contentScheduler, let contentCache else { return }
+        let counts = await contentScheduler.diagnostics()
+        let memory = await contentCache.memoryHits
+        let disk = await contentCache.diskHits
+        contentRequestDiagnostics = "cache=\(counts.cacheHits) foreground=\(counts.networkForeground)"
+            + " prefetch=\(counts.networkSpeculative) merged=\(counts.merged) memory=\(memory) disk=\(disk)"
+    }
+
+    func setContentPrefetch(_ mode: ContentPrefetchMode) {
+        settings.contentPrefetch = mode
         persistCurrentSettings()
     }
 

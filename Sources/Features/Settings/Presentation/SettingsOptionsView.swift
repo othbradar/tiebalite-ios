@@ -30,6 +30,19 @@ struct SettingsOptionsView: View {
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("settings.reading-text-size")
+                LabeledContent("内容预载") {
+                    Picker("内容预载", selection: Binding(
+                        get: { store.settings.contentPrefetch }, set: { store.setContentPrefetch($0) }
+                    )) {
+                        ForEach(ContentPrefetchMode.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .labelsHidden()
+                    .accessibilityIdentifier("settings.content-prefetch")
+                }
+                .frame(minHeight: 44)
+                Text("低数据模式、低电量或进入后台时暂停预载。")
+                    .font(Typography.font(.caption))
+                    .foregroundStyle(SemanticColor.secondaryText)
                 LabeledContent("吧内默认排序") {
                     Picker("吧内默认排序", selection: Binding(
                         get: { store.defaultForumSort },
@@ -84,6 +97,11 @@ struct SettingsOptionsView: View {
                     action: openAbout
                 )
 #if DEBUG
+                if !store.contentRequestDiagnostics.isEmpty {
+                    Text(store.contentRequestDiagnostics)
+                        .font(Typography.font(.caption))
+                        .accessibilityIdentifier("settings.debug.content-requests")
+                }
                 if let runtimeModeDescription {
                     LabeledContent("数据模式", value: runtimeModeDescription)
                         .font(Typography.font(.body))
@@ -94,6 +112,9 @@ struct SettingsOptionsView: View {
         }
         .task {
             await historyStore.loadIfNeeded()
+#if DEBUG
+            await store.refreshContentDiagnostics()
+#endif
         }
         .alert("清空浏览历史？", isPresented: $confirmsHistoryClear) {
             Button("取消", role: .cancel) {}

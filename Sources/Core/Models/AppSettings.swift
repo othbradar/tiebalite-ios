@@ -13,6 +13,7 @@ enum ReadingTextSizePreference: String, Codable, CaseIterable, Sendable {
 struct AppSettingsSnapshot: Codable, Equatable, Sendable {
     var appearance: AppAppearancePreference
     var readingTextSize: ReadingTextSizePreference
+    var contentPrefetch: ContentPrefetchMode = .unmetered
     var forumSort = ForumSortPreferences()
 
     static let defaults = AppSettingsSnapshot(

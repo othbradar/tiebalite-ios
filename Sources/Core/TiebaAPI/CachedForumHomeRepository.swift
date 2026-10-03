@@ -1,6 +1,6 @@
 import Foundation
 
-actor CachedForumHomeRepository: ForumHomeCacheAccess {
+actor CachedForumHomeRepository: ForumHomeCacheAccess, ForumContentPrefetching {
     private struct Manifest: Codable {
         let schemaVersion: Int
         let generation: String
@@ -14,11 +14,13 @@ actor CachedForumHomeRepository: ForumHomeCacheAccess {
     private let clock: any AppClock
     private let policy: ContentCachePolicy
     private let context: @MainActor @Sendable () -> ContentCacheContext
-    private var inFlight: [String: Task<ForumCachedReading, Error>] = [:]
+    private var preparationRevisions: [String: UInt64] = [:]
+    private let scheduler: ContentLoadScheduler
 
     init(source: any ForumHomeRepository, cache: ContentPageCache, clock: any AppClock = SystemAppClock(),
-         policy: ContentCachePolicy = .init(),
+         policy: ContentCachePolicy = .init(), scheduler: ContentLoadScheduler = ContentLoadScheduler(),
          context: @escaping @MainActor @Sendable () -> ContentCacheContext = { .anonymous }) {
+        self.scheduler = scheduler
         self.source = source
         self.cache = cache
         self.clock = clock
@@ -80,35 +82,92 @@ actor CachedForumHomeRepository: ForumHomeCacheAccess {
                   request.pageNumber == continuing.pages.count + 1,
                   request.lastThreadID == continuing.pages.last?.page.lastThreadID else { throw CancellationError() }
         }
-        let key = "\(scope.namespace ?? "disabled"):\(scope.revision):\(epoch):"
-            + manifestKey(namespace: "flight", identity: ForumQueryIdentity(route: request.route, query: request.query))
-            + ":\(request.pageNumber):\(request.lastThreadID):\(continuing?.generation ?? "first")"
-        if let task = inFlight[key] {
-            let reading = try await task.value
-            guard await isValid(reading) else { throw CancellationError() }
-            return reading
-        }
-        let task = Task { [source, clock] in
-            let page = try await source.loadForumHomePage(request)
-            try Task.checkCancellation()
-            let cached = ForumCachedPage(requestPage: request.pageNumber, requestCursor: request.lastThreadID,
-                                         fetchedAt: await clock.now, page: ForumPageDTO(page))
-            var reading = continuing ?? ForumCachedReading(generation: UUID().uuidString,
-                                                           queryIdentity: ForumQueryIdentity(route: request.route, query: request.query),
-                                                           context: scope,
-                                                           cacheEpoch: epoch, pages: [], anchor: nil, isFresh: true)
-            reading.pages.append(cached)
-            return reading
-        }
-        inFlight[key] = task
-        defer { inFlight[key] = nil }
-        let result = try await withTaskCancellationHandler {
-            try await task.value
-        } onCancel: {
-            task.cancel()
-        }
+        let page = try await requestPage(request, scope: scope, epoch: epoch, priority: .foreground)
         guard await context() == scope, await cache.epoch == epoch else { throw CancellationError() }
-        return result
+        var reading = continuing ?? ForumCachedReading(
+            generation: UUID().uuidString,
+            queryIdentity: ForumQueryIdentity(route: request.route, query: request.query), context: scope,
+            cacheEpoch: epoch, pages: [], anchor: nil, isFresh: true)
+        reading.pages.append(page)
+        return reading
+    }
+
+    func invalidatePrefetch(_ request: ForumHomePageRequest) async {
+        let scope = await context()
+        guard let namespace = scope.namespace else { return }
+        let identity = await identity(request, namespace: namespace)
+        let key = manifestKey(namespace: namespace, identity: identity)
+        let oldRevision = preparationRevisions[key, default: 0]
+        preparationRevisions[key] = oldRevision &+ 1
+        let oldPrepared = "prepared:\(scope.revision):\(await cache.epoch):\(oldRevision):" + key
+            + ":\(request.pageNumber):\(request.lastThreadID)"
+        await cache.remove(key: oldPrepared)
+    }
+
+    func prefetchForum(_ request: ForumHomePageRequest) async throws {
+        if let reading = await restoreReading(request), reading.isFresh,
+           reading.pages.contains(where: { $0.requestPage == request.pageNumber && $0.requestCursor == request.lastThreadID }) {
+            await scheduler.cacheHit()
+            return
+        }
+        let scope = await context()
+        let epoch = await cache.epoch
+        _ = try await requestPage(request, scope: scope, epoch: epoch, priority: .speculative)
+        // Prepared pages deliberately do not replace the reading manifest, anchor or pagination chain.
+    }
+
+    private func requestPage(_ request: ForumHomePageRequest, scope: ContentCacheContext, epoch: UInt64,
+                             priority: ContentLoadScheduler.Priority) async throws -> ForumCachedPage {
+        guard let namespace = scope.namespace else { throw CancellationError() }
+        let resolved = await identity(request, namespace: namespace)
+        let identityKey = manifestKey(namespace: namespace, identity: resolved)
+        let revision = preparationRevisions[identityKey, default: 0]
+        let key = "\(scope.revision):\(epoch):\(revision):" + identityKey
+            + ":\(request.pageNumber):\(request.lastThreadID)"
+        let preparedKey = "prepared:" + key
+        if let page = await preparedPage(preparedKey, scope: scope, epoch: epoch),
+           preparationRevisions[identityKey, default: 0] == revision {
+            if priority == .foreground { await cache.remove(key: preparedKey) }
+            await scheduler.cacheHit()
+            return page
+        }
+        let page: ForumCachedPage = try await scheduler.load(key: key, priority: priority) { [source, clock] in
+            try Task.checkCancellation()
+            guard await self.isCurrent(scope, epoch: epoch, key: identityKey, revision: revision) else { throw CancellationError() }
+            // A completed flight may have filled the cache between the first lookup and admission.
+            if let page = await self.preparedPage(preparedKey, scope: scope, epoch: epoch) {
+                await self.scheduler.cacheHit()
+                return page
+            }
+            await self.scheduler.sourceStarted(priority: priority)
+            let snapshot = try await source.loadForumHomePage(request)
+            try Task.checkCancellation()
+            guard await self.isCurrent(scope, epoch: epoch, key: identityKey, revision: revision) else { throw CancellationError() }
+            let page = ForumCachedPage(requestPage: request.pageNumber, requestCursor: request.lastThreadID,
+                                       fetchedAt: await clock.now, page: ForumPageDTO(snapshot))
+            if let data = try? JSONEncoder().encode(page) {
+                await self.cache.write(data, key: preparedKey, epoch: epoch)
+            }
+            return page
+        }
+        try Task.checkCancellation()
+        guard await context() == scope, await cache.epoch == epoch else { throw CancellationError() }
+        guard preparationRevisions[identityKey, default: 0] == revision else { throw CancellationError() }
+        if priority == .foreground { await cache.remove(key: preparedKey) }
+        return page
+    }
+
+    private func preparedPage(_ key: String, scope: ContentCacheContext, epoch: UInt64) async -> ForumCachedPage? {
+        guard let data = await cache.read(key: key),
+              let page = try? JSONDecoder().decode(ForumCachedPage.self, from: data),
+              await clock.now.timeIntervalSince(page.fetchedAt) < policy.freshSeconds,
+              await context() == scope, await cache.epoch == epoch else { return nil }
+        return page
+    }
+
+    private func isCurrent(_ scope: ContentCacheContext, epoch: UInt64, key: String, revision: UInt64) async -> Bool {
+        guard await context() == scope, await cache.epoch == epoch else { return false }
+        return preparationRevisions[key, default: 0] == revision
     }
 
     func saveReading(_ reading: ForumCachedReading, request: ForumHomePageRequest) async {

@@ -64,6 +64,9 @@ struct ThreadReaderView: View {
         .accessibilityIdentifier(
             ThreadReaderAccessibilityID.screen(store.threadID)
         )
+#if UITESTING
+        .accessibilityValue(store.isShowingCachedContent ? "content-source:cache" : "content-source:request")
+#endif
         .onDisappear { Task { await store.saveReadingPosition() } }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { Task { await store.saveReadingPosition() } }
@@ -134,6 +137,7 @@ struct ThreadReaderView: View {
                 initialRestorationScope: AnyHashable(ThreadReaderRestorationScope(
                     threadID: store.threadID, context: store.cacheContext)),
                 onPrefetch: { rowIDs in
+                    if !rowIDs.isEmpty { store.prefetchNextPage() }
                     guard rowIDs.contains(where: {
                         presentation.prefetchRowIDs.contains($0)
                     }) else {

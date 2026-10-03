@@ -747,3 +747,11 @@ failure 与 cleanup retry。
 - 缺页只恢复含锚点的实际连续范围，不按楼层计算页码、不顺序下载旧页。末页 hasMore/cursor 始终来自成功响应；失败不能假报读完。
 - 账号变化丢弃旧可见状态；清缓存 epoch 与账号 revision 同时保护迟到响应和进度写入。未知错误保留内容；明确权限拒绝、会话无效或删除响应失效副本并进入原错误态。
 - 已缓存/刷新失败文案仅出现在既有页尾；不新增顶部提示条。复用 VirtualizedList 的系统下拉刷新和一次性初始布局恢复。
+
+### U04：有界内容预载
+
+- 页级候选 → queued（最多 8）→ speculativeRunning（最多 2）→ 页面缓存 / 静默失败。完成不生成后继请求。
+- 同完整键前台消费者接入 → 共用正在运行的任务；若仍排队则立即启动。单个消费者取消不传播给其他消费者；最后消费者离开才取消源任务。
+- 网络策略、账号、页面查询和刷新撤销候选；缓存 epoch 与查询刷新 revision 拒绝旧完成。关闭预载不影响前台读取。
+- 预载不持有 visible snapshot、readAnchor 或历史写接口；吧 prepared 页不覆盖 reading manifest，线程页写入保留后页和阅读位置。U02 自动重进检查/深处静默/回顶应用与 U03 阅读恢复契约继续成立。
+- 直接验证：U04ContentSchedulerTests、U04ContentPrefetchTests、U04ContentPrefetchSmokeTests。实现决定见 ADR-0032。

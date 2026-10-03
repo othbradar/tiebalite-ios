@@ -8,6 +8,7 @@ final class FollowedForumsStore {
     private(set) var state: FollowedForumsState = .signedOut
     private(set) var scrollAnchor: Int64?
 
+    private let prefetch: ContentPrefetchSession?
     private let repository: any FollowedForumsRepository
     private let expireSession: ExpireSession
 
@@ -22,8 +23,10 @@ final class FollowedForumsStore {
 
     init(
         repository: any FollowedForumsRepository,
+        prefetch: ContentPrefetchSession? = nil,
         expireSession: @escaping ExpireSession = { _ in }
     ) {
+        self.prefetch = prefetch
         self.repository = repository
         self.expireSession = expireSession
     }
@@ -55,6 +58,7 @@ final class FollowedForumsStore {
     }
 
     func reload() async {
+        prefetch?.cancel()
         guard case let .active(authentication) = currentAccess else {
             return
         }
@@ -67,6 +71,7 @@ final class FollowedForumsStore {
     }
 
     func cancel() {
+        prefetch?.cancel()
         guard activeGeneration != nil else {
             return
         }
@@ -81,6 +86,14 @@ final class FollowedForumsStore {
             return
         }
         scrollAnchor = forumID
+        prefetchNearbyForums()
+    }
+
+    func prefetchNearbyForums() {
+        guard let forums = retainedForums else { return }
+        let index = forums.firstIndex { $0.forumID == scrollAnchor } ?? 0
+        let routes = forums.dropFirst(index).prefix(2).compactMap { ForumRoute(forumID: $0.forumID, forumName: $0.name) }
+        prefetch?.nearbyForums(routes)
     }
 
     private var retainedForums: [FollowedForum]? {
@@ -160,6 +173,7 @@ final class FollowedForumsStore {
         switch result {
         case let .success(forums):
             state = forums.isEmpty ? .empty : .loaded(forums)
+            prefetchNearbyForums()
         case let .failure(failure):
             state = previous.map {
                 .refreshFailure($0, failure)
@@ -199,6 +213,7 @@ final class FollowedForumsStore {
     }
 
     private func cancelCurrentLoad() {
+        prefetch?.cancel()
         loadTask?.cancel()
         nextGeneration &+= 1
         activeGeneration = nil

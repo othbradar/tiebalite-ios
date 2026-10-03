@@ -41,6 +41,7 @@ struct ForumCachedReading: Sendable {
 protocol ForumHomeCacheAccess: ForumHomeRepository {
     @MainActor var cacheContext: ContentCacheContext { get }
     func restoreReading(_ request: ForumHomePageRequest) async -> ForumCachedReading?
+    func invalidatePrefetch(_ request: ForumHomePageRequest) async
     func fetchPage(_ request: ForumHomePageRequest, continuing: ForumCachedReading?) async throws -> ForumCachedReading
     func saveReading(_ reading: ForumCachedReading, request: ForumHomePageRequest) async
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Page/progress adapter over the same bounded byte store used by forum pages.
-actor CachedReadingRepository: ReadingContentCacheAccess {
+actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetching {
     private struct Record: Codable, Sendable {
         let locator: ReadingPageLocator
         let key: String
@@ -12,6 +12,13 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
         let fetchedAt: Date
         let data: Data
     }
+    private struct FetchScope: Sendable {
+        let ticket: ReadingCacheTicket
+        let key: String
+        let revision: UInt64
+        let useCache: Bool
+        let priority: ContentLoadScheduler.Priority
+    }
     private struct Manifest: Codable, Sendable {
         var records: [Record] = []
         var position: ReadingPosition?
@@ -19,6 +26,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
 
     private let threads: any ThreadReaderRepository
     private let subposts: any SubpostsRepository
+    private let scheduler: ContentLoadScheduler
     private let cache: ContentPageCache
     private let clock: any AppClock
     private let context: @MainActor @Sendable () -> ContentCacheContext
@@ -31,8 +39,10 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
     @MainActor var cacheContext: ContentCacheContext { context() }
 
     init(threads: any ThreadReaderRepository, subposts: any SubpostsRepository, cache: ContentPageCache,
-         clock: any AppClock = SystemAppClock(), policy: ContentCachePolicy = .init(),
+         clock: any AppClock = SystemAppClock(), scheduler: ContentLoadScheduler = ContentLoadScheduler(),
+         policy: ContentCachePolicy = .init(),
          context: @escaping @MainActor @Sendable () -> ContentCacheContext = { .anonymous }) {
+        self.scheduler = scheduler
         self.threads = threads
         self.subposts = subposts
         self.cache = cache
@@ -62,8 +72,14 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
         try await threadPage(request, useCache: true)
     }
 
+    func prefetchThread(_ request: ThreadReaderPageRequest) async throws {
+        _ = try await threadPage(request, useCache: true, priority: .speculative)
+    }
+
     func refreshThread(_ request: ThreadReaderPageRequest) async throws -> ThreadReaderSnapshot {
-        try await threadPage(request, useCache: false)
+        let ticket = await ticket()
+        if let key = key(.init(threadID: request.threadID), ticket: ticket) { revocations[key, default: 0] &+= 1 }
+        return try await threadPage(request, useCache: false)
     }
 
     func loadPage(route: SubpostsRoute, page: Int) async throws -> SubpostsPage {
@@ -78,10 +94,11 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
         await enqueue(position.identity, ticket: ticket, position: position)
     }
 
-    private func threadPage(_ request: ThreadReaderPageRequest, useCache: Bool) async throws -> ThreadReaderSnapshot {
+    private func threadPage(_ request: ThreadReaderPageRequest, useCache: Bool,
+                            priority: ContentLoadScheduler.Priority = .foreground) async throws -> ThreadReaderSnapshot {
         let identity = ReadingCacheIdentity(threadID: request.threadID)
         let locator = ReadingPageLocator(page: request.pageNumber, postID: request.postID)
-        return try await fetch(identity, locator: locator, useCache: useCache) { [threads] in
+        return try await fetch(identity, locator: locator, useCache: useCache, priority: priority) { [threads] in
             let page = try await threads.loadPage(request)
             guard page.threadID == request.threadID, page.currentPage == locator.responsePage else {
                 throw EndpointExecutionError.mapping
@@ -104,16 +121,47 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
 
     private func fetch<Page: Codable & Sendable>(
         _ identity: ReadingCacheIdentity, locator: ReadingPageLocator, useCache: Bool,
-        load: @Sendable () async throws -> Page
+        priority: ContentLoadScheduler.Priority = .foreground,
+        load: @escaping @Sendable () async throws -> Page
     ) async throws -> Page {
         let ticket = await ticket()
         guard await isValid(ticket), let key = key(identity, ticket: ticket) else { throw EndpointExecutionError.authentication }
         let revision = revocations[key, default: 0]
-        if useCache, let page: Page = await cachedPage(identity, locator: locator, ticket: ticket) { return page }
+        if useCache, let page: Page = await cachedPage(identity, locator: locator, ticket: ticket) {
+            await scheduler.cacheHit()
+            return page
+        }
+        let flightKey = "\(key)|\(ticket.context.revision)|\(ticket.epoch)|\(revision)|\(locator.page)|\(locator.postID)"
+        let scope = FetchScope(ticket: ticket, key: key, revision: revision, useCache: useCache, priority: priority)
+        return try await scheduler.load(key: flightKey, priority: priority) {
+            try await self.fetchAndSave(identity, locator: locator, scope: scope, load: load)
+        }
+    }
+
+    private func fetchAndSave<Page: Codable & Sendable>(
+        _ identity: ReadingCacheIdentity, locator: ReadingPageLocator, scope: FetchScope,
+        load: @Sendable () async throws -> Page
+    ) async throws -> Page {
+        let (ticket, key, revision) = (scope.ticket, scope.key, scope.revision)
+        let (useCache, priority) = (scope.useCache, scope.priority)
+        if useCache, let page: Page = await cachedPage(identity, locator: locator, ticket: ticket) {
+            await scheduler.cacheHit()
+            return page
+        }
         do {
+            try Task.checkCancellation()
+            guard await isValid(ticket), revocations[key, default: 0] == revision else { throw CancellationError() }
+            await scheduler.sourceStarted(priority: priority)
             let page = try await load()
             try Task.checkCancellation()
             guard await isValid(ticket), revocations[key, default: 0] == revision else { throw CancellationError() }
+            if priority == .speculative {
+                let existing = await manifest(key)
+                // A speculative refresh cannot invalidate the locator/chain used by a saved reading session.
+                if existing.records.contains(where: { $0.locator.responsePage == locator.responsePage && $0.locator != locator }) {
+                    return page
+                }
+            }
             let record = CachedReadingPage(locator: locator, fetchedAt: await clock.now, value: page)
             if let data = try? JSONEncoder().encode(record) {
                 await enqueue(identity, ticket: ticket, page: .init(locator: locator, fetchedAt: record.fetchedAt, data: data))
@@ -121,7 +169,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
             guard await isValid(ticket) else { throw CancellationError() }
             return page
         } catch {
-            if ReadingContentRevoked.isConfirmed(error) {
+            if priority == .foreground, ReadingContentRevoked.isConfirmed(error) {
                 revocations[key, default: 0] &+= 1
                 await enqueue(identity, ticket: ticket, invalidate: true)
             }
@@ -167,6 +215,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess {
         let position = manifest.position.flatMap { position in
             pages.contains { $0.locator == position.locator } ? position : nil
         }
+        await scheduler.cacheHit()
         return .init(pages: pages, position: position, ticket: ticket,
                      isFresh: pages.allSatisfy { now.timeIntervalSince($0.fetchedAt) < 300 })
     }

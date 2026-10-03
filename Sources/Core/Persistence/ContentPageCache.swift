@@ -9,6 +9,8 @@ actor ContentPageCache {
         var access: UInt64
     }
 
+    private(set) var memoryHits = 0
+    private(set) var diskHits = 0
     private(set) var epoch: UInt64 = 0
     private let policy: ContentCachePolicy
     private let disk: ContentCacheDisk?
@@ -33,9 +35,11 @@ actor ContentPageCache {
             entry.access = access
             memory[identifier] = entry
             await disk?.touch(identifier)
+            if epoch == ticket { memoryHits += 1 }
             return epoch == ticket ? entry.data : nil
         }
         guard let data = await disk?.read(identifier), epoch == ticket else { return nil }
+        diskHits += 1
         remember(data, identifier: identifier)
         return data
     }

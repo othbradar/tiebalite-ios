@@ -19,6 +19,7 @@ final class ForumHomeStore {
     private var contentContext: ContentCacheContext = .anonymous
     private let sortPreferences: (any ForumSortPreferenceProviding)?
 
+    private let prefetch: ContentPrefetchSession?
     private let repository: any ForumHomeRepository
     @ObservationIgnored private var hasCompletedLoad = false
     @ObservationIgnored private var loadTask: Task<Void, Never>?
@@ -35,8 +36,10 @@ final class ForumHomeStore {
         repository: any ForumHomeRepository,
         query: ForumThreadQuery? = nil,
         knownForum: ForumSummary? = nil,
-        sortPreferences: (any ForumSortPreferenceProviding)? = nil
+        sortPreferences: (any ForumSortPreferenceProviding)? = nil,
+        prefetch: ContentPrefetchSession? = nil
     ) {
+        self.prefetch = prefetch
         self.route = route
         self.repository = repository
         self.query = query ?? .latest(sortPreferences?.forumSortPreferences.order(for: route) ?? .lastReply)
@@ -85,6 +88,10 @@ final class ForumHomeStore {
     }
 
     func reload() async {
+        prefetch?.cancel()
+        if let cache = repository as? any ForumHomeCacheAccess {
+            await cache.invalidatePrefetch(.init(route: route, query: query))
+        }
         pendingReading = nil
         let previous = state.snapshot
         hasCompletedLoad = false
@@ -102,6 +109,7 @@ final class ForumHomeStore {
     }
 
     func cancel() {
+        prefetch?.cancel()
         checkpointReading()
         tabStores.values.forEach { $0.cancel() }
         guard activeGeneration != nil else {
@@ -129,6 +137,21 @@ final class ForumHomeStore {
         scrollAnchor = threadID
     }
 
+    func prefetchNearby(_ ids: [ForumHomeRowID]) {
+        prefetch?.nearbyThreads(Array(ids.prefix(2).compactMap { id in
+            if case let .thread(threadID) = id { return threadID }
+            return nil
+        }))
+    }
+
+    func prefetchNextPage() {
+        if let snapshot = state.snapshot, snapshot.hasMore {
+            prefetch?.followingForumPage(.init(
+                route: route, pageNumber: snapshot.currentPage + 1, query: query,
+                lastThreadID: snapshot.lastThreadID, knownForum: knownForum))
+        }
+    }
+
     func claimDisplayedForum(_ forumID: Int64) -> Bool {
         guard forumID > 0,
               displayedForumID != forumID else {
@@ -148,6 +171,7 @@ final class ForumHomeStore {
 
     func selectPage(_ id: ForumPageID) {
         guard pageIDs.contains(id), selectedPage != id else { return }
+        prefetch?.cancel()
         selectedPage = id
         selectionGeneration &+= 1
     }
@@ -174,11 +198,11 @@ final class ForumHomeStore {
     private func configureTabs(_ forum: ForumSummary) {
         guard case .latest = query else { return }
         if tabStores[.good] == nil {
-            tabStores[.good] = ForumHomeStore(route: route, repository: repository, query: .good(0), knownForum: forum)
+            tabStores[.good] = ForumHomeStore(route: route, repository: repository, query: .good(0), knownForum: forum, prefetch: prefetch)
         }
         for category in forum.navigation.categories where tabStores[.category(category.id)] == nil {
             tabStores[.category(category.id)] = ForumHomeStore(
-                route: route, repository: repository, query: .category(category, sort: 0), knownForum: forum
+                route: route, repository: repository, query: .category(category, sort: 0), knownForum: forum, prefetch: prefetch
             )
         }
     }
@@ -274,6 +298,7 @@ final class ForumHomeStore {
     }
 
     private func cancelCurrentLoad() {
+        prefetch?.cancel()
         loadTask?.cancel()
         nextGeneration &+= 1
         activeGeneration = nil
@@ -487,6 +512,7 @@ extension ForumHomeStore {
         configureTabs(snapshot.forum)
         state = snapshot.threads.isEmpty ? .empty(snapshot.forum) : .loaded(snapshot)
         listPresentation = ForumHomeListPresentation(snapshot: snapshot, pagination: snapshot.hasMore ? .idle : .end)
+        prefetch?.nearbyThreads(Array(snapshot.threads.prefix(2).map(\.threadID)))
     }
 }
 

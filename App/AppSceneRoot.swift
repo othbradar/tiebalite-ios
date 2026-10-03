@@ -81,19 +81,28 @@ struct AppSceneRoot: View {
             )
         }
         .task {
+            compositionRoot.contentPrefetchEnvironment.setActive(scenePhase == .active)
             await sessionStore.restoreIfNeeded()
             await updateNotifications()
         }
         .onChange(of: sessionStore.state) { _, _ in
+            compositionRoot.contentPrefetchEnvironment.cancelAll()
             compositionRoot.currentAccountStore.updateContext(compositionRoot.authContextProvider.context())
             compositionRoot.notificationsStore.updateContext(compositionRoot.authContextProvider.context())
             Task { await compositionRoot.notificationsStore.refreshCounts() }
         }
         .onChange(of: scenePhase) { _, phase in
+            compositionRoot.contentPrefetchEnvironment.setActive(phase == .active)
             if phase == .active { Task { await updateNotifications() } }
         }
         .task {
             await featureStores.settingsStore.loadIfNeeded()
+        }
+        .onChange(of: featureStores.settingsStore.settings) { _, _ in
+            compositionRoot.contentPrefetchEnvironment.cancelAll()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
+            compositionRoot.contentPrefetchEnvironment.policyChanged()
         }
         .preferredColorScheme(
             featureStores.settingsStore.appearance.colorScheme

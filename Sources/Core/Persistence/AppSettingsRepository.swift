@@ -18,6 +18,7 @@ actor InMemoryAppSettingsRepository: AppSettingsRepository {
 
 actor UserDefaultsAppSettingsRepository: AppSettingsRepository {
     private enum Key {
+        static let contentPrefetch = "dev.tiebalite.settings.content-prefetch.v1"
         static let forumSort = "dev.tiebalite.settings.forum-sort.v1"
         static let appearance = "dev.tiebalite.settings.appearance"
         static let readingTextSize = "dev.tiebalite.settings.reading-text-size"
@@ -41,12 +42,15 @@ actor UserDefaultsAppSettingsRepository: AppSettingsRepository {
            let preferences = try? JSONDecoder().decode(ForumSortPreferences.self, from: data) {
             settings.forumSort = preferences
         }
+        settings.contentPrefetch = defaults.string(forKey: Key.contentPrefetch)
+            .flatMap(ContentPrefetchMode.init(rawValue:)) ?? .unmetered
         return settings
     }
 
     func save(_ settings: AppSettingsSnapshot) throws {
         let forumSort = try JSONEncoder().encode(settings.forumSort)
         let defaults = resolvedDefaults
+        defaults.set(settings.contentPrefetch.rawValue, forKey: Key.contentPrefetch)
         defaults.set(forumSort, forKey: Key.forumSort)
         defaults.set(settings.appearance.rawValue, forKey: Key.appearance)
         defaults.set(

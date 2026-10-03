@@ -46,6 +46,7 @@ final class RecommendationsStore {
     private(set) var currentPage: UInt32?
     private(set) var nextPage: UInt32?
 
+    private let prefetch: ContentPrefetchSession?
     private let repository: any RecommendationRepository
     @ObservationIgnored private var hasCompletedInitialLoad = false
     @ObservationIgnored private var accessScope: RecommendationsAccessScope?
@@ -53,7 +54,8 @@ final class RecommendationsStore {
     @ObservationIgnored private var activeGeneration: UInt64?
     @ObservationIgnored private var nextGeneration: UInt64 = 0
 
-    init(repository: any RecommendationRepository) {
+    init(repository: any RecommendationRepository, prefetch: ContentPrefetchSession? = nil) {
+        self.prefetch = prefetch
         self.repository = repository
     }
 
@@ -76,6 +78,7 @@ final class RecommendationsStore {
     }
 
     func reload() async {
+        prefetch?.cancel()
         hasCompletedInitialLoad = false
         await replaceLoad(retaining: state.items)
     }
@@ -121,11 +124,18 @@ final class RecommendationsStore {
         state = .initialLoading
     }
 
+    func prefetchNearbyThreads() {
+        guard let items = state.items else { return }
+        let index = items.firstIndex { $0.threadID == scrollAnchor } ?? 0
+        prefetch?.nearbyThreads(Array(items.dropFirst(index).prefix(2).map(\.threadID)))
+    }
+
     func setScrollAnchor(_ threadID: Int64?) {
         guard scrollAnchor != threadID else {
             return
         }
         scrollAnchor = threadID
+        prefetchNearbyThreads()
     }
 
     func shouldPrefetch(after threadID: Int64) -> Bool {
@@ -138,6 +148,7 @@ final class RecommendationsStore {
     }
 
     private func reset(for scope: RecommendationsAccessScope) {
+        prefetch?.cancel()
         loadTask?.cancel()
         nextGeneration &+= 1
         activeGeneration = nil
@@ -241,6 +252,7 @@ final class RecommendationsStore {
             currentPage = page.requestedPage
             nextPage = items.isEmpty ? nil : page.nextPageCandidate
             state = items.isEmpty ? .empty : .loaded(items)
+            prefetchNearbyThreads()
         case .nextPage:
             guard let retained else {
                 finishFailure(

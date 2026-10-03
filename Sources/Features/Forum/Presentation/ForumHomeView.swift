@@ -119,6 +119,8 @@ struct ForumThreadPageView: View {
                 accessibilityIdentifier: ForumHomeAccessibilityID.list,
                 restoredAnchor: store.scrollAnchor.map(ForumHomeRowID.thread),
                 onPrefetch: { ids in
+                    store.prefetchNearby(ids)
+                    if !ids.isEmpty { store.prefetchNextPage() }
                     guard ids.contains(where: { presentation.prefetchRowIDs.contains($0) }) else { return }
                     Task { await store.loadNextPage() }
                 },

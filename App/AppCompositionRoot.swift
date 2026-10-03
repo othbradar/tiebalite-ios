@@ -2,6 +2,8 @@ import Foundation
 
 @MainActor
 final class AppCompositionRoot {
+    let contentScheduler = ContentLoadScheduler()
+    lazy var contentPrefetchEnvironment = ContentPrefetchEnvironment(settings: sharedSettingsStore)
     let environment: AppEnvironment
     let notificationsStore: NotificationsStore
     let currentAccountStore: CurrentAccountStore
@@ -14,7 +16,9 @@ final class AppCompositionRoot {
     private let followedForumsRepository: any FollowedForumsRepository
     private let forumHomeRepository: any ForumHomeRepository
     private let browsingHistoryRepository: any BrowsingHistoryRepository
-    private lazy var sharedSettingsStore = SettingsStore(repository: appSettingsRepository)
+    private let contentCache: ContentPageCache
+    private lazy var sharedSettingsStore = SettingsStore(repository: appSettingsRepository,
+                                                         contentScheduler: contentScheduler, contentCache: contentCache)
     private let appSettingsRepository: any AppSettingsRepository
     private let recommendationRepository: any RecommendationRepository
     private let searchRepository: any SearchRepository
@@ -48,9 +52,9 @@ final class AppCompositionRoot {
             authContextProvider: resolvedAuthContextProvider,
             websiteDataCleaner: resolvedLoginWebSession
         )
-        let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("TiebaLiteContent-v1", isDirectory: true)
-        let contentCache = forumHomeCache ?? ContentPageCache(directory: directory)
+        let contentCache = forumHomeCache ?? ContentPageCache(directory: Self.contentCacheDirectory)
+        self.contentCache = contentCache
+        let scheduler = contentScheduler
         switch environment.readingDataSourceMode {
 #if DEBUG
         case .fixture:
@@ -65,14 +69,14 @@ final class AppCompositionRoot {
             self.followedForumsRepository = followedForumsRepository ?? FixtureFollowedForumsRepository()
             let forumSource = forumHomeRepository ?? FixtureForumHomeRepository()
             self.forumHomeRepository = forumHomeCache.map {
-                CachedForumHomeRepository(source: forumSource, cache: $0, clock: environment.clock,
+                CachedForumHomeRepository(source: forumSource, cache: $0, clock: environment.clock, scheduler: scheduler,
                                           context: { resolvedAuthContextProvider.contentCacheContext })
             } ?? forumSource
             self.recommendationRepository = recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
             let reading = Self.readingRepositories(
                 threads: threadReaderRepository ?? FixtureThreadReaderRepository(), subposts: FixtureSubpostsRepository(),
-                cache: forumHomeCache, environment: environment, auth: resolvedAuthContextProvider)
+                cache: forumHomeCache.map { ($0, scheduler) }, environment: environment, auth: resolvedAuthContextProvider)
             subpostsRepository = reading.subposts
             self.threadReaderRepository = reading.threads
             self.userProfileRepository = userProfileRepository ?? FixtureUserProfileRepository()
@@ -97,7 +101,7 @@ final class AppCompositionRoot {
                 )
             self.forumHomeRepository = CachedForumHomeRepository(
                 source: LiveForumHomeRepository(client: environment.httpClient), cache: contentCache,
-                clock: environment.clock, context: { resolvedAuthContextProvider.contentCacheContext })
+                clock: environment.clock, scheduler: contentScheduler, context: { resolvedAuthContextProvider.contentCacheContext })
             self.recommendationRepository =
                 recommendationRepository ?? LiveRecommendationRepository(
                     client: environment.httpClient,
@@ -107,7 +111,7 @@ final class AppCompositionRoot {
             let reading = CachedReadingRepository(
                 threads: LiveThreadReaderRepository(client: environment.httpClient),
                 subposts: LiveSubpostsRepository(client: environment.httpClient), cache: contentCache,
-                clock: environment.clock, context: { resolvedAuthContextProvider.contentCacheContext })
+                clock: environment.clock, scheduler: contentScheduler, context: { resolvedAuthContextProvider.contentCacheContext })
             subpostsRepository = reading
             self.threadReaderRepository = reading
             self.userProfileRepository =
@@ -118,13 +122,19 @@ final class AppCompositionRoot {
         self.notificationCounts = notificationCounts ?? notificationsStore
     }
 
+    private static var contentCacheDirectory: URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("TiebaLiteContent-v1", isDirectory: true)
+    }
+
     private static func readingRepositories(
-        threads: any ThreadReaderRepository, subposts: any SubpostsRepository, cache: ContentPageCache?,
+        threads: any ThreadReaderRepository, subposts: any SubpostsRepository,
+        cache: (pages: ContentPageCache, scheduler: ContentLoadScheduler)?,
         environment: AppEnvironment, auth: SessionAuthContextProvider
     ) -> (threads: any ThreadReaderRepository, subposts: any SubpostsRepository) {
         guard let cache else { return (threads, subposts) }
-        let adapter = CachedReadingRepository(threads: threads, subposts: subposts, cache: cache,
-                                              clock: environment.clock, context: { auth.contentCacheContext })
+        let adapter = CachedReadingRepository(threads: threads, subposts: subposts, cache: cache.pages,
+                                              clock: environment.clock, scheduler: cache.scheduler, context: { auth.contentCacheContext })
         return (adapter, adapter)
     }
 
@@ -145,13 +155,14 @@ final class AppCompositionRoot {
     }
 
     func makeRecommendationsStore() -> RecommendationsStore {
-        RecommendationsStore(repository: recommendationRepository)
+        RecommendationsStore(repository: recommendationRepository, prefetch: makeContentPrefetchSession())
     }
 
     func makeFollowedForumsStore() -> FollowedForumsStore {
         let sessionStore = sessionStore
         return FollowedForumsStore(
             repository: followedForumsRepository,
+            prefetch: makeContentPrefetchSession(),
             expireSession: { context in
                 await sessionStore.markExpired(context: context)
             }
@@ -163,14 +174,25 @@ final class AppCompositionRoot {
     }
 
     func makeForumHomeStore(route: ForumRoute) -> ForumHomeStore {
-        ForumHomeStore(route: route, repository: forumHomeRepository, sortPreferences: sharedSettingsStore)
+        ForumHomeStore(route: route, repository: forumHomeRepository,
+                       sortPreferences: sharedSettingsStore, prefetch: makeContentPrefetchSession())
     }
 
     func makeThreadReaderStore(threadID: Int64) -> ThreadReaderStore {
         ThreadReaderStore(
             threadID: threadID,
-            repository: threadReaderRepository
+            repository: threadReaderRepository, prefetch: makeContentPrefetchSession()
         )
+    }
+
+    private func makeContentPrefetchSession() -> ContentPrefetchSession {
+        let settings = sharedSettingsStore
+        return ContentPrefetchSession(
+            candidates: contentPrefetchEnvironment.makeScope(),
+            nextPage: contentPrefetchEnvironment.makeScope(),
+            threads: threadReaderRepository as? any ThreadContentPrefetching,
+            forums: forumHomeRepository as? any ForumContentPrefetching,
+            sort: { settings.forumSortPreferences.order(for: $0) })
     }
 
     func makeSubpostsStore(route: SubpostsRoute) -> SubpostsStore {

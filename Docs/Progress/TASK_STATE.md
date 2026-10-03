@@ -1,5 +1,19 @@
 # TASK_STATE
 
+## 2026-10-03 U04 — USER_ACCEPTED
+
+- 本次验收：用户批准提交已安装 U04 候选并进入 U05。验收后代码未变，沿用同一候选的定向结果；只复核 diff、secret scan 和精确暂存清单。源请求 1 次的合并测试、Live merged=0 与 iPad 旋转分栏回首楼未修复的事实均保留。不 push，提交成功后才开始 U05。
+- 授权与提交边界：先完成 U03 精确提交 `7f7a5c9f0132396f2f757a170649aa877741f25d`，标题 `feat: cache thread reading and restore reading position`；25 个相关文件，未 push。提交前沿用候选定向结果，只复核 diff、secret scan、精确暂存清单。未包含原有未跟踪 Prompt/skill、Artifacts、IDE 文件、凭证或 Android submodule。U03 缓存重进、首次定位自动结束、新位置保存、进程重开及规定的 iPad 重进保持已通过；`testIPadRotationKeepsNewReadingPosition` 的分栏旋转回首楼失败用例与证据保留，用户批准不阻塞 U04，但没有改为通过。
+- U04 仅有界正文预载：新增 Core/Prefetch 的共享 ContentLoadScheduler、页级候选 scope/session 和 App 网络策略适配。关注吧与推荐/吧内帖子候选最多两个，列表末端最多一页；后台完成不递归排后页、不更新正在阅读的列表、不创建离屏 View/Cell、不写历史或 readAnchor。两个投机槽、八项队列，前台可接管或越过队列；单个等待者取消不终止其他消费者，最后消费者取消后仍等传输真正退出才释放槽。
+- 数据与隔离：复用 U02/U03 Repository、ContentPageCache、账号/query 身份和原预算。帖子页预载保持后页、位置与定位页身份；吧 prepared 页与 reading manifest 分开，前台一次取用后仍保留后续重进自动检查。账号 revision、缓存 epoch、查询键、刷新 revision 拒绝旧完成；显式刷新移除原首屏 prepared 条目。网络取用前再查一次缓存，覆盖缓存首次查询与调度入场之间另一请求刚完成的窗口。
+- 接线/设置：AppCompositionRoot/SceneRoot、FollowedForums/Recommendations/Forum/ThreadReader Store 与已有列表回调、Settings、两类缓存 Repository；AppSettings 增加独立持久化预载模式，默认仅非昂贵连接，可关闭/所有网络。constrained、低电量、非前台撤销投机消费者，前台接管者不受影响。仅应用内策略，不保证锁屏下载。Debug 设置页显示聚合 cache/foreground/prefetch/merged/memory/disk 计数，Release 无诊断条；计数不含正文、URL、账号或凭证。VirtualizedList、首次恢复/视口保持、Pager、MediaViewer、图片加载/缓存、iPad 导航和网络协议均无修改。无新动画、业务手势、overlay 或第三方依赖；图片磁盘缓存仍留 U06。
+- 实际定向证据（ignored `Artifacts/VisualReview/U04/`）：`unit-delivery.xcresult` 9 项/12 次参数化执行 PASS；最终刷新条目清理补充后的 `unit-invalidation.xcresult` 5 项/8 次执行 PASS，未重复旧 U03 缓存套件。包括同键预载→前台接管→取消投机等待者→缓存重进的源调用总数恰为 1；两个运行请求+八个队列时前台立即开始；关闭/低数据/低电量/后台策略；取消不响应的传输仍占槽；账号/清理/刷新失效；首屏预载保留后页/锚点和当前显示；不同排序隔离、prepared 取用后重进仍新增一次自动检查。`unit-final` 命令附带的两个 U02 方法 selector 没有匹配 Swift Testing 参数化名称，不计为 U02 独立执行；U02 自动检查/深处缓存保留的本轮直接证据来自 U04 的 forumPreload 用例，未声称跑了完整 U02。
+- UI：`ui-delivery.xcresult` 1/1 PASS（21.137s），同一完整 fixture App 中首次打开以 UITESTING accessibility 值证实来自预载缓存，实际滚动→返回→重进，保存楼层可见且 initial-restoration 自动 idle；没有弱化目标可见断言。该值不进入普通 Live/Release。未跑全部 Unit、quality-fast、完整 quality、长交互矩阵或 iPad 旋转。
+- 门禁：`make lint` PASS（396 文件，0 violation），`make build` PASS，`make secret-scan` PASS，`git diff --check` PASS。过程中失败如实保留：首轮队列测试误用了单等待者 HarnessContinuationGate，替换成每请求独立 gate 后通过；编译阶段暴露 Sendable 闭包、Foundation import、lazy actor 默认值/初始化前捕获 self，已修正；首个 forum 用例误用不支持所需第二页的基础 fixture，改用已有 R05ForumFixture 后通过；lint 的长度/参数组织/对齐问题已修正。UI 首轮在隐藏底栏的帖子路由尝试直接切设置失败，改为读取帖子页已有缓存状态的测试值后通过，没有改导航。相关日志含 u04-scheduler*.log、unit-first/second/third/fourth、lint-first/second/third、ui-first。
+- 正常 Live 交付：`scripts/visual_review_build_install.sh U04` PASS，完整 Debug .app 覆盖安装正常 iPhone `70D93841-1FEB-445A-8FAD-B1C29B981D5D`；签名和 Simulator entitlements 校验通过，未 uninstall/erase/清 Keychain/缓存。安装 executable SHA256 `dea971574d041ccbe7f5c7059744c2b1df8841397d8931c9f51662fa13599b69`、debug dylib `dd63689e1d0a929325f5352680bb298de5fae6ae6fe3c6964d40a6f32baf0700` 与本轮产物匹配。登录、关注吧、历史入口和高通吧最新发布排序保留。
+- Live 实测：默认“仅非昂贵连接”；初始设置计数 cache=0 foreground=0 prefetch=2 merged=0 memory=0 disk=6。实际打开高通吧及两条附近帖子，第二条 `threadID 11071397108` 滚到中部→返回重进，原目标 `postID 153990977320` 仍在视口；磁盘仅检查位置元数据，确为同一 postID，未输出正文或凭证。随后设置计数 cache=1 foreground=3 prefetch=7 merged=0 memory=51 disk=9；这是实际操作累计值，不将 Live 未观察到的并发合并声称为通过，也不将所有打开称为预载命中。合并零重复源请求由上面的受控测试证明。最终再次回到该帖子，目标仍可见，留给用户检查。截图 `20261003-115721-live-middle-before-return.png`、`20261003-115815-live-middle-reentry.png` 和 live-final-reader 均在 U04 ignored 目录。
+- 剩余限制与停止：预载只覆盖少量候选，受原 TTL/预算与网络策略限制；没有定量延迟承诺。U03 iPad 旋转分栏已知缺陷仍未修复，不在 U04 修改导航/旋转恢复。本记录的候选已获用户验收，按授权精确提交 U04，随后单独开始 U05；不推送。
+
 ## 2026-10-03 U03 — USER_ACCEPTED
 
 - 用户批准按已验证范围提交 U03，沿用下方同一候选的定向 Unit/UI、缓存重进、初始恢复自动结束、新阅读位置保存、Live 进程重开及规定范围 iPad 重进结果。验收后未改变代码，只复核差异、secret scan 与精确暂存清单。
