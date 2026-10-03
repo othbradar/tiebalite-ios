@@ -58,3 +58,12 @@ xcodebuild archive -project TiebaLite.xcodeproj -scheme TiebaLite \
 - 公开 REST `releases/tags/v0.2.0beta2` 返回404，**Release 与附件均未完成**。
 - Safari 表单可以打开，但网页标题/正文的 AX 设置、点击输入未生效；内置浏览器与 Chrome 连接超时。`gh api user` 因 CLI 未登录返回 exit 4。已请求用户正常登录 GitHub CLI 后继续上传，没有提取浏览器 Cookie/token 或改变安全设置。
 - `release-notes.md` 和两项附件已在上述 ignored 目录准备；未上传 xcarchive、dSYM 或任何私人数据。
+
+## 已完成发布回执
+
+- 用户指定 Chrome 并澄清 Safari 未登录；之前的 Safari 页面控件判断不足以证明认证。本次使用 Chrome 已有 GitHub 会话，经原生 UI 设置标题/正文、选择既有标签、上传两项附件、标记 pre-release 后发布，未获取浏览器凭证或要求新 token。
+- 公开 Release：<https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta2>，ID `402400487`，`draft=false`、`prerelease=true`，2026-10-03 16:02:38（Asia/Shanghai）发布。
+- 标签与源码仍为 `5c9b3a8dda71d0deef8adfa685a7900d623b5b83`。IPA 6,734,035 bytes、SHA256SUMS 112 bytes，两项均 uploaded；GitHub 返回的 SHA-256 与本机对应文件完全一致。
+- IPA SHA-256：`02bf64d510a3f97fb72527ad7d2d762af501db32f1f29a6b868affb80513855a`；校验文件 SHA-256：`76d0a9f5e2b04810444af560af3d1ace13a2e80aa6d71949be552196a8110ecf`。
+- 首次回执脚本在正文严格字节比较处失败，原因是网页提交使用 CRLF；仅归一换行后与已核验说明完全一致，标签、公开状态和附件校验全部 PASS。证据：`publication-inspection.json`、`publication-receipt.json`。
+- Chrome 发布完成页已核对，未改变发布产物或标签；此文档回执单独提交，不重新编译或修改已验收 App。

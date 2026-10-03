@@ -1,5 +1,12 @@
 # TASK_STATE
 
+## 2026-10-03 v0.2.0beta2 — PUBLISHED_AND_VERIFIED
+
+- 用户指定使用 Chrome，并澄清 Safari 未登录 GitHub；此前基于 Safari 页面控件作出的登录判断不作为认证证据。按用户要求使用本机 Chrome 的现有 GitHub 会话，经原生 UI 完成发布，无需 CLI 登录或读取浏览器凭证。
+- 公开 Release：`https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta2`，ID `402400487`，`draft=false`、`prerelease=true`，发布时间2026-10-03 16:02:38（Asia/Shanghai）。标签仍指向已核验发布源码 `5c9b3a8dda71d0deef8adfa685a7900d623b5b83`。
+- 附件均 `uploaded`：IPA 6,734,035 bytes，SHA256SUMS 112 bytes，公开 REST 返回的两项大小及 SHA-256 与本机完全相同。IPA SHA256 `02bf64d510a3f97fb72527ad7d2d762af501db32f1f29a6b868affb80513855a`。发布正文与准备稿经 CRLF/LF 归一后相同，保留未签名安装说明、实测计数和已知缺陷。
+- Chrome 已显示正式版本页面，机器回执在 ignored `Artifacts/Releases/v0.2.0beta2/publication-receipt.json`。本次只完成发布和回执，不再改 App、重打包或重跑测试，不进入 U07。此前“等待登录/尚未发布”是历史状态，由本节更新。
+
 ## 2026-10-03 v0.2.0beta2 — TAG_PUSHED，Release 等待 GitHub CLI 登录
 
 - 发布源提交 `5c9b3a8dda71d0deef8adfa685a7900d623b5b83` 与附注标签 `v0.2.0beta2` 已原子推送到 `origin/main`；远端分支和标签解析均回读同一提交。U06 所有生产/测试源码哈希与已验收提交一致。
