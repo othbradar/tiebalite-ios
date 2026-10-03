@@ -26,10 +26,16 @@ actor ImageDiskCache {
     private var index: [String: Entry] = [:]
     private var prepared = false
     private var epoch: UInt64 = 0
+    private var maintenance: Task<Void, Never>?
+    private var dirtyAccess = false
+    private let beforeWrite: (@Sendable () async -> Void)?
+    private(set) var committedWrites = 0
+    private(set) var indexFlushes = 0
 
-    init(directory: URL, policy: ImageCachePolicy = .init()) {
+    init(directory: URL, policy: ImageCachePolicy = .init(), beforeWrite: (@Sendable () async -> Void)? = nil) {
         self.directory = directory
         self.policy = policy
+        self.beforeWrite = beforeWrite
     }
 
     nonisolated static func digest(_ data: Data) -> String {
@@ -47,11 +53,12 @@ actor ImageDiskCache {
             return nil
         }
         index[key]?.access = Date()
-        try? saveIndex()
+        scheduleMaintenance()
         return resource
     }
 
-    func write(_ resource: EncodedImageResource, key: String, epoch ticket: UInt64) {
+    func write(_ resource: EncodedImageResource, key: String, epoch ticket: UInt64) async {
+        await beforeWrite?()
         prepare()
         guard epoch == ticket, resource.data.count <= policy.maximumResourceBytes,
               let bytes = try? PropertyListEncoder().encode(resource), bytes.count <= policy.diskBytes else { return }
@@ -60,14 +67,20 @@ actor ImageDiskCache {
             evict()
             // Record intent first: a killed process may leave a missing file, never an unbounded orphan image.
             try saveIndex()
+            guard index[key] != nil else { return }
             try bytes.write(to: file(key), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            committedWrites += 1
         } catch {
             remove(key) // A disk failure must not turn a successful download into a display failure.
         }
     }
 
     func clear(epoch: UInt64) {
+        guard epoch >= self.epoch else { return }
         self.epoch = epoch
+        maintenance?.cancel()
+        maintenance = nil
+        dirtyAccess = false
         prepare()
         for key in Array(index.keys) { remove(key, save: false) }
         try? saveIndex()
@@ -117,5 +130,28 @@ actor ImageDiskCache {
 
     private func saveIndex() throws {
         try PropertyListEncoder().encode(index).write(to: directory.appendingPathComponent("index-v1.plist"), options: .atomic)
+        indexFlushes += 1
+        dirtyAccess = false
+    }
+
+    func flushMaintenance() {
+        maintenance?.cancel()
+        maintenance = nil
+        if dirtyAccess { try? saveIndex() }
+    }
+
+    private func scheduleMaintenance() {
+        dirtyAccess = true
+        guard maintenance == nil else { return }
+        let ticket = epoch
+        maintenance = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(1)) } catch { return }
+            await self?.maintenanceDue(epoch: ticket)
+        }
+    }
+
+    private func maintenanceDue(epoch ticket: UInt64) {
+        guard !Task.isCancelled, epoch == ticket else { return }
+        flushMaintenance()
     }
 }

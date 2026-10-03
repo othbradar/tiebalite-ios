@@ -20,6 +20,10 @@ ContentPageCache 保存有界 Data；默认内存最多 30 条、16 MiB，包含
 
 ## 生命周期与代价
 
+2026-10-03 U06P2：ContentPageCache 的已验证内存命中直接返回，LRU 日期按 key 在内存合并（最多256项），单一维护 writer 约每秒批量提交；显式 flushMaintenance 提供无计时等待的 barrier。正文/manifest 写入仍 await 原子文件及索引完成，并在结构写入时吸收待处理的 LRU 日期；纯 miss（包括初次空目录查询）不写索引。维护是允许丢失的近似访问时间，阅读位置不是延后到进程退出才写的维护数据。clear 递增 epoch，旧批次检查 epoch 后才能修改索引，不改变磁盘格式、目录、容量或有效期。
+
+吧首页在真正 fetch 到新页面时发布原 generation/page/cursor 键的正文；saveReading 通过缓存索引批量确认引用，随后只写小 manifest/锚点，别名不变不重写，不再逐页 read/touch/编码旧正文。未成功落盘的页不能生成新 manifest，预算驱逐/坏文件仍按既有恢复路径降为 cache miss。帖子 CachedReadingRepository 原本已只写小 manifest，本批保留其序列化及显式完成语义。计数与重启证据见 U06P2CacheFastPathTests 及 U03ReadingCacheTests。
+
 页面完成、离开/后台时保存，滚动仅更新内存锚点；重建列表仅一次应用稳定行锚点，允许合理行内偏移差异。现有导航内 UIView 实例和 offset 不变。VirtualizedList 仅增加默认关闭的系统 UIRefreshControl 回调，未更换 diffable/复用/锚点算法；刷新去重，dismantle 取消并解绑。
 
 冷命中仍有本地 IO 等待；本阶段没有离线图片持久化，也不承诺操作系统清理 Caches 后可离线读取。无缓存或持久化失败时正常网络路径仍可工作。

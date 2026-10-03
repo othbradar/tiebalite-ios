@@ -12,6 +12,7 @@ struct U06ImageCacheTests {
         let first = ImageResourceStore(loader: source, directory: directory)
         let downloaded = try await first.data(for: request(), maximumByteCount: 1_000_000).0
         #expect(downloaded == bytes)
+        await first.flushPersistence()
         let offline = ImageCacheTestTransport(bytes: bytes)
         await offline.setOffline()
         let restarted = ImageResourceStore(loader: offline, directory: directory)
@@ -57,6 +58,7 @@ struct U06ImageCacheTests {
             role: .original, destination: .init(absoluteString: try #require(request().url).absoluteString, scheme: .https))])
         let exported = try await fetcher.fetch(.init(mediaID: "first", position: 1, descriptor: descriptor))
         #expect(exported.isOriginal)
+        await store.flushPersistence()
         #expect(await store.diagnostics().diskBytes > 0)
         await store.clear()
         #expect(await store.diagnostics().diskBytes == 0)
@@ -112,6 +114,7 @@ struct U06ImageCacheTests {
         let store = ImageResourceStore(loader: source, directory: directory)
         _ = try await store.data(for: request("same?size=small"), maximumByteCount: 1_000_000)
         _ = try await store.data(for: request("same?size=large"), maximumByteCount: 1_000_000)
+        await store.flushPersistence()
         let before = await store.diagnostics().diskBytes
         _ = try await store.data(for: request("same?token=private"), maximumByteCount: 1_000_000)
         #expect(await source.requests == 3)
@@ -125,19 +128,23 @@ struct U06ImageCacheTests {
         let store = ImageResourceStore(loader: source, directory: directory, policy: .init(maximumEntries: 2))
         for name in ["one", "two", "one", "three", "one"] {
             _ = try await store.data(for: request(name), maximumByteCount: 1_000_000)
+            await store.flushPersistence()
         }
         #expect(await source.requests == 3)
         _ = try await store.data(for: request("two"), maximumByteCount: 1_000_000)
+        await store.flushPersistence()
         #expect(await source.requests == 4)
         let key = ImageDiskCache.digest(Data(("encoded-v1|anonymous|" + (try #require(request("two").url).absoluteString)).utf8))
         try Data("corrupt".utf8).write(to: directory.appendingPathComponent(key).appendingPathExtension("image"))
         _ = try await store.data(for: request("two"), maximumByteCount: 1_000_000)
+        await store.flushPersistence()
         #expect(await source.requests == 5)
         try Data("invalid index".utf8).write(to: directory.appendingPathComponent("index-v1.plist"))
         let rebuilt = ImageResourceStore(loader: source, directory: directory, policy: .init(diskBytes: 1_024, maximumEntries: 2))
         #expect(await rebuilt.diagnostics().diskBytes == 0)
         for name in ["one", "two", "three"] {
             _ = try await rebuilt.data(for: request(name), maximumByteCount: 1_000_000)
+            await rebuilt.flushPersistence()
         }
         #expect(await rebuilt.diagnostics().diskBytes <= 1_024)
         #expect(await source.requests == 8)

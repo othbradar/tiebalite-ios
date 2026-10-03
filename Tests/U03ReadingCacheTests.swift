@@ -10,7 +10,8 @@ struct U03ReadingCacheTests {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("u03-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = U03ThreadSource()
-        let adapter = makeAdapter(source, cache: ContentPageCache(directory: directory))
+        let cache = ContentPageCache(directory: directory)
+        let adapter = makeAdapter(source, cache: cache)
         let store = ThreadReaderStore(threadID: threadID, repository: adapter)
         await store.loadIfNeeded()
         await store.loadNextPage()
@@ -21,7 +22,12 @@ struct U03ReadingCacheTests {
         let retained = try #require(store.state.snapshot)
         let anchor = ThreadReaderRowID.post(threadID: threadID, postID: try #require(retained.posts.last?.id.postID))
         store.setReadAnchor(anchor)
+        let beforeSave = await cache.ioCounts()
+        let readRequests = await cache.readRequests
         await store.saveReadingPosition()
+        #expect(await cache.readRequests - readRequests == 1) // Only the small manifest, never the three page bodies.
+        #expect(await cache.ioCounts().writes - beforeSave.writes == 1)
+        await cache.flushMaintenance()
         await store.loadIfNeeded()
         #expect(await source.requests.count == 3)
         let rebuilt = makeAdapter(source, cache: ContentPageCache(directory: directory))

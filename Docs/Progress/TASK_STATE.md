@@ -1,5 +1,24 @@
 # TASK_STATE
 
+## 2026-10-03 U06P2 — USER_ACCEPTED，授权提交并进入 U06P3
+
+- 用户已验收并授权“提交并进入U06P3”。本次核对已安装候选的10个源码/测试/ADR文件SHA256全部一致，沿用下方9项定向Unit及1项短UI和轻量门禁结果；只复核diff、secret scan及精确暂存清单。
+- 仅提交U06P2的11个相关文件，提交信息 `perf: remove disk maintenance from cache hit paths`。排除用户原有Prompt/skill、Artifacts、凭证、IDE文件及Android submodule；不推送、不tag、不发版。提交成功后才实施U06P3。
+- 下方READY的未提交/等待验收为此前交付状态。本次仍保留可选图片落盘队列溢出限制、真机未验证和U03 iPad旋转分栏回首楼已知缺陷，不将其标为通过。
+
+## 2026-10-03 U06P2 — READY_FOR_USER_VISUAL_REVIEW
+
+- 用户授权“提交并进入U06P2”后，先精确提交 U06P1：`85e0b0c503f4c91e10b1c3f09d6d825e20a4d60b`，`fix: defer forum refresh while scrolling`，11个相关文件；提交前10个候选文件哈希一致，复核 diff/secret scan/精确暂存。未 push/tag/release。U06P2 以此实际 HEAD 为基线，只读两级 COMMON、当前 P2、相关缓存源码/规格与最新记录，未展开后续批次或全量历史审计。
+- 确认仍存在的两条失败：30次内存命中逐次写索引（30次），纯 miss 也写索引；4个真实下载被 gate 挂住时，另一张磁盘缓存图排入下载队列，不能独立返回。原红例 `baseline.xcresult` 两项 FAIL 保留。CachedReadingRepository 本来已是小 manifest checkpoint，不重写；吧首页 saveReading 的逐页旧正文读取仍存在，改为元数据确认引用。
+- 页面最小修改：ContentPageCache 命中仅合并有界 LRU 日期，单 writer 批量维护，显式 flush 提供完成屏障；纯 miss 不写索引。正文/索引/manifest 仍 await 持久化成功，clear/账号/query/epoch 检查及原格式、容量、有效期不变。吧首页真实加载页面时先持久化页，再保存引用它的 manifest；保存锚点不读旧正文，别名未变不重复写。失败写不宣称已落盘。1秒计时仅用于 COMMON 明确允许的 LRU 合并维护，不参与 UI/布局/取消时序。
+- 图片最小修改：同资源 flight 覆盖查盘到返回，磁盘查找最多2项，真正 miss 才进入原4个下载槽；共享优先级保持前台接管与订阅取消隔离。已验证 bytes 可先返回，单 writer 最多保留2项/48 MiB active + queued 编码资源，待写同键复用；超过上限跳过本次可选落盘并计数，不阻塞显示或扩大队列。旧 epoch 写不能回填，显式 flushPersistence 用于落盘/离线重启证明。原图/缩略图/裁切 key、完整性、传输规则、预算及 U05 独占导出文件均保留。
+- 定向计数：30次页面命中从30次索引写合并为1次，20次纯 miss 写0次；挂住索引 writer 时31次内存命中仍能完成。吧首页1页/3页只改 anchor 均为旧正文读取0、manifest写1（读取小 manifest及两个别名共3次）；帖子3页 checkpoint仍为manifest读1/写1。缓存图返回时4个下载仍被挂住；两订阅者取消一个后另一成功，待写同键再次请求源下载仍1次。队列满时 pending=2、跳过1；clear后旧提交0，导出GIF逐字节保留；新 epoch落盘1，重建 Loader断网命中1、源请求0。
+- 检查：`direct-unit-2.xcresult` 8/8 PASS；`final-disk-unit.xcresult` 2/2 PASS（复跑1项冷miss补充 + 1项原预算/损坏回归），合计9个不同逻辑用例，0 skip。含现有尺寸/裁切隔离及ImageWorkPool前台优先/实际退出才释放槽。`phone-ui.xcresult` 唯一完整App图片往返短UI 1/1 PASS（56.053s）：加载原图保持zoom、Mock保存、切页往返、关闭回阅读页。`make lint` 422文件0 violation、`make build`、`make secret-scan`、`git diff --check` 均PASS；没有全量Unit、quality-fast、quality或长矩阵。
+- 中间失败保留：`fast-path-unit.xcresult` timer闭包直接访问actor隔离属性导致编译失败，改为actor入口；`direct-unit.xcresult` 测试宏中组合throwing Data读取导致编译失败，拆成局部值；首次lint参数对齐修正。修正后原2个红例 `fast-path-unit-2.xcresult` 通过。没有降低断言、增加布局延时或清用户缓存。
+- 完整Live交付：`scripts/visual_review_build_install.sh U06P2` PASS；正常Debug App覆盖 iPhone `70D93841-1FEB-445A-8FAD-B1C29B981D5D`，保留登录、排序、历史、缓存，未 uninstall/erase/清Keychain。安装主程序SHA256 `24ee061359ba8c14d1497ad39fcf9da0fbf04df7be0a026f049ccbf47fa4d598`、debug dylib `5636fcf2ed141436d679067e1cd17713e46ee9186f5fb174fd9d46e2c6ed6c7d` 与本轮产物一致。证据仅在 ignored `Artifacts/VisualReview/U06P2/`。
+- Live实际观察：打开真实高通吧（原排序保留），从已有历史打开缓存帖 `11071397108`、同一楼层 `153990906755` 的第2/6张图，关闭→返回→重进仍在该楼层。首次原图读取 disk36→37、network保持4、merged1。结束进程并重新launch，经原历史进入同帖同图；显示图disk32/network0/merged0，点加载原图后disk33/network0/merged0，图片显示1080×2400。以上是图片服务计数，未宣称所有业务请求为0；实际断网证明来自临时目录Mock测试，没有切断Live网络。当前候选留在该真实原图，截图 `20261003-223436-live-restart-original-ready.png`。
+- 修改范围：5个Core缓存/Repository文件、3个直接测试、ADR-0008/0030和本记录；无UI/手势/动画/overlay/依赖变更，未改VirtualizedList、U03恢复、U02刷新策略、U04预载策略、Pager、Viewer、iPad导航或Android submodule。图片写队列饱和时本次资源可能未持久化；不承诺FPS或全设备耗时提升。真机未验证，U03 iPad旋转分栏回首楼仍未修复。U06P2未暂存/提交/推送，不进入P3/U07，等待人工验收。
+
 ## 2026-10-03 U06P1 — USER_ACCEPTED，授权提交并进入 U06P2
 
 - 用户已验收并明确授权提交 U06P1 后进入 U06P2。当前10个源码/规格/测试文件与已安装、通过检查的候选 SHA256 全部一致；沿用下方8项定向 Unit、iPhone/iPad 短 UI 和轻量门禁结果，仅复核 diff、secret scan、精确暂存清单。

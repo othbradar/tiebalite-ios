@@ -9,6 +9,10 @@
 
 ## 2026-10-03 U06 授权更新
 
+U06P2 补充：同资源 single-flight 覆盖查盘、下载和返回；先经最多2个磁盘查询任务查 encoded cache，真正 miss 才进入原来的4个下载槽位。资源订阅与两个实际工作队列共享可提升的前台优先级；最后订阅取消后，实际网络/磁盘工作结束才释放所占槽位。decoded key、下载大小/MIME/完整性检查及原图身份保持。
+
+验证后的网络 bytes 可先返回。编码文件采用单 writer，最多2项、最多48 MiB（2×单资源24 MiB）的 active + queued Data，clear 后尚未结束的旧写也计入上限；满时跳过本次可选持久化并计数，不阻塞正确显示或累积大 Data。待写期间的同键订阅复用该结果；磁盘写入前复查 epoch，clear 不会复活旧文件。flushPersistence 等待实际 writer 与访问时间维护完成，离线重建测试以此作为持久化 barrier，不能把“已显示”当作“已写盘”。磁盘命中仅在内存更新 LRU，单任务约每秒合并索引维护；结构写入仍保留原意图索引/原子文件顺序。磁盘预算、文件格式、U05 独占导出文件生命周期均不变。
+
 - 用户明确授权在既有 ProductionImageLoader 下补持久化、合并与高清，替代本 ADR 早期对磁盘/decoded 的 Proposed 限制；不引入第三方图片库或第二套 Viewer。
 - 使用已有匿名 HTTPDataLoading 边界，关闭 URLCache。已使用的公开图片 host（imgsrc/imgsa/tiebapic.baidu.com、既有 tb.himg.baidu.com 头像例外）且无 token/sign/auth/secret 等 query 的候选可落盘；未知 host、带权限参数候选及响应 private/no-store 不落盘。不删除 query、不猜新地址、不带会话。
 - 编码文件：完整 URL + anonymous namespace + schema-v1 的 SHA256；512 MiB、4096 项上限，单资源24 MiB，二进制 plist 保留原 Data 与 MIME/checksum。有界索引懒加载、原子写入、LRU、损坏淘汰；磁盘操作在独立 actor，不在主线程解码或全目录扫描。索引损坏仅重建本版本图片目录。

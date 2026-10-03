@@ -89,6 +89,14 @@ actor CachedForumHomeRepository: ForumHomeCacheAccess, ForumContentPrefetching {
             queryIdentity: ForumQueryIdentity(route: request.route, query: request.query), context: scope,
             cacheEpoch: epoch, pages: [], anchor: nil, isFresh: true)
         reading.pages.append(page)
+        // Publish each immutable generation page when it is actually loaded, before any manifest can reference it.
+        if let namespace = scope.namespace, let first = reading.pages.first {
+            let resolved = ForumRoute(forumID: first.page.forum.forumID, forumName: request.route.forumName.rawValue) ?? request.route
+            let prefix = manifestKey(namespace: namespace, identity: .init(route: resolved, query: request.query))
+            let key = prefix + ":\(reading.generation):\(page.requestPage):\(page.requestCursor)"
+            if let data = try? JSONEncoder().encode(page) { await cache.write(data, key: key, epoch: epoch) }
+        }
+        guard await context() == scope, await cache.epoch == epoch else { throw CancellationError() }
         return reading
     }
 
@@ -177,16 +185,10 @@ actor CachedForumHomeRepository: ForumHomeCacheAccess, ForumContentPrefetching {
         let resolvedRoute = ForumRoute(forumID: first.page.forum.forumID, forumName: request.route.forumName.rawValue) ?? request.route
         let identity = ForumQueryIdentity(route: resolvedRoute, query: request.query)
         let prefix = manifestKey(namespace: namespace, identity: identity)
-        var pageKeys: [String] = []
-        for page in reading.pages {
-            let key = prefix + ":\(reading.generation):\(page.requestPage):\(page.requestCursor)"
-            pageKeys.append(key)
-            guard await isValid(reading) else { return }
-            if await cache.read(key: key) == nil, let data = try? JSONEncoder().encode(page) {
-                await cache.write(data, key: key, epoch: reading.cacheEpoch)
-            }
+        let pageKeys = reading.pages.map {
+            prefix + ":\(reading.generation):\($0.requestPage):\($0.requestCursor)"
         }
-        guard await isValid(reading) else { return }
+        guard await cache.contains(keys: pageKeys, epoch: reading.cacheEpoch), await isValid(reading) else { return }
         if let existing = await cache.read(key: prefix),
            let manifest = try? JSONDecoder().decode(Manifest.self, from: existing),
            manifest.fetchedAt > first.fetchedAt || (manifest.generation == reading.generation && manifest.pageKeys.count > pageKeys.count) {
@@ -204,7 +206,7 @@ actor CachedForumHomeRepository: ForumHomeCacheAccess, ForumContentPrefetching {
                 let previous = await cache.read(key: key).flatMap { String(data: $0, encoding: .utf8) }.flatMap(Int64.init)
                 let value = previous == nil || previous == id ? id : 0
                 guard await isValid(reading) else { return }
-                await cache.write(Data(String(value).utf8), key: key, epoch: reading.cacheEpoch)
+                if previous != value { await cache.write(Data(String(value).utf8), key: key, epoch: reading.cacheEpoch) }
             }
         }
         if !(await isValid(reading)) {
