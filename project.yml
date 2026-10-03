@@ -63,6 +63,7 @@ targets:
       properties:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSPhotoLibraryAddUsageDescription: "将您选择的图片保存到相册，仅添加照片，不读取您的相册。"
         NSAppTransportSecurity:
           NSExceptionDomains:
             tb.himg.baidu.com:

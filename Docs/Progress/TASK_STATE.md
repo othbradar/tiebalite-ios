@@ -1,5 +1,21 @@
 # TASK_STATE
 
+## 2026-10-03 U04 已提交；U05 — USER_ACCEPTED（Simulator 相册已人工验收）
+
+- 用户已在当前 Simulator 点击保存，并在照片 App 确认图片正确，明确批准提交 U05 后开始 U06。提交前与候选 20 文件 SHA256 清单逐一核对，代码未变，沿用 11 项 Unit 和 iPhone/iPad 短 UI；仅复核 diff、secret scan、精确暂存清单。保存/分享直接使用下载得到的编码 Data 文件，PhotoKit 添加 fileURL，分享传递 fileURL；不读取 Viewer 的 decoded UIImage，不裁切、转码或重编码。“原始候选”依据 descriptor 中已有 original 角色及字节保持路径，不依据 1080×2400 尺寸推断。
+
+- U04 已按用户批准的精确清单提交：`708b09e6088d8e2e7e33da59401cf2879e8c19c7`，`feat: add bounded content prefetching`，26 个相关文件，未推送。提交前复核 diff、secret-scan、暂存清单，源代码与验收候选一致，沿用已有结果。排除用户原有改动及提示词/技能文件、.idea、.DS_Store、Artifacts、凭证和 Android submodule。下方 U04 控制测试源请求 1 次、Live 合并计数 0 的事实不变。
+- U05 修改范围：Core/Images 的 ImageExport、OriginalImageFileFetcher、PhotoLibraryWriter；Viewer 的 MediaExportStore、MediaExportControls、ImageFileSharePresenter；现有 Viewer/App composition 注入；project.yml 与生成 Info.plist 的 addOnly 用途说明；直接 Unit/UI、fixture、规格及本记录。未修改显示 Loader/解码策略、VirtualizedList/首次恢复/视口保持、Pager/缩放 ownership、U02/U03/U04 缓存刷新预载、Session/Keychain、iPad 导航。无第三方依赖、新手势、自定义动画、覆盖拦截层或 U06 磁盘图片缓存。
+- 原始文件通道捕获点击时 MediaID、资源描述和序号，复用已有 Viewer 候选顺序和匿名 HTTPDataLoading（24 MiB 上限），不附加会话。ImageIO 只识别编码元数据，源 Data 写入独占临时文件，不读取/重新编码显示位图。原始候选失败时只使用已返回候选，显示“可用版本（非原图）”；无法识别、超限文件拒绝导出。正文复用原图片点击 → 唯一 Viewer 保存入口，未添加第二套长按实现。
+- 状态：save → addOnly 授权 → 下载 → PhotoKit 文件资源写入 → 完成/明确失败；share → 下载 → 等待系统接管 → 分享 → 完成/取消清理。忙时禁止重复操作，切图不替换捕获资源，重试继续原图。关闭取消下载；PhotoKit 提交后保留文件到实际回调。尚未分享接管时关闭直接清理，接管后等待系统完成/取消/拆除再幂等释放。系统不支持写入时可用分享/存文件，不转换成 JPEG 或静态帧。
+- Unit：`Artifacts/VisualReview/U05/baseline.xcresult` MediaViewerPresentation 2 PASS；最终 `lifecycle-unit.xcresult` **11 项，15 个含参数化用例，0 FAIL/skip**。覆盖捕获/重复点击、拒绝权限、下载/写入/格式失败与重试、原图优先/降级标记、JPEG 方向、透明 PNG、GIF 两帧逐字节保持、超限/无效文件、相册/分享期间文件保留、分享接管前关闭清理。自动化仅使用 Mock 写入端，不读写个人相册。
+- UI：最终 `lifecycle-ui.xcresult` 同一短用例在独立 iPhone/iPad fixture Simulator **各 1 PASS**：第二张保存（Mock）、第三张实际文件分享面板、原生外部取消、取消后第三张再次保存、关闭返回来源页面。`make lint`（`lint-delivery.log`，406 文件 0 violation）、`make build`（`build-delivery.log`）、`make secret-scan`（`secret-delivery.log`）、`git diff --check` 均 PASS。未运行全量 Unit、quality-fast、quality、长交互矩阵或未改的内容缓存测试。
+- 中间失败保留：export-unit 因候选字符串未转换 URL 编译失败，export-unit-2 因误用不存在的 callout token 编译失败；修正后 export-unit-3/export-unit-final 通过。早期 lint 为格式/对齐错误，已修正。phone-ui 分享已打开，但测试查找不存在的英文 Close 按钮失败；改用该系统原生外部取消后 phone-ui-final/ipad-ui 及最终 lifecycle-ui 通过。正常 Debug build.log 暴露 fixture 符号隔离遗漏，build-final.log 暴露旧 Debug Viewer 调用未注入依赖；修正 UITESTING 边界及可选导出注入后 build-pass/build-delivery 通过。没有降低产品断言掩盖失败。
+- 正常 Live：最终 `scripts/visual_review_build_install.sh U05`（`live-install-final.log`）PASS，完整 Debug App 覆盖安装 iPhone `70D93841-1FEB-445A-8FAD-B1C29B981D5D`，签名/entitlements 校验通过，无卸载、erase、清 Keychain/账号/历史/排序/内容缓存。安装与构建哈希匹配：executable `fad47ddb5cca35309163e36b496654e0413ad22462f3d6162beac3d249a4af26`；debug dylib `19b9596a30827067b146b85e93e948ba9cb159606e9d619564602397ff3d620e`，见 `installed-binary-proof.json`。
+- Live 实际文件：真实缓存帖子 `11071397108`、楼层 `153990906755`，第二张（source ordinal 4，2/6）使用已有 original 候选，系统分享展示 **JPEG / 1080×2400 / 315720 bytes**；取消后独占临时文件数为 0。关闭 Viewer 返回同一楼层，再打开第二张，停在启用的“保存图片”入口。`live-file-proof.json` 与 `20261003-125907-media-viewer-save-ready.png` 为 ignored 证据。未代用户点击真实相册保存、扫描照片或向他人发送；实际 Photos 内容、边缘、清晰度、方向及系统文件目标写入完成待人工检查。
+- 限制：按原配置执行 generic iOS 设备 build（`device-build.log`）因 **未配置 Development Team** 失败，没有关闭签名、更改证书或生成伪 IPA。设备工程/用途声明已就绪，但无已签名真机包、无真机验证；真实 GIF/其他格式 PhotoKit 兼容性待设备验收。U03 的 **iPad 旋转进入分栏回首楼** 已知失败及证据保留，未修复、未标通过。
+- U05 按此次授权精确提交，提交成功后才开始 U06；不推送，保留用户原有改动与 Android submodule。Simulator 人工相册验收通过不代表真机相册通过；真机未验收、签名团队未配置的限制保留。
+
 ## 2026-10-03 U04 — USER_ACCEPTED
 
 - 本次验收：用户批准提交已安装 U04 候选并进入 U05。验收后代码未变，沿用同一候选的定向结果；只复核 diff、secret scan 和精确暂存清单。源请求 1 次的合并测试、Live merged=0 与 iPad 旋转分栏回首楼未修复的事实均保留。不 push，提交成功后才开始 U05。

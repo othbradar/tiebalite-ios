@@ -402,6 +402,11 @@ MediaViewerState =
 MediaViewerImagePhase =
   idle | loading | rendered | failedToFetch | failedToDecode | cancelled
 
+MediaExportState =
+  idle → authorizing(addOnly, save only) → downloading(captured request)
+  → writing → saved | failed(reason)
+  downloading → readyToShare(owned file) → sharing(system owns lifetime) → idle(completed/cancelled)
+
 MediaPageCapability =
   (atMinimumZoom, horizontalBoundary: interior | leading | trailing | both)
 ```
@@ -418,6 +423,11 @@ MediaPageCapability =
   UIScrollView coordinator 持有；Store 只接收离散 capability，不保存第二份
   transform。
 - `singleTap`：切换 chrome；不关闭。
+- U05 export：每个 Viewer 一个导出 Store；完成、失败后可再次操作，重试保持原捕获资源。
+  关闭取消可取消的下载；已经提交 PhotoKit 的写入保留文件到系统回调，关闭后不发布成功状态。
+  尚未展示分享面板时关闭 Viewer 立即清理文件；分享期间文件由系统操作持有，完成/取消/拆除回调幂等释放，不因用户切图而换文件。
+  源文件通道使用已证实的 Viewer 候选顺序、匿名有界传输（24 MiB），不读取显示位图。
+  ImageIO 只识别编码元数据；不裁切、转码或解码整张位图。降级候选明确标为可用版本（非原图）。
 - `loadItem/retryItem`：占位尺寸与黑底保持。
 - `reachBoundary`：阶段 09 固定 intent 边界不发请求；边界 Repository 留到有
   live/cursor 证据的后续独立阶段。

@@ -20,16 +20,19 @@ struct MediaViewer: View {
     @State private var ownershipController =
         MediaGestureOwnershipController<String>()
     @State private var isClosing = false
+    @State private var exportStore: MediaExportStore?
 
     init(
         presentation: MediaViewerPresentation,
         imageLoader: any ImageLoading,
+        exportStore: MediaExportStore? = nil,
         close: @escaping () -> Void
     ) {
         self.presentation = presentation
         self.imageLoader = imageLoader
         self.close = close
         _currentID = State(initialValue: presentation.initialMediaID)
+        _exportStore = State(initialValue: exportStore)
     }
 
     var body: some View {
@@ -74,6 +77,7 @@ struct MediaViewer: View {
         }
         .onDisappear {
             ownershipController.invalidateActiveSession()
+            exportStore?.cancel()
         }
     }
 }
@@ -133,9 +137,18 @@ private extension MediaViewer {
             .accessibilityIdentifier(MediaViewerAccessibilityID.chrome)
 
             Spacer()
+            if let exportStore {
+                MediaExportControls(store: exportStore, request: exportRequest)
+            }
         }
         .safeAreaPadding(.top, Spacing.small)
         .safeAreaPadding(.horizontal, Spacing.small)
+    }
+
+    var exportRequest: ImageExportRequest? {
+        guard let index = presentation.items.firstIndex(where: { $0.id == currentID }) else { return nil }
+        let item = presentation.items[index]
+        return ImageExportRequest(mediaID: item.id, position: index + 1, descriptor: item.request)
     }
 
     @ViewBuilder

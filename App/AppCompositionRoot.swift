@@ -143,6 +143,16 @@ final class AppCompositionRoot {
                                      threads: threadReaderRepository)
     }
 
+    func makeMediaExportStore() -> MediaExportStore {
+#if UITESTING
+        if environment.readingDataSourceMode == .fixture {
+            return MediaExportStore(fetcher: OriginalImageFileFetcher(loader: HarnessExportImageTransport()),
+                                    writer: HarnessExportPhotoWriter())
+        }
+#endif
+        return MediaExportStore(fetcher: OriginalImageFileFetcher.production(), writer: PhotoLibraryWriter())
+    }
+
     func makeBrowsingHistoryStore() -> BrowsingHistoryStore {
         BrowsingHistoryStore(
             repository: browsingHistoryRepository,

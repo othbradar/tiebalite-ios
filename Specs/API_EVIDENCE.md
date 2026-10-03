@@ -471,6 +471,13 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 
 ### `image.resourceFetch`
 
+- U05 导出（CODE_EVIDENCE）：Android `PhotoViewActivity.kt` 保存/分享按钮固定当时页索引，下载 `originUrl`。
+  iOS 复用已存在的 `.original → bigCDN → big → dynamic → cdn → activeCDN → source` 候选，
+  不合成 URL、不附加会话。原始编码文件与显示 Loader 的下采样位图分离，扩展名由内容类型确定。
+  PhotoKit 使用 addOnly 和文件资源，成功依据 performChanges 完成；参见
+  [Apple 文件资源说明](https://developer.apple.com/documentation/photos/phassetcreationrequest/addresource(with:fileurl:options:))。
+  格式、方向、透明度、动图帧的字节保持由固定 fixture 验证；具体真机相册格式兼容性仍待人工验证。
+
 - 用户任务：加载推荐/FRS 缩略图、PBPage 正文图片和唯一 MediaViewer
   当前页；它是服务端返回资源 URL 的普通 GET，不是新 Tieba API endpoint。
 - Android 来源文件：`ui/widgets/compose/FeedCard.kt`、

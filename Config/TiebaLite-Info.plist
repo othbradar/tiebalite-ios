@@ -31,5 +31,7 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>将您选择的图片保存到相册，仅添加照片，不读取您的相册。</string>
 </dict>
 </plist>

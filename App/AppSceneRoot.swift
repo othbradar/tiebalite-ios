@@ -60,6 +60,7 @@ struct AppSceneRoot: View {
             MediaViewer(
                 presentation: presentation,
                 imageLoader: compositionRoot.environment.imageLoader,
+                exportStore: compositionRoot.makeMediaExportStore(),
                 close: {
                     mediaPresentation = nil
                 }
