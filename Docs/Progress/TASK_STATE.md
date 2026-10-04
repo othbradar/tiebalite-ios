@@ -1,5 +1,13 @@
 # TASK_STATE
 
+## 2026-10-04 v0.2.0beta3 — PUBLISHED_AND_VERIFIED
+
+- 用户授权的提交、推送和IPA发布已完成：首页修复4e66ea6，发布源4534020；U06P1–P4一并快进推送，附注标签v0.2.0beta3解析为 `4534020d509ea0188dced53cf582fcc775dbb71e`，远端回读一致。
+- Chrome正式发布页 `https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta3`；Release ID402807353，draft=false/prerelease=true，2026-10-04 11:28:20（Asia/Shanghai）。已注明新功能、Bug修复、性能计数、安装方法及限制。
+- IPA 6,789,405 bytes，SHA256 `cd775ccaea77a5ffaaa33e8c6f39c47efe942d1ceb0e9d35efabfa1c4220a0b1`；SHA256SUMS 112 bytes，均uploaded且远端digest与本机一致。发布正文归一换行后与准备稿相同。
+- App0.2.0/Build4、真机arm64 Release未签名，需自行签名；未改Simulator现有安装或用户数据。已有定向结果复用，本次generate/lint/build/archive/Release隔离/包完整性/secret-scan/diff check通过。原warning及未验证范围见发布审计；没有运行全量测试或进入U07。
+- 本条只补已核验远端回执，不变更已发布源码/标签或附件。下方RELEASE_PREPARED及未提交状态为历史记录；用户原有未跟踪Prompt/skill仍完整保留。
+
 ## 2026-10-04 v0.2.0beta3 — RELEASE_PREPARED
 
 - 首页三项已验收修复精确16文件提交 `4e66ea614d1c46d32d6af43d88384b03495d9ff9`；15个候选哈希一致，沿用既有定向结果。当前准备把U06P1–P4与本次修复一起正常快进推送，不包含用户原有未跟踪文件或Android submodule。

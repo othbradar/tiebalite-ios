@@ -48,3 +48,11 @@ xcodebuild archive -project TiebaLite.xcodeproj -scheme TiebaLite \
 - 两处条件性热点仍NOT_MEASURED，不把计数优化写成FPS或全设备耗时承诺。
 
 本记录当前确认本机构建，远端标签、发布正文及附件摘要待发布后另补回执。
+
+## 发布完成回执
+
+- 发布源提交 `4534020d509ea0188dced53cf582fcc775dbb71e`；附注标签 `v0.2.0beta3` 与 main 原子推送成功，SSH及公开REST回读标签解析一致。
+- 通过Chrome现有会话发布：<https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta3>，Release ID `402807353`，`draft=false`、`prerelease=true`，2026-10-04 11:28:20（Asia/Shanghai）。Chrome正式页面已核对。
+- 两项附件均uploaded：IPA 6,789,405 bytes，SHA256SUMS 112 bytes；公开REST返回的大小及digest分别与本机一致。IPA SHA256保持 `cd775ccaea77a5ffaaa33e8c6f39c47efe942d1ceb0e9d35efabfa1c4220a0b1`，校验文件SHA256为 `7924698a0ee30fdf5ca3c3426b279e682255d1d2510c872805733c12c39dc499`。
+- 发布标题与说明核对通过（正文仅归一CRLF/LF）；机器证据publication-receipt.json、publication-inspection.json、tag-proof.json均ignored。没有提取浏览器凭证。
+- 本节仅补远端回执，不改变发布标签或IPA，不重新打包，不进入U07。
