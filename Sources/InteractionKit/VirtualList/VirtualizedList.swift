@@ -378,6 +378,10 @@ where Item: Identifiable & Equatable & Sendable,
             refreshViewportChanged()
             guard initialScope != nil, let table = tableView,
                   !isAdjustingReadingPosition, !table.isPerformingLayout else { return }
+            // UIKit can adjust the navigation inset before the first usable layout.
+            // didScroll alone is not user intent while the one-shot target is still pending;
+            // dragging / scroll-to-top explicitly cancel it through their delegate entries.
+            if readingRestoration?.isActive == true, readingRestoration?.hasPositioned == false { return }
             // An explicit offset change outside layout takes precedence over the old viewport.
             viewportAnchor = nil
             if readingRestoration?.isActive == true { stopReadingRestoration(permitsProgress: true) }

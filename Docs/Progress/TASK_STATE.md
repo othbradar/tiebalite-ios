@@ -1,5 +1,25 @@
 # TASK_STATE
 
+## 2026-10-04 U06P4 — USER_ACCEPTED，授权提交
+
+- 用户批准提交U06P4并另行提出三个首页交互修复。五个候选源码/测试/契约/ADR哈希一致，沿用已验收定向结果，仅复核diff、secret scan及精确六文件清单。提交后再开始新修复，不混入本提交。
+- U06P四批已获用户批准；P3两处条件性热点仍NOT_MEASURED，P4手工调宽及真机仍未验证，保留真实范围及历史失败证据。无push/tag/release，不进入U07。下方READY中的未提交状态为此前交付记录。
+
+## 2026-10-04 U06P4 — READY_FOR_USER_VISUAL_REVIEW
+
+- 用户授权“提交并进入U06P4”后，17个U06P3候选文件SHA256一致，沿用已验收定向结果；复核diff/secret scan/精确清单后仅18文件提交 `0d37b45e6a534a1ea34761441d1ad8d2f1e6812f`，`perf: avoid repeated full-list preparation`。未推送/tag/发版。以该实际HEAD开始U06P4，先读两级COMMON及实际P4提示词，未展开U07或全部历史审计。
+- 原失败复现：`baseline-ipad.xcresult` 在旋转后同一目标450001不可见。正常Live安装已验收P3候选后，从真实缓存帖11072893916滚至中部（首个可见回复153994304967），竖转横分栏后回首楼153993052312，截图 `20261004-092747-baseline-live-ipad-returned-top.png`。只记录业务ID，未读取凭证或打印正文/URL。
+- 根因：Registry保持同一阅读目的地的Store/四页数据；分栏新Coordinator收到450001和63行，但UIKit先将adjusted top inset改为64、offset改为-64，在layoutSubviews外触发didScroll。旧逻辑将其当作程序导航，取消尚未positioned的一次定位。零尺寸临时投影没有写进度，未发现数据回第一页或重做缓存的必要。脱敏实例/行/尺寸/写入来源在 `reading-trace.log` 等本轮ignored证据。
+- 最小修复：VirtualizedList的didScroll在事务active且尚未positioned时保留目标；真实拖动/主动回顶部仍走原明确取消入口，scope/目标变化及拆除保持原失效；定位后仍以实际Cell身份/配置/可见完成，释放历史目标并交给原当前视口保持。无新等待机制、导航/Store/缓存修改，不跨尺寸复用旧几何。生产差异仅一条guard及说明；临时诊断已全部移除。
+- Unit：新inset入口红例 `inset-red.xcresult` FAIL保留；加入guard后最早inset-green/geometry-unit仍因测试挂窗未触发布局而超时，补足真实layout入口后 `geometry-unit-2.xcresult` 两项PASS。最终 `direct-unit.xcresult` **8/8逻辑项PASS、0fail/skip**，包括原430001异高恢复/退出/新进度、拖动/账号/目标/拆除取消（4参数）、U02顶部（3参数）与深处恢复、通知精确楼层及一次消费、新导航inset和同表窄宽重排。Cell创建少于总行数，初始定位次数1，后续尺寸变化不重新执行历史定位。
+- UI：`ipad-rotation-current-query.xcresult` **1/1 PASS，104.163s**，原楼层460001在竖→横分栏→竖后仍可见且初始恢复idle；`ipad-direct.xcresult` 中独立窄宽/新楼层重进用例 **PASS，124.916s**（同bundle另一旋转用例早期重进观测超时不能算通过）；`phone-ui.xcresult` **1/1 PASS**，保留430001可见、图片往返、不回拉和新楼层重进。窄宽已通过流程不重复跑；无全文分页/媒体/压力矩阵。
+- 中间UI观测失败如实保留：diagnostic-ipad首次为Simulator活动App AX -25218环境错误；diagnostic-ipad-2定位到真实取消入口。inset-ipad/geometry-ipad/target-observation-ipad在旧hittable谓词超时，但最新查询及UITableView实际Cell已显示同一460001（610.5,260.5,765.5,142），并保持四页；改为每轮在当前表内按相同业务ID新建查询，仍要求exists/hittable/视口相交/idle及5秒限时，没有放宽楼层。ipad-final的旋转断言已过，随后系统“App animations complete notification not received”等待60秒导致合并流程180秒总限时失败，因此拆开旋转和窄宽两条直接场景，未关动画/增固定等待。首次lint两项测试排版错误修正后通过。
+- 门禁：最终 `make lint` 425文件0violation，`make build`、`make secret-scan`、`git diff --check`均PASS。未全量Unit/quality-fast/quality；未修改Pager/MediaViewer/图片/Session/Keychain/Android submodule，无新手势、动画、overlay或依赖。只新增直接组件测试、扩展原UI与相关契约/ADR/本记录。
+- 安装：`scripts/visual_review_build_install.sh U06P4` PASS，完整正常Debug App覆盖正常iPhone；同一产物覆盖正常iPad，保留账号/历史/排序/缓存/签名，无uninstall/erase/Keychain或缓存清理。两端主程序SHA256 `31029f4545e1572f6b31d0839fd4cd309952ded9a06c23322e784506393e3a10`、debug dylib `d60ee52fc8d395cbc005b20791e9acd895fdce53be70218bbd804c65e8257e4c` 与构建一致，证明见installed-binary-proof.json。iPad仅启用既有Debug工作计数参数，仍为完整Live环境。
+- 解锁后正常Live验证：原失败帖11072893916的153994304967在竖→横分栏→竖后仍可见；该帖实际仅29楼，不冒充多页。另从正常吧首页选择多页帖11071998867，滚动加载到46行后，153993780180在竖→横分栏→竖均可见，46行没有退回首屏；继续滚到新位置后返回重进，恢复153993794608（第31楼），未回拉旧目标。表格计数从加载前31行到46行，旋转各新投影prepare/apply均1；旧表cells12/reuse38，新投影最多cells9，未全量创建楼层。截图live-ipad-multipage-rotation/live-ipad-new-position保留于本轮Artifacts。手工拖系统窗口边缘未产生尺寸变化，不能算Live窄宽通过；窄宽/新位置保存以独立UI回归PASS为证，由用户继续实际调宽验收。
+- iPhone正常Live：缓存帖11071397108返回重进仍见153991153447/153991274030；正常terminate→launch后经历史进入同帖，以上同一业务楼层仍在视口，截图live-phone-process-reopen。账号/排序/历史/缓存均保留，未清理任何数据。操作中有两次AX索引过期及短帖到底后Scroll Down不可用，刷新实际界面后继续，不记为App失败或成功操作。
+- 交付：候选源码/测试/规格/ADR共5个文件SHA256与已安装检查版本一致，仅补本记录；最终secret scan和diff check再次PASS，暂存区为空，HEAD仍为0d37b45。完整正常Live iPad留在11071998867第31楼，iPhone留在11071397108恢复位置。真机未验证，无新动画/手势/overlay/依赖。U06P4未暂存/提交/推送，不进入U07，等待用户验收。
+
 ## 2026-10-04 U06P3 — USER_ACCEPTED，授权提交并进入 U06P4
 
 - 用户已验收并授权“提交并进入U06P4”。本次核对已安装候选17个源码/测试/规格/ADR文件SHA256全部一致，沿用下方定向Unit、短UI与轻量门禁结果；只复核diff、secret scan及精确暂存清单。

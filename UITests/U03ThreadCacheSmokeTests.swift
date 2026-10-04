@@ -6,20 +6,45 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
         _ = checkReentryAndNewPosition()
     }
 
-    // Keep the observed adaptive-navigation failure separate from the requested reentry check.
+    // Keep the original rotation regression and exact restored-row assertion.
     @MainActor
     func testIPadRotationKeepsNewReadingPosition() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad)
         let restored = checkReentryAndNewPosition()
         XCUIDevice.shared.orientation = .landscapeLeft
-        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "hittable == true"), object: restored)], timeout: 5), .completed)
+        let app = XCUIApplication()
+        requireVisible(restored, in: app)
+        XCUIDevice.shared.orientation = .portrait
+        requireVisible(restored, in: app)
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "P4 same floor portrait landscape portrait")
     }
 
     @MainActor
-    private func checkReentryAndNewPosition() -> XCUIElement {
+    func testIPadWindowResizeKeepsNewReadingPosition() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad)
+        let restored = checkReentryAndNewPosition()
+        let app = XCUIApplication()
+        let list = app.tables["thread-reader.scroll.t140001"].firstMatch
+        // Resize the same compact projection, then return to the full viewport.
+        app.buttons["app.harness.layout.narrow"].tap()
+        requireVisible(restored, in: app)
+        app.buttons["app.harness.layout.regular"].tap()
+        requireVisible(restored, in: app)
+        list.swipeUp()
+        let newAnchor = visibleAnchor(in: app, list: list)
+        XCTAssertNotEqual(newAnchor, restored)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let thread = app.buttons["forum-home.row.t140001"]
+        XCTAssertTrue(thread.waitForExistence(timeout: 5))
+        thread.tap()
+        requireVisible(newAnchor, in: app)
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "P4 rotation resize and new reading position")
+    }
+
+    @MainActor
+    private func checkReentryAndNewPosition() -> String {
         continueAfterFailure = false
-        executionTimeAllowance = 120
+        executionTimeAllowance = 180
         XCUIDevice.shared.orientation = .portrait
         let app = UITestHarness.launch(scenario: .forumContentCache, startingTab: .followedForums)
         let forum = app.buttons["followed-forums.row.f13001"]
@@ -54,13 +79,9 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(thread.waitForExistence(timeout: 5))
         thread.tap()
-        let restored = app.descendants(matching: .any)[anchor].firstMatch
-        let condition = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            restored.exists && restored.isHittable && restored.frame.intersects(list.frame)
-        }, object: restored)
-        let result = XCTWaiter.wait(for: [condition], timeout: 5)
+        let restored = list.descendants(matching: .any)[anchor].firstMatch
+        requireVisible(anchor, in: app)
         UITestHarness.attachSafeVisualEvidence(app: app, name: "U03 restored third page")
-        XCTAssertEqual(result, .completed)
         let completed = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "value == %@", "initial-restoration:idle"), object: list)
         XCTAssertEqual(XCTWaiter.wait(for: [completed], timeout: 5), .completed)
@@ -74,14 +95,23 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(thread.waitForExistence(timeout: 5))
         thread.tap()
-        let newRestored = app.descendants(matching: .any)[newAnchor].firstMatch
-        let newPosition = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            newRestored.exists && newRestored.isHittable && newRestored.frame.intersects(list.frame)
-                && list.value as? String == "initial-restoration:idle"
-        }, object: newRestored)
-        XCTAssertEqual(XCTWaiter.wait(for: [newPosition], timeout: 5), .completed)
+        requireVisible(newAnchor, in: app)
         UITestHarness.attachSafeVisualEvidence(app: app, name: "U03 newly saved position restored")
-        return newRestored
+        return newAnchor
+    }
+
+    @MainActor
+    private func requireVisible(_ rowID: String, in app: XCUIApplication) {
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            // A projection can replace both the table and hosting element. Resolve the
+            // stable ID inside the current table on each observation, not a cached element.
+            let table = app.tables["thread-reader.scroll.t140001"].firstMatch
+            let row = table.descendants(matching: .any)[rowID].firstMatch
+            return row.exists && row.isHittable && row.frame.intersects(table.frame) &&
+                table.value as? String == "initial-restoration:idle"
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed,
+                       "Expected same business floor after layout: \(rowID)")
     }
 
     @MainActor
@@ -107,7 +137,7 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
 
     @MainActor
     private func visibleAnchor(in app: XCUIApplication, list: XCUIElement) -> String {
-        app.descendants(matching: .any)
+        list.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH %@", "thread-reader.post.t140001."))
             .allElementsBoundByIndex.filter { !$0.frame.isEmpty && $0.frame.intersects(list.frame) && $0.isHittable }
             .min { $0.frame.minY < $1.frame.minY }?.identifier ?? "missing-reader-anchor"
