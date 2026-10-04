@@ -25,6 +25,7 @@ struct VirtualListSnapshotPlan<ID: Hashable> {
 struct VirtualListDiagnostics: Equatable, Sendable {
     var itemCount = 0
     var snapshotApplyCount = 0
+    var preparationCount = 0
     var createdCellCount = 0
     var reuseCount = 0
     var peakVisibleCellCount = 0
@@ -44,9 +45,20 @@ final class VirtualizedTableView: UITableView {
     var isPerformingLayout = false
     var hasInitialAnchorLayout: Bool { onInitialAnchorLayout != nil }
 
-    #if UITESTING
+    #if DEBUG
     override var accessibilityValue: String? {
-        get { virtualListDiagnostics.isRestoringInitialReadingPosition ? "initial-restoration:active" : "initial-restoration:idle" }
+        get {
+            if ProcessInfo.processInfo.arguments.contains("--p3-work-counts") {
+                let counts = virtualListDiagnostics
+                return "rows=\(counts.itemCount) prepare=\(counts.preparationCount) apply=\(counts.snapshotApplyCount)"
+                    + " cells=\(counts.createdCellCount) reuse=\(counts.reuseCount)"
+            }
+            #if UITESTING
+            return virtualListDiagnostics.isRestoringInitialReadingPosition ? "initial-restoration:active" : "initial-restoration:idle"
+            #else
+            return super.accessibilityValue
+            #endif
+        }
         set { super.accessibilityValue = newValue }
     }
     #endif
@@ -107,6 +119,11 @@ where Item: Identifiable & Equatable & Sendable,
       Item.ID: Hashable & Sendable,
       RowContent: View {
     let items: [Item]
+    let contentVersion: AnyHashable?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.layoutDirection) private var layoutDirection
+    @Environment(\.locale) private var locale
     let backgroundColor: UIColor
     let accessibilityIdentifier: String
     let restoredAnchor: Item.ID?
@@ -122,6 +139,7 @@ where Item: Identifiable & Equatable & Sendable,
         backgroundColor: UIColor,
         accessibilityIdentifier: String,
         restoredAnchor: Item.ID? = nil,
+        contentVersion: AnyHashable? = nil,
         initialRestorationScope: AnyHashable? = nil,
         onPrefetch: @escaping ([Item.ID]) -> Void = { _ in },
         onScrollSettled: @escaping (Item.ID?) -> Void = { _ in },
@@ -129,6 +147,7 @@ where Item: Identifiable & Equatable & Sendable,
         pendingRefresh: VirtualListRefreshCommit<Item>? = nil,
         @ViewBuilder rowContent: @escaping (Item) -> RowContent
     ) {
+        self.contentVersion = contentVersion
         self.items = items
         self.backgroundColor = backgroundColor
         self.accessibilityIdentifier = accessibilityIdentifier
@@ -139,6 +158,11 @@ where Item: Identifiable & Equatable & Sendable,
         self.onRefresh = onRefresh
         self.pendingRefresh = pendingRefresh
         self.rowContent = rowContent
+    }
+
+    var updateVersion: VirtualListUpdateVersion? {
+        contentVersion.map { .init(content: $0, environment: .init(
+            size: dynamicTypeSize, color: colorScheme, direction: layoutDirection, locale: locale)) }
     }
 
     final class Coordinator:
@@ -152,6 +176,9 @@ where Item: Identifiable & Equatable & Sendable,
         var itemsByID: [Item.ID: Item] = [:]
         var appliedItemsByID: [Item.ID: Item] = [:]
         var pendingItems: [Item]?
+        var pendingVersion: VirtualListUpdateVersion?
+        var applyingVersion: VirtualListUpdateVersion?
+        var completedVersion: VirtualListUpdateVersion?
         var isApplyingSnapshot = false
         var hasAppliedSnapshot = false
         private var refreshTask: Task<Void, Never>?
@@ -236,17 +263,7 @@ where Item: Identifiable & Equatable & Sendable,
                     self?.markHostedContentEnded(for: cell)
                 }
                 self.markHostedContentStarted(for: cell)
-                let content = parent.rowContent(item)
-                cell.rowID = AnyHashable(itemID)
-                cell.hasCurrentConfiguration = { [weak self] in self?.itemsByID[itemID] == item }
-                cell.contentConfiguration = UIHostingConfiguration { content }
-                .margins(.all, 0)
-                .background {
-                    Color.clear
-                }
-                cell.backgroundColor = .clear
-                cell.contentView.backgroundColor = .clear
-                cell.selectionStyle = .none
+                self.configure(cell, with: item)
                 return cell
             }
             self.dataSource = dataSource
@@ -262,7 +279,7 @@ where Item: Identifiable & Equatable & Sendable,
             tableView.onRefreshViewportChange = parent.pendingRefresh == nil ? nil : { [weak self] force in
                 self?.refreshViewportChanged(force: force)
             }
-            pendingItems = parent.items
+            stageCurrentItems()
             applyPendingSnapshotIfNeeded()
             refreshViewportChanged(force: true)
         }

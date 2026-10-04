@@ -127,7 +127,9 @@ struct U06P1ForumRefreshTests {
 
     private func makeList(_ store: ForumHomeStore) -> VirtualizedList<ForumHomeRowModel, Text> {
         VirtualizedList(items: store.listPresentation?.rows ?? [], backgroundColor: .systemBackground,
-                        accessibilityIdentifier: "u06p1.forum", onScrollSettled: store.setScrollAnchor,
+                        accessibilityIdentifier: "u06p1.forum",
+                        contentVersion: VirtualListContentRevision(owner: ObjectIdentifier(store), revision: store.listRevision),
+                        onScrollSettled: store.setScrollAnchor,
                         pendingRefresh: store.pendingRefreshCommit, rowContent: { Text(String(describing: $0.id)) })
     }
 

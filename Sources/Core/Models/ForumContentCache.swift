@@ -33,8 +33,29 @@ struct ForumCachedReading: Sendable {
     var isFresh: Bool
 
     var snapshot: ForumHomeSnapshot? {
-        guard let first = pages.first?.page.snapshot else { return nil }
-        return pages.dropFirst().reduce(first) { $0.appending($1.page.snapshot) }
+        assembly.snapshot
+    }
+
+    var assembly: (snapshot: ForumHomeSnapshot?, visitedItems: Int) {
+        guard let first = pages.first?.page, let last = pages.last?.page else { return (nil, 0) }
+        var seen = Set<Int64>()
+        var threads: [ForumThreadSummary] = []
+        var visits = 0
+        var currentPage = first.currentPage
+        for page in pages {
+            currentPage = max(currentPage, page.page.currentPage)
+            for thread in page.page.threads {
+                visits += 1
+                if seen.insert(thread.threadID).inserted { threads.append(thread.summary) }
+            }
+        }
+        return (.init(forum: first.forum, threads: threads, currentPage: currentPage,
+                      hasMore: last.hasMore, lastThreadID: last.lastThreadID), visits)
+    }
+
+    // Explicit generic-executor boundary: no inherited MainActor task or shared request actor.
+    @concurrent func assembledSnapshot() async -> ForumHomeSnapshot? {
+        snapshot
     }
 }
 

@@ -124,25 +124,22 @@ struct ThreadReaderView: View {
     private func reader(_ snapshot: ThreadReaderSnapshot) -> some View {
         if let presentation = store.listPresentation {
             VirtualizedList(
-                items: presentation.rows.map {
-                    ThreadReaderConfiguredRow(
-                        row: $0,
-                        readingTextSize: readingTextSize
-                    )
-                },
+                items: store.configuredRows(textSize: readingTextSize),
                 backgroundColor: .systemBackground,
                 accessibilityIdentifier:
                     ThreadReaderAccessibilityID.scroll(snapshot.threadID),
                 restoredAnchor: store.readAnchor,
+                contentVersion: VirtualListContentRevision(owner: ObjectIdentifier(store), revision: store.listRevision,
+                                                           configuration: readingTextSize),
                 initialRestorationScope: AnyHashable(ThreadReaderRestorationScope(
                     threadID: store.threadID, context: store.cacheContext)),
                 onPrefetch: { rowIDs in
-                    if !rowIDs.isEmpty { store.prefetchNextPage() }
                     guard rowIDs.contains(where: {
                         presentation.prefetchRowIDs.contains($0)
                     }) else {
                         return
                     }
+                    store.prefetchNextPage()
                     requestNextPage()
                 },
                 onScrollSettled: store.setReadAnchor,
@@ -209,13 +206,19 @@ struct ThreadReaderView: View {
     }
 }
 
-private struct ThreadReaderConfiguredRow: Identifiable, Equatable, Sendable {
+struct ThreadReaderConfiguredRow: Identifiable, Equatable, Sendable {
     let row: ThreadReaderRowModel
     let readingTextSize: ReadingTextSizePreference
 
     var id: ThreadReaderRowID {
         row.id
     }
+}
+
+struct ThreadReaderConfiguredRows {
+    let revision: UInt64
+    let textSize: ReadingTextSizePreference
+    let rows: [ThreadReaderConfiguredRow]
 }
 
 private struct ThreadReaderLoadTaskID: Hashable {

@@ -1,5 +1,15 @@
 import Foundation
 
+struct ThreadPagePrefetchIdentity {
+    let threadID: Int64
+    let page: Int
+    let postID: Int64
+    let context: ContentCacheContext
+    let generation: UInt64
+
+    var key: String { "thread:\(threadID):\(page):\(postID):\(context):\(generation)" }
+}
+
 /// Receives a small candidate window from a page. It never owns displayed state or reading progress.
 @MainActor
 final class ContentPrefetchSession {
@@ -34,11 +44,12 @@ final class ContentPrefetchSession {
         })
     }
 
-    func followingThreadPage(_ request: ThreadReaderPageRequest) {
+    func followingThreadPage(_ identity: ThreadPagePrefetchIdentity, makeRequest: () -> ThreadReaderPageRequest) {
         guard let threads else { return }
-        nextPage.submit([("thread:\(request.threadID):\(request.pageNumber):\(request.postID)", { @Sendable in
-            try await threads.prefetchThread(request)
-        })])
+        nextPage.submitOne(key: identity.key) {
+            let request = makeRequest()
+            return { try await threads.prefetchThread(request) }
+        }
     }
 
     func followingForumPage(_ request: ForumHomePageRequest) {

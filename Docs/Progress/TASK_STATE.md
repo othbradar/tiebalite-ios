@@ -1,5 +1,25 @@
 # TASK_STATE
 
+## 2026-10-04 U06P3 — USER_ACCEPTED，授权提交并进入 U06P4
+
+- 用户已验收并授权“提交并进入U06P4”。本次核对已安装候选17个源码/测试/规格/ADR文件SHA256全部一致，沿用下方定向Unit、短UI与轻量门禁结果；只复核diff、secret scan及精确暂存清单。
+- 仅提交U06P3的18个相关文件，提交信息 `perf: avoid repeated full-list preparation`；排除用户原有Prompt/skill、Artifacts、凭证、IDE文件与Android submodule。不推送、不tag、不发版，提交成功后才实施U06P4。
+- 下方READY的未提交/等待验收为此前交付状态。两处条件性热点仍NOT_MEASURED，iPad旋转分栏回首楼仍为已知失败，真机未验证，不将这些项目标为通过。
+
+## 2026-10-03 U06P3 — READY_FOR_USER_VISUAL_REVIEW
+
+- 用户授权“提交并进入U06P3”后，先核对U06P2验收候选10个文件哈希一致，复核diff/secret scan/精确暂存，沿用已有结果，精确11文件提交 `b16c6f06aa205a957c842ae1025771d9ae29de73`：`perf: remove disk maintenance from cache hit paths`。未推送/tag/发版。U06P3只执行当前实际提示词和两级COMMON，以该HEAD为基线；不展开P4/U07或历史审计。
+- 原失败证据 `Artifacts/VisualReview/U06P3/baseline.xcresult` 3项FAIL：5页共1000项的吧缓存合并访问2994项；30次重复预取先构造全帖ID集合30次；30次anchor更新让全表prepare从1到31，实际apply保持1。断言保留，不用耗时阈值。优化构建基线以既有1000楼/每页200楼Fixture进行4次系统滚动，rows201、prepare3→7、apply1、cells9/reuse21；滚轮/原生drag未产生有效滚动的尝试不计入结果。
+- 修改A：ForumCachedReading以一个Set和数组单次按页合并，first-wins及原顺序、首屏论坛元数据、最大页码、末页hasMore/cursor保持；只映射首次出现的主题。Store通过明确 `@concurrent assembledSnapshot()` 在通用执行器组装，回来后重新校验generation/账号/取消，再发布。1/3/5页访问数为200/600/1000，逐项结果与原appending相同；正常单页追加和缓存格式/权限/锚点不变。
+- 修改B：帖子只有接近现有尾部加载边界才投机预取；先检查加载状态、账号和thread/page/cursor/generation，再由Scope懒构造请求。loadedPostIDs随首屏/恢复/刷新重建，后页合入新ID，不因每次回调扫描全帖。30次重复回调只准备1份请求、源调用1次；失败后前台仍成功加载第二页400楼。Scope失败/取消按本代次清理去重记录，后续边界事件可重试，完成不自动递归；U04调度器、槽位/预算和订阅者取消规则不变。
+- 修改C：帖子/吧Store在真实presentation变化时递增revision，帖子configured rows按revision/阅读字号缓存。VirtualizedList可选接入Store身份/revision/设置及字号/主题/方向/locale环境版本，默认调用方仍走原比较。分别记录applying/completed/pending，只有真实完成才记completed；连续更新只应用最新有效数据。相同版本更新anchor/回调不再准备IDs、字典或retained比较；只更新实际可见Cell的闭包，复用时取最新parent。实际内容/footer/字号仍生效，无业务ID、UITableView/Diffable、首次恢复/视口补偿、Pager/导航改写。P1同步刷新提交使旧版本失效。快路径及完成/配置方法为薄扩展，未全表reload或预创建Cell。
+- 定向结果：原3条红例 `fast-path.xcresult` 全通过。`direct-unit-final.xcresult` 8/8逻辑用例PASS、0skip（多页参数化1/3/5页）；覆盖顺序/元数据、重复预取与失败后前台加载、配置投影/字号、连续anchor不prepare、两次排队更新最新内容/footer、可见UIButton实际调用最新callback、14→26实际字体更新、替换token不留旧数据、既有千行虚拟化/复用、P1拖动刷新及排序/账号/取消、U03异高初始恢复。随后完成方法原样提取及限定可见回调刷新仅适用于接入者后，`completion-unit.xcresult` 3/3 PASS；将原U03异高用例接入可选版本后 `versioned-restoration.xcresult` 1/1 PASS，保持目标可见/事务退出/新位置进度/不重启断言。
+- 完整App UI `phone-ui.xcresult` 2/2 PASS：复用五页帖子滚动→分页→看图→返回原位置（172.979s），以及吧首页深处重进→排序→下拉刷新→顶部重进（49.327s）。这是两条既有直接流程，没有跑历史全套或千楼压力矩阵。首次 `direct-unit.xcresult` 的4个旧方法selector未带括号，仅匹配了新增4条；不将其冒充8条，随后精确selector执行8条。lint前两次因对齐/参数数目/方法与类型长度/空行失败，提取原方法与轻量请求身份后修正，未降低规则。
+- 相同Debug `-O`手工对照：候选仍用既有千行Fixture首批200楼、4次系统滚动，rows201、prepare1→1、apply1、cells9/reuse17；截图 `20261003-231329-optimized-fixture-after.png`，计数在baseline-counts/candidate-counts.json。未把该小样本推断为FPS或耗时百分比提升。两处条件性热点（URLSession逐字节接收、Viewer倍率导致根/Pager更新）未获得可靠采样：Time Profiler附着报Cannot find process，后查隔离设备已被测试生命周期关停；本轮没有可比较的接收/连续缩放样本，因此均记NOT_MEASURED/未证实，不修改网络或缩放实现。
+- 门禁：`make lint`、`make build`、`make secret-scan`、`git diff --check`全PASS；未运行全量Unit、quality-fast、quality、iPad旋转矩阵。代码/规格/ADR/测试17个候选文件哈希在安装后复核未变。正常安装前尝试向已关停Fixture设备install/launch收到405，启动该隔离设备后成功；无卸载/erase或数据清理。
+- 正常Live交付：`scripts/visual_review_build_install.sh U06P3` PASS，完整正常Debug App覆盖 iPhone `70D93841-1FEB-445A-8FAD-B1C29B981D5D`，保留原账号/历史/排序/缓存/签名/Keychain。主程序SHA256 `7a5a04c02f132165d40cef183f6ce8464dd6eb73e5e05e3e7bd8bd310c48894a`、debug dylib `34a82e9d9dd98d9ee8cf0eed18ef31ea93296d73f9f363a7670463c8b850e56f` 与本轮构建相同。经正常入口打开真实高通吧并滚动，再从历史进入原缓存帖 `11071397108`，第2/6张旧图正常显示，关闭回同一楼层 `153990906755`；“已登录”仍可见，最终停在真实帖子页供操作。Live图片服务累计disk48/network1/merged0，仅作兼容观察，不声称全程零请求或本批改善图片命中率。
+- 范围与限制：修改Forum领域组装、相关Store/View投影与prefetch接线、VirtualizedList可选版本/计数及直接测试/记录；无新动画、手势、overlay或依赖，无缓存重置/持久格式/预算/图片系统/网络协议变更。iPad旋转分栏回首楼仍是已知失败，真机及两处条件性热点未验证。U06P3未暂存/提交/推送，不进入P4/U07，等待人工验收。
+
 ## 2026-10-03 U06P2 — USER_ACCEPTED，授权提交并进入 U06P3
 
 - 用户已验收并授权“提交并进入U06P3”。本次核对已安装候选的10个源码/测试/ADR文件SHA256全部一致，沿用下方9项定向Unit及1项短UI和轻量门禁结果；只复核diff、secret scan及精确暂存清单。

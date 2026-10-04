@@ -8,14 +8,12 @@ extension VirtualizedList.Coordinator {
               let incomingItems = pendingItems else {
             return
         }
+        let incomingVersion = pendingVersion
         pendingItems = nil
+        pendingVersion = nil
+        tableView.virtualListDiagnostics.preparationCount += 1
 
-        var incomingIDs: [Item.ID] = []
-        var uniqueItemsByID: [Item.ID: Item] = [:]
-        for item in incomingItems where uniqueItemsByID[item.id] == nil {
-            incomingIDs.append(item.id)
-            uniqueItemsByID[item.id] = item
-        }
+        let (incomingIDs, uniqueItemsByID) = prepareItems(incomingItems)
 
         let currentIDs = dataSource.snapshot().itemIdentifiers
         let currentIDSet = Set(currentIDs)
@@ -25,7 +23,7 @@ extension VirtualizedList.Coordinator {
                   let applied = appliedItemsByID[itemID] else {
                 return false
             }
-            return incoming != applied
+            return incoming != applied || incomingVersion?.environment != completedVersion?.environment
         }
 
         if let anchor = viewportAnchor,
@@ -42,6 +40,8 @@ extension VirtualizedList.Coordinator {
            currentIDs == incomingIDs,
            changedRetainedIDs.isEmpty {
             appliedItemsByID = uniqueItemsByID
+            completedVersion = incomingVersion
+            updateVisibleContent()
             restoreAnchorIfNeeded(in: tableView)
             return
         }
@@ -66,6 +66,7 @@ extension VirtualizedList.Coordinator {
         }
 
         isApplyingSnapshot = true
+        applyingVersion = incomingVersion
         tableView.virtualListDiagnostics.snapshotApplyCount += 1
         dataSource.apply(
             snapshot,
@@ -75,15 +76,31 @@ extension VirtualizedList.Coordinator {
                 guard let self else {
                     return
                 }
-                self.appliedItemsByID = uniqueItemsByID
-                self.hasAppliedSnapshot = true
-                self.isApplyingSnapshot = false
-                if let tableView {
-                    self.restoreAnchorIfNeeded(in: tableView)
-                }
-                self.applyPendingSnapshotIfNeeded()
-                self.refreshViewportChanged()
+                self.completeSnapshot(items: uniqueItemsByID, version: incomingVersion, tableView: tableView)
             }
         }
+    }
+    private func completeSnapshot(items: [Item.ID: Item], version: VirtualListUpdateVersion?, tableView: VirtualizedTableView?) {
+        appliedItemsByID = items
+        completedVersion = version
+        applyingVersion = nil
+        hasAppliedSnapshot = true
+        isApplyingSnapshot = false
+        if let tableView {
+            restoreAnchorIfNeeded(in: tableView)
+        }
+        updateVisibleContent()
+        applyPendingSnapshotIfNeeded()
+        refreshViewportChanged()
+    }
+
+    private func prepareItems(_ items: [Item]) -> ([Item.ID], [Item.ID: Item]) {
+        var ids: [Item.ID] = []
+        var byID: [Item.ID: Item] = [:]
+        for item in items where byID[item.id] == nil {
+            ids.append(item.id)
+            byID[item.id] = item
+        }
+        return (ids, byID)
     }
 }

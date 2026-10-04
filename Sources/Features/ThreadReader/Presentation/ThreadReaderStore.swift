@@ -29,8 +29,15 @@ enum ThreadReaderState: Equatable, Sendable {
 final class ThreadReaderStore {
     let threadID: Int64
     private(set) var state: ThreadReaderState = .initialLoading
-    private(set) var listPresentation: ThreadReaderListPresentation?
+    private(set) var listPresentation: ThreadReaderListPresentation? {
+        didSet { listRevision &+= 1 }
+    }
+    private(set) var listRevision: UInt64 = 0
     private(set) var readAnchor: ThreadReaderRowID?
+    @ObservationIgnored private(set) var prefetchPreparationCount = 0
+    @ObservationIgnored private var loadedPostIDs: Set<Int64> = []
+    @ObservationIgnored var configuredRowsCache: ThreadReaderConfiguredRows?
+    @ObservationIgnored private(set) var configuredRowsBuildCount = 0
 
     private(set) var refreshFailed = false
     private(set) var isShowingCachedContent = false
@@ -62,6 +69,7 @@ final class ThreadReaderStore {
             state = .loaded(snapshot)
             hasCompletedInitialLoad = true
             listPresentation = ThreadReaderListPresentation(snapshot: snapshot, pagination: paginationState(for: snapshot))
+            loadedPostIDs = Set(snapshot.posts.map(\.id.postID))
         }
     }
 
@@ -73,6 +81,7 @@ final class ThreadReaderStore {
             listPresentation = nil
             readAnchor = nil
             loadedPages = []
+            loadedPostIDs = []
             cacheTicket = nil
             hasCompletedInitialLoad = false
             hasClaimedDisplayedThread = false
@@ -93,6 +102,7 @@ final class ThreadReaderStore {
             if let reading, let last = reading.pages.last {
                 loadedPages = reading.pages.map { ($0.locator, $0.value) }
                 let snapshot = assembledPages(metadata: last.value)
+                loadedPostIDs = Set(snapshot.posts.map(\.id.postID))
                 state = .loaded(snapshot)
                 isShowingCachedContent = true
                 listPresentation = .init(snapshot: snapshot, pagination: paginationState(for: snapshot))
@@ -135,9 +145,7 @@ final class ThreadReaderStore {
             threadID: threadID,
             pageNumber: retained.currentPage + 1,
             postID: nextPostID,
-            loadedPostIDs: Set(
-                retained.posts.map(\.document.source.postID)
-            )
+            loadedPostIDs: loadedPostIDs
         )
         listPresentation?.setPagination(.loading(
             nextPage: request.pageNumber
@@ -147,16 +155,6 @@ final class ThreadReaderStore {
             retained: retained,
             loadingState: .loadingNextPage(retained)
         )
-    }
-
-    func setReadAnchor(_ rowID: ThreadReaderRowID?) {
-        guard let rowID, rowID.isPost, listPresentation?.rows.contains(where: { $0.id == rowID }) == true else { return }
-        let stablePostID = rowID
-        guard readAnchor != stablePostID else {
-            return
-        }
-        readAnchor = stablePostID
-        checkpointReading()
     }
 
     func claimDisplayedThread(_ displayedThreadID: Int64) -> Bool {
@@ -244,6 +242,7 @@ final class ThreadReaderStore {
                 guard let self, self.activeGeneration == generation, self.contentContext == self.cacheContext else { return }
                 if ReadingContentRevoked.isConfirmed(error) {
                     self.loadedPages = []
+                    self.loadedPostIDs = []
                     self.readAnchor = nil
                     self.finishFailure(generation: generation, retained: nil)
                 } else {
@@ -292,6 +291,7 @@ final class ThreadReaderStore {
                 state = .loaded(assembledPages(metadata: page))
             }
             if let snapshot = state.snapshot {
+                loadedPostIDs = Set(snapshot.posts.map(\.id.postID))
                 listPresentation = .init(snapshot: snapshot, pagination: paginationState(for: snapshot))
             }
             isShowingCachedContent = false
@@ -309,6 +309,7 @@ final class ThreadReaderStore {
                 return
             }
             state = .loaded(merged.snapshot)
+            loadedPostIDs.formUnion(merged.uniquePosts.map(\.id.postID))
             if var presentation = listPresentation {
                 presentation.append(
                     snapshot: merged.snapshot,
@@ -328,6 +329,7 @@ final class ThreadReaderStore {
                 return
             }
             state = .loaded(page)
+            loadedPostIDs = Set(page.posts.map(\.id.postID))
             listPresentation = ThreadReaderListPresentation(
                 snapshot: page,
                 pagination: paginationState(for: page)
@@ -407,7 +409,7 @@ extension ThreadReaderStore {
         retained: ThreadReaderSnapshot,
         page: ThreadReaderSnapshot
     ) -> (snapshot: ThreadReaderSnapshot, uniquePosts: [ThreadReaderPost]) {
-        var seen = Set(retained.posts.map { $0.document.source.postID })
+        var seen = loadedPostIDs
         let uniquePosts = page.posts.filter {
             seen.insert($0.document.source.postID).inserted
         }
@@ -498,9 +500,34 @@ extension ThreadReaderStore {
     }
 
     func prefetchNextPage() {
-        guard let snapshot = state.snapshot, snapshot.hasMore, let postID = snapshot.nextPostID else { return }
-        prefetch?.followingThreadPage(.init(
-            threadID: threadID, pageNumber: snapshot.currentPage + 1, postID: postID,
-            loadedPostIDs: Set(snapshot.posts.map(\.document.source.postID))))
+        guard activeGeneration == nil, contentContext == cacheContext,
+              let snapshot = state.snapshot, snapshot.hasMore, let postID = snapshot.nextPostID else { return }
+        prefetch?.followingThreadPage(.init(threadID: threadID, page: snapshot.currentPage + 1, postID: postID,
+                                            context: contentContext, generation: nextGeneration)) {
+            prefetchPreparationCount += 1
+            return .init(threadID: threadID, pageNumber: snapshot.currentPage + 1, postID: postID,
+                         loadedPostIDs: loadedPostIDs)
+        }
     }
+}
+
+extension ThreadReaderStore {
+    func configuredRows(textSize: ReadingTextSizePreference) -> [ThreadReaderConfiguredRow] {
+        if let cached = configuredRowsCache, cached.revision == listRevision, cached.textSize == textSize { return cached.rows }
+        let rows = (listPresentation?.rows ?? []).map { ThreadReaderConfiguredRow(row: $0, readingTextSize: textSize) }
+        configuredRowsCache = .init(revision: listRevision, textSize: textSize, rows: rows)
+        configuredRowsBuildCount += 1
+        return rows
+    }
+
+    func setReadAnchor(_ rowID: ThreadReaderRowID?) {
+        guard let rowID, rowID.isPost, listPresentation?.rows.contains(where: { $0.id == rowID }) == true else { return }
+        let stablePostID = rowID
+        guard readAnchor != stablePostID else {
+            return
+        }
+        readAnchor = stablePostID
+        checkpointReading()
+    }
+
 }

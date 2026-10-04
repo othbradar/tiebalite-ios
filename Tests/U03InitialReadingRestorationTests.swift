@@ -12,6 +12,7 @@ struct U03InitialReadingRestorationTests {
         func list(count: Int = 60, expandedRow: Int? = nil) -> VirtualizedList<Row, some View> {
             VirtualizedList(items: (1...count).map { Row(id: $0, expanded: $0 == expandedRow) }, backgroundColor: .systemBackground,
                             accessibilityIdentifier: "u03.sizing", restoredAnchor: 29,
+                            contentVersion: "\(count):\(expandedRow ?? 0)",
                             initialRestorationScope: AnyHashable("thread-account"),
                             onScrollSettled: { reports.append($0) }, rowContent: { item in
                 Text("Floor \(item.id)").frame(maxWidth: .infinity).frame(height: item.id == 1 ? 777 : item.expanded ? 277 : 117)

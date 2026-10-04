@@ -50,6 +50,7 @@ extension VirtualizedList.Coordinator {
                   let rows = self.parent.pendingRefresh?.takeRows(current) else { return }
             // No await between the fresh activity check, Store commit and snapshot.
             self.pendingItems = rows
+            self.pendingVersion = nil // Store mutation publishes its new caller revision on the next update.
             self.applyPendingSnapshotIfNeeded()
         }
     }

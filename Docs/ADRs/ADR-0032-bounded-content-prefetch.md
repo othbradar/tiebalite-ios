@@ -3,6 +3,8 @@
 - 状态：Accepted，用户 2026-10-03 人工验收并批准提交。
 - 基线：U03 `7f7a5c9f0132396f2f757a170649aa877741f25d`。
 
+2026-10-03 U06P3（CODE_EVIDENCE）：帖子先确认接近尾部、当前账号/加载状态、thread/page/cursor/generation 候选是否已进行或完成，再调用懒构造 request。已加载 postID 集合随首屏/恢复/刷新重建，后页仅合入新楼层；重复预取不扫描全帖。Scope 失败/取消仅在本次候选代次仍有效时移除去重记录，后续真实边界事件可重试，完成不会递归加载；前台 loadNextPage 仍独立可接管/请求。不改变底层2个投机槽、队列预算或消费者取消策略。对应 U06P3ListWorkTests，运行结果见 TASK_STATE。
+
 沿用 ContentPageCache 与现有 Forum/Reading Repository，在 Repository 内共用 ContentLoadScheduler。最多两个投机请求运行、八个等待；前台同键接管或直接启动，不在投机队列后等待。每个调用者独立取消，最后调用者取消才取消底层任务。已取消但尚未真正结束的传输仍占槽位，防止不响应取消的源突破上限。
 
 键包含缓存账号命名空间、授权 revision、清理 epoch、完整查询身份、页和游标；显式刷新增加本查询代次。每次落盘前校验原作用域；新页面只读取其当前键。线程首屏预载保留已缓存后页、位置和定位页身份。吧预载页面保存在同一有界缓存的 prepared 条目中，不写 reading manifest；前台取用一次后移除 prepared，后续重进仍执行 U02 自动检查。预载失败没有前台错误状态，不轮询重试。

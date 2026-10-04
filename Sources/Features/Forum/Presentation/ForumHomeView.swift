@@ -118,6 +118,7 @@ struct ForumThreadPageView: View {
                 items: presentation.rows, backgroundColor: .systemBackground,
                 accessibilityIdentifier: ForumHomeAccessibilityID.list,
                 restoredAnchor: store.scrollAnchor.map(ForumHomeRowID.thread),
+                contentVersion: VirtualListContentRevision(owner: ObjectIdentifier(store), revision: store.listRevision),
                 onPrefetch: { ids in
                     store.prefetchNearby(ids)
                     if !ids.isEmpty { store.prefetchNextPage() }

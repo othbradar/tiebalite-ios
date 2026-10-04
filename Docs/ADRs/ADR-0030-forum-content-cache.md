@@ -20,6 +20,8 @@ ContentPageCache 保存有界 Data；默认内存最多 30 条、16 MiB，包含
 
 ## 生命周期与代价
 
+2026-10-03 U06P3（CODE_EVIDENCE）：缓存多页组装使用一个 Set 和结果数组，按页/服务端顺序 first-wins，只映射首次出现的主题；论坛元数据取首屏，页码取最大值，hasMore/cursor 取末页，与原 appending 合同一致。Store 经明确的 `@concurrent assembledSnapshot()` 通用执行器边界进行大块纯领域合并，不放进 MainActor 或共享请求调度 actor；返回后重新检查请求 generation、账号与取消状态，再发布现有展示模型。常规单页 appending 保持原实现，锚点、置顶投影、持久格式、权限和自动刷新策略不变。U06P3ListWorkTests 对1/3/5页比较原顺序/元数据并计数，无缓存迁移。
+
 2026-10-03 U06P2：ContentPageCache 的已验证内存命中直接返回，LRU 日期按 key 在内存合并（最多256项），单一维护 writer 约每秒批量提交；显式 flushMaintenance 提供无计时等待的 barrier。正文/manifest 写入仍 await 原子文件及索引完成，并在结构写入时吸收待处理的 LRU 日期；纯 miss（包括初次空目录查询）不写索引。维护是允许丢失的近似访问时间，阅读位置不是延后到进程退出才写的维护数据。clear 递增 epoch，旧批次检查 epoch 后才能修改索引，不改变磁盘格式、目录、容量或有效期。
 
 吧首页在真正 fetch 到新页面时发布原 generation/page/cursor 键的正文；saveReading 通过缓存索引批量确认引用，随后只写小 manifest/锚点，别名不变不重写，不再逐页 read/touch/编码旧正文。未成功落盘的页不能生成新 manifest，预算驱逐/坏文件仍按既有恢复路径降为 cache miss。帖子 CachedReadingRepository 原本已只写小 manifest，本批保留其序列化及显式完成语义。计数与重启证据见 U06P2CacheFastPathTests 及 U03ReadingCacheTests。

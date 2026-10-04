@@ -5,7 +5,10 @@ import Observation
 final class ForumHomeStore {
     private(set) var route: ForumRoute
     private(set) var state: ForumHomeState = .initialLoading
-    private(set) var listPresentation: ForumHomeListPresentation?
+    private(set) var listPresentation: ForumHomeListPresentation? {
+        didSet { listRevision &+= 1 }
+    }
+    private(set) var listRevision: UInt64 = 0
     private(set) var scrollAnchor: Int64?
     private(set) var query: ForumThreadQuery
     var selectedPage: ForumPageID? = .latest
@@ -381,7 +384,7 @@ private extension ForumHomeStore {
             var restored = false
             do {
                 if restoreCache, let cache = repository as? any ForumHomeCacheAccess,
-                   let reading = await cache.restoreReading(request), let snapshot = reading.snapshot {
+                   let reading = await cache.restoreReading(request), let snapshot = await reading.assembledSnapshot() {
                     guard let self, self.activeGeneration == generation, self.contentContext == self.cacheContext else { return }
                     try Task.checkCancellation()
                     self.isCheckingCache = false
@@ -397,9 +400,10 @@ private extension ForumHomeStore {
                 self?.isCheckingCache = false
                 if let cache = repository as? any ForumHomeCacheAccess {
                     let reading = try await cache.fetchPage(request, continuing: nil)
+                    let snapshot = await reading.assembledSnapshot()
                     try Task.checkCancellation()
                     guard let self, self.activeGeneration == generation, self.contentContext == self.cacheContext,
-                          let snapshot = reading.snapshot else { return }
+                          let snapshot else { return }
                     self.receiveFirstPage(snapshot, reading: reading, previous: retained,
                                           generation: generation, automatic: restored)
                     if retained == nil { await self.saveReadingPosition() }
