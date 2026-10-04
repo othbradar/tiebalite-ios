@@ -1,5 +1,23 @@
 # TASK_STATE
 
+## 2026-10-04 v0.2.0beta3 — USER_AUTHORIZED
+
+- 用户已确认三项首页追加修复，现明确批准提交、推送并构建发布v0.2.0beta3，注明新功能和修复。当前15个候选文件SHA256全部与验收清单相同，沿用已通过的7项Unit/5条UI和最终位置人工验收，仅复核diff/secret scan/精确清单。
+- 先独立提交首页修复，再将App Build 3升为4并构建真机arm64 Release未签名IPA，沿用既有分发方式，不修改签名、Bundle ID或Keychain。不进入U07，不纳入用户原有Prompt/skill、Artifacts或Android submodule。此条仅记录授权，不表示已经发布。
+
+## 2026-10-04 用户追加：首页/吧首页三项修复 — USER_ACCEPTED（未提交）
+
+- 按用户批准先精确六文件提交U06P4：`b976ffad19eb3593d84565869095987821432885`，`fix: preserve iPad reading position across layout changes`；五个验收候选哈希一致，沿用原定向结果，仅复核diff/secret scan/清单。未推送。本轮以此HEAD修三个用户指定问题，不执行U07。
+- 底部根因与修改：外层VStack移除根选择栏时同时改变TabView/NavigationStack高度；新组件三次均测得91pt突变，普通最终row rect检查无法覆盖。正常Live基线转场录屏也保留在entry-live-baseline.mov。将根栏移到各非阅读目的页内部safeAreaInset，紧凑TabView保持完整底部视口；保留canonical route、系统转场、四根状态及iPad横屏三列。修后同一三次容器尺寸不变，阅读表格采样底边差<1pt。未改VirtualizedList、U03恢复、Pager、图片、缓存、协议或Session。
+- 最近逛吧：当前只有打开入口。新增首页编辑态进入recent行投影，长按任意chip显示全部红底白减号，再长按隐藏；编辑时正文不导航，减号复用BrowsingHistoryStore.delete(.forum(id))，不取消关注、不清其他历史/阅读缓存。新增独立无障碍删除ID和管理动作；仅编辑期间有局部badge。用户指出第一版减号压住吧名；曾试加编辑态顶部空间，随后用户明确要求仅右移，已撤销该留白，最终只给badge向右10pt的视觉偏移，胶囊/文字/行尺寸及间距完全不变；未新增动画、依赖或列表框架。
+- 刷新：原setRetainedStatus(.refreshing)在首行插入说明，改为仅失败时插入重试行；UI不再绘制“正在重新加载”，保留UIRefreshControl、旧内容及P1静止视口提交/取消。用户已实际确认底边遮挡和吧首页刷新说明均修好，这两处保持验收代码。
+- 红例及观测：baseline-unit刷新行相等断言失败；初版转场Unit使用未关联scene的UIWindow不能挂载导航，不能当产品失败。改用真实UIWindowScene后，单看表格几何三轮通过但未覆盖容器缩放，补容器不变断言后entry-container-red三轮均91pt失败。entry-presentation-baseline中的长按入口在原代码失败（该次遗漏only-test-configuration导致同一条在三配置重复运行，未跑整套）。
+- 定向结果：direct-unit **7/7 PASS**（新增3项、R05策略3项、P1拖动刷新1项）；phone-ui中的长按删除 **33.410s PASS**、三次进吧/看帖/返回及四Tab **69.660s PASS**。旧U02短测首屏固定“刷新1”失败，当时已显示“刷新2”；现有首页预载可能先完成，改成从显示源代次出发严格检查重进+1、下拉+1，保留刷新内容/可见/无提示断言，refresh-ui **21.012s PASS**。ipad-ui **2/2 PASS**：横竖屏路由/根切换31.051s、长按显隐删除34.909s。未重复缓存/恢复全套、全量Unit或quality；顶部留白试案的短回归badge-spacing-ui为33.295s PASS；用户随后要求仅右移，已撤销留白。最终仅badge位置变化，功能沿用已通过的长按/删除结果，最终右移版已覆盖正常Live两端，用户明确“现在位置可以了”。
+- 此前门禁make lint（426文件0violation）/make build/secret scan/diff check通过，完整正常Live iPhone/iPad已覆盖且两端主程序/dylib与产物哈希一致。用户正在该候选检查；真实数据未删除，所有删除自动化仅在隔离Fixture。CUA观察与用户同时操作导致界面变化，不将其当应用失败。真机未验证。本轮追加修复不暂存/提交/推送。
+
+
+- 最终交付：已撤销顶部留白，最终仅badge `.offset(x: 10)`；非编辑和编辑状态的胶囊/整行排版均保持原样。make lint/build/secret scan/diff check在最终代码PASS，最终完整Live两端产物哈希再次一致。用户已分别确认底边遮挡、刷新说明栏和最后的减号位置；无需继续改变已验收实现。前述7项Unit/5条UI验证功能与导航，最后纯位置调整由正常Live用户验收，未伪称为重新跑了全部自动化。iPhone/iPad均保留数据停在首页供使用，没有代理删除真实最近访问条目。真机未运行自动化；本批追加修复未暂存、未提交、未推送，无U07。
+
 ## 2026-10-04 U06P4 — USER_ACCEPTED，授权提交
 
 - 用户批准提交U06P4并另行提出三个首页交互修复。五个候选源码/测试/契约/ADR哈希一致，沿用已验收定向结果，仅复核diff、secret scan及精确六文件清单。提交后再开始新修复，不混入本提交。

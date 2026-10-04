@@ -28,7 +28,8 @@ struct FollowedForumsAppRootView: View {
                 }
                 openRoute(route)
             },
-            openRecentForum: { openRoute(.forum($0)) }
+            openRecentForum: { openRoute(.forum($0)) },
+            removeRecentForum: { forumID in Task { await historyStore.delete(.forum(forumID)) } }
         )
         .task { await historyStore.loadIfNeeded() }
         .task(id: sessionStore.state) {

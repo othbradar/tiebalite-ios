@@ -23,14 +23,16 @@ struct AppShellContent {
         )
     }
 
-    var personalStack: some View {
+    func personalStack(notificationCounts: (any NotificationCountSource)? = nil) -> some View {
         NavigationStack(path: Binding(
             get: { navigation.state.settingsPath },
             set: { navigation.replaceSettingsPathFromSystem($0) }
         )) {
             personalRoot
+                .safeAreaInset(edge: .bottom, spacing: 0) { phoneSelector(notificationCounts, atRoot: true) }
                 .navigationDestination(for: SettingsRoute.self) { route in
                     personalDestination(for: route)
+                        .safeAreaInset(edge: .bottom, spacing: 0) { phoneSelector(notificationCounts) }
                 }
         }
     }
@@ -74,15 +76,24 @@ struct AppShellContent {
         )
     }
 
-    func rootStack(for root: RootID) -> some View {
+    func rootStack(for root: RootID, notificationCounts: (any NotificationCountSource)? = nil) -> some View {
         NavigationStack(path: Binding(
             get: { navigation.state.routes(for: root) },
             set: { navigation.replacePathFromSystem($0, in: root) }
         )) {
             rootContent(for: root, regular: false)
+                .safeAreaInset(edge: .bottom, spacing: 0) { phoneSelector(notificationCounts, atRoot: true) }
                 .navigationDestination(for: RouteIdentity.self) { route in
                     businessDestination(for: route, root: root)
+                        .safeAreaInset(edge: .bottom, spacing: 0) { phoneSelector(notificationCounts) }
                 }
+        }
+    }
+
+    @ViewBuilder
+    private func phoneSelector(_ counts: (any NotificationCountSource)?, atRoot: Bool = false) -> some View {
+        if let counts, atRoot || AppShellPresentation.showsPhoneTabSelector(in: navigation.state) {
+            PhoneTabSelector(navigation: navigation, notificationCounts: counts)
         }
     }
 

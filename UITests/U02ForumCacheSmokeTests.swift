@@ -81,21 +81,26 @@ final class U02ForumCacheSmokeTests: XCTestCase {
     }
 
     @MainActor
-    func testReentryAndPullRefreshShowNewPostsWithoutUpdateBanner() {
+    func testReentryAndPullRefreshShowNewPostsWithoutUpdateBanner() throws {
         let app = UITestHarness.launch(scenario: .forumContentCache, startingTab: .followedForums)
         tap("followed-forums.row.f13001", in: app)
         let first = app.buttons["forum-home.row.t140001"]
-        waitForRefresh(1, row: first)
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        // Home prefetch may finish before the tap. Check one new request per user
+        // action relative to the displayed source revision, not a fixed initial count.
+        let range = try XCTUnwrap(first.label.range(of: "刷新[0-9]+", options: .regularExpression))
+        let initial = try XCTUnwrap(Int(first.label[range].dropFirst(2)))
+        XCTAssertGreaterThan(initial, 0)
         UITestHarness.tapSystemBack(in: app, returningTo: .followedForumsFirstRow)
         tap("followed-forums.row.f13001", in: app)
-        waitForRefresh(2, row: first)
+        waitForRefresh(initial + 1, row: first)
         XCTAssertFalse(app.buttons["forum-home.cache.new-content"].exists)
         XCTAssertFalse(app.staticTexts["forum-home.cache.update-failed"].exists)
         let list = app.tables["forum-home.list"]
         list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
             .press(forDuration: 0, thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)))
         UITestHarness.attachSafeVisualEvidence(app: app, name: "U02 after full pull gesture")
-        waitForRefresh(3, row: first)
+        waitForRefresh(initial + 2, row: first)
         XCTAssertTrue(first.isHittable)
         XCTAssertFalse(app.buttons["forum-home.cache.new-content"].exists)
         UITestHarness.attachSafeVisualEvidence(app: app, name: "U02 automatic and pull refresh without banner")

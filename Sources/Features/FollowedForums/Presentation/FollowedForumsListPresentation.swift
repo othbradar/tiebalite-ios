@@ -11,7 +11,7 @@ enum FollowedForumsRetainedStatus: Equatable, Sendable {
 }
 
 enum FollowedForumsRowContent: Equatable, Sendable {
-    case recent([RecentForum], expanded: Bool)
+    case recent([RecentForum], expanded: Bool, editing: Bool)
     case heading
     case status(FollowedForumsRetainedStatus)
     case forum(FollowedForum)
@@ -39,10 +39,11 @@ struct FollowedForumsListPresentation: Equatable, Sendable {
         forums: [FollowedForum],
         recent: [RecentForum],
         expanded: Bool,
+        editingRecent: Bool = false,
         status: FollowedForumsRetainedStatus? = nil
     ) {
         var contents: [FollowedForumsRowContent] = []
-        if !recent.isEmpty { contents.append(.recent(recent, expanded: expanded)) }
+        if !recent.isEmpty { contents.append(.recent(recent, expanded: expanded, editing: editingRecent)) }
         contents.append(.heading)
         if let status { contents.append(.status(status)) }
         var seen = Set<Int64>()

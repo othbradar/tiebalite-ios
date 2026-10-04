@@ -69,7 +69,7 @@ struct AppShellView: View {
         if navigation.state.selectedTab == .settings,
            navigation.state.settingsPath.last == .interactionLab {
             // Keep the existing interaction lab container stable across size classes.
-            content.personalStack
+            content.personalStack()
                 .padding(.horizontal, layout == .regular ? Spacing.large : 0)
         } else {
             adaptiveShellContent(layout: layout)
@@ -95,30 +95,23 @@ private struct IPhoneAppShellView: View {
     let notificationCounts: any NotificationCountSource
 
     var body: some View {
-        // Reserve the selector's measured height in layout. TabView does not forward
-        // an outer safeAreaInset to the hosted navigation stacks on this SDK.
-        VStack(spacing: 0) {
-            TabView(selection: selectedTabBinding) {
-                content.rootStack(for: .followedForums)
-                    .toolbar(.hidden, for: .tabBar)
-                    .tag(AppTab.followedForums)
-                content.rootStack(for: .recommendations)
-                    .toolbar(.hidden, for: .tabBar)
-                    .tag(AppTab.recommendations)
-                content.rootStack(for: .notifications)
-                    .toolbar(.hidden, for: .tabBar)
-                    .tag(AppTab.notifications)
-                content.personalStack
-                    .toolbar(.hidden, for: .tabBar)
-                    .tag(AppTab.settings)
-            }
-            if AppShellPresentation.showsPhoneTabSelector(in: content.navigation.state) {
-                PhoneTabSelector(
-                    navigation: content.navigation,
-                    notificationCounts: notificationCounts
-                )
-            }
+        // The navigation containers keep their full viewport during push/pop.
+        // Each non-reading page owns its selector inset inside its own destination.
+        TabView(selection: selectedTabBinding) {
+            content.rootStack(for: .followedForums, notificationCounts: notificationCounts)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.followedForums)
+            content.rootStack(for: .recommendations, notificationCounts: notificationCounts)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.recommendations)
+            content.rootStack(for: .notifications, notificationCounts: notificationCounts)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.notifications)
+            content.personalStack(notificationCounts: notificationCounts)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.settings)
         }
+        .ignoresSafeArea(.container, edges: .bottom)
         .tint(SemanticColor.primaryText)
     }
 

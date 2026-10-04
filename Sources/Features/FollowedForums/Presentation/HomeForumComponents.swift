@@ -40,9 +40,12 @@ struct HomeSectionLabel: View {
 struct HomeRecentForumsRow: View {
     let forums: [RecentForum]
     let expanded: Bool
+    let editing: Bool
     let imageLoader: any ImageLoading
     let toggle: () -> Void
+    let toggleEditing: () -> Void
     let openForum: (ForumRoute) -> Void
+    let removeForum: (Int64) -> Void
     @ScaledMetric(relativeTo: .caption) private var nameSize: CGFloat = 12
 
     var body: some View {
@@ -66,19 +69,7 @@ struct HomeRecentForumsRow: View {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 8) {
                         ForEach(forums) { forum in
-                            Button { openForum(forum.route) } label: {
-                                HStack(spacing: 4) {
-                                    TiebaForumAvatarView(resource: forum.avatarResource, imageLoader: imageLoader, size: 24)
-                                    Text("\(forum.name)吧").font(.system(size: nameSize, weight: .bold))
-                                        .lineLimit(1).padding(.trailing, 4)
-                                }
-                                .padding(4)
-                                .background(TiebaParityTokens.neutralFill, in: Capsule())
-                                .frame(minHeight: 44)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("home.recent.f\(forum.id)")
+                            recentForum(forum)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -88,6 +79,44 @@ struct HomeRecentForumsRow: View {
             }
         }
         .padding(.vertical, 8)
+    }
+
+    private func recentForum(_ forum: RecentForum) -> some View {
+        Button { if !editing { openForum(forum.route) } } label: {
+            HStack(spacing: 4) {
+                TiebaForumAvatarView(resource: forum.avatarResource, imageLoader: imageLoader, size: 24)
+                Text("\(forum.name)吧").font(.system(size: nameSize, weight: .bold))
+                    .lineLimit(1).padding(.trailing, 4)
+            }
+            .padding(4)
+            .background(TiebaParityTokens.neutralFill, in: Capsule())
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("home.recent.f\(forum.id)")
+        .accessibilityHint(editing ? "长按结束删除" : "长按管理最近逛吧")
+        .accessibilityAction(named: editing ? "结束删除" : "管理最近逛吧", toggleEditing)
+        // Keep the capsule and row layout unchanged. Only the edit badge extends
+        // slightly into the trailing gap, away from the forum name.
+        .overlay(alignment: .topTrailing) {
+            if editing {
+                Button { removeForum(forum.id) } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 20, height: 20)
+                        .background(.red, in: Circle())
+                        .frame(width: 44, height: 44, alignment: .topTrailing)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("删除\(forum.name)吧的最近访问记录")
+                .accessibilityIdentifier("home.recent.remove.f\(forum.id)")
+                .offset(x: 10)
+            }
+        }
+        .highPriorityGesture(LongPressGesture().onEnded { _ in toggleEditing() })
     }
 }
 

@@ -41,6 +41,38 @@ final class R03HomeSmokeTests: XCTestCase {
     }
 
     @MainActor
+    func testRecentForumsLongPressTogglesRemovalWithoutUnfollowing() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = UITestHarness.launch(scenario: .sessionSignedInFixture, startingTab: .followedForums)
+        for forumID in 13_001...13_002 {
+            tap("followed-forums.row.f\(forumID)", in: app)
+            UITestHarness.requirePresent(.forumHomeHeader, in: app)
+            UITestHarness.tapSystemBack(in: app, returningTo: .followedForumsRoot)
+        }
+        let first = app.buttons["home.recent.f13001"]
+        let remove = app.buttons["home.recent.remove.f13001"]
+        XCTAssertFalse(remove.exists)
+        first.press(forDuration: 0.8)
+        XCTAssertTrue(remove.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["home.recent.remove.f13002"].exists)
+        XCTAssertFalse(app.buttons["forum-home.search"].exists)
+        first.press(forDuration: 0.8)
+        XCTAssertTrue(remove.waitForNonExistence(timeout: 3))
+        first.press(forDuration: 0.8)
+        XCTAssertTrue(remove.waitForExistence(timeout: 3))
+        remove.tap()
+        XCTAssertTrue(first.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["home.recent.f13002"].exists)
+        XCTAssertTrue(app.buttons["followed-forums.row.f13001"].exists)
+        app.buttons["home.recent.f13002"].press(forDuration: 0.8)
+        tap("home.recent.f13002", in: app)
+        UITestHarness.requirePresent(.forumHomeHeader, in: app)
+        UITestHarness.tapSystemBack(in: app, returningTo: .followedForumsRoot)
+        XCTAssertFalse(first.exists)
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "Recent forum removal preserves followed list")
+    }
+
+    @MainActor
     func testIPadHomeRecentForumsSurviveDarkWidthChange() {
         executionTimeAllowance = 90
         let device = XCUIDevice.shared

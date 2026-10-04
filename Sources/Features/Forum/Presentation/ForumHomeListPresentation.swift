@@ -308,13 +308,11 @@ struct ForumHomeListPresentation: Equatable, Sendable {
             }
             return false
         }
-        guard let status else {
-            return
-        }
+        guard status == .refreshFailure else { return }
         rows.insert(
             ForumHomeRowModel(
                 id: .retainedStatus(forumKey),
-                content: .retainedStatus(status)
+                content: .retainedStatus(.refreshFailure)
             ),
             at: 0
         )

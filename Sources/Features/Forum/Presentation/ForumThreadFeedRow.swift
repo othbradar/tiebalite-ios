@@ -134,9 +134,7 @@ struct ForumHomeRowView: View {
                 .frame(maxWidth: .infinity, minHeight: 200)
                 .accessibilityIdentifier(ForumHomeAccessibilityID.empty)
         case let .retainedStatus(status):
-            if status == .refreshing {
-                InlineLoadingView(title: "正在重新加载")
-            } else {
+            if status == .refreshFailure {
                 InlineErrorView(message: "重新加载失败，已保留原列表。", retry: requestReload)
             }
         case let .pagination(state):

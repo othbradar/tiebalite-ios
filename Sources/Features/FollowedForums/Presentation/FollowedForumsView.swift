@@ -11,8 +11,10 @@ struct FollowedForumsView: View {
     let openSearch: () -> Void
     let openForum: (FollowedForum) -> Void
     let openRecentForum: (ForumRoute) -> Void
+    let removeRecentForum: (Int64) -> Void
 
     @State private var historyExpanded = true
+    @State private var editingRecentForums = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -61,8 +63,9 @@ struct FollowedForumsView: View {
             VStack(spacing: 0) {
                 if !recentForums.isEmpty {
                     HomeRecentForumsRow(
-                        forums: recentForums, expanded: historyExpanded, imageLoader: imageLoader,
-                        toggle: { historyExpanded.toggle() }, openForum: openRecentForum
+                        forums: recentForums, expanded: historyExpanded, editing: editingRecentForums, imageLoader: imageLoader,
+                        toggle: { historyExpanded.toggle() }, toggleEditing: { editingRecentForums.toggle() },
+                        openForum: openRecentForum, removeForum: removeRecentForum
                     )
                 }
                 stateContent
@@ -126,7 +129,8 @@ struct FollowedForumsView: View {
         _ forums: [FollowedForum], status: FollowedForumsRetainedStatus? = nil
     ) -> some View {
         let presentation = FollowedForumsListPresentation(
-            forums: forums, recent: recentForums, expanded: historyExpanded, status: status
+            forums: forums, recent: recentForums, expanded: historyExpanded,
+            editingRecent: editingRecentForums, status: status
         )
         return VirtualizedList(
             items: presentation.rows,
@@ -144,10 +148,11 @@ struct FollowedForumsView: View {
     @ViewBuilder
     private func listRow(_ row: FollowedForumsRowModel) -> some View {
         switch row.content {
-        case let .recent(forums, expanded):
+        case let .recent(forums, expanded, editing):
             HomeRecentForumsRow(
-                forums: forums, expanded: expanded, imageLoader: imageLoader,
-                toggle: { historyExpanded.toggle() }, openForum: openRecentForum
+                forums: forums, expanded: expanded, editing: editing, imageLoader: imageLoader,
+                toggle: { historyExpanded.toggle() }, toggleEditing: { editingRecentForums.toggle() },
+                openForum: openRecentForum, removeForum: removeRecentForum
             )
         case .heading:
             HStack {

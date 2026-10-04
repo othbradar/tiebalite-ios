@@ -160,7 +160,8 @@ struct Stage17FollowedProjectionHarness: View {
                 openLogin: {},
                 openSearch: {},
                 openForum: { _ in },
-                openRecentForum: { _ in }
+                openRecentForum: { _ in },
+                removeRecentForum: { _ in }
             )
         } else {
             Color.clear

@@ -28,3 +28,9 @@ Android 主页面自己的 bottom navigation 不属于 Forum/Thread destination�
 ## R06 的实际回复条
 
 R06 提示词明确要求真实 bottom safe-area composer。ThreadReader 从无底部控件改为紧凑回复条时，移除 AppRouter 对该目的页的底部忽略，使用系统 safeAreaInset 保证按钮在 Home indicator 上方；列表紧贴回复条上沿，不能在二者间残留白区。吧页继续延伸到底边。R05 短测试的帖子目标边缘因此改为回复条上沿（<=1pt），吧页仍为屏幕底边；没有放宽容差或修改共享列表。
+
+## 2026-10-04：进吧转场保持导航容器尺寸
+
+用户报告进吧早期底部出现短暂白条遮挡，之后消失。外层VStack移除PhoneTabSelector时连同bottom safe area改变TabView/NavigationStack的视口；定向组件三次均量到导航容器高度增加91pt。只读最终UITableView rect会漏掉这一容器变化，原结束后底边检查不足以覆盖转场。
+
+紧凑Shell的TabView保持完整底部视口，根选择栏改为每个非阅读目的页内部的safeAreaInset。根页面自己的栏随系统push/pop自然离开/返回，不再同时改变整个导航容器尺寸；阅读目的页不附加根栏，非阅读子页仍按现有canonical route策略显示。safeAreaInset放在NavigationStack的页面内，避开原先TabView不转发外层inset的问题。iPad横屏三列、系统转场、路径和Store身份保持不变；无固定延迟或关闭动画。测试同时检查三次进出导航容器尺寸不变、阅读底边、四Tab和iPad投影。
