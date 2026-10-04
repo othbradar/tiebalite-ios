@@ -1,5 +1,12 @@
 # TASK_STATE
 
+## 2026-10-04 v0.2.0beta3 — RELEASE_PREPARED
+
+- 首页三项已验收修复精确16文件提交 `4e66ea614d1c46d32d6af43d88384b03495d9ff9`；15个候选哈希一致，沿用既有定向结果。当前准备把U06P1–P4与本次修复一起正常快进推送，不包含用户原有未跟踪文件或Android submodule。
+- App 0.2.0/Build4，真机arm64 Release未签名IPA构建及完整性/Release隔离检查PASS，6,789,405 bytes，SHA256 `cd775ccaea77a5ffaaa33e8c6f39c47efe942d1ceb0e9d35efabfa1c4220a0b1`。make generate/lint/build/secret-scan/diff check均PASS，未重跑全套。
+- 新功能、Bug修复、性能计数和限制见Docs/Releases/v0.2.0beta3.md；构建详情见Docs/Audits/RELEASE_0_2_0_BETA_3.md。P4指定旋转问题已修复，手工调宽/真机范围仍准确保留。无需改变现有Simulator安装、账号、签名或Keychain。
+- GitHub CLI未登录，采用Chrome现有登录发布；当前只是本机产物准备完成，不提前宣称已上传。不进入U07。
+
 ## 2026-10-04 v0.2.0beta3 — USER_AUTHORIZED
 
 - 用户已确认三项首页追加修复，现明确批准提交、推送并构建发布v0.2.0beta3，注明新功能和修复。当前15个候选文件SHA256全部与验收清单相同，沿用已通过的7项Unit/5条UI和最终位置人工验收，仅复核diff/secret scan/精确清单。
