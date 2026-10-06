@@ -91,68 +91,71 @@ enum AppRouter {
         openRoute: @escaping (RouteIdentity) -> Void,
         dependencies: AppRouteDependencies
     ) -> some View {
-        switch route {
-        case let .notification(target):
-            if let store = dependencies.featureStores.notificationDestination(for: target) {
-                NotificationDestination(store: store, dependencies: dependencies, openRoute: openRoute)
-            }
-        case .search:
-            searchDestination(
-                scope: scope,
-                openRoute: openRoute,
-                dependencies: dependencies
-            )
-        case let .thread(threadID):
-            ThreadReaderView(
-                store: dependencies.featureStores.threadReaderStore(
-                    for: scope,
-                    threadID: threadID
-                ),
-                imageLoader: dependencies.imageLoader,
-                accountAvatar: dependencies.currentAccountAvatar,
-                readingTextSize:
-                    dependencies.featureStores.settingsStore.readingTextSize,
-                onOpenMedia: dependencies.onOpenMedia,
-                onOpenUser: { openRoute(.userProfile($0)) },
-                onDisplayed: {
-                    await dependencies.featureStores.browsingHistoryStore
-                        .recordThread($0)
-                },
-                onOpenSubposts: { source in
-                    guard let threadID = ThreadID(source.threadID), let postID = PostID(source.postID) else { return }
-                    openRoute(.subposts(threadID: threadID, postID: postID))
+        Group {
+            switch route {
+            case let .notification(target):
+                if let store = dependencies.featureStores.notificationDestination(for: target) {
+                    NotificationDestination(store: store, dependencies: dependencies, openRoute: openRoute)
                 }
-            )
-        case let .forum(forum):
-            ForumHomeDestination(
-                forum: forum, scope: scope, dependencies: dependencies, openRoute: openRoute
-            )
-            .ignoresSafeArea(.container, edges: .bottom)
-        case let .userProfile(profileRoute):
-            UserProfileView(
-                imageLoader: dependencies.imageLoader,
-                store: dependencies.featureStores.userProfileStore(
+            case .search:
+                searchDestination(
+                    scope: scope,
+                    openRoute: openRoute,
+                    dependencies: dependencies
+                )
+            case let .thread(threadID):
+                ThreadReaderView(
+                    store: dependencies.featureStores.threadReaderStore(
+                        for: scope,
+                        threadID: threadID
+                    ),
+                    imageLoader: dependencies.imageLoader,
+                    accountAvatar: dependencies.currentAccountAvatar,
+                    readingTextSize:
+                        dependencies.featureStores.settingsStore.readingTextSize,
+                    onOpenMedia: dependencies.onOpenMedia,
+                    onOpenUser: { openRoute(.userProfile($0)) },
+                    onDisplayed: {
+                        await dependencies.featureStores.browsingHistoryStore
+                            .recordThread($0)
+                    },
+                    onOpenSubposts: { source in
+                        guard let threadID = ThreadID(source.threadID), let postID = PostID(source.postID) else { return }
+                        openRoute(.subposts(threadID: threadID, postID: postID))
+                    }
+                )
+            case let .forum(forum):
+                ForumHomeDestination(
+                    forum: forum, scope: scope, dependencies: dependencies, openRoute: openRoute
+                )
+                .ignoresSafeArea(.container, edges: .bottom)
+            case let .userProfile(profileRoute):
+                UserProfileView(
+                    imageLoader: dependencies.imageLoader,
+                    store: dependencies.featureStores.userProfileStore(
+                        for: scope,
+                        route: profileRoute
+                    ),
+                    onDisplayed: {
+                        await dependencies.featureStores.browsingHistoryStore
+                            .recordUser($0)
+                    }
+                )
+            case let .subposts(threadID, postID):
+                if let store = dependencies.featureStores.subpostsStore(
                     for: scope,
-                    route: profileRoute
-                ),
-                onDisplayed: {
-                    await dependencies.featureStores.browsingHistoryStore
-                        .recordUser($0)
+                    route: .init(threadID: threadID.rawValue, postID: postID.rawValue)) {
+                    SubpostsView(
+                        store: store, imageLoader: dependencies.imageLoader,
+                        readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
+                        onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) })
+                        .ignoresSafeArea(.container, edges: .bottom)
+                } else {
+                    SubpostsUnavailableView(threadID: threadID, postID: postID)
                 }
-            )
-        case let .subposts(threadID, postID):
-            if let store = dependencies.featureStores.subpostsStore(
-                for: scope,
-                route: .init(threadID: threadID.rawValue, postID: postID.rawValue)) {
-                SubpostsView(
-                    store: store, imageLoader: dependencies.imageLoader,
-                    readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
-                    onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) })
-                    .ignoresSafeArea(.container, edges: .bottom)
-            } else {
-                SubpostsUnavailableView(threadID: threadID, postID: postID)
             }
         }
+        .environment(\.openURL, ContentLinkHandler.action(openRoute: openRoute))
     }
 
     private static func searchDestination(

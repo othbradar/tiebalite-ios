@@ -6,6 +6,10 @@ struct RecommendationsView: View {
     let imageLoader: any ImageLoading
     let onOpenThread: (RecommendationSummary) -> Void
 
+    var onOpenUser: (UserProfileRoute) -> Void = { _ in }
+
+    @Environment(\.openURL) private var openURL
+
     @State private var retryGeneration: UInt64 = 0
 
     var body: some View {
@@ -94,7 +98,7 @@ struct RecommendationsView: View {
     private func recommendationListRow(_ row: RecommendationsRowModel) -> some View {
         switch row.content {
         case let .thread(item):
-            RecommendationFeedRow(item: item, imageLoader: imageLoader) {
+            RecommendationFeedRow(item: item, imageLoader: imageLoader, openURL: openURL, onOpenUser: onOpenUser) {
                 onOpenThread(item)
             }
             .id(item.threadID)

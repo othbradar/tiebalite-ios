@@ -35,6 +35,9 @@ struct R04FeedFixture: RecommendationRepository {
                     feed: RecommendationFeedDetails(
                         abstractText: item.threadID == 100_004
                             ? String(repeating: "这是完整保留而按五行显示的固定长摘要。", count: 12) : "",
+                        abstractNodes: item.threadID == 100_001
+                            ? FixtureThreadReaderPages.actionLinks(
+                                source: .init(threadID: item.threadID, postID: 0, scope: .firstPost), ordinal: 0) : [],
                         showsTitle: true, timeUnixSeconds: 1_700_000_000,
                         media: resources, totalMediaCount: count, agreeCount: 46, shareCount: 1
                     )

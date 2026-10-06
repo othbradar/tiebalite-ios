@@ -14,7 +14,7 @@ struct ThreadReaderView: View {
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var retryGeneration: UInt64 = 0
-    @State private var showsUnavailableAction = false
+    @Environment(\.openURL) private var openURL
     @State private var composeTarget: TextComposeTarget?
 
     init(
@@ -48,15 +48,10 @@ struct ThreadReaderView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if store.state.snapshot != nil {
                 ThreadReaderReplyBar(imageLoader: imageLoader, accountAvatar: accountAvatar,
-                                     onAction: { showsUnavailableAction = true }, onCompose: {
+                                     threadID: store.threadID, reload: { Task { await store.reload() } }, onCompose: {
                     if let snapshot = store.state.snapshot { composeTarget = .reply(snapshot: snapshot) }
                 })
             }
-        }
-        .alert("功能暂未开放", isPresented: $showsUnavailableAction) {
-            Button("知道了", role: .cancel) {}
-        } message: {
-            Text("当前支持只读浏览，评论、点赞等功能暂未开放。")
         }
         .textComposer(target: $composeTarget) { _ in await store.reload() }
         .navigationBarTitleDisplayMode(.inline)
@@ -93,8 +88,14 @@ struct ThreadReaderView: View {
         // A title must not morph into the previous page's native back item.
         ToolbarItem(placement: .principal) {
             if let snapshot = store.state.snapshot {
-                ThreadReaderForumChip(snapshot: snapshot, imageLoader: imageLoader)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button {
+                    if let url = PublicContentURL.forum(snapshot.forumName) { openURL(url) }
+                } label: {
+                    ThreadReaderForumChip(snapshot: snapshot, imageLoader: imageLoader)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("thread-reader.open-forum")
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -152,7 +153,9 @@ struct ThreadReaderView: View {
                         onOpenMedia: onOpenMedia,
                         onOpenUser: onOpenUser,
                         onOpenSubposts: onOpenSubposts,
-                        onReadOnlyAction: { showsUnavailableAction = true },
+                        onOpenExternalLink: { intent in
+                            if let url = URL(string: intent.destination.absoluteString) { openURL(url) }
+                        },
                         onReply: { post in composeTarget = .reply(snapshot: snapshot, post: post) },
                         requestNextPage: requestNextPage
                     )

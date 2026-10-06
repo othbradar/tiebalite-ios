@@ -60,6 +60,12 @@ struct ForumHomeView: View {
                 }
                     .accessibilityIdentifier("forum-home.compose")
                 Menu("更多", systemImage: "ellipsis") {
+                    if let url = PublicContentURL.forum(route.forumName.rawValue) {
+                        Button("复制链接", systemImage: "link") { UIPasteboard.general.url = url }
+                            .accessibilityIdentifier("forum-home.more.copy")
+                        ShareLink(item: url) { Label("分享", systemImage: "square.and.arrow.up") }
+                            .accessibilityIdentifier("forum-home.more.share")
+                    }
                     Button("重新加载", systemImage: "arrow.clockwise") {
                         Task { await (store.pageStore(for: store.selectedPage ?? .latest) ?? store).reload() }
                     }

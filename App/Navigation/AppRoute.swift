@@ -217,7 +217,7 @@ enum RouteGrammar {
             return false
         }
 
-        if routes.count >= 2, case .userProfile = routes[routes.count - 1], case .subposts = routes[routes.count - 2] {
+        if routes.count >= 2, permitsContentAction(from: routes[routes.count - 2], to: routes[routes.count - 1]) {
             return isValid(Array(routes.dropLast()), for: root)
         }
         guard !routes.isEmpty else {
@@ -231,6 +231,22 @@ enum RouteGrammar {
             return isValidFollowedForumsChain(routes)
         case .notifications:
             return isValidNotificationChain(routes)
+        }
+    }
+
+    static func permitsContentAction(from parent: RouteIdentity, to child: RouteIdentity) -> Bool {
+        switch (parent, child) {
+        case (.thread, .thread), (.thread, .forum), (.thread, .userProfile),
+             (.subposts, .thread), (.subposts, .forum), (.subposts, .userProfile),
+             (.notification, .thread), (.notification, .forum), (.notification, .userProfile),
+             (.forum, .thread):
+            return true
+        case let (.thread(threadID), .subposts(childThreadID, _)):
+            return threadID == childThreadID
+        case let (.notification(target), .subposts(childThreadID, _)):
+            return target.threadID == childThreadID.rawValue
+        default:
+            return false
         }
     }
 
@@ -263,6 +279,7 @@ enum RouteGrammar {
         case 1:
             return isSearch(routes[0])
                 || isForum(routes[0])
+                || isUserProfile(routes[0])
                 || threadID(from: routes[0]) != nil
         case 2:
             if isSearch(routes[0]) {
@@ -437,16 +454,7 @@ enum SettingsRouteGrammar {
             return false
         }
         for (parent, child) in zip(routes, routes.dropFirst()) {
-            switch (parent, child) {
-            case (.forum, .thread), (.thread, .userProfile), (.subposts, .userProfile):
-                continue
-            case let (.thread(threadID), .subposts(childThreadID, _)):
-                guard threadID == childThreadID else {
-                    return false
-                }
-            default:
-                return false
-            }
+            guard RouteGrammar.permitsContentAction(from: parent, to: child) else { return false }
         }
         return true
     }

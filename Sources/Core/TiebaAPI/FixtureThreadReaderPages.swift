@@ -214,6 +214,9 @@ enum FixtureThreadReaderPages {
                 ordinal: nodes.count
             ))
         }
+        if threadID == 100_001, scope == .firstPost {
+            nodes.append(contentsOf: actionLinks(source: source, ordinal: nodes.count))
+        }
         for (index, resourceID) in imageResources.enumerated() {
             nodes.append(imageNode(
                 resourceID: resourceID,
@@ -235,6 +238,16 @@ enum FixtureThreadReaderPages {
             nodes: nodes,
             poll: nil
         )
+    }
+
+    static func actionLinks(source: ThreadContentSource, ordinal: Int) -> [ThreadContentNode] {
+        let nodeID = ThreadContentNodeID(source: source, ordinal: ordinal)
+        let link = ExternalLinkIntent(sourceNodeID: nodeID, label: "打开关联帖子",
+                                      destination: .init(absoluteString: "https://tieba.baidu.com/p/100002", scheme: .https))
+        return [ThreadContentNode(id: nodeID, rawType: 1, payload: .link(.init(label: link.label, intent: link, rejection: nil))),
+                ThreadContentNode(id: .init(source: source, ordinal: ordinal + 1), rawType: 0, payload: .text(.init(value: " "))),
+                ThreadContentNode(id: .init(source: source, ordinal: ordinal + 2), rawType: 4,
+                                  payload: .mention(.init(userID: 91, label: "@固定用户")))]
     }
 
     private static func textNode(

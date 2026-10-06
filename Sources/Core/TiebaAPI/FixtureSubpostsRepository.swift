@@ -36,6 +36,7 @@
           payload: .text(.init(value: "回复 固定样本用户：第 \(index) 条完整回复，内联 #滑稽 #捂嘴笑 #(微微一笑)。")))
       ]
       if index == 1 {
+        nodes += FixtureThreadReaderPages.actionLinks(source: source, ordinal: 99)
         let faces = [("04", "大笑"), ("07", "笑哭"), ("60", "赞同"), ("71", "滑稽"), ("72", "捂脸")]
         nodes += faces.enumerated().map { ordinal, face in
           ThreadContentNode(

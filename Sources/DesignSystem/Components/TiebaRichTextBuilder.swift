@@ -21,6 +21,12 @@ enum TiebaRichTextBuilder {
                 if bold { attributes[.font] = UIFont.systemFont(ofSize: font.pointSize, weight: .bold) }
             case .mention:
                 attributes[.foregroundColor] = UIColor.systemBlue
+            case let .identifiedMention(nodeID, _, _):
+                // TextKit marker only. The delegate resolves the original typed identity,
+                // never sends this marker to an external URL handler.
+                attributes[.link] = URL(string: "tiebalite-mention:\(nodeID.stableKey)")
+                attributes[nodeIDKey] = nodeID.stableKey
+                attributes[.foregroundColor] = UIColor.systemBlue
             case let .link(intent):
                 // Only the already validated destination is attached. The delegate delivers the original intent.
                 attributes[.link] = URL(string: intent.destination.absoluteString)

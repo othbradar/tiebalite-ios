@@ -4,6 +4,7 @@ import Foundation
 enum TiebaRichTextRun: Equatable, Sendable {
     case text(String, bold: Bool = false)
     case mention(String)
+    case identifiedMention(ThreadContentNodeID, userID: Int64, label: String)
     case link(ExternalLinkIntent)
     case emoticon(TiebaEmoticon, alternative: String)
 
@@ -11,6 +12,7 @@ enum TiebaRichTextRun: Equatable, Sendable {
         switch self {
         case let .text(text, _), let .mention(text): text
         case let .link(intent): intent.label.isEmpty ? "打开链接" : intent.label
+        case let .identifiedMention(_, _, label): label
         case let .emoticon(_, alternative): alternative
         }
     }
@@ -27,6 +29,12 @@ enum TiebaRichTextRun: Equatable, Sendable {
 
     var linkIntent: ExternalLinkIntent? {
         if case let .link(intent) = self { return intent }
+        return nil
+    }
+
+    var profileIntent: (nodeID: ThreadContentNodeID, route: UserProfileRoute)? {
+        if case let .identifiedMention(nodeID, userID, label) = self,
+           let route = UserProfileRoute(userID: userID, fallbackDisplayName: label) { return (nodeID, route) }
         return nil
     }
 }
@@ -73,7 +81,11 @@ enum TiebaRichText {
                 } else { [.text(emoji.fallbackText)] }
             case let .link(link):
                 if let intent = link.intent { [.link(intent)] } else { [.text(link.label.isEmpty ? "链接不可用" : link.label)] }
-            case let .mention(mention): [.mention(mention.label.isEmpty ? "提及用户" : mention.label)]
+            case let .mention(mention):
+                if let userID = mention.userID,
+                   let route = UserProfileRoute(userID: userID, fallbackDisplayName: mention.label) {
+                    [.identifiedMention(node.id, userID: route.userID.rawValue, label: mention.label.isEmpty ? "提及用户" : mention.label)]
+                } else { [.mention(mention.label.isEmpty ? "提及用户" : mention.label)] }
             case .image: [.text("[图片]")]
             case .video: [.text("[视频]")]
             case .voice: [.text("[语音]")]

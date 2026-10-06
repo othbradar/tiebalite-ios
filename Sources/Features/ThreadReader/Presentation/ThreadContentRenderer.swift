@@ -12,19 +12,22 @@ struct ThreadContentRenderer: View {
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
 
     init(
         document: ThreadContentDocument,
         imageLoader: any ImageLoading,
         readingTextSize: ReadingTextSizePreference = .standard,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void = { _ in },
-        onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in }
+        onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in },
+        onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in }
     ) {
         self.document = document
         self.imageLoader = imageLoader
         self.readingTextSize = readingTextSize
         self.onOpenMedia = onOpenMedia
         self.onOpenExternalLink = onOpenExternalLink
+        self.onOpenUser = onOpenUser
     }
 
     var body: some View {
@@ -60,12 +63,12 @@ struct ThreadContentRenderer: View {
                     ThreadContentNodeView(
                         node: node, document: document, imageLoader: imageLoader,
                         readingTextSize: readingTextSize, onOpenMedia: onOpenMedia,
-                        onOpenExternalLink: onOpenExternalLink
+                        onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser
                     )
                 case let .richText(nodes):
                     TiebaRichTextView(
                         runs: TiebaRichText.runs(nodes: nodes), fontSize: readingFontSize,
-                        onOpenExternalLink: onOpenExternalLink
+                        onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser
                     )
                     .accessibilityIdentifier(nodes.first.map { ThreadContentAccessibilityID.node($0.id) } ?? "thread-content.text")
                 case let .images(nodes):
@@ -119,6 +122,7 @@ private struct ThreadContentNodeView: View {
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
 
     @ViewBuilder
     var body: some View {
@@ -126,7 +130,7 @@ private struct ThreadContentNodeView: View {
             switch node.payload {
             case .text, .emoji, .link, .mention:
                 // Inline-capable nodes are grouped before reaching this media/fallback branch.
-                TiebaRichTextView(runs: TiebaRichText.runs(nodes: [node]), onOpenExternalLink: onOpenExternalLink)
+                TiebaRichTextView(runs: TiebaRichText.runs(nodes: [node]), onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
             case let .image(content):
                 ThreadContentImageView(
                     content: content,

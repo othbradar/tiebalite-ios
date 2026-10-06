@@ -224,3 +224,11 @@ MediaViewer/descriptor/URL、loading/error/task。
 
 上述容器、恢复和 deep-link 验收在工程建立前均为 `NOT_TESTED`；U-40、
 U-42、U-43 保持开放到对应 deterministic/UI 证据完成。
+
+## U07 内容动作接线
+
+ContentLinkHandler 将已支持的站内 HTTP(S) 内容地址交给发起页面的 openRoute，保持原 root 或搜索 sheet；
+不走外部 deep link 的 replaceRootDetail。RouteGrammar 仅扩展 thread/subposts/notification 到 thread/forum/profile
+以及相同 thread 的 subposts 边，动态根允许已识别用户；Settings 历史内容链复用相同规则。
+现有唯一 route 去重、最多5层业务路径（历史最多4个内容页）、compact/regular 投影和 Store 所有权不变。
+外部安全网页交系统浏览器；未知网页查询/短链不猜参数。复制/分享使用公开URL。

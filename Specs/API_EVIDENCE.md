@@ -954,3 +954,13 @@ CODE_EVIDENCE：Android `AccountUtil.fetchAccountFlow`144–187 从 LoginBean �
 本次最小适配复用已接入的匿名 `/c/u/user/profile` 和 ProfileProtocol（与 R12 当前账户资料相同的读取路径），只取同 uid 的原始 `user.nameShow`。不新增 getuserinfo/schema，不发送登录凭据到公开资料请求，不把 name/fallbackDisplayName 写成 name_show。资料获取失败/身份不符停止发送、保留草稿；有效响应缺字段用原版空值语义。每次发送前读取，不增加重试或账户缓存。固定样本：R09WriteFixture 的合成 uid42、不同登录名/显示名和 Unicode/保留字符；自动化全部 Mock。服务端审核/真实发布结果另行验证，不由 Unit 推定。
 
 RUNTIME_EVIDENCE（用户手动，2026-09-27）：用户确认“这回发成功了”，提供完整 App 中新增第3楼、中文时间及内联表情正常显示的截图，保存在 ignored Artifacts/Audits/WriteCompatibility20260927/user-confirmed-live-reply.png。只验证本次发送/当前可见；未采集即时响应、未验证后续审核保留，不据此将 name_show 与删帖原因认定为因果。AI 零 Live 发送/上传，当前候选未提交。
+
+### U07 公开内容动作（2026-10-06，CODE_EVIDENCE）
+
+- 锁定 Android `ui/page/thread/ThreadPage.kt` 的 onShareClick（1440）使用 `https://tieba.baidu.com/p/$threadId`；
+  `ui/page/forum/ForumPage.kt::shareForum`（344）使用 `https://tieba.baidu.com/f?kw=$forumName`。
+  iOS PublicContentURL 只携正 threadID 或 URLQueryItem 编码的吧名，不拼 API、Cookie 或跟踪参数。
+- `ThreadInfo.richAbstract` 的元素是既有 `PbContent`，复用 ThreadContentProtoMapper 的 type=1/link 与 type=4/uid 验证；
+  `Abstract.proto` 只有 text/link/un 等，没有 uid，不能按显示名猜资料 ID。保留摘要文字/表情原顺序及原始 ordinal。
+- 不新增 endpoint、请求或网络协议；外部安全网页通过系统 OpenURLAction，站内已知 URL 复用 DeepLinkParser 到当前路由栈。
+  合成测试仅证明 intent、原生 route 与分享载荷，不能当作所有 Live 短链/查询组合已支持。

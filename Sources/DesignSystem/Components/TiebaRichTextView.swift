@@ -7,22 +7,25 @@ struct TiebaRichTextView: View {
     let lineLimit: Int
     let interactive: Bool
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
     @ScaledMetric(relativeTo: .body) private var pointSize: CGFloat = 17
 
     init(
         runs: [TiebaRichTextRun], fontSize: CGFloat = 17, lineLimit: Int = 0, interactive: Bool = true,
-        onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in }
+        onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in },
+        onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in }
     ) {
         self.runs = runs
         self.lineLimit = lineLimit
         self.interactive = interactive
         self.onOpenExternalLink = onOpenExternalLink
+        self.onOpenUser = onOpenUser
         _pointSize = ScaledMetric(wrappedValue: fontSize, relativeTo: .body)
     }
 
     var body: some View {
         TiebaRichTextRepresentable(runs: runs, pointSize: pointSize, lineLimit: lineLimit,
-                                   interactive: interactive, onOpenExternalLink: onOpenExternalLink)
+                                   interactive: interactive, onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
             .frame(maxWidth: .infinity, alignment: .leading)
             .allowsHitTesting(interactive)
     }
@@ -34,17 +37,20 @@ private struct TiebaRichTextRepresentable: UIViewRepresentable {
     let lineLimit: Int
     let interactive: Bool
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
 
     func makeUIView(context: Context) -> TiebaSelectableTextView { TiebaSelectableTextView() }
 
     func updateUIView(_ uiView: TiebaSelectableTextView, context: Context) {
         uiView.onOpenExternalLink = onOpenExternalLink
+        uiView.onOpenUser = onOpenUser
         uiView.apply(runs: runs, pointSize: pointSize, lineLimit: lineLimit, interactive: interactive)
     }
 
     static func dismantleUIView(_ uiView: TiebaSelectableTextView, coordinator: ()) {
         uiView.delegate = nil
         uiView.onOpenExternalLink = { _ in }
+        uiView.onOpenUser = { _ in }
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: TiebaSelectableTextView, context: Context) -> CGSize? {
@@ -57,6 +63,7 @@ private struct TiebaRichTextRepresentable: UIViewRepresentable {
 @MainActor
 final class TiebaSelectableTextView: UITextView, UITextViewDelegate {
     var onOpenExternalLink: (ExternalLinkIntent) -> Void = { _ in }
+    var onOpenUser: (UserProfileRoute) -> Void = { _ in }
     private var currentRuns: [TiebaRichTextRun] = []
     private var currentSize: CGFloat = 0
 
@@ -97,8 +104,11 @@ final class TiebaSelectableTextView: UITextView, UITextViewDelegate {
     func textView(_ textView: UITextView, primaryActionFor textItem: UITextItem, defaultAction: UIAction) -> UIAction? {
         guard textItem.range.location < attributedText.length,
               let key = attributedText.attribute(TiebaRichTextBuilder.nodeIDKey, at: textItem.range.location,
-                                                 effectiveRange: nil) as? String,
-              let intent = currentRuns.compactMap(\.linkIntent).first(where: { $0.sourceNodeID.stableKey == key }) else {
+                                                 effectiveRange: nil) as? String else { return nil }
+        if let profile = currentRuns.compactMap(\.profileIntent).first(where: { $0.nodeID.stableKey == key }) {
+            return UIAction { [weak self] _ in self?.onOpenUser(profile.route) }
+        }
+        guard let intent = currentRuns.compactMap(\.linkIntent).first(where: { $0.sourceNodeID.stableKey == key }) else {
             return nil
         }
 

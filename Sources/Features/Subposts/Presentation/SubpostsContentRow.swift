@@ -9,6 +9,7 @@ struct SubpostsContentRow: View {
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    let onOpenExternalLink: (ExternalLinkIntent) -> Void
     let identifier: String
     let reply: (() -> Void)?
 
@@ -37,7 +38,7 @@ struct SubpostsContentRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 ThreadContentRenderer(
                     document: document, imageLoader: imageLoader, readingTextSize: readingTextSize,
-                    onOpenMedia: onOpenMedia)
+                    onOpenMedia: onOpenMedia, onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
                 if let reply {
                     Button("回复", action: reply).font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
                         .frame(minHeight: 44).accessibilityIdentifier(identifier + ".action")

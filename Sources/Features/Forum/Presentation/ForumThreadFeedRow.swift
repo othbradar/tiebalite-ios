@@ -44,16 +44,29 @@ struct ForumThreadFeedRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint("打开只读帖子")
+            .accessibilityHint("打开帖子")
             .accessibilityIdentifier(ForumHomeAccessibilityID.row(row.threadID))
+            .contextMenu {
+                if let url = PublicContentURL.thread(thread.threadID) {
+                    LinkActionsContent(url: url, identifier: "forum-home.more.t\(thread.threadID)", open: openThread)
+                }
+            }
             HStack(spacing: 0) {
-                action("arrow.up.arrow.down", count: thread.metadata.shareCount, fallback: "分享")
+                if let url = PublicContentURL.thread(thread.threadID) {
+                    ShareLink(item: url) {
+                        action(TiebaShareIcon(), count: thread.metadata.shareCount, fallback: "分享")
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("分享帖子")
+                    .accessibilityIdentifier("forum-home.share.t\(thread.threadID)")
+                }
                 Button(action: openThread) {
-                    action("text.bubble", count: Int64(row.replyCount), fallback: "回复")
+                    action(TiebaReplyIcon(), count: Int64(row.replyCount), fallback: "回复")
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("forum-home.reply.t\(row.threadID)")
-                action("heart", count: thread.metadata.agreeCount, fallback: "点赞")
+                action(TiebaLikeIcon(), count: thread.metadata.agreeCount, fallback: "0")
             }
             .foregroundStyle(SemanticColor.secondaryText)
         }
@@ -93,9 +106,9 @@ struct ForumThreadFeedRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func action(_ symbol: String, count: Int64?, fallback: String) -> some View {
+    private func action<Icon: View>(_ icon: Icon, count: Int64?, fallback: String) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: symbol).font(.system(size: 18))
+            icon.font(TiebaParityTokens.contentActionIconFont)
             Text(ForumFeedText.count(count, fallback: fallback)).font(.caption)
         }
         .frame(maxWidth: .infinity, minHeight: 48)

@@ -74,8 +74,8 @@ NavigationSplitView
 | Forum header | 吧资料 | `forumDetail` | P1 |
 | Thread | 点楼中楼摘要 | `subposts` | threadID + postID |
 | Thread | 点图片 | `mediaViewer` | 以 media id 定位初始页 |
-| Thread/PbContent | 点作者或 mention | `userProfile` | P1；非法 uid 不导航 |
-| Thread/PbContent | 点链接 | 系统外链流程 | P1；校验 scheme |
+| Thread/PbContent、楼中楼、动态摘要 | 点作者或有 ID 的 mention | `userProfile` | U07：正 uid；只有显示名时保持文本 |
+| Thread/PbContent、楼中楼、动态摘要 | 点链接 | 当前栈的 thread/forum 或系统浏览器 | U07：HTTP(S) 安全校验；已支持的站内路径原生打开，其余网页交系统；相对/未知 scheme/凭证 URL 拒绝 |
 | 受保护入口 | 未登录 | `authentication` presentation | continuation 原子注册后才展示；登录成功后回原 route 并最多显式重试一次 |
 | Settings/User | 历史 | `history` | 阶段 16B；使用 settingsPath |
 | History | 点 thread/forum/user 记录 | 现有 `thread/forum/userProfile` | 仅安全最小 route 值，保留 History Store |

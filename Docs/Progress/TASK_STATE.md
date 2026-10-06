@@ -1,5 +1,56 @@
 # TASK_STATE
 
+## 2026-10-06 U07 — USER_ACCEPTED，授权提交并进入U08
+
+- 用户已确认最终外观并明确批准提交U07、开始U08。代码保持当前已安装验收候选，复用原31项不同逻辑Unit、7条设备/流程UI及各次直接视觉短回归；最终分享/回复候选19.590s UI、433文件lint/build/secret-scan/diff check已通过，不重复全套。
+- 精确提交U07相关源码、测试、规格及视觉约束；排除用户原有未跟踪Prompt/skill、模拟器清理记录、Artifacts、凭证和Android submodule。真实Live仅验证过已记录范围，真机未验收。提交成功后才进入U08，不推送；全App已稳定视觉继续冻结。
+
+## 2026-10-06 U07 分享/回复原版轮廓及分享文字
+
+- 用户明确验收简洁空心点赞图标；TiebaLikeIcon保持原样。最新要求恢复分享右侧文字/数量，并按其原版截图替换分享、回复为简洁空心轮廓。仅修改两种信息流动作label并新增TiebaContentActionIcons：分享为圆角开口外框和斜向箭头，回复为圆润气泡、短弧和底部尾部；两者18pt、1.4pt圆头描边，与已验收点赞相同。
+- 分享复用同一行现有计数label：源shareCount为正数显示其格式化数值，零/缺失显示“分享”；吧首页使用caption，动态使用原有12pt ScaledMetric，与各自点赞数字完全同源。使用已有API字段和计数格式化，不新增网络请求或伪增计数。保留48pt命中范围、系统ShareLink及现有回复动作；其他文字、位置、布局和已验收点赞图形不改。已更新PROJECT_RULES中的分享文字例外，全App视觉冻结仍生效。
+- 最终make build、make lint（433文件0violation）、make secret-scan、git diff --check均exit0。现有U07动态标签/摘要/分享UI 1项19.590s PASS，未跑全套。证据在ignored `Artifacts/VisualReview/U07/share-label/`。无新动画、手势、overlay或依赖。
+- scripts/visual_review_build_install.sh U07成功；完整正常Live覆盖iPhone/iPad，主程序/debug dylib与候选回读一致（share-label/installed-binary-proof.json），未卸载、清数据或改签名。iPhone真实高通吧已截图确认分享文字与右侧计数相同字号、分享/回复空心轮廓，停在吧首页供检查。本次Live可见的是“分享”回退分支；正数分支复用既有formatter和fixture shareCount，不冒称本次Live已观察到正数。iPad仅覆盖安装，真机未验证。
+- 未暂存、提交或推送，不进入U08。点赞图形已获用户验收，本次分享/回复待用户视觉验收。READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-06 U07 用户原版截图 — 简洁空心点赞轮廓
+
+- 用户提供原版贴吧截图，明确拒绝实心拇指，要求空心且外形简洁。此前hand.thumbsup/hand.thumbsup.fill候选均未获视觉验收；以本次截图作为图形依据，不回退U07功能或用户数据。
+- 新增纯绘制组件TiebaLikeIcon：圆润封闭外轮廓、直立拇指、一条袖口分界线，无填充和手指细纹。ForumThreadFeedRow、RecommendationFeedRow、ThreadReaderFloorViews复用这一18pt图形；仅替换点赞图形，保留现有位置、颜色、间距、点击范围和已按用户要求统一的caption计数字号。其余图标、正文、标题、作者、导航、列表和缓存均未调整；无新动画/手势/overlay/依赖。
+- 最终make build、make lint（432文件0violation）、make secret-scan及git diff --check均exit0。共享组件定向UI `testFeedForumTagAndAbstractLinkUseIndependentNativeRoutes` 1项19.629s PASS；未跑全套。证据在ignored `Artifacts/VisualReview/U07/outline-like/`。
+- scripts/visual_review_build_install.sh U07成功，完整正常Live覆盖iPhone和iPad，登录与数据保留。两端主程序/debug dylib均与候选一致（outline-like/installed-binary-proof.json）。iPhone真实吧首页及缓存帖11082436856第4/5楼已截图看到同一简洁空心图标，停在帖子页供用户检查；iPad本次仅覆盖安装，真机未验证。自绘轮廓参考用户截图，不冒称提取了官方原始素材。
+- 本轮未暂存、提交或推送，不进入U08；保留全部U07与用户原有改动。等待用户视觉验收，READY_FOR_USER_VISUAL_REVIEW。下方实心及系统轮廓版本为已被用户否定的历史候选。
+
+## 2026-10-06 U07 用户视觉反馈 — 点赞图标与尺寸
+
+- 用户明确要求整个TiebaLite的已稳定视觉冻结：未获明确要求，不改变图标、字号、字重、间距、颜色或布局；已写入Docs/VisualParity/PROJECT_RULES.md。本轮仅处理用户指定的点赞符号、帖内外操作图标尺寸和最终再次明确授权的楼层点赞计数字号。
+- 楼层原先在U07接线时从HStack换为默认Label，图标和计数缺少与信息流一致的尺寸约束。当前用原HStack排列和4pt间距；吧首页/动态/楼层点赞统一为`hand.thumbsup.fill`，操作图标共用18pt令牌，楼层点赞计数依最新要求使用与吧首页相同的caption。先前轮廓拇指候选被用户指出过细，已更换实心版本；不声称是官方原始素材。计数只提供一个无障碍元素，避免重复朗读。分享图标及无说明文字要求保留。
+- 核对与HEAD的相关差异，未发现正文、标题、作者字号设置变化；本轮不修改这些文字、阅读字号偏好或布局。未改缓存、恢复、VirtualizedList、Pager、图片、导航或任何远端写操作。无新动画、手势、overlay和依赖。
+- 验证：现有U07帖内/楼中楼/更多分享短UI 1项36.297s PASS（like-icons/phone-ui.xcresult）；随后只调整图形、计数字号和无障碍分组，功能结果复用，没有重复全套或新增镜像测试。最终filled-build、filled-lint（431文件0violation）、filled-secret-scan、git diff --check均exit0；filled-install完整Live覆盖安装成功，未卸载/清数据/改签名。
+- iPhone/iPad的最终主程序及debug dylib均与候选一致，见ignored `Artifacts/VisualReview/U07/like-icons/filled-installed-binary-proof.json`。iPhone正常Live高通吧及缓存帖11082436856楼层2/3已截图确认相同实心拇指、较小计数，停在帖子页供用户检查；iPad本轮仅覆盖安装，不冒称重新执行大屏视觉/真机验收。证据在同目录及U07的filled-like-feed/reader截图。
+- 保留所有U07及用户原有改动；未暂存、提交或推送，不进入U08。此前其他候选的安装哈希仅为历史证据。READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-06 U07 用户视觉反馈 — 分享入口简化
+
+- 用户要求分享入口只留图标，并进一步指出双向箭头不像分享。仅修改ForumThreadFeedRow和RecommendationFeedRow的分享label：使用`square.and.arrow.up`，移除分享文字/计数，保留原48pt点击区域、三列布局、系统ShareLink及无障碍名称。将后续按钮不随意添加可见描述文字的偏好写入Docs/VisualParity/PROJECT_RULES.md；无新增动画、手势、overlay或依赖。
+- 图标单独显示后的现有短UI回归`U07ContentActionsSmokeTests/testFeedForumTagAndAbstractLinkUseIndependentNativeRoutes`通过，1项/19.600s；随后仅更换SF Symbol，沿用该功能结果，不重复全套或新增测试。最终make lint（431文件0violation）、make build、make secret-scan、git diff --check均exit0。证据在ignored `Artifacts/VisualReview/U07/share-icon/`。
+- `scripts/visual_review_build_install.sh U07`成功；最终正常Live产物覆盖iPhone/iPad，主程序及debug dylib哈希与候选均一致（share-icon/installed-binary-proof.json），未卸载、清数据或改签名。iPhone真实高通吧页面已截图确认分享仅显示方框向上箭头，留在此处供用户检查；iPad本次只覆盖安装，沿用此前分享布局回归，未声称重新手工验收。真机未验证。
+- 保留下方U07全部实现和既有验证记录；下方旧产物哈希为上一候选，不代表本次图标候选。未暂存、提交、推送，不进入U08。READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-06 U07 — READY_FOR_USER_VISUAL_REVIEW
+
+- 用户要求进入 U07；实际 HEAD 为8a1eedfd7aced187fbe35334037d55401fbf743a。读取本轮COMMON/实际U07及相关规则、当前源码；保留此前模拟器清理记录、用户未跟踪Prompt/skill和所有用户数据。不进入U08，不暂存/提交/推送。
+- 根因：ThreadReader正文/三条子回复/完整楼中楼没有接收已有链接intent；动态摘要mapper丢弃link/mention，吧标签在外层帖卡Button内；旧RouteGrammar还拒绝thread→thread/forum。已接入统一安全网页/原生路由策略并仅补必要合法边；当前导航容器、去重和有界路径不变。已知uid提及走现有资料，未知uid保留文本。
+- 公开链接只用已证实threadID或URLQueryItem编码吧名；生产分享使用系统ShareLink，更多菜单复制/分享/已有阅读操作，移除假点赞及过期评论未开放提示。普通帖卡主体保留原点击范围，吧标签独立；有链接的摘要保留TextKit选择，长按更多只挂作者入口。未改列表/富文本布局/缓存/预载/图片/Pager/Session。
+- 验证进展：原摘要丢失红例actions-red FAIL；baseline的DeepLink4项PASS、R07 parser7项PASS。direct-unit-3为14项PASS（U07初版6、RichTextBuilder4、DeepLink4）；navigation-unit为21项PASS（U07最终7、导航Store7、R07 parser7）。同一已通过测试不跑全套。R07链接点击/起滑、长按选择复制UI两条PASS。
+- UI排障如实记录：phone-ui的正文跳转因旧路径规则失败；动态分享已打开，失败是测试把系统Copy Cell查成Button，按实际AX修正。phone-actions-2两条U07已PASS，但普通帖卡改成仅作者行点击导致原滚动目标被跳过；恢复普通卡片原主体命中范围，无修改旧断言。phone-final三条PASS：四Tab/返回51.513s，正文/楼中楼/提及/吧入口/更多分享36.728s，动态吧标签/摘要链接/分享20.041s。早期两次Unit构建因测试支架多传参数失败，修正后通过。
+- 最终相关验证：iPad-ui两条PASS（正文/楼中楼/提及/吧入口/更多分享38.237s，动态标签/摘要/分享21.034s），截图确认系统popover指向实际分享控件。navigation-compat使用test-without-building只跑R08楼中楼路由/Store投影和R11通知thread/subposts关系两项PASS。合计31个不同逻辑Unit、7条不同设备/流程UI通过；复用已通过R07结果，没有跑全部Unit/quality-fast/quality或无关压力矩阵。早期错误和中间失败保留上条及ignored日志，不计为通过。
+- 最终门禁：make lint（431文件0violation）、make build、make secret-scan、git diff --check均PASS。只有工具链既有warning；无测试克隆（XCTestDevices count=0）。新增的是系统contextMenu/ShareLink及typed mention动作，没有自定义拖动、动画、透明遮罩或依赖；没有改变VirtualizedList、恢复、Pager、媒体、网络或缓存预算。
+- 安装：scripts/visual_review_build_install.sh U07成功；同一完整正常Debug产物覆盖iPhone17Pro和13寸iPad，不uninstall/erase/清Keychain或数据。两端主程序SHA256均2091beb5edc46dd2b9fa97f72201eb393fbc0ee1b5eed4b5969e3b89766f6967，debug dylib均1d8e9596725660433e4033bc611793aeeb307da240d03534418f4bb2a4ea36b5；27个源码/测试候选哈希回读一致，证据在candidate-source-sha256/installed-binary-proof。
+- 正常Live：iPhone原登录/关注和最新发布排序仍在，真实帖子顶部吧名成功进入原生高通吧；11082237926更多菜单包含复制链接/分享/重新加载，系统分享已实际弹出并正常关闭。iPad原最新回复排序仍在，缓存帖11071998867重进仍见153993794608（第31楼），系统分享锚定右下更多入口，关闭后仍在该楼层。iPhone最终留在11082237926更多菜单，iPad留在原缓存帖31楼供操作。没有发出真实帖子/关注/点赞等写操作。
+- 范围/限制：正文、楼中楼、摘要、提及的具体链接跳转由完整生产App接Fixture进行确定性UI验证；本次正常Live未找到并遍历所有真实外链/短链组合，不冒称全部实网链接均验证。未知网页路径/查询仍交系统浏览器；保留现有5层业务路径及4层历史内容上限。只在Simulator验证，真机未验收。清理相关README/节点矩阵/导航/API证据中的过期说明，未重读或删除历史审计。
+- 当前HEAD仍8a1eedf，暂存区为空；保留先前模拟器清理记录和用户原有未跟踪Prompt/skill。U07未暂存/提交/推送，不进入U08，等待用户验收。证据在ignored Artifacts/VisualReview/U07/。
+
 ## 2026-10-04 v0.2.0beta3 — PUBLISHED_AND_VERIFIED
 
 - 用户授权的提交、推送和IPA发布已完成：首页修复4e66ea6，发布源4534020；U06P1–P4一并快进推送，附注标签v0.2.0beta3解析为 `4534020d509ea0188dced53cf582fcc775dbb71e`，远端回读一致。

@@ -128,6 +128,7 @@ struct AppShellContent {
                 accessPolicy: environment.recommendationsAccessPolicy,
                 imageLoader: environment.imageLoader,
                 openLogin: onOpenLogin,
+                onOpenUser: { open(.userProfile($0), in: root, regular: regular) },
                 onOpenThread: { recommendation in
                     guard let route = AppRouter.threadRoute(for: recommendation),
                           case let .thread(threadID) = route else { return }
@@ -135,6 +136,7 @@ struct AppShellContent {
                     open(route, in: root, regular: regular)
                 }
             )
+            .environment(\.openURL, ContentLinkHandler.action { open($0, in: root, regular: regular) })
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("搜索", systemImage: "magnifyingglass") {

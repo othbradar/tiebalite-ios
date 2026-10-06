@@ -8,6 +8,7 @@ struct RecommendationsAppRootView: View {
     let accessPolicy: RecommendationsAccessPolicy
     let imageLoader: any ImageLoading
     let openLogin: () -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
     let onOpenThread: (RecommendationSummary) -> Void
 
     @State private var synchronizedScope: RecommendationsAccessScope?
@@ -108,7 +109,7 @@ struct RecommendationsAppRootView: View {
         RecommendationsView(
             store: store,
             imageLoader: imageLoader,
-            onOpenThread: onOpenThread
+            onOpenThread: onOpenThread, onOpenUser: onOpenUser
         )
     }
 

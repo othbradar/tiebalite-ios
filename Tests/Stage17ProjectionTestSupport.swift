@@ -136,6 +136,7 @@ struct Stage19BScopedRecommendationHarness: View {
                 accessPolicy: .activeSessionRequired,
                 imageLoader: DisabledImageLoader(),
                 openLogin: {},
+                onOpenUser: { _ in },
                 onOpenThread: { _ in }
             )
         } else {

@@ -8,7 +8,7 @@ struct ThreadReaderRowView: View {
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
     let onOpenSubposts: (ThreadContentSource) -> Void
-    let onReadOnlyAction: () -> Void
+    let onOpenExternalLink: (ExternalLinkIntent) -> Void
     var onReply: (ThreadReaderPostRowModel) -> Void = { _ in }
     let requestNextPage: () -> Void
 
@@ -19,7 +19,7 @@ struct ThreadReaderRowView: View {
             ThreadReaderPostView(
                 post: post, imageLoader: imageLoader, readingTextSize: readingTextSize,
                 onOpenMedia: onOpenMedia, onOpenUser: onOpenUser,
-                onOpenSubposts: onOpenSubposts, onReadOnlyAction: onReadOnlyAction, onReply: onReply
+                onOpenSubposts: onOpenSubposts, onOpenExternalLink: onOpenExternalLink, onReply: onReply
             )
         case let .pagination(pagination):
             ThreadReaderPaginationView(pagination: pagination, requestNextPage: requestNextPage)
@@ -58,7 +58,7 @@ private struct ThreadReaderPostView: View {
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
     let onOpenSubposts: (ThreadContentSource) -> Void
-    let onReadOnlyAction: () -> Void
+    let onOpenExternalLink: (ExternalLinkIntent) -> Void
     var onReply: (ThreadReaderPostRowModel) -> Void = { _ in }
 
     private var contentInset: CGFloat { post.floorNumber > 1 ? TiebaParityTokens.userAvatarSize + 8 : 0 }
@@ -68,15 +68,14 @@ private struct ThreadReaderPostView: View {
             HStack(alignment: .top, spacing: 8) {
                 authorHeader
                 if post.floorNumber > 1 {
-                    Button(action: onReadOnlyAction) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "heart")
-                            if let count = post.agreeCount, count > 0 { Text("\(count)") }
-                        }
-                        .frame(minWidth: 44, minHeight: 44)
+                    HStack(spacing: 4) {
+                        TiebaLikeIcon()
+                        Text("\(post.agreeCount ?? 0)").font(.caption)
                     }
-                    .buttonStyle(.plain).foregroundStyle(SemanticColor.secondaryText)
-                    .accessibilityLabel("点赞")
+                    .frame(minWidth: 44, minHeight: 44)
+                    .foregroundStyle(SemanticColor.secondaryText)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("点赞数 \(post.agreeCount ?? 0)")
                     .accessibilityIdentifier("thread-reader.agree.p\(post.source.postID)")
                 }
             }
@@ -85,7 +84,8 @@ private struct ThreadReaderPostView: View {
                     Text(title).font(Typography.font(.headline)).textSelection(.enabled)
                 }
                 ThreadContentRenderer(document: post.document, imageLoader: imageLoader,
-                                      readingTextSize: readingTextSize, onOpenMedia: onOpenMedia)
+                                      readingTextSize: readingTextSize, onOpenMedia: onOpenMedia,
+                                      onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
                 if !post.inlineSubposts.isEmpty || post.remainingSubpostCount > 0 {
                     subposts
                 }
@@ -149,7 +149,7 @@ private struct ThreadReaderPostView: View {
     private var subposts: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(post.inlineSubposts) { subpost in
-                ThreadReaderSubpostPreview(subpost: subpost)
+                ThreadReaderSubpostPreview(subpost: subpost, onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
             }
             if post.remainingSubpostCount > 0 {
                 Button("查看全部 \(post.totalSubpostCount) 条回复") { onOpenSubposts(post.source) }
@@ -166,9 +166,12 @@ private struct ThreadReaderPostView: View {
 
 private struct ThreadReaderSubpostPreview: View {
     let subpost: ThreadReaderSubpostRowModel
+    let onOpenExternalLink: (ExternalLinkIntent) -> Void
+    let onOpenUser: (UserProfileRoute) -> Void
 
     var body: some View {
-        TiebaRichTextView(runs: runs, fontSize: 15, lineLimit: 4)
+        TiebaRichTextView(runs: runs, fontSize: 15, lineLimit: 4,
+                          onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
             .accessibilityIdentifier(ThreadReaderAccessibilityID.subpost(subpost.document.source))
     }
 
@@ -184,7 +187,8 @@ private struct ThreadReaderSubpostPreview: View {
 struct ThreadReaderReplyBar: View {
     let imageLoader: any ImageLoading
     var accountAvatar: ImageResourceDescriptor?
-    let onAction: () -> Void
+    let threadID: Int64
+    let reload: () -> Void
     var onCompose: () -> Void = {}
 
     var body: some View {
@@ -200,12 +204,9 @@ struct ThreadReaderReplyBar: View {
                 }
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("thread-reader.compose")
-                Button("点赞", systemImage: "heart", action: onAction)
-                    .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
-                    .accessibilityIdentifier("thread-reader.compose.agree")
-                Button("更多", systemImage: "ellipsis", action: onAction)
-                    .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
-                    .accessibilityIdentifier("thread-reader.compose.more")
+                if let url = PublicContentURL.thread(threadID) {
+                    LinkActionsMenu(url: url, identifier: "thread-reader.compose.more", reload: reload)
+                }
             }
             .buttonStyle(.plain).foregroundStyle(SemanticColor.secondaryText)
             .padding(.horizontal, 16).padding(.vertical, 4)

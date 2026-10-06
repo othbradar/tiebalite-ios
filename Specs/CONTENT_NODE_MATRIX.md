@@ -1,6 +1,6 @@
 # 帖子内容节点矩阵
 
-状态：`PHASE_08_IMPLEMENTED_AND_VERIFIED`
+状态：`PHASE_08_IMPLEMENTED_AND_VERIFIED`（历史基线）；当前链接/提及生产接线见下方 U07。
 
 本矩阵只使用只读 Android submodule
 `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2` 的代码证据。raw type
@@ -144,7 +144,7 @@ fixture 是人工合成、脱敏内容，只证明锁定 schema 的首楼正文 
 
 ## R06 渲染补充
 
-连续image节点在楼层Cell内形成TiebaMediaGrid；任意非image节点结束一组，node/media ID及服务端顺序不变。每组最多预览8图，保留尺寸比例，超过8图提示总数；Viewer intent仅包含当前组的可加载图片，initialMediaID仍为原节点。每张图片继续既有可取消加载/代次与迟到过滤，不通过Store或整表刷新传播加载状态。非图片渲染与官方表情fallback留待R07。子回复只按服务端顺序预览3条，更多入口走既有subposts route；回复/点赞操作只有本地未开放提示。
+连续image节点在楼层Cell内形成TiebaMediaGrid；任意非image节点结束一组，node/media ID及服务端顺序不变。每组最多预览8图，保留尺寸比例，超过8图提示总数；Viewer intent仅包含当前组的可加载图片，initialMediaID仍为原节点。每张图片继续既有可取消加载/代次与迟到过滤，不通过Store或整表刷新传播加载状态。非图片渲染与官方表情fallback留待R07。子回复只按服务端顺序预览3条，更多入口走既有subposts route；回复已在 R09/R10 接入现有编辑器；U07 移除未实现的点赞按钮，保留计数展示。
 
 ## R07 内联表情（2026-09-23）
 
@@ -153,3 +153,13 @@ fixture 是人工合成、脱敏内容，只证明锁定 schema 的首楼正文 
 官方资源与名称来源为 UI commit c5f1125f42498e49db4e4a9cb66313b8c8a285c7 的 EmoticonManager/EmoticonUtil；逐文件来源见 Resources/TIEBA_EMOTICONS_PROVENANCE.md。支持 Android `#(名称)`、web `(#名称)`，以及用户明确要求的裸 `#名称`（完整已知token，未知话题原样保留）。独立 node 优先使用真实 registry ID，不凭未知 ID 的名字猜资源；缺资源回退到原可读文字。DEFAULT 生气=61无本地资源，web 生气=31、明确 node 31 可显示；不以31冒充61。
 
 TiebaRichTextView 是唯一 inline renderer；ThreadReader正文、三条楼中楼预览和动态摘要已接入。文字可选择，附件复制还原输入token，VoiceOver语义为“名称表情”；未来 R08/R10/R11可复用相同 runs/builder，本阶段不实现那些页面。官方静态附件仅本地加载，原远程图片仍由 ProductionImageLoader 负责。
+
+## U07 生产动作接线（2026-10-06）
+
+正文、前三条子回复、完整楼中楼及动态摘要把原始链接 intent 交给 App 的统一 ContentLinkHandler。
+已支持的 tieba.baidu.com 帖子/吧 URL 在当前栈打开；其余合法 HTTP(S) 由系统浏览器处理，
+相对地址、凭证 URL、未知 scheme 不执行。既有外部 deep-link parser 的严格白名单不放宽；
+未支持的查询/短链不猜原生参数。@提及只有正 uid 才形成用户资料动作，显示名不用于推测 ID。
+动态摘要保留 richAbstract/PbContent 的 link/mention 节点；旧 Abstract 没有 uid，提及仍是文本。
+TextKit 的选择、布局、表情附件和 primaryAction 触发时机保持原实现，只增加 typed profile intent 接线。
+分享与复制只输出规范公开帖链/吧链，不使用 API 地址、会话或追踪参数。

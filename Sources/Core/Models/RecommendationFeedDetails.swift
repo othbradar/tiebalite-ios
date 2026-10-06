@@ -1,6 +1,7 @@
 /// Display fields from Personalized. Missing scalar data never receives fixture values.
 struct RecommendationFeedDetails: Equatable, Sendable {
     var abstractText = ""
+    var abstractNodes: [ThreadContentNode] = []
     var showsTitle = true
     var timeUnixSeconds: UInt32?
     var media: [ImageResourceDescriptor] = []

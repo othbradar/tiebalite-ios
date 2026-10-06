@@ -7,6 +7,7 @@ enum TiebaParityTokens {
     static let forumAvatarSize: CGFloat = 40
     static let horizontalInset: CGFloat = 16
     static let imageGap: CGFloat = 4
+    static let contentActionIconFont = Font.system(size: 18)
     static let neutralFill = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(white: 0.16, alpha: 1)

@@ -7,6 +7,7 @@ struct SubpostsView: View {
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var composeTarget: TextComposeTarget?
     @State private var actionTask: Task<Void, Never>?
@@ -57,6 +58,10 @@ struct SubpostsView: View {
         .task(id: store.cacheContext) { await store.loadIfNeeded() }
     }
 
+    private func openExternalLink(_ intent: ExternalLinkIntent) {
+        if let url = URL(string: intent.destination.absoluteString) { openURL(url) }
+    }
+
     private var refreshToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button("刷新", systemImage: "arrow.clockwise", action: refresh)
@@ -71,7 +76,7 @@ struct SubpostsView: View {
             SubpostsContentRow(
                 author: parent.author, metadata: parent.metadata, document: parent.document,
                 isThreadAuthor: parent.author.isThreadAuthor(threadAuthorID), imageLoader: imageLoader,
-                readingTextSize: readingTextSize, onOpenMedia: onOpenMedia, onOpenUser: onOpenUser,
+                readingTextSize: readingTextSize, onOpenMedia: onOpenMedia, onOpenUser: onOpenUser, onOpenExternalLink: openExternalLink,
                 identifier: "subposts.parent", reply: nil)
         case .count(let count):
             Text("\(count) 条回复").font(Typography.font(.subheadline)).fontWeight(.semibold)
@@ -81,7 +86,7 @@ struct SubpostsView: View {
             SubpostsContentRow(
                 author: item.author, metadata: item.metadata, document: item.document,
                 isThreadAuthor: isThreadAuthor, imageLoader: imageLoader, readingTextSize: readingTextSize,
-                onOpenMedia: onOpenMedia, onOpenUser: onOpenUser, identifier: "subposts.reply.\(item.id)",
+                onOpenMedia: onOpenMedia, onOpenUser: onOpenUser, onOpenExternalLink: openExternalLink, identifier: "subposts.reply.\(item.id)",
                 reply: {
                     if let intent = store.replyIntent(for: item) { composeTarget = .reply(intent, document: item.document) }
                 })

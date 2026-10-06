@@ -4,6 +4,8 @@ import SwiftUI
 struct RecommendationFeedRow: View {
     let item: RecommendationSummary
     let imageLoader: any ImageLoading
+    let openURL: OpenURLAction
+    let onOpenUser: (UserProfileRoute) -> Void
     let openThread: () -> Void
 
     @ScaledMetric(relativeTo: .subheadline) private var nameSize: CGFloat = 13
@@ -12,21 +14,15 @@ struct RecommendationFeedRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button(action: openThread) {
-                VStack(alignment: .leading, spacing: 8) {
-                    authorHeader
-                    contentText
-                    if !item.previewMediaResources.isEmpty {
-                        mediaPreview
-                    }
-                    forumChip
+            VStack(alignment: .leading, spacing: 8) {
+                primaryContent
+                if let url = PublicContentURL.forum(item.forumName) {
+                    Button { openURL(url) } label: { forumChip }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("recommendations.forum.t\(item.threadID)")
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityHint("打开只读帖子")
-            .accessibilityIdentifier(RecommendationsAccessibilityID.row(item.threadID))
+            .frame(maxWidth: .infinity, alignment: .leading)
             actions
         }
         .padding(.horizontal, TiebaParityTokens.horizontalInset)
@@ -60,16 +56,63 @@ struct RecommendationFeedRow: View {
         .foregroundStyle(SemanticColor.primaryText)
     }
 
-    private var contentText: some View {
+    private var contentRuns: [TiebaRichTextRun] {
         let abstract = item.feed.abstractText
         let showTitle = item.feed.showsTitle || abstract.isEmpty
         let title = showTitle ? TiebaRichText.parse(item.title, bold: true) : []
         let separator = showTitle && !abstract.isEmpty ? "\n" : ""
-        return TiebaRichTextView(
-            runs: title + TiebaRichText.parse(separator + abstract),
-            fontSize: 15, lineLimit: 5, interactive: false
-        )
+        let abstractRuns = item.feed.abstractNodes.isEmpty
+            ? TiebaRichText.parse(abstract) : TiebaRichText.runs(nodes: item.feed.abstractNodes)
+        return title + TiebaRichText.parse(separator) + abstractRuns
+    }
 
+    private var hasInlineActions: Bool {
+        contentRuns.contains { $0.linkIntent != nil || $0.profileIntent != nil }
+    }
+
+    @ViewBuilder
+    private var primaryContent: some View {
+        if hasInlineActions {
+            VStack(alignment: .leading, spacing: 8) {
+                Button(action: openThread) { authorHeader }.buttonStyle(.plain)
+                    .accessibilityIdentifier(RecommendationsAccessibilityID.row(item.threadID))
+            .contextMenu { moreActions }
+                contentText
+                if !item.previewMediaResources.isEmpty {
+                    Button(action: openThread) { mediaPreview }.buttonStyle(.plain)
+                        .accessibilityIdentifier("recommendations.media.t\(item.threadID)")
+                }
+            }
+        } else {
+            Button(action: openThread) {
+                VStack(alignment: .leading, spacing: 8) {
+                    authorHeader
+                    contentText
+                    if !item.previewMediaResources.isEmpty { mediaPreview }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("打开帖子")
+            .accessibilityIdentifier(RecommendationsAccessibilityID.row(item.threadID))
+            .contextMenu { moreActions }
+        }
+    }
+
+    @ViewBuilder
+    private var moreActions: some View {
+        if let url = PublicContentURL.thread(item.threadID) {
+            LinkActionsContent(url: url, identifier: "recommendations.more.t\(item.threadID)", open: openThread)
+        }
+    }
+
+    private var contentText: some View {
+        TiebaRichTextView(runs: contentRuns, fontSize: 15, lineLimit: 5, interactive: hasInlineActions,
+                          onOpenExternalLink: { intent in
+                              if let url = URL(string: intent.destination.absoluteString) { openURL(url) }
+                          }, onOpenUser: onOpenUser)
+            .accessibilityIdentifier("recommendations.content.t\(item.threadID)")
     }
 
     private var mediaPreview: some View {
@@ -113,23 +156,29 @@ struct RecommendationFeedRow: View {
 
     private var actions: some View {
         HStack(spacing: 0) {
-            actionLabel("arrow.up.arrow.down", count: item.feed.shareCount, fallback: "分享")
-                .accessibilityLabel("分享：\(RecommendationFeedText.count(item.feed.shareCount, fallback: "暂无计数"))")
+            if let url = PublicContentURL.thread(item.threadID) {
+                ShareLink(item: url) {
+                    actionLabel(TiebaShareIcon(), count: item.feed.shareCount, fallback: "分享")
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("分享帖子")
+                .accessibilityIdentifier("recommendations.share.t\(item.threadID)")
+            }
             Button(action: openThread) {
-                actionLabel("text.bubble", count: Int64(item.replyCount), fallback: "回复")
+                actionLabel(TiebaReplyIcon(), count: Int64(item.replyCount), fallback: "回复")
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(item.replyCount) 条回复，打开只读帖子")
+            .accessibilityLabel("\(item.replyCount) 条回复，打开帖子")
             .accessibilityIdentifier("recommendations.reply.t\(item.threadID)")
-            actionLabel("heart", count: item.feed.agreeCount, fallback: "点赞")
+            actionLabel(TiebaLikeIcon(), count: item.feed.agreeCount, fallback: "0")
                 .accessibilityLabel("点赞：\(RecommendationFeedText.count(item.feed.agreeCount, fallback: "暂无计数"))")
         }
         .foregroundStyle(SemanticColor.secondaryText)
     }
 
-    private func actionLabel(_ symbol: String, count: Int64?, fallback: String) -> some View {
+    private func actionLabel<Icon: View>(_ icon: Icon, count: Int64?, fallback: String) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: symbol).font(.system(size: 18))
+            icon.font(TiebaParityTokens.contentActionIconFont)
             Text(RecommendationFeedText.count(count, fallback: fallback)).font(.system(size: metadataSize))
         }
         .frame(maxWidth: .infinity, minHeight: 48)
