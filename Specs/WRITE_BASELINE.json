@@ -1,0 +1,164 @@
+{
+  "baseline": "4534020d509ea0188dced53cf582fcc775dbb71e",
+  "tag": "v0.2.0beta3",
+  "entries": [
+    {
+      "path": "Sources/Core/TiebaAPI/Endpoint.swift",
+      "start": null,
+      "end": null,
+      "sha256": "0aa21f8bfaa5bcb0ba9ca96ff494ece9343cbeb33fd296a3143be5a9e8ab438d"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/EndpointRequestBuilder.swift",
+      "start": null,
+      "end": null,
+      "sha256": "21a065b01ef4190bc1e2aa1faa6ccfd26156faff66e92adf3808c4b794e826c2",
+      "authorizedNativeMigration": {
+        "authorization": "用户明确要求与指定22.11.1原生发帖及回复行为对齐；保留旧摘要，限定共享编码器的内部可见性及合法boundary字符。",
+        "evidence": "Specs/API_EVIDENCE.md — U08 原生 HTTP 封装；AF multipart init 0x104310ab4",
+        "inverseEdits": [
+          {
+            "from": "    static func encode(",
+            "to": "    private static func encode("
+          },
+          {
+            "from": "        case 42, 43, 45, 46, 48...57, 65...90, 95, 97...122:",
+            "to": "        case 42, 45, 46, 48...57, 65...90, 95, 97...122:"
+          }
+        ]
+      }
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/EndpointPipeline.swift",
+      "start": null,
+      "end": null,
+      "sha256": "dfaca70d41f18871c582f14a3373e7e50fce2cce7a1107bdcf7c943749b7303b"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/TextWriteProtocol.swift",
+      "start": null,
+      "end": null,
+      "sha256": "4414d69a46447fe9a0c28e8f965fa67d93f8adca2d44cf40c0c12349c74798ed"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/TextWriteAccountProtocol.swift",
+      "start": null,
+      "end": null,
+      "sha256": "d8de8a83a469ed92e8d664ddede1ea930ddb48822af64335588b318f6332fa8e"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/LiveTextWriteRepository.swift",
+      "start": null,
+      "end": null,
+      "sha256": "377dacdcd852dbf6e04a00d9cc71f646a580744b3009a9ff186575334cb78539"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/ImageUploadProtocol.swift",
+      "start": null,
+      "end": null,
+      "sha256": "05dc22a5670710e4274b0812974cb638039cf1059c534d20c39782f28f516c85"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/LiveComposerImageUploader.swift",
+      "start": null,
+      "end": null,
+      "sha256": "0c4ca623c0b653d9f73758750db1f9a53aec8f06a1826423bc39a34347f41a90"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/CachedReadingRepository.swift",
+      "start": null,
+      "end": null,
+      "sha256": "848e428587a158774fbfbfb1041604140b12772c74cc373dbfcddc6abbd3f48e"
+    },
+    {
+      "path": "Sources/Core/TiebaAPI/AuthContext.swift",
+      "start": null,
+      "end": null,
+      "sha256": "ea160e56d13beb89602d1450307dd1993275476b5f3de5776a1fff51818e9d8c"
+    },
+    {
+      "path": "Sources/Core/Models/TextComposeTargets.swift",
+      "start": null,
+      "end": null,
+      "sha256": "43fadbbedc329d5aa3b4b4255046981a51752c65e8a2d1e20a374ebc7bc32636"
+    },
+    {
+      "path": "Sources/Core/Models/ReadingContentCache.swift",
+      "start": null,
+      "end": null,
+      "sha256": "c2a55a5f6b25aa7be1dd8e0f1d920eb4a2df25084eaf0e5874ed54824672e909"
+    },
+    {
+      "path": "Sources/Features/Composer/Presentation/ThreadComposeTarget.swift",
+      "start": null,
+      "end": null,
+      "sha256": "0c65228f76ec1d434c9a8bcf500f2267d8e0404f5e8c6ee45e03b5f592d44925"
+    },
+    {
+      "path": "Sources/Features/ThreadReader/Presentation/ThreadReaderStore.swift",
+      "start": null,
+      "end": null,
+      "sha256": "98fc3078f852c73ffee66e8ace6e583b189990b0ad3aeaf4f6eeae9f6b2370c0"
+    },
+    {
+      "path": "Sources/Features/Subposts/Presentation/SubpostsStore.swift",
+      "start": null,
+      "end": null,
+      "sha256": "a869699f922690f128df84b786ea8b99ad28529c20279bd16beb95b723fd81b3"
+    },
+    {
+      "path": "Sources/Core/Networking/URLSessionHTTPClient.swift",
+      "start": null,
+      "end": null,
+      "sha256": "2ac3392dc6529280e5f4d4eedb87aa6bb8a5305f57daebf1b4a807c6ad89155e"
+    },
+    {
+      "path": "Sources/Core/Session/SessionAuthContextProvider.swift",
+      "start": null,
+      "end": null,
+      "sha256": "15ac5d82de830af14a70e670e5c7bd98eb890173361f0521263d7755361830da"
+    },
+    {
+      "path": "Sources/Features/Composer/Presentation/TextComposerStore.swift",
+      "start": null,
+      "end": "@MainActor\n@Observable\nfinal class TextComposerService",
+      "sha256": "0f3a984be713772bf350486a05e625cc1a8acc41e2eadd4565ecd1b2534d2de8",
+      "authorizedNativeMigration": {
+        "authorization": "2026-10-08 用户明确要求先交付一版参照原版iOS请求的正常App；本次限定文字发送，图片须在任何旧上传前保留草稿并拒绝。",
+        "evidence": "Specs/API_EVIDENCE.md — 用户授权的iOS请求试用版接入；NativeLiveTextWriteRepository不复用Android上传。",
+        "inverseEdits": [
+          {
+            "from": "            try (repository as? any TextWriteRequestValidating)?.validateForSending(request)\n",
+            "to": ""
+          }
+        ]
+      }
+    },
+    {
+      "path": "Sources/Features/Composer/Presentation/TextComposerStore.swift",
+      "start": "    func present(",
+      "end": null,
+      "sha256": "f7402b42288f0250a9c91f2756a4a14c6f1fbe2bccbc2446e1105df0eee57d83"
+    },
+    {
+      "path": "Sources/Features/Composer/Presentation/TextComposerView.swift",
+      "start": "extension View {",
+      "end": "/// Hosted outside",
+      "sha256": "b6b89f733fd70380e147974f6ed59afb84aafaf5e34984be02e1dc203352646c"
+    },
+    {
+      "path": "Sources/Features/Composer/Presentation/TextComposerView.swift",
+      "start": "            .onChange(of: store.receipt)",
+      "end": "            .onDisappear",
+      "sha256": "cd6cccaa2e21f58df1b2bc49daf641183c5d7f218e8ce647fedefbff2be25a29"
+    },
+    {
+      "path": "Sources/Features/ThreadReader/Presentation/ThreadReaderView.swift",
+      "contains": ".textComposer(target: $composeTarget) { _ in await store.reload() }"
+    },
+    {
+      "path": "Sources/Features/Subposts/Presentation/SubpostsView.swift",
+      "contains": ".textComposer(target: $composeTarget) { _ in await store.refresh() }"
+    }
+  ]
+}

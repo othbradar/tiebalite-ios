@@ -224,9 +224,28 @@ mv \
   "$generated/FrsPage/AdParam.pb.swift" \
   "$generated/FrsPage/FRSAdParam.pb.swift"
 
+# The user-authorized native writing migration has its own evidence-pinned schema.
+# It does not change the Android reference or the existing 234-file closure.
+native_schema="Config/Protobuf/NativeWrite.proto"
+native_lock="$repo/Config/Protobuf/NativeWrite.inputs.tsv"
+native_schema_hash="$(awk -F '\t' '!/^#/ && NF { print $1 }' "$native_lock")"
+native_locked_path="$(awk -F '\t' '!/^#/ && NF { print $2 }' "$native_lock")"
+[[ "$native_locked_path" == "$native_schema" &&
+   -f "$repo/$native_schema" && ! -L "$repo/$native_schema" &&
+   "$(shasum -a 256 "$repo/$native_schema" | awk '{ print $1 }')" == "$native_schema_hash" ]] || {
+  printf 'ERROR: native writing schema does not match its evidence lock.\n' >&2
+  exit 1
+}
+protoc \
+  --proto_path="$repo/Config/Protobuf" \
+  --plugin="protoc-gen-swift=$(command -v protoc-gen-swift)" \
+  --swift_out="$generated" \
+  --swift_opt=Visibility=Public,FileNaming=FullPath,UseAccessLevelOnImports=false \
+  NativeWrite.proto
+
 generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-[[ "$generated_count" -eq 234 ]] || {
-  printf 'ERROR: expected 234 generated Swift files; found %s.\n' \
+[[ "$generated_count" -eq 235 ]] || {
+  printf 'ERROR: expected 235 generated Swift files; found %s.\n' \
     "$generated_count" >&2
   exit 1
 }
@@ -245,6 +264,10 @@ endpoints=recommendations.personalized,thread.pbPage,followedForums.forumGuide,f
 roots=Personalized.proto,PbPage/PbPageRequest.proto,PbPage/PbPageResponse.proto,ForumGuide/ForumGuideRequest.proto,ForumGuide/ForumGuideResponse.proto,FrsPage/FrsPage.proto,Profile/ProfileRequest.proto,Profile/ProfileResponse.proto,GeneralTabList/GeneralTabListRequest.proto,GeneralTabList/GeneralTabListResponse.proto,PbFloor/PbFloorRequest.proto,PbFloor/PbFloorResponse.proto,AddPost/AddPostRequest.proto,AddPost/AddPostResponse.proto
 reference_commit=$expected_commit
 input_count=234
+native_write_schema=$native_schema
+native_write_schema_sha256=$native_schema_hash
+native_write_reference_sha256=4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb
+native_write_input_count=1
 protoc=$expected_protoc
 protoc_gen_swift=$expected_generator
 swiftprotobuf_runtime=$expected_generator

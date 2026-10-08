@@ -1,5 +1,323 @@
 # TASK_STATE
 
+## 2026-10-08 U08 — USER_ACCEPTED，用户批准提交当前候选
+
+- 用户在确认本轮模拟器真实主题回复成功、原帖第 8 楼可见后，明确要求“现在先提交”。提交范围为当前已安装候选的草稿持久化、原生 iOS 文字发送链路、URL 路由修复及对应回归/证据；验收后生产代码未变，沿用已有构建和定向结果，不重复全套测试。
+- 精确提交本阶段源码、生成 Proto/输入锁、Mock/fixture、测试、回放工具、约束与证据文档。排除用户原有 Prompts 和技能配置、Artifacts、参考 IPA/程序、真实内容/凭据、缓存/草稿、IDE 文件及 Android submodule。提交题目：`fix: persist drafts and repair native iOS text replies`。本次仅提交，不推送、不进入 U09。
+- 本次接受不表示原 U08 所有目标或原版协议完整对齐：图片发送仍不可用，完整 SDK/Passport、原生 getmypost 后续读取等仍未完成；仅当前主题回复有用户实发确认，其他目标及长期审核留存未据此转为通过。保留当前发送行为，后续调整继续需要用户明确授权。
+- 提交前 secret scan 通过；首次 staged diff check 检出 4 个既有离线回放脚本的行尾/文件尾空白，清理后 Python AST 与清理前逐一相同，不改变回放或生产代码。精确清单共 121 个本阶段文件，用户原有 Prompts/技能配置保持未暂存。
+
+## 2026-10-08 U08 — 用户确认当前候选真实回复成功
+
+- USER_REPORTED：用户明确反馈“这回发成功了”，所附截图显示本次回复已出现在原帖第 8 楼。当前已安装的原生 Proto URL 修复候选获得一次真实主题回复成功、列表可见的人工验证；不是 agent 代发或 Mock 结果。
+- 保留当前发送实现，不再自行调整账号准备、参数/签名、请求头/体、次数/顺序、回执或刷新。本轮仅记录反馈，没有生产代码、外观或用户数据变化；未提交、推送或进入 U09。
+- 本次反馈未单独说明编辑器自动关闭/自动刷新过程，也不外推为新帖、楼中楼、上传、完整 SDK 对齐或长期审核留存已验证；此前记录的未验证项继续保留。文档差异检查通过，未重复构建或测试。
+
+## 2026-10-08 U08 — 修正原生 Proto 写入 URL 路由遗漏，已覆盖安装，实发待用户确认
+
+- 本次用户手动点击的 DEBUG 白名单诊断已取得：账号 HTTP200/JSON error_code0；回复 HTTP200/137bytes/JSON error_code110001，无 Proto payload/有效回复 ID。因此当前“未知”来自收到 JSON 后按 Proto 解码失败；不能解释为封禁、发送成功或已证明不存在远端回复。仅保存 metadata，未保存原始回包、正文或凭据。
+- 确定的实现差异：NativeWriteHTTPRequest 发送了原生 Proto multipart，却漏了短连接 URL 的 `cmd` 和 `format=protobuf`。同 SHA 22.11.1 的 TBCBaseModel.loadInnerWithShotConnection（0x100249044–0x100249168）离线执行 6 个合成场景，得到 post309731/thread309730、已有 query、shortAsLong 及非 Proto 分支的实际地址。此前 query==nil 测试无依据，已更正；旧 body/header/signing fixtures 保持原字节，不将旧测试通过称为 URL 已对齐。
+- 生产修复只在 NativeWriteHTTPRequest 拼接上述 query，command 复用既有编码器。新增 emulate_url.py / native-ios-request-url.json 并更新 HTTP、Client、Signing、LiveWrite 四套直接回归和证据文档。账号准备、正文、签名、请求头/体、次数/顺序、SDK、回执条件和成功刷新不变；无新增 UI、动画、手势、overlay 或生产依赖。保留全部既有 U08/用户草稿和其他工作树改动。
+- 先红：native-url-red.xcresult 运行 5 项，两个测试因 URL 缺 query 产生 7 个断言失败，正文/头部断言未失败。修后 native-url-green.xcresult：30 项/4 套件 PASS，含实际 App runtime→Composer→账号准备→一次 Mock 写入和成功收起状态。lint 首次出现测试 fixture 类型嵌套 1 项违规，平移私有类型后 native-url-http-final.xcresult 再跑 HTTP 6 项 PASS；lint 488 文件 0 violation/23 项发送基线通过。make build、secret-scan、git diff --check 通过。未跑全量测试；未新增自动化 UI 结果，当前正常 Live UI 仅验证登录与原草稿恢复，不代替实发。
+- 覆盖正常 iPhone 17 Pro 的完整 Live App 前通过现有 Simulator Keychain entitlement 检查；安装 executable/debug dylib 与本次 build 摘要相同。当前草稿目录 1 份文件在终止后、覆盖前后摘要一致（在启动前比较）；未卸载、清缓存、清 Keychain 或改签名。UI 已确认“已登录”，经浏览记录返回原帖，原两字草稿已恢复，停在编辑器，agent 实际写请求 0。证据 native-url-installed.json。一次历史行 AX ID 过期导致点击未执行，重新读取后正常打开，无错误发送。
+- 地址差异已修，实网接收和审核留存仍待用户操作；没有把 JSON110001 含义猜为审核原因，完整 SDK/Passport/上传及 MODERATION_CAUSE_UNKNOWN 限制继续保留。未暂存、提交、推送或进入 U09。
+
+## 2026-10-08 U08 — 发送结果未知，已装只读诊断候选，尚未修复
+
+- 用户在上一编码修复候选中手动发送后立刻收到“尚未确认发送结果”，未见回复或封禁提示。与之前的发送前 malformedNumber 不同；没有将此问题表述为旧修复已经覆盖。系统 CFNetwork 元数据在对应时间附近显示两次 HTTP 200，分别 94/54ms、request_bytes=1398/response_bytes=673，但未保留业务回包，不足以证明目标写请求成功、服务器未接受或遭封禁。仅记录这些元数据，未留原系统日志。
+- 不猜修改账号、SDK、请求参数/签名/次数/顺序、回执判定或刷新。新增 DEBUG 限定的 NativeWriteResponseDiagnostic 和 DebugNativeWriteDataLoader/Diagnostics，在原 loader 返回后仅提取白名单 HTTP 状态、MIME 类别、体积、JSON/Proto 解码是否成功、错误整数及 ID 是否存在/有效；不输出/保存原始响应、ID、正文、凭证、验证材料或任意服务端文字。缓存文件 NativeWriteDiagnostics-v1.json 最多 8 条，只观察本次显式用户操作触发的账号/TBS/写接口，不发新请求、不重试、不改结果。Release 不接入，UI 无变化。
+- 新诊断测试先遇到嵌套 #require 宏展开、actor 断言访问编译问题，修正测试后 write-diagnostic-unit-green.xcresult 为 15 项/2 套件 PASS（4 项诊断及原 11 项客户端字节/单次请求/取消/旧账号回归）。首次 lint 8 项格式违规，修后 488 文件 0 violation；secret scan 两次误中合成 passToken 测试赋值（STOKEN 子串及长变量名），改用短名的明确合成样本后通过，扫描规则未改。generate/build、diff check 通过。未重新运行 UI 矩阵及无关测试。
+- 已覆盖正常 iPhone 的完整 Live App，签名/Keychain 配置未改；安装可执行文件与本轮构建匹配，UI 确认已登录并恢复原帖两字草稿，停在编辑器。辅助草稿 hash 比较在重新打开编辑器之后执行，首次断言失败：5 份文件均在、4 份摘要相同、当前一份字节已变化，因此不声称五份逐字节一致；未输出正文，原草稿内容由 UI 确认。未卸载/清理账号或缓存；agent 未真实发送。已请用户在愿意继续该评论时自行点一次发送取得缺失证据，不要求连续重试；当前故障仍未解决，不输出 READY，不提交/推送/U09。已知完整 SDK 等缺口继续保留。
+
+## 2026-10-08 U08 — 修复试用版发送前本地编码失败，已覆盖安装
+
+- 用户截图提示“发送前获取账号资料失败”。本轮使用一次显式账号准备检查：HTTP 200、error_code=0、现有 user/anti 解码成功；未保存回包正文/凭据，未调用发帖或回复。诊断入口随后删除，App/TiebaLiteApp.swift 恢复本轮前内容，不留诊断页面或自动准备任务。
+- 唯一根因是实际 NativeWriteAppRuntime 在缺少个性化配置时生成 `personalized_rec_switch=""`，SwiftProtobuf JSON int32 桥接抛 malformedNumber，尚未进入写入传输；通用错误映射误报为账号资料失败。之前只验证运行时 context 和使用完整配置的 Mock 发送，漏了真实运行时到编码这一边界。新真实运行时编码用例及空字段 wire 用例先红，分别保留 account-encoding-red-suite.xcresult / account-field-red.xcresult。
+- 参考原版 IDL int32 分支 NSString.intValue 的显式零行为，仅在 NativeWriteRequestEncoder 的线格式转换前将该已知空字段转换为 0。签名仍基于原空串，缺字段保持 absent，其他非法整数仍拒绝；不改账号准备、正文/业务字段、SDK、网络请求次数/顺序、回执和刷新。NativeLiveTextWriteRepository 的非回包类发送前错误改为 requestPreparation，避免错误归因；保留草稿。相关差异仅上述编码器、错误模型/映射、直接测试及证据记录，无视觉/手势/动画/overlay/依赖变化。
+- account-fix-green.xcresult：16 项/2 套件 PASS，含真实运行时完整 Composer→账号准备→单次 Mock 写入→成功、草稿/错误、字节/presence/签名/非法数回归。account-fix-ui.xcresult：隔离 iPhone 编辑器成功关闭/只清匹配草稿短 UI 1 项 PASS（24.292s）。最初单方法筛选漏括号执行 0 项，不计通过；已改为明确套件运行。lint 首次 4 项、第二次 1 项格式违规，修正后 account-fix-lint-clean.log 为 485 文件 0 violation / 23 项基线 PASS；make generate/build、secret scan、diff check 均通过。未跑全量测试；本次未新增 iPad UI 结果，沿用上一轮相关 UI 结果，不冒充本轮运行。
+- 已按原签名覆盖正常 iPhone 17 Pro 完整 Live App；5 份既有草稿文件摘要一致，可执行文件与 debug dylib 匹配本轮 build，未卸载/清 Keychain/清缓存。UI 确认仍已登录，经浏览记录重开原帖，原两字草稿正确恢复，停在回复编辑器；未点击发送。安装证据 account-fix-installed.json；仅账号检查 1 次，agent 真实写请求 0 次。完整 SDK/Passport/图片上传等既有限制及 MODERATION_CAUSE_UNKNOWN 保留，不能据本地修复宣称审核通过。未暂存、提交、推送或进入 U09。
+
+## 2026-10-08 U08 — iOS 文字请求试用版已接入并安装，等待用户手动发送
+
+- 最新明确授权为“先做出来一版能参照原版 iOS 贴吧发请求的 TiebaLite iOS 再停止”。据此实际接入正常 App，而非继续追加孤立组件；本版限定文字新帖/主题回复/楼层回复/楼中楼回复。完整 SDK/Passport/上传/验证复刻仍未完成，不将原始完整迁移目标标为完成；本轮试用版交付后停止，不自动试发、提交、推送或进入 U09。
+- 新增 NativeLiveTextWriteRepository、NativeAccountPreparation、NativeWriteAppRuntime。生产 Composer 改用该 Repository；账号准备走 22.11.1 包内明确 BDUSS 登录分支（原字符串 bdusstoken，不追加 Android 后缀），当前有效会话复用账号、缺 TBS 才补取，接已核对的 iOS 业务/IDL/Common/签名/单次 multipart。账号变化拒绝迟到结果，不自动重试、回退旧 Android 写入或额外查询旧 profile。浏览/个人资料模块未迁移。
+- 运行时 UA 来自本 App 本地空白、nonPersistent WKWebView，仅读取 navigator.userAgent，不加载远端页面或账号；系统版本/机型/屏幕/会话使用本 App 实际值。原版 CUID/安全 SDK/实验值缺失不伪造；本版选用标准分支并明确保留缺口。账号仅内存缓存，进程重开重新准备，不能称为完整原生持久化账号生命周期。
+- 回执零错误且目标 ID 有效才交还既有成功关闭/单次当前页刷新；附带 anti/info 不自动判为验证失败；真正错误码 5/6 等要求验证时保留草稿且不执行挑战。图片（包括选图中旧上传 token）在任何上传/账号请求前拒绝，明确提示本版暂不支持并保留草稿；旧上传实现留存但不接入本版 Composer。现有 UI/字号/图标、VirtualizedList、阅读恢复、预载、Pager 和 MediaViewer 未改。
+- 定向验证：首次编译有 CGFloat→Double 转换错误；修正后 live-trial-unit-2.xcresult 为 16 项/2 套件 PASS。补各级目标及原阅读回归后 live-trial-final-unit.xcresult 为 10 项/2 套件 PASS（参数化用例另含 2 场景）；进一步明确验证码/空回执断言后 live-trial-verification-unit.xcresult 的 6 项新 Live adapter 测试 PASS。前述套件有重叠，不累加成独立测试数。Mock 实际观察首次 login→write、次次复用仅 write；没有 Android profile 调用，每次发送 1 个写请求，无真实写请求。
+- UI：隔离 iPhone 和 iPad 各运行 U08DraftSmokeTests.testSuccessfulReplyClosesComposerWithoutConfirmationAndClearsOnlySentDraft，分别 24.312s/27.160s，均 1 项 0 失败。其 Fixture 验证编辑器关闭/当前页显示/位置保持，不冒充真实发送成功。lint 首轮 10 项格式/复杂度违规、第二轮 1 字行长违规，均已修复；最终 485 文件 0 violation、23 项旧基线检查通过（保留原摘要，新增精确授权的图片前置校验逆向差异）。make generate、make build 完整正常 Debug Simulator App、secret scan、diff check 通过。未跑全套 Unit/quality 或无关压力矩阵。
+- 按现有安装脚本相同签名/Keychain 检查和 terminate→install→launch 流程，复用 .build/DerivedData 构建产物覆盖正常 iPhone 17 Pro，未新建 DerivedData、卸载/erase/清 Keychain。安装后可执行文件与 debug dylib 摘要均匹配本轮构建；四份既有草稿文件逐字节相同。Simulator 覆盖安装改变数据容器路径，最初“路径必须相同”辅助断言因此失败并停止启动；确认草稿仍一致后更正该错误前提并正常启动，未回滚/清数据。UI 实际确认“已登录”、最近逛吧和原排序仍在；未读取凭据。
+- 当前完整 Live App 已打开高通吧真实帖子的空白回复编辑器，正文 0 字、未点击发送。Live 账号准备/写入尚未由用户触发，服务端接受及后续留存均未验证。图片发送、原版验证 SDK、专用 getmypost 合并/跨页新回复立即可见仍是限制。证据为 ignored live-trial-*.log/xcresult/installed.json，用户内容不写入提交；所有用户原改动、原草稿和 Android submodule 保留，暂存区为空。
+
+## 2026-10-08 U08 — 模拟器验证后的 Live 接入阻塞确认
+
+- 本轮仅复核最新记录、原生客户端/运行时上下文和 App 接线。`NativeWriteRuntimeProviding` 仍只有 TestSupport 实现；正常 App 仍接 `LiveCurrentAccountRepository`/`LiveTextWriteRepository`。上一轮组件通过没有改变这一事实，不能将其称为已完成发送迁移。
+- 恢复目标后的连续三轮仍缺可用参考运行时证据：第一轮真机解锁后实际附加被拒绝，第二轮确认给定 IPA 为 iPhoneOS 真机包且转用 Simulator 验证本项目，第三轮确认这些验证不能提供实际账号/SDK/配置和验证生命周期。前两轮有静态/组件进展，本轮没有新的实现进展，也没有正在运行、值得等待的调试会话。当前无法有依据地闭合完整 Live，停止追加孤立组件，目标按同一阻塞达到阈值标记 blocked，未完成。
+- 下一步需要可用的参考运行条件或等效脱敏运行证据；已提出的“参考 App 使用何种工具签名安装”问题仍待答复，用于判断独立可调试参考副本是否可行。签名工具名称本身不保证可调试。不索取凭据、不要求测试发帖，不把现有 App 改签或替换为混合候选。保留所有代码、草稿、账号、历史、缓存及已验收外观；不提交、推送或进入 U09。
+- 本轮复核上一候选的 5 份文件摘要全部一致，沿用已执行的定向验证；未重复 Unit/UI/lint/build。仅任务记录更新，secret scan 与 diff check 通过，暂存区为空；无生产代码、安装、视觉、手势、动画、overlay 或依赖变化。
+
+## 2026-10-08 U08 — 转本机Simulator验证原生回复后读取组件
+
+- 上一goal turn是进展：解锁后取得实际调试拒绝证据，并追通新回复完成handler。本轮用户明确提出用本机模拟器，保留完整目标并继续实现，不以真机不可附加重复等待，也未将目标缩成仅组件通过。HEAD仍edfb9ef、暂存区为空，所有原U08/用户改动保留。
+- 直接从用户指定IPA读取白名单元数据：22.11.1、iPhoneOS、arm64、LC_BUILD_VERSION平台2，SDK26.2，参考TBClient SHA相同；它不是可直接运行的Simulator包。本机正常和隔离iPhone Simulator均Booted/available。本轮测试运行于隔离Tieba-Perf-Test，不把ARM64封闭回放称作原版App在Simulator运行。
+- 追到原版独立getmypost读取（CMD309751）：普通PB转换移除旧r/back/lz/pn并使用新pid；楼中楼保持字符串ID，mark_type=2。初始server state1/2不派发、不增加计数，其他状态使用下一request_times和offset=2。基础PB上下文、连接模式3的后续传输、响应合并和实际开关仍待闭合，不能与普通下拉刷新混同。
+- 新增NativeReplyFollowupParameters及16例原生参数/门控回放、3项直接Unit；先固定原生样本和测试契约，再实现值转换。原生网络入口仅拦截计数，不访问账号/SDK或宿主网络。仅使用明确合成十进制ID验证64位精度；无效底层builder样本不等于允许无效目标发送。没有加入重试、计时器、循环读取、乐观回复行或新列表框架。
+- 验证：make generate通过；reply-followup-unit.xcresult的3项/1套件Simulator Unit全部PASS（0.005s），覆盖16例原生场景和不修改原参数/描述脱敏；reply-followup-verify.log重放16例PASS；make lint为481文件0violation、23项WRITE_BASELINE PASS；make build完整正常Simulator App为Build Succeeded；secret-scan及git diff --check通过。编译只有既有unused Proto import/AppIntents metadata提示，无失败命令。未运行全部Unit、quality、UI长矩阵或重复未改缓存测试。
+- 新组件尚未接Live；当前发送、安装、视觉、草稿、缓存、账号和阅读位置未改，无新手势/动画/overlay/生产依赖。未自动发送/回复/上传、暂存、提交、推送或进入U09。实际Runtime provider、原生账号准备、完整富文本/上传、验证和结果合并仍未完成；不宣称异常删除已解决，不安装未完成的混合链路，不输出READY，目标保持active。
+
+## 2026-10-08 U08 — 设备恢复连接，核对调试限制及原生回复完成链
+
+- 上一 goal turn 因设备/真实运行依据缺口标记 blocked，属于无进展的状态复核。本次目标已恢复 active，重新开始阻塞审计；不是沿用此前三次计数。当前出现新权威证据并追通新的静态调用关系，属于进展，不是 verified wait 或完成。
+- HEAD仍edfb9ef、暂存区为空；reply-content-candidate-proof中9份源码/测试/回放文件摘要全部相同。保留所有未提交U08/用户改动，不重跑未变的13项Unit和完整构建，也不将这些旧结果表述为新Live验证。
+- 参考iPhone已available，指定bundle查询确认安装为22.11.1/22.11.1.0、builtByDeveloper=true。首次LLDB设备选择因锁定终止；用户解锁后重试。批处理detach的“Process must be launched”未被当作附加结果；交互式附加得到明确“Not allowed to attach to process”。退出调试器后只查TBClient，原进程仍在。没有读取账号/私有容器、重签、替换或结束官方App。元数据过滤首次对URL做字符串比较失败，改用lastPathComponent后准确匹配，不扩大个人App/进程输出。
+- 替代的Time Profiler单进程5秒采样未建立：设备准备超时，exit13；xctrace设备列表为Offline，同轮CoreDevice确认已解锁。未重启相同录制或将超时写成采样通过。两个工具会话均已终止；现在没有可继续等待的调试/采样句柄。已向用户询问参考App的签名安装工具，不索取证书/密码/凭证，不要求测试发送。
+- 离线沿22.11.1新回复completion追到实际handler，明确成功先调用页面handler，再处理编辑器附件/草稿及收起；成功之后仍经过条件UEG检查。PB读取有pbMyReplySwitch门控，楼层/主题分别进入按父楼读取/按返回pid读取末页；楼中楼另走其handler。编辑器refreshContentFromContext不能冒充帖子刷新。具体地址、已证顺序及未知下层语义记入API_EVIDENCE和UNKNOWN；没有据方法名添加生产刷新或清草稿行为。
+- 本轮只更新证据/状态与ignored反汇编，不改生产代码、App接线、界面、手势、动画、overlay或依赖；正常安装、用户数据与原Live发送保持。未发送/上传/重试、暂存、提交、推送或进入U09。完整目标未完成，仍缺可用运行证据、实际provider、完整富文本/上传与最终回执/页面接线；不输出READY，不宣称解决异常删除。
+- 验证：参考TBClient SHA256复核相同，9份既有候选文件摘要一致；make secret-scan（runtime-completion-secret.log）及git diff --check通过。runtime-access-20261008.json仅记录白名单状态/版本与静态证据摘要，不含账号、设备标识或凭据。未重复Unit/UI/lint/build，不把本轮文档核对当新版本验收。
+
+## 2026-10-07 U08 — 核对真实运行时接入条件，等待参考设备
+
+- 最新复核：正文准备轮、上一接入条件轮、本轮连续三次 goal turn 均确认参考 iPhone unavailable，官方运行时来源缺口未变。上一轮新增真机平台/调试权限证据属进展，本轮仅重新核对权威状态，没有新实现进展，也不是 verified wait。NativeWriteRuntimeProviding 仍只有测试替身，上一候选所有文件摘要未变、暂存区为空。当前必须取得可用的官方运行/调试条件或等效脱敏运行证据，才能继续有依据地闭合 Live；不能用额外 Mock 或未知参数代替。目标按同一外部阻塞达到阈值标为 blocked，未完成；待用户恢复参考设备后先检查实际可调试性，不承诺仅连接就已解决。已有实现和完整目标保留。
+- 上一 goal turn 为进展：正文准备已接入原生客户端、13 项定向测试及轻量检查通过。本轮核对当前 worktree：HEAD edfb9ef、暂存区为空，上一候选源码摘要仍相同；不重复测试或更换安装。
+- 当前 NativeWriteRuntimeProviding 唯一实现仍是 TestSupport 的 NativeClientFixtureRuntime。AppCompositionRoot 的发送仍为 LiveTextWriteRepository，不能把新组件测试或已有 Live 安装当作原生迁移成功。真实 SDK/Common、账号准备及完整完成路径是接入前必需条件，不能用合成值补齐。
+- 本次 devicectl 再次确认参考 iPhone unavailable。只检查用户提供 IPA 的白名单元数据：com.baidu.tieba/22.11.1，Mach-O 平台 iOS device（不是 Simulator），参考可执行文件 get-task-allow=false。未打印完整 entitlements、设备/账号标识或凭证；这些参考包属性不等于已安装 App 的实际调试能力，后者待设备恢复后检查。
+- 已向用户请求恢复连接并解锁参考 iPhone，仅为确认运行/调试条件，不要求发布测试帖。当前没有可运行的官方调试会话，不把对话等待记为 verified wait。缺少运行时证据前不再将新的孤立 Mock 组件包装成 Live 可交付结果；目标仍 active/未完成，未标记 blocked 或 READY。无生产代码/界面/数据/安装改变，无提交/推送/U09。
+- 本轮确认记录在 ignored runtime-access-status.json；源码未变，沿用 reply-content-candidate-proof.json 已通过结果，仅对记录再做 secret-scan 和 diff check。
+
+## 2026-10-07 U08 — 新旧 iOS 回复路径区分及正文准备验证
+
+- 上一轮为进展：原生客户端串联结果入档，并定位正文入口；本轮继续同一目标，不新增阶段。HEAD 仍 edfb9ef、暂存区为空，保留全部 U08/用户改动。无真实发送、上传、重试、提交、推送或 U09。
+- 发现 22.11.1 同时包含旧回复控制器和新 ReplyComposeSubmitPlugin。PB 的 useReplyCompose 先排除折叠评论，再读取实验配置；不能仅凭包内存在某方法认定用户当次会执行。新插件最终仍调用原已验证的 PbReplayModel，但正文准备独立；上一轮看到的旧 delegate 140 单位截断不直接移植。实际用户配置仍 UNKNOWN，参考 iPhone 当前 devicectl 为 unavailable；未读取其他设备个人数据。
+- 新增 NativeReplyComposeContent，按新插件第一次显式提交保留 serverText、空值回退、回复状态及收件人前缀条件。NativeWriteContent 显式接入新客户端，在 TBS/网络前完成不可变正文准备，新主题误用回复插件提前拒绝；已有 prepared 路径和四类完整请求字节不变。不修改草稿、界面、现有 Live、上传或验证重放，不从目标 ID 猜实验分支。
+- 新增 16 例真实 ARM64 插件正文回放。第一版用 Python regex 替代 NSPredicate，初轮 Unit 13 项中 12 PASS/1 FAIL，发现全角冒号的 Foundation 宽度匹配差异。独立 Apple Foundation 探针确认后，改回放工具使用开发期 Foundation 原语，并在 Simulator 逐例验证原语；只有该预期结果变化，生产判断未变，原错误样本和失败 xcresult 保留。最终 reply-content-verify-final.log 的 16 例通过，不把初版错误替身当最终证据。
+- reply-content-unit-final.xcresult：13 项/2 套件 PASS（0.047s），包括正文 oracle、脱敏、准备到单次出站、拒绝错入口及原 Client 回归。lint 首次 141 字行长、第二次换行对齐失败，只改测试空白后 479 文件 0 violation，23 项 WRITE_BASELINE PASS；最终测试之后仅空白及文档变化，未无故重跑。make generate、完整正常 Simulator make build、secret-scan、diff check PASS。证据在 ignored reply-content-*.log/xcresult，未跑全量 Unit/quality/UI 矩阵或缓存测试。
+- 正常 iPhone/iPad 安装未改，新的正文处理仅接入尚未 Live 化的 NativeTextWriteClient。仍缺真实运行时 Common/SDK、账号取得/持久化、完整富文本/上传、新旧入口选择和验证/成功完成接线，不能宣称完全对齐或异常删除已解决。MODERATION_CAUSE_UNKNOWN 保留；无视觉、手势、动画、overlay 或生产依赖变化，不输出 READY，继续原目标。
+
+## 2026-10-07 U08 — iOS 原生请求组件组合验证，Live 仍未迁移
+
+- 继续以用户提供的 iOS 22.11.1 包为唯一新发送证据；Android 只用于旧实现差异对照。HEAD 仍 edfb9ef，暂存区为空，原有 U08/用户改动及正常安装保留；无真实发帖、回复、上传、重试、提交、推送或 U09。
+- 新增 NativeTextWriteClient，将已验证的账号内存状态、缺失 TBS 准备、四类目标业务字段、Common/签名、HTTP、解码和响应状态串联；有 TBS 时直接一次写请求，缺失时一次 TBS 后一次写请求，不调用旧账号查询或失败回退。账号/取消/重复发送保护覆盖整个操作，runtime 的旧响应状态不能覆盖当前会话。实际运行时 provider、持久账号准备及 Live Repository 接线尚未实现，不能把本组件称为可安装的新发送链路。
+- 独立原生组合样本覆盖四类目标的 5 种请求，完整 multipart 正文字节相等。另执行原生 parseBodyIsProtobuf 的空响应分支：state=4、IDL decodeCount=0；SwiftProtobuf 默认会把空字节解为零错误码对象。先加入回归，client-empty-red.xcresult 保留 1 项失败/2 个断言；然后在客户端解码前拒绝空响应，不写入捕获的响应状态。
+- 定向结果：client-unit.xcresult 为初版 Client 8 项 + Session 8 项共 16 项 PASS；空响应修复后的 client-unit-final.xcresult 为 Client 9 项 PASS（0.044s）。Session 未再改动，沿用前述 8 项结果，不伪称一次运行了 17 项。client-verify-final.log 原生请求 5 例与空响应 1 例 PASS；旧 13 份 fixture 字节未变。首轮 lint 仅两处新测试格式失败，修正后 476 文件 0 violation，23 项 WRITE_BASELINE PASS。make generate、完整正常 Simulator make build、secret-scan、diff check 通过；候选摘要见 ignored client-candidate-proof.json。没有全量 Unit/quality/UI 或重复缓存测试。
+- 后续仅定向查看正文准备入口：TBCEditableRichView.getTextForServer(0x101c44a90) 走 type=2 的富文本枚举；普通段保留原字符串，附件取 textForServer。generatePbReplyContent(0x1023313e4) 在指定回复输入状态下产生“回复 #(reply, portrait, name) :”前缀；楼中楼 delegate(0x102f527c4/0x102f7855c) 另有 140 单位截断和表情计数处理。尚未覆盖这些方法的完整上下文/运行回放，不据静态片段把 Android 正文处理直接认定为相等，也未修改生产正文或界面。
+- 正常 iPhone 仍为先前批准的纯 beta3 对照，iPad 未变；本批未安装未完成的混合链路。运行时 Common/SDK、原生账号取得与持久化、正文/上传、完整验证及编辑器成功完成仍未闭合。MODERATION_CAUSE_UNKNOWN 保留，不宣称完全对齐或删除问题解决，不输出 READY。无视觉、手势、动画、overlay 或生产依赖变化。
+
+## 2026-10-07 U08 — iOS TBS 普通请求与账号准备组件已验证
+
+- 继续用户指定iOS22.11.1参考，不以Android补值。HEAD仍edfb9ef、暂存区为空，保留既有U08/用户改动及正常安装；无Live发帖/回复/上传/重试，无提交/推送/U09，无视觉、手势、动画、overlay、生产依赖变化。
+- 新增NativeTBSRequest/ResponseDecoder；复用Common和签名，普通表单返回业务合并结果，空格%20且保留/和?，不走Proto/multipart。最终BBA timeout证据修正为net_type字符串1时10秒、其他25秒；此前20秒只属上层初始化，不能当最终网络值。原生command0头单独执行确认无protobuf标记，logID0/-1省略、42保留。
+- 新增NativeWriteSession.prepareTBS，沿用HTTPClient，已有TBS不请求、缺失最多一次显式补取，失败和取消释放操作，不自动重试；晚回包/旧lease拒绝，昵称不被覆盖。限定准确TBS POST目的地。JSON按原生两种错误码优先级、任意非零拒绝，仅接受顶层非空tbs；类型转换及UTF8边界明确。
+- 新增封闭TBS回放：两种真实普通Common/签名返回，以及22个真实JSON parser→stringAtPath→完成块样本；SDK/账号/Foundation primitive为显式合成替身，DB和通知只记录。初次回放因未声明的字典Foundation调用中止，补限定替身后通过，不开放网络。旧12份fixture逐字节未变；tbs-verify.log重新回放24样本PASS。表单编码/timeout另外来自静态链，不冒充整个URLRequest已运行。
+- 首轮Unit编译失败是新测试6处异步throws断言漏await，修测试后tbs-unit-green.xcresult为26项/5套件PASS（0.052s），包含已有Session/签名/Common。首轮lint4项失败：合成请求计数count误触empty_count、末尾多余空行和Data转String写法；仅修测试/辅助命名与格式后473文件0violation，受影响12项/2套件又PASS（tbs-unit-final.xcresult，0.029s）。没有改扫描/测试规则或削弱断言。辅助读取两处猜测路径不存在已按实际文件定位，不作为代码缺失证据。
+- make generate、完整正常Simulator make build（tbs-build.log）、secret-scan、git diff --check均PASS；lint内23项WRITE_BASELINE仍PASS。tbs-candidate-proof.json记录源码摘要及逐项证据。未跑全量Unit/quality/UI矩阵，未重复缓存测试；本批无UI接线变化。
+- 实际账号资料取得/持久化、运行时Common/SDK provider、富文本/上传、完整UEG及最终Live Repository接线仍未闭合。新组件仍未接Live，正常iPhone仍是原纯beta3对照，iPad未变，没有以混合发送候选覆盖。MODERATION_CAUSE_UNKNOWN保持，不宣称完全对齐、不输出READY；继续原任务。
+
+## 2026-10-07 U08 — 按 iOS 账号昵称与条件请求头继续对齐
+
+- 最新用户再次强调以iOS而非Android实现为准；继续用户给定22.11.1参考包。HEAD仍edfb9ef，暂存区为空，保留全部既有U08/用户改动和安装。无自动Live发帖/回复/上传/重试，无提交/推送/U09，也未改视觉、手势、动画、overlay或依赖。
+- 原生profile回调先核对UID，非空uNameShow优先，否则用该profile.uName；非空且不同才更新昵称缓存。纠正“缺失只为空”的旧推断。新增NativeWriteAccountName和NativeWriteSession的带AuthContext昵称入口，仅更新所属账号/lease，保留TBS和进行中操作；11个ARM64合成样本。account-name-unit.xcresult 12项/2套件PASS（0.012s），覆盖昵称回退、旧账号/同UID旧lease、TBS完成不覆盖新昵称。account-name构建及lint466文件0violation通过。
+- 下层原生Cookie边界发现并补全：ka按WiFi/非WiFi配置选择，其他网络状态不启用；pub_env按独立smallFlow策略选择。新增NativeWriteRequestCookies与显式HTTPContext输入，系统Foundation生成对应头，transport仍只发一次且关闭全局Cookie处理。12个原生方法合成样本覆盖条件、nil/空值，原11份fixture逐字节未变。没有读取官方App/浏览器Cookie或把配置值当作账号凭证。
+- request-cookies-unit.xcresult 19项/4套件PASS（0.037s），包含新Cookie与已有HTTP/transport/签名直接回归；扫描误报修名后仅重跑受影响Cookie套件4项PASS（request-cookies-unit-final.xcresult）。原封闭回放初次因未声明NSMutableArray分配中止，补限定替身后12例通过，不执行宿主网络。首次lint仅新测试4处参数对齐失败，格式修正后468文件0violation；secret-scan首次把测试内部类型Cookie的声明误判，改名RecordedPair后通过，扫描规则未变。23项WRITE_BASELINE仍PASS。
+- make generate、完整正常Simulator make build（request-cookies-build.log）、secret-scan、git diff --check均通过。未跑全量Unit、quality、UI矩阵或未改缓存测试；没有UI接线变化。定向结果和本轮文件摘要记于account-cookie-candidate-proof.json，现有Live安装未被新组件覆盖。
+- TBS普通参数入口已追到20秒默认timeout、业务合并/签名返回，与发帖Proto common-only封装不同；needSig及参数改名名单均不含TBS。最终TBS表单/JSON、原生资料取得/账号持久化、实际SDK/Common提供者、富文本/上传及完整UEG/发送完成接线仍未完成。所有NativeWrite组件未接Live；正常iPhone仍为原纯beta3对照，iPad未变。MODERATION_CAUSE_UNKNOWN保留，不输出READY、不宣称完全对齐，继续原任务。
+
+
+## 2026-10-07 U08 — iOS 公共参数转换已验证，运行时来源与发送接线继续
+
+- 继续用户指定22.11.1原生发送迁移；Android只作旧差异对照。HEAD仍edfb9ef、暂存区为空，保留全部既有U08/用户改动与正常安装，无提交/推送/U09，无Live发帖/回复/上传/重试。
+- 新增静态Common缓存/重算、动态标准/优化分支、上一请求统计消费及组合签名入口。所有OS/SDK/账号/隐私/配置/时钟值必须显式提供，不由组件制造实际provider值。真实参考方法9序列/15步静态、24动态、6签名返回与独立IDL样本验证；原7份/97样本未变。最终common-verify.log全部PASS。nil/空值、隐私切换、静态缓存分支切换、统计只消费一次与64位/无符号精度均覆盖。
+- 动态Unit首次4项中3PASS/1FAIL，定位到优化分支m_api仍使用普通setter，空字符串必须写入且消费，按原生0x1024b3fb8修正。新增组合回归首次2项FAIL（8处断言），准确复现优化分支不追加package_version/实验元数据；签名组件增加显式分支后解决。最终common-unit-green.xcresult共13项/4套件PASS（0.036s），含旧签名4项直接回归。没有弱化断言或改旧样本。
+- 原生回放最初因未声明_objc_opt_new失败，补仅NSMutableDictionary的封闭Foundation替身后成功；不执行实际SDK/账号或宿主App。静态原型先后修正pureMode/xcxMode的NSString类型及回放快照别名，生产结果由独立生成/核对固定；这些调试失败不作为已通过证据。
+- make generate PASS；lint初次仅新测试参数对齐2项失败，格式修正后最终464文件0violation，23项write-baseline仍通过；完整正常Simulator make build PASS（common-build.log）。secret-scan及diff check PASS。未跑全量Unit/quality/UI矩阵或重复缓存测试；本批没有UI接线变化，无新外观、手势、动画、overlay或生产依赖。
+- 实际运行时Common/SDK provider、持久账号准备/TBS HTTP、富文本与上传、完整UEG和发布完成接线仍未完成。所有新增公共组件未接入Live，不能宣称完全对齐或异常删除已解决。正常iPhone仍为之前批准的纯beta3对照，iPad不变；不覆盖混合发送候选、不输出READY，继续原任务。
+
+
+## 2026-10-07 U08 — iOS 签名与回执组件通过，完整原生发送仍在迁移
+
+- 用户再次明确按原版iOS实现，已在AGENTS顶部记入当前授权；Android仅作为旧实现差异对照，不用于填补未知参数。HEAD仍edfb9ef，暂存区为空；保留既有U08代码、用户草稿/缓存/账号/外观，无提交/推送/U09或自动Live发送/上传/重试。
+- NativeWriteSigning按同一22.11.1原生方法保留业务覆盖合并、公共副本返回、大写MD5和签名后元数据顺序；5组封闭回放，签名/编码10项Unit PASS（signing-unit.xcresult）。Common中不透明sig不提升为业务字段；未知运行时SDK值未伪造。正常构建signing-build.log PASS。
+- NativeWriteResponseRules核对22个错误码谓词、30个账号动作输入与3个parser状态输入；独立3项Unit PASS。NativeWriteResponseDecoder新增iOS原生响应descriptor子集，分离错误码、payload存在性、ID关联和验证元数据；不以anti/info非空直接判失败，也不把解析/ID关联当成完整UEG/UI处理。新13组wire由参考descriptor独立编码，旧84组fixture不变；最终97组verify PASS（response-decoding-verify.log）。原234个生成文件摘要仍完全一致。
+- 实际原版回复completion与onCompletion继续查证：短连接成功谓词要求procState3、serverApi.state3、无model.error，成功路径清对应草稿并交完成回调。谓词本身没有pid判定；本App正ID/目标关联是本地防错保护，完整验证和刷新delegate未执行。账号login模型/TBS路径已定位，不把遗留登录模型直接当作Passport主链路。
+- 回执Unit初轮编译失败，原因新DTO与已有transport结果同名；仅改为NativeWriteDecodedResponse后8项PASS，补unknown-field回归并调整扫描误报后最终9项PASS（response-decoding-unit-final.xcresult，0.011s）。没有把初次编译失败或0运行当通过。定向检查覆盖两种原生响应、三类回复目标、附带验证字段、明确拒绝、材料缺失、错帖/缺ID、畸形与未知字段；无Live请求。
+- make generate-protos、make generate PASS；最终lint457文件0violation，23项write-baseline仍PASS；正常完整Simulator make build PASS（response-decoding-build-final.log）。secret-scan先误判passToken参数表达式与changePassword测试selector，改局部变量表达后PASS，扫描规则未放宽。diff check PASS。辅助脚本一次括号语法错误/错误路径读取已纠正，仅影响本地分析；未读取用户正文/凭据。未跑全量Unit/quality/UI矩阵或重复缓存测试，无新视觉/手势/动画/overlay/生产依赖。
+- 本批尚未接入Live。原生账号资料持久准备、完整运行时Common/SDK、TBS请求、富文本/上传、完整回执验证与最终发送接线仍未完成。正常iPhone仍为此前用户批准的纯beta3对照，iPad安装未变，未覆盖不完整的混合发送候选。不能宣称完全对齐或异常删除已修，不输出READY；继续原任务。
+
+## 2026-10-07 U08 — 原生 HTTP 封装已验证，完整原生发送继续
+
+- HEAD仍edfb9ef，暂存区为空。保留原U08/用户改动、草稿、缓存及安装；无Live发帖/回复/上传/重试，无提交/推送/U09。
+- 查证两种原生网络manager共用AF multipart分支。新增NativeWriteHTTPRequest，复用原body编码，Proto文件段为data/data/image/jpeg，无Android外层表单/cmd与format查询；使用明确提供的UA/语言/logID/timeout及单会话响应状态，不从响应MIME推导Accept。保持写端点1MiB响应上限和一次发送。它未接入Live，Common/签名及原生账号/回执/上传接线仍待完成。
+- EndpointRequestBuilder仅encode模块内可见和允许boundary中的+两处变化。保留beta3原摘要，WRITE_BASELINE声明精确逆向这两项许可编辑后校验；23项PASS。临时目录guard用例证实正常通过、其他header漂移和缺少许可编辑均拒绝；未静默重置摘要。
+- 离线原生HTTPEmulator新增4组header/文件段回放，旧20组数据不变；最终全部24组verify PASS。未执行宿主App、读取真实设备/账号值或联网。bbaCUID主路径另查明直接读BBACuidSDK.cuid；不能把defaultCuid旁支当成实际provider。
+- 首个测试命令因Swift Testing方法筛选未匹配而运行0项，未记通过；改跑测试类后5项中4项在预期invalidBoundary失败，1项描述脱敏通过。支持+后定向18逻辑项/29参数场景PASS（http-green.xcresult），覆盖新封装、现有transport、共享builder及beta3四目标完整请求快照。没有重跑未改缓存/账号套件、全量Unit/quality或UI长矩阵。
+- make generate PASS；make lint 451文件0violation；make build完整正常Simulator App PASS（http-build.log）；secret-scan、diff check PASS。新组件无UI接线，未运行UI。无新视觉、动画、手势、overlay、生产依赖。
+- 正常iPhone仍为此前批准的纯beta3对照，iPad未改；未覆盖未完成的混合发送候选。不能把本轮HTTP组件通过称为完全对齐或发帖审核成功，不输出READY。剩余真实Common/SDK及账号、签名、回执、富文本/图片发送路径继续查证接线。
+
+## 2026-10-07 U08 — 原生账号内存状态及响应捕获组件已验证，完整发送接线继续
+
+- 保持最新原生22.11.1对齐授权与现有U08范围，HEAD仍edfb9ef、暂存区为空；未提交/推送/U09。保留原有代码、草稿、缓存、账号及安装，无Live发帖/回复/上传/重试。
+- 新增NativeWriteSession：绑定当前有效lease和已有账号元数据，复用非空TBS，仅缺失时产生一个补取操作；空值/失败释放操作，操作对象身份防旧完成覆盖新请求，账号/lease变化失效。回包状态必须携带发起请求的AuthContext，即使误投递给新会话也会被拒绝。没有实现/宣称账号持久化提供者、原生TBS HTTP请求或自动网络重试。
+- 新增NativeWriteResponseState与NativeWriteTransport：沿用原URLSessionHTTPClient的TLS/重定向/大小/取消约束，每个请求独立捕获原生写端点的指定状态；普通响应仍不暴露Set-Cookie，全局Cookie jar仍关闭；解析响应后才由Repository显式接受，不把它当成功回执。旧Live Repository/网络/Session/冻结基线文件未改，新组件尚未接入Live。
+- 原生ARM64封闭回放新增6个TBS getter、6个header提取样本。查证新主题同样保存/回传svcp_stk；同时继续追到IDPServerAPI与BBABaseAPIRequest的外层Proto文件段构造（data/data/image/jpeg，Proto非nil跳过额外表单params），下层到最终URLRequest仍待核对，不能据此宣称完整wire一致或删帖原因确定。
+- 相关Unit：初次测试编译因#require内部漏try失败，修接线后13项中仅header“首个空值后还有非空值”失败；按原生正则语义修正后13项PASS。加强旧响应误投递新账号保护后8项PASS；最后13项PASS，测试fixture类型移出过深嵌套后该唯一受影响用例又1项PASS。均为隔离Simulator纯合成输入，无Live发送。新增回放全部20样本核对PASS，旧8个fixture样本保持不变。
+- make generate PASS；最终lint449文件0violation、原23项write-baseline检查PASS；secret scan先将setCookie参数名及较长合成值误判，改明确headerValue命名/短fixture值后PASS，未放宽规则；新增测试CodingKeys嵌套的1项lint失败已修。make build最终正常Simulator完整App PASS（account-build-final.log）；git diff --check PASS。未跑全量Unit/quality/UI矩阵，未重复未改动缓存测试。
+- 正常iPhone仍是之前用户批准的纯beta3对照，未覆盖；iPad未改。完整迁移仍缺账号持久准备、Common/签名/实际请求封装、回执/验证及图片发送接线；不将这批组件通过当成发帖修好，不输出READY。无新UI、动画、手势、overlay或生产依赖。
+
+
+## 2026-10-07 U08 — 原生文字业务构造与 IDL 编码已落地，完整发送迁移继续中
+
+- 最新授权是持续完成与用户指定22.11.1参考包的发帖/回复对齐，仍属U08。本轮已开始实现，未新增阶段。HEAD仍edfb9ef，既有U08草稿及用户改动保留，暂存区为空；未提交/推送/U09。
+- 新增 `Config/Protobuf/NativeWrite.proto`/输入锁，独立转录参考descriptor的Common87、回复80、新主题95个字段；既有Android234个生成Swift文件逐字节未改，只多一个NativeWrite生成文件及摘要/metadata。新主题Proto CMD309730、回复309731。`NativeWriteRequestEncoder` 与 `NativeTextWriteParameters` 实现显式上下文下的普通文字业务字段/编码；不负责选路、富文本转换、上传、账号准备、Common运行时字段或签名，尚未接入Live Repository。
+- 新增封闭的ARM64离线回放工具 `scripts/fixtures/native_write/`，参考主程序SHA先校验，Foundation/账号/位置/发送使用显式合成替身，未知调用立即中止，不执行宿主App或提供网络出口。原生业务函数产生主题回复/楼层/楼中楼及有/无标题新帖5组数据，回复各命中一次拦截发送。独立Python descriptor编码另核对3个IDL样本。不是官方完整App执行/实网抓包，也不证明删帖已修。
+- 新证据收窄此前sig判断：Proto入口传false，公共参数副本与业务合并签名后返回公共字典；其中条件sig不能直接等同data.sig。Common描述符无sig，IDL查不到字段会跳过，并无在该处提升到业务层的代码。本轮增加不自动提升未知公共sig的回归；没有按此前未闭合的“业务sig必需”假设接入Live。地址与证据见API_EVIDENCE本轮段。
+- 定向验证：首次编码5项PASS、业务4项PASS；最终相关Unit共10项PASS（native-unit-final.xcresult）。`make generate-protos`、`make generate`含双生成比较PASS；`make build`完整正常Simulator构建PASS；最终lint444文件0violation，原23项写入基线检查PASS；secret-scan和diff check PASS。初轮lint13项格式/复杂度/嵌套违规已修；可重放工具初次因IDL消息名缺Idl后缀失败，修正后逐fixture比较PASS。没有运行全量Unit/quality/UI矩阵；本轮没有UI接线变更。
+- 原生账号TBS生命周期、实际页面上下文、Common/签名完整来源、响应头状态闭环、回执/验证及现有图片发送的兼容接入仍未完成。不能把这些新组件的通过称为完整迁移或审核成功；MODERATION_CAUSE_UNKNOWN保持。没有改变Live发送行为、编造SDK身份、读取运行时凭据或自动发送/上传/重试。
+- 正常iPhone仍是用户之前批准的纯beta3对照，未覆盖为本轮源码；iPad安装也未改。当前新构建只用于编译验证，不是可验收的原生迁移候选。账号、历史、缓存、排序、阅读位置和草稿均未清理；无新UI、动画、手势、overlay或生产依赖，不输出READY。继续完成剩余发送链路后再交付完整Live App。
+
+## 2026-10-07 U08 — 22.11.1 账号/回执续查，完整迁移仍未完成
+
+- 继续用户指定的发送对齐任务，无新增阶段。确认 TBS 完成块按发起时 UID 保存非空结果；原生回执按 serverApi 的错误码和错误信息进入对应验证处理，不能等价于当前任意 anti/info 字段非空即失败。返回 header 状态读取已追到实际 request，但该方法不提供账号清理契约。确切方法/地址追加在既有 WRITE_MODERATION_COMPARISON 顶部。
+- ignored 分析工具补 UTF-16 CFString 后确认楼中楼静态正文前缀；SDK 入口 ret 跳板后的方法体可读，已定位一次性 token、实例状态读取和不同结果分支，完整间接控制流/初始化/更新仍未还原。未把局部反汇编或 selector 存在误写成完整运行证据；没有读取用户正文、凭据、设备值或嵌入接入密钥。
+- 本轮只改本记录及既有差异记录，分析文件留在 Artifacts。没有生产源码/冻结摘要变化、没有新 App 构建或覆盖、没有 Live 发送/重试。iPhone 仍是此前批准覆盖的纯 beta3 对照；不能用它证明原生迁移。无动画、手势、overlay、依赖变化；完整迁移和删帖原因仍未解决，不输出 READY，不暂存/提交/推送/U09。
+- 已执行 make write-baseline-check（23项PASS）、make secret-scan（PASS）、git diff --check（PASS），暂存区为空，HEAD仍edfb9ef。没有生产变化，未重跑Unit/UI/build；以上检查不构成发送/审核通过证据。
+
+## 2026-10-07 U08 — 用户指定22.11.1正常发帖包为主要行为基准
+
+- 用户再次明确：给出的去广告版发帖正常，按这个行为完整对齐；随后提供新版22.11.1 IPA。接受为有效功能基准，22.7.3只作对照，不以修改包身份/无抓包拒绝分析或要求重复试发。最新授权允许必要发送链路迁移；旧beta3冻结不构成该授权的阻碍，但未用更新摘要掩盖实现差异。
+- 新IPA只读确认22.11.1/22.11.1.0、arm64 iPhoneOS、cryptid0；SHA8b7daae0…cba9f15，主程序SHA4f0cb74c…702d9eb。只复制主程序到ignored分析目录，未安装/执行/修改IPA，未读凭据、提取接入密钥或Live写入。
+- 新版交叉验证匿名值、业务TBS、iOS Common、签名和Set-Cookie/svcp_stk状态闭环仍同前版；已确认TBS缺失补取为HTTPS /c/s/tbs。新版AddPost80字段、Common87字段；新增send_from #80来自replyStatScene，旧业务字段编号/类型不变。账号和上下文并非照抄固定参数：定位SSDK_zid→SSDKLib.getZInfoWithEvent及带CUID/appKey/secretKey/ready callback的初始化接口。没有证据认定该可选字段必填或导致删除；完整provider/验证生命周期仍未移植。
+- 本轮只更新既有TASK_STATE、WRITE_MODERATION_COMPARISON、API_EVIDENCE、UNKNOWN，ignored目录保留证据。源码/安装/用户数据和U08草稿保持；无新动画/手势/overlay/依赖。不再把“不能认证原始App Store包”写成实施门槛，也不以静态部分相同宣称完整修好。初次metadata无methods键检索失败已修正，SDK线性反汇编不足已记明。
+- 检查：make write-baseline-check 23项PASS、make secret-scan PASS、git diff --check PASS。不跑无代码变化的Unit/UI/build，不暂存/提交/推送，不进入U09。完整发送迁移尚未完成，不输出READY。
+
+## 2026-10-07 U08 — 用户提供官方衍生解包，确认静态请求差异
+
+- 用户确认官方22.11.1/22.7.3均可发送，并提供本机“贴吧去广告”解包目录。只读TBClient程序/元数据/制作记录，未执行注入库、未读App用户数据、未发送或重发。程序为22.7.3/22.7.3.0、arm64 iPhoneOS、cryptid0，SHA67867b7a…04c03c0与制作记录相符；含去广告注入，不能认证为原始App Store包；22.11.1未分析。
+- 本轮沿用接口证据/根因流程，只追普通回复模型到参数、IDL及multipart。同post/add和CMD309731，不等于同实现：iOS初始anonymous0 vs 当前1、业务data.tbs vs 只设common.tbs、账号KV/数据库含缺失刷新分支 vs 每次login/资料、clientType1及iOS UA来源 vs Android2、业务参与签名/额外sig、响应Set-Cookie状态缓存并回传svcp_stk，均有精确方法/地址证据。详见WRITE_MODERATION_COMPARISON最新节，不记录凭据值/正文/设备ID、不复制另一App运行时身份。
+- 独立解析包内descriptor，AddPost当前67字段/Common当前45字段对应tag/type均无冲突；官方schema分别79/85项，不将新增项全部视为必填。真实手机当次配置开关、选路、上下文来源和最终请求/响应仍未确认，静态差异不能定为删除根因；不提供只改字段的试发补丁。当前OFFICIAL_IOS_STATIC_DIFFERENCES_CONFIRMED / RUNTIME_CONTRACT_INCOMPLETE / MODERATION_CAUSE_UNKNOWN。
+- 仅更新本记录、WRITE_MODERATION_COMPARISON、API_EVIDENCE、UNKNOWN；忽略目录保留有界反汇编/descriptor/摘要。辅助JSON/正则/边界解析初次失败已纠正，LLVM反汇编超时改用Capstone和LC_FUNCTION_STARTS；不隐瞒为一次全通过。当前生产源码、基线摘要、现有安装与用户数据均未变；iPhone仍为纯beta3对照，iPad仍为前次U08候选。无新动画/手势/overlay/依赖，无Unit/UI/build重跑，不输出READY或修复成功。
+- 检查：make write-baseline-check 23项PASS、make secret-scan PASS、git diff --check PASS；git diff --cached为空。仅证实生产发送冻结未漂移及文档检查通过，不是Live修复结果。不暂存、提交、推送或进入U09。
+
+## 2026-10-07 U08 — 纯 beta3 仍被删，官方 iOS 对照证据待补
+
+- 用户确认原始 beta3 覆盖后仍失败，手机 TiebaLite 也失败；异步答复同一账号近期在官方 iOS App 能发送且没有随后被删。最新要求是调查并对齐官方 iOS；不能继续将“手机 beta3 可用”或恢复旧源码作为修复成功证据。当前 HEAD edfb9ef，U08 与用户原有改动保留，暂存区仍空。
+- 使用既有根因/接口证据流程，限读当前发送链路、最新状态及相关规格。当前账号准备11.10.8.6、回复12.35.1.0、新主题7.2.0.0均为Android参考路径；没有官方iOS实现证据，不能猜UA/client type或安全参数替换。具体对照和公开来源记入WRITE_MODERATION_COMPARISON顶部，不新增阶段。
+- 公开App Store、百度隐私政策及API/SDK合作页已读取；通过独立无登录Chrome/jshook核实政策中的账号/设备安全范围，但其不提供本次发帖字段、顺序或删帖原因。jshook首次call要求先activate，激活后读取成功；没有读取用户浏览器会话或发送内容。
+- 连接iPhone的App元数据可见百度贴吧22.11.1及另一bundle的22.7.3；用户随后确认两个版本均能正常发送。工具filter未按预期过滤显示，未进一步访问无关App。现有devicectl文件域不支持导出官方程序包，未读取官方App数据/凭据。现有安装包/脱敏记录路径仍待用户回复。对照证据缺失前不制作“猜参数”候选。
+- 本轮仅更新本记录、既有差异记录和UNKNOWN；生产源码、冻结基线及安装均未变，正常iPhone仍为上轮纯beta3对照，iPad仍为前次U08候选。不新增动画、手势、overlay或依赖；不自动发布/上传/重发/申诉。make write-baseline-check 23项、make secret-scan、git diff --check通过；不重跑无变化的Unit/UI/build。独立取证Chrome已关闭，未关闭用户浏览器。
+- 当前 `OFFICIAL_IOS_EVIDENCE_NEEDED / MODERATION_CAUSE_UNKNOWN`，不输出READY或修复成功，不暂存/提交/推送/进入U09。
+
+## 2026-10-07 U08 — 用户批准覆盖，原始 beta3 同设备对照已安装
+
+- 用户明确回复“覆盖”。仅将正常iPhone 70D93841-1FEB-445A-8FAD-B1C29B981D5D覆盖为上一轮从4534020完整未修改源码构建的Release Simulator App；没有重新构建、改变源码/发送行为或覆盖iPad。当前iPhone运行的是纯beta3，**不是当前U08工作树候选**；不能在后续记录中混淆。
+- 覆盖前复核候选主程序SHA及codesign；terminate → install → launch成功，安装后主程序SHA与beta3-app-proof一致。原data container保持，持久草稿目录全部文件覆盖前后及启动后摘要一致，仅在内存比较、不记录文件名/正文。证据ignored runtime-comparison/beta3-installed.json；无uninstall/erase/清Keychain/迁移或清缓存。
+- CUA确认仍已登录、原浏览历史存在；已进入真实帖11082472712，第10/11/13楼及“评论一番”入口可见，留在帖子页。未点击发送、上传、点赞或修改草稿。旧版界面/会话草稿能力为本次明确批准的临时对照，U08持久草稿文件、当前工作树及新版完整App均保留。
+- 同设备beta3实际发送及后续留存仍待用户操作，本轮只确认覆盖和启动，不输出发送修复通过。无生产代码变化，不重跑Unit/UI/构建；diff check通过。不暂存/提交/推送/进入U09。
+
+
+## 2026-10-07 U08 — beta3 对齐候选仍被删，USER_RETEST_FAILED
+
+- 用户再次确认当前电脑Simulator发出的回复仍被删除。上轮源码/Mock通过不能证明实际发送留存正常；本轮不输出修复成功/READY，不再修改发送协议、回执、刷新或增加请求/重试。
+- 已复核当前正常iPhone安装程序及debug dylib与上轮beta3-alignment候选哈希相同，排除旧安装；本地原版beta3 IPA摘要与发布时回执一致，IPA内程序与留存归档一致，来源记录为4534020。原IPA为iPhoneOS Release，当前候选为Simulator Debug；这只是已知构建/运行环境差异，不是删除原因。证据在ignored runtime-comparison/current-installed.json及published-package.json。
+- 核对剩余U07入口与U08草稿接线：发送目标仍来自原构造器，全App仍单一TextComposerHost、LiveTextWriteRepository直接使用原生产HTTPClient。保留的差异是本地持久恢复/保存、namespace隔离、图片文件所有权及已验收视觉，不据此猜删除根因。
+- 新增直接离线测试：四类目标分别将合成草稿落盘、重建并恢复，再经真实ComposerStore → LiveRepository → URLSessionHTTPClient，在HTTPDataLoading入口截取URLRequest（Mock返回，不启动网络）。URL、方法、全部请求头、正文SHA、超时均匹配既有beta3快照；按原顺序读取账号/公开资料各一次、发布一次，完成后再调send不发第二次。request-boundary 2逻辑项/8参数情况PASS。该结果仍不是当次Live线上抓包或服务端证据。
+- 新测试首次lint仅参数缩进失败，调整排版后lint440文件0violation、secret-scan、diff check通过；未动生产源码、未重跑全套Unit/UI。读取AppEnvironment+Live/Config/Base的路径不存在，已按实际文件定位；不据此推断缺少实现。
+- 为避免继续假设，已在ignored目录导出纯beta3源码，App/Sources/Generated/Resources/Config/project.yml共664文件逐字节匹配tag；单独构建完整Release Simulator对照App，不改工作树、不新增模拟器。原始beta3完整Release Simulator App构建成功，664文件构建前后仍匹配；codesign、Simulator嵌入entitlements验证通过，application-identifier/Keychain组与当前正常候选一致。beta3-app-proof.json记录App及摘要。因为纯beta3也会暂时切回旧界面和会话草稿功能，已请求用户确认后才覆盖正常模拟器；当前正常App未更换，全部数据保留。后续须区分旧版同设备结果与新候选结果，不能把设备差异直接定为原因。MODERATION_CAUSE_UNKNOWN，不提交/推送/进入U09。
+
+
+## 2026-10-07 U08 — 用户明确要求完整对齐 v0.2.0beta3，发送链路冻结
+
+- 最新授权覆盖 U08 原来的回复后局部刷新方案：必须以手机已确认可用的 v0.2.0beta3（4534020d509ea0188dced53cf582fcc775dbb71e）完整恢复发送行为，后续不得擅改。当前 HEAD 仍 edfb9ef，未提交。此前“只恢复 Accept／撤回一次额外读”确实不等于完整对齐。
+- 已逐字节恢复 Endpoint、EndpointRequestBuilder、TextWriteProtocol、ThreadReaderStore、SubpostsStore、CachedReadingRepository、ReadingContentCache 和原 R09 回执测试；保留 U07 视觉/链接接线，只恢复两处 textComposer 成功回调为原 reload/refresh。Composer 发送主体和 Service present/didDismiss 本来与 beta3 相同；恢复 View modifier、成功清草稿→回执→dismiss 原块，去掉新增账号变化强制关闭。保留草稿存储恢复/落盘/就绪门槛、namespace 隔离和图片文件所有权，不宣称全 App 与 beta3 字节相同。
+- 已撤回 MIME 扩展、成功优先、requestAcceptMIMETypes、target 成功回调、lastReplyReceipt、父楼/尾页选择、dirtyPages 及追加读取。原 application/protobuf 的结果未知、anti/info 附带字段验证提示也按 beta3 原逻辑保留；不得再偷偷“兼容”。U03/U04 原缓存、排序、历史、位置及用户数据不删除。无新动画、手势、overlay 或依赖。
+- 冻结：AGENTS.md 新增用户长期约束，Specs/WRITE_BASELINE.json 从 tag 提取23项完整文件/代码块/接线，scripts/verify_write_baseline.py 纳入 make lint。首次检查准确列出10个漂移文件，恢复后23项PASS；四类请求完整属性/正文SHA与原冻结快照一致。网络/Session/生成协议242源码逐字节0差异（ignored beta3-alignment/dependencies-proof.json）。逐项结果见WRITE_MODERATION_COMPARISON顶部，不重开历史审计阶段。
+- 测试：原分支在新 beta3 回执断言上 unit-red 6逻辑项/10issue失败（MIME及anti优先级），恢复后 unit-green 共30逻辑项中29通过、1个新阅读测试选点失败。实际请求 [0,2,3,0,2]，原因是fixture第17楼在第一页/第二页重复，旧版刷新后将该锚点归到第二页；reload-observation保留原证据。测试改用唯一首楼，生产原码未改；reload-final 4项PASS，其余26项沿用unit-green，最终30项全部已通过。不再要求被用户撤回的全部旧协议断言；完整旧源码/测试保存于ignored beta3-alignment/before。初次清单生成引用了不存在的EndpointExecutor文件，改为实际EndpointPipeline；diff check曾发现文档尾空行，已修。未隐藏这些失败。
+- UI：隔离Mock的iPhone成功关闭/一次刷新/真实返回新ID及原位置/仅清对应草稿23.932s PASS，文字表情图片跨进程恢复35.973s PASS；iPad对应成功关闭/刷新27.076s PASS。没有Live发送/上传/重发/审核探测。make lint 440文件0violation（含基线检查）、make build、secret-scan及修正后的diff check通过；未跑全量Unit/quality。
+- scripts/visual_review_build_install.sh U08 成功，完整正常Live已覆盖原iPhone/iPad；两端主程序/debug dylib与候选哈希一致（beta3-alignment/installed-binary-proof.json），无卸载/erase/清Keychain/改签名。CUA确认iPhone已登录、历史存在，经原浏览记录进入真实帖11082472712，第10/11/13楼及评论入口可见，留在帖子页。一次CUA解析diff行索引失败无点击，改读完整AX后正常导航；未打开/修改用户草稿。
+- 服务端删帖原因及恢复后真实发布留存仍 MODERATION_CAUSE_UNKNOWN；不能从源码相等或Mock通过宣称删帖修好。此前历史READY不是当前实网成功证据。本轮READY仅表示beta3发送基线恢复候选已安装待用户检查，不是审核通过。未暂存/提交/推送，不进入U09。
+
+
+## 2026-10-07 U08 — 撤回未经实网证实的额外读取，STOP / MODERATION_CAUSE_UNKNOWN
+
+- 用户再次反馈当前Simulator回复遭异常行为删除，并明确反对继续改回复行为。承认上一轮没有确认实际首读结果就新增同页额外读取，不应把合成场景当成该实网问题的根因。
+- 仅撤回上一轮新增的额外同页读取、后置dirty标记和对应的Fixture假设；四个源码/测试文件已恢复到该改动前的精确字节。ThreadReaderStore/U08ReplyTests与reply-fix留档哈希一致，Fixture/UI与verification-fix哈希一致。发送协议、Endpoint/Builder与用户曾报告一次成功时的request-compatibility候选哈希一致；并非把整个U08回退到beta3，保留全部草稿/缓存/恢复和用户改动。证明见ignored withdraw-extra-read/restored-source-proof.json。
+- 撤回内容与其测试完整备份在同目录withdrawn；原失败/通过的xcresult仍保留。恢复的是既有代码，沿用其定向Unit/短UI结果，不删失败来宣称产品已通过。旧“READY”是历史交付记录，当前实际发送可靠性与自动刷新均未验证解决；不输出READY。
+- 本轮不再新增诊断/请求/重试/定时器，不探测审核，不读取真实凭据，不进行任何Live发送/上传/重发或申诉。make lint（440文件0violation）、make build、secret-scan、diff check通过；完整正常Live已覆盖iPhone/iPad，两端主程序/debug dylib均与撤回后候选哈希一致（withdraw-extra-read/installed-binary-proof.json）。未卸载/erase/清Keychain或用户数据。完成这次局部撤回后停止，不再追加机制；不暂存/提交/推送，不进入U09。
+
+## 2026-10-07 U08 — 成功回复后首次读取仍旧页的有界确认
+
+- USER_REPORTED：本次回复成功；编辑器自动收起、发送前已到底、未看到刷新失败，但手动下拉后才显示。即时回复可见仍不能证明后续审核留存；本轮不改已经对齐beta3的发送/回执/上传/认证代码。
+- CODE/FIXTURE_EVIDENCE：成功回调和绕过缓存的首次读取已存在。缺口是首次读取成功但receipt未出现且hasMore仍false时直接结束，并把返回的旧页缓存标为fresh。已有Fixture假设首次读取就可见，未覆盖这一路径。新合成场景在旧代码上明确失败：只读2次（含初始加载）、新ID缺失、一直不可见时cache仍fresh。真实当次首个响应未保存，因此不能断言用户实网必然也是同一原因。
+- 最小改动只ThreadReaderStore.replySucceeded：原已读到底的主题回复首次读取成功但缺receipt时，最多再读一次；有新增页则沿用原读取下一页，否则再强制刷新同一末页。没有固定delay/轮询/重发；仍缺receipt或第二次失败时保留内容/回执/锚点并重标相关cache dirty。取消/新代次/账号变化不再继续。无界面、动画、手势、overlay、依赖变化；VirtualizedList/恢复/预载策略及协议未改。
+- 基线6项PASS。首次新测试因Int→Int32编译失败，修测试类型后unit-red2在上述4个断言失败。unit-green7项、补取消/第二次失败后的unit-final9项均PASS，涵盖三页/跨页/锚点、首次仍旧、一直不可见的上限、取消、失败、未知结果不重发与回调一次性。lint440文件0violation。既有写入候选6文件哈希一致，证据write-source-unchanged.json，未重复全套发送/缓存测试。
+- 同一短UI的本地读服务改为首次仍返回旧内容，继续要求自动关闭、无确认alert、新ID/正文可见、原Y保留及仅清对应草稿。iPhone23.936s、iPad27.194s均PASS。make build、secret-scan、diff check通过；未运行全量Unit/quality/无关矩阵。
+- scripts/visual_review_build_install.sh U08覆盖完整正常Live iPhone成功；iPad同候选覆盖成功，两端主程序/debug dylib哈希回读一致，证据reply-refresh-followup/installed-binary-proof.json。未卸载/清登录/缓存/草稿。iPhone已登录，经浏览记录进入刚回复的真实帖11082472712，留在第10/11/13楼附近及评论入口。CUA滚动/拖动没有改变画面，不据此声称复核了第14楼或修后Live发送刷新；自动回读显示新楼由隔离Mock短UI证明，未操作真实发送。
+- 当前交付覆盖“一次读取滞后”的本地缺口，不保证服务端任意长延迟或审核留存；修后实际发送的自动刷新仍待正常使用确认。未暂存/提交/推送，不进入U09。READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-07 U08 — beta3 请求兼容回查，删帖原因仍 UNKNOWN
+
+- USER_REPORTED：当前电脑Simulator发出的回复收到“涉嫌异常行为”删除通知；手机GitHub发布版v0.2.0beta3仍能正常发送。基线明确为4534020d509ea0188dced53cf582fcc775dbb71e，当前HEAD edfb9ef。设备/系统/网络与版本同时不同，不把两者当成严格单变量实验，也不归咎于Simulator。
+- CODE_EVIDENCE：此前“发送请求没变”的结论错误。EndpointRequestBuilder把allowedResponseMIMETypes同时用于Accept；U08补收application/protobuf时，AddPost的出站Accept也从两项变成三项。这是已确认的意外请求差异，不是已确认的服务端删除原因。此前成功优先的回执判定确有修改，但只影响本地成功/失败及后续关闭、读取刷新，不会撤回或改变已经提交的正文。
+- 当前只修该可证实差异：分离请求Accept和响应MIME允许集合，为AddPost固定beta3的请求Accept，继续正确解析已实测application/protobuf回执。以纯合成输入离线比较四种发送目标的完整HTTP请求字段/正文摘要；保留草稿、自动关闭、局部刷新和单次发送。没有重发用户内容、读取凭据或打开申诉链接，不伪造设备/验证参数。
+- 离线红测：从beta3发送构造代码生成纯合成冻结请求快照；三类回复仅Accept不等，新主题相等。最初两次编译未过分别为测试缺MainActor、在同步auth上多await；只修测试接线后得到上述行为失败。临时旧协议生成器移入ignored证据，未保留第二套发送实现。最终以冻结fixture核对method/URL/全部header/bodySHA256/timeout/bodyLimit/redirect。
+- unit-green与最终unit-final均15项逻辑测试PASS；final包含beta3四目标、请求/响应MIME分离和非法值拒绝、共享builder既有5项、回执三目标各一次写入、重复send不追加、结果未知草稿保留不重发。首轮lint只因旧测试文件加用例超600行失败；将新增用例收在U08直接测试文件，原EndpointFoundationTests回到未改，final lint440文件0violation。phone-ui 24.136s PASS：Mock发送后关闭/无alert、新回复/原位置、对应草稿清理；iPad界面及关闭接线本轮未改，沿用上一轮27.027s结果，不重复长矩阵。
+- make build、secret-scan、git diff --check通过。scripts/visual_review_build_install.sh U08构建并覆盖正常iPhoneLive成功，iPad同一完整App覆盖成功；两端主程序和debug dylib均与当前候选哈希一致（request-compatibility/installed-binary-proof.json）。未卸载/erase/清Keychain或用户数据；没有新增视觉、手势、动画、overlay、依赖或日志机制。
+- 正常iPhone仍已登录，经浏览记录回到最近真实帖子中部，第5/6/8楼可见，停在帖子页；未点击发送或动旧草稿。当前只交付“恢复beta3请求兼容”的候选，不以Mock或即时回复可见证明服务端审核修复。删帖原因及修后持续发布可靠性仍UNKNOWN，不能将本轮标成删帖已解决。不暂存/提交/推送，不进入U09。
+
+## 2026-10-07 U08 — 成功回执被验证字段覆盖，READY_FOR_USER_VISUAL_REVIEW
+
+- 用户在MIME修复候选再次亲自发送：回复确已发布，但编辑器提示verificationRequired。这是App本地文案，不是直接展示的服务器原文。该次原响应未保存，具体触发字段值仍UNKNOWN；不把构造的vcode_type=0等测试值冒充实测，也不再要求用户替诊断重复发帖。
+- 源码证据：旧decodePost先检查anti/info非空字段（包括非空字符串0的vcodeType及不明accessState.type），然后才检查error/pid/tid。Android createProtobufApi→ProtoFailureResponseInterceptor先拒绝非零错误，AddPostRepository以新pid确认，再由ReplyViewModel/ReplyPage成功关闭。原来的“附带字段优先于有效成功回执”是本地无依据规则，MIME修复暴露了后续这一独立误判。
+- 最小修改仅AddPost回执判定：error0+正pid+匹配的非空tid确认成功；附带anti/info不覆盖成功回执。非零错误永不成功；未确认成功时保留need_vcode/验证码材料的verification分类，类型/accessState本身不冒充验证要求。错thread、缺ID、未知结果、Session和不自动重发保护保留。无UI、缓存、上传、请求参数或AddThread改动。
+- unit-red新两项参数化规则在旧代码明确失败（6个成功回执元数据组合，3个无回执类型描述误判）。既有验证码测试改成带明确非零服务器错误的拒绝回执，保留原ID与挑战字段和失败断言；新用例另覆盖error0但无ID的真实挑战分类，不以删断言过关。unit-green 7项逻辑测试PASS，含全部旧触发字段、原MIME/三目标单次发送、服务器/验证失败及未知结果草稿保护。合成数据只经Mock，未发Live请求。
+- 同生产pipeline携带附带字段的iPhone短UI24.395s、iPad短UI27.027s均PASS：收起、无alert、新行、原Y及清对应草稿断言全保留。make lint439文件0violation、make build、secret-scan、diff check通过。此前缓存/多页刷新结果沿用，无全量Unit/quality。
+- scripts/visual_review_build_install.sh U08成功；完整正常Live覆盖iPhone/iPad，两端主程序/debug dylib均与最终候选匹配（verification-fix/installed-binary-proof.json），五个直接相关源码/测试哈希同目录保存。未卸载/清数据/改签名，账号、缓存、历史、草稿保留；没有新日志或诊断机制。
+- 正常Live仍已登录，经历史进入用户刚回复的11082701396，第13楼154006608889可见，截图核对外观未改，停在帖子页供继续使用。未点击发送或删除旧草稿。修后实际发送关闭/刷新仍待用户手动验收，不能把Mock或已发布回复可见写成修后Live发送通过；真机未验证。未暂存/提交/推送，不进入U09，READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-07 U08 — 回执 MIME 修复，READY_FOR_USER_VISUAL_REVIEW
+
+- 用户已亲自再次发送并提供“结果未知”和服务端新回复同时存在的截图。正常iPhone本次元数据：HTTP200、208bytes、MIME protobuf（诊断常量对应application/protobuf）、payload protobuf、hasData=true、serverRejected=false、postID positive、threadID matches-target、pipeline unsupported-content、repository result-unknown。仅复制这份白名单元数据到ignored receipt-diagnostic/live-response-metadata.json，未采集正文/原响应/凭证。
+- 根因确定：write.post只允许application/octet-stream和application/x-protobuf，在解码前拒绝了服务器实际返回的application/protobuf。仅补该端点MIME；当时误称未修改发送请求，现已发现该白名单也改变Accept头（见顶部纠正记录）。上传/认证、共享pipeline、ID校验或重试未改，保留此前已实现的自动关闭、保留位置刷新与草稿逻辑。
+- 新U08WriteReceiptTests经真实Repository→MockHTTPClient→Composer复现三种回复目标resultUnknown；unit-red三个逻辑测试失败，均在预期MIME分支。保留该回归与既有无效ID/错thread/验证码/服务器错误/畸形/HTML保护。UITESTING本地回复服务改用同一生产pipeline解析合成application/protobuf回执，原短UI继续严格检查编辑器关闭、无alert、新行可见、首楼Y及清对应草稿。
+- 临时诊断源码/测试已备份到ignored receipt-diagnostic并撤除，LiveTextWriteRepository精确回到原生产实现；未动用户草稿或其他U08实现。与此前reply-fix候选18个源码哈希相比，仅本地Fixture与UI注释改变；另外新增本次一个端点MIME条目和3项定向Unit。无外观、动画、手势、overlay或依赖变化。
+- unit-green共8项逻辑测试PASS（新回执3项，U08保留式刷新/未知结果5项）；三类回复取得回执，账号资料与Profile各一次、真正write仅一次，成功后的重复send不发请求。无效ID/错thread/验证码/服务端错误/畸形PB/HTML仍拒绝；旧两种MIME继续有效。phone-ui 24.043s、ipad-ui 27.339s各1条PASS：同生产pipeline的已观察MIME→编辑器关闭/无alert→新行可见/原Y保留→再次打开空草稿。测试均在隔离设备使用合成数据。
+- make lint439文件0violation、make build、secret-scan、diff check均通过；未运行全量Unit/quality/压力矩阵。scripts/visual_review_build_install.sh U08成功，完整正常Live覆盖iPhone/iPad，两端主程序/debug dylib均与候选一致（receipt-fix/installed-binary-proof.json）；最终源码哈希同目录保留。没有卸载、清数据或签名变更。
+- iPhone正常Live仍显示已登录，经历史进入用户刚回复的11082715433，截图核对第3楼154006516140仍可见，保留原界面并停在帖子页回复入口。未操作发送、旧草稿或远端数据。修后真实发送关闭/刷新仍待用户手动验收，不把Fixture写成Live通过；真机未验证。未暂存/提交/推送，不进入U09，READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-07 U08 — 已确认 resultUnknown，等待真实回执分支
+
+- 用户回答提示为“发送结果暂不确定，请先到目标页面确认”。明确属于 resultUnknown，先前去成功 alert 和尾页刷新修复仅覆盖已确认 receipt 分支；不能据此宣称解决实网发送后不关闭问题。
+- 核对当前 LiveTextWriteRepository/TextWriteProtocol、发送 Store 及锁定 Android AddPostResponse/Repository/ReplyPage。旧响应未保存，发送后格式校验、解码、回执 ID 或会话变化均可能落入同一提示；具体原因仍 UNKNOWN。没有猜测 MIME、放宽 ID 或将模糊结果当成功。
+- 当前仅新增临时 Debug-only TextWriteResponseDiagnostics 和 Live repository 包装接线：同一 HTTPClient 原样执行一次，写回复响应在原 pipeline 前形成固定类别/布尔/计数记录，再记录 repository 结果。单份元数据覆盖保存于 App Caches/U08ReplyDiagnostics/last-attempt.json；不含正文、响应、URL、ID 值或凭证，也不观测账号资料响应。Release 不启用；无界面、动画、手势、overlay、依赖或 Session/缓存策略变化。
+- 首轮 11 项定向 Unit PASS（新增诊断4项含4个回执参数场景，原单次发送1项、Composer6项）；lint 首次新增函数复杂度13超限，拆分固定错误分类后440文件0violation。分类拆分后的4项直接复核PASS；make build、secret-scan、diff check通过。此前成功发送后关闭/刷新/清对应草稿的iPhone/iPad短UI结果沿用，此轮没有改其接线，不重跑全套。
+- scripts/visual_review_build_install.sh U08成功；完整正常Live覆盖iPhone/iPad，主程序/debug dylib均与候选一致，证据receipt-diagnostic/installed-binary-proof.json。未卸载/清数据，iPhone仍已登录，经历史回到原帖已缓存楼层并打开原回复编辑器，草稿保留。历史AX索引一次过期，重新读取当前索引后正常进入，不作为App失败。没有自动发送实网内容，也没有删除用户已发布但仍保留的草稿。
+- 下一步需用户主动发送一条新的、确实想发布的回复（不能重复发送已发布的旧草稿），才能读取last-attempt.json定位真正失败分支；旧响应没有保存，Mock不替代Live证据。此候选是定位用完整App，问题尚未宣称修复，不输出READY。未暂存、提交或推送，不进入U09。
+
+## 2026-10-07 U08 — 用户反馈：发送后自动关闭与回复刷新
+
+- 用户已实际确认Live发送成功、草稿保留和帖子重进位置，进一步要求成功后自动收起编辑器、无需确认，并刷新显示回复。保留此前U08实现及所有用户数据；本轮不提交、不推送、不进入U09。
+- 确定性证据：ui-red在真实生产编辑器接Fixture发送后已自动关闭，随后阅读页弹出的“发送成功”alert导致无需确认断言失败（14.483s）；Android ReplyPage的ReplySuccess同样执行onBack，不要求确认。删除ThreadReaderView/SubpostsView这两处阻塞alert，保留原receipt关闭编辑器和只清对应草稿的接线，不另造关闭机制或提示UI。
+- 新内容定向测试：同页缓存刷新已经能取得服务端新行；unit-red明确失败于原先已到底、回复新增下一页时，只刷新旧尾页。修后仍只刷新父楼页/已加载尾页；原已到底且返回新增下一页、receipt尚不可见时最多追加一页，不追读整帖、不伪造审核未返回的行。楼中楼刷新已加载尾页，独立于较早的阅读锚点；缺少页来源的注入快照不再直接跳过刷新。保留分页范围/readAnchor、失败回执及原请求代次保护。
+- 修改边界：上述两个View、两个Store、直接Unit/UI及隔离Mock接线，更新本ADR/状态契约；没有改写发送API、上传、草稿、缓存预算、VirtualizedList、恢复、Pager、图片或已验收外观。只移除系统alert，无新自定义动画、手势、overlay或依赖。
+- 定向结果：unit-green 10项逻辑测试PASS（其中缓存同页/跨页2个参数场景），subpost-unit新增1项PASS，包含三页/原锚点保留、失败回执、错thread拒绝、结果未知不自动重发及原单次发送保护。phone-ui-final 1项23.967s PASS：发送后编辑器消失、无alert、服务端读取的新900002行可见、原首楼Y不变、再次打开已发送草稿为空。此前phone-ui失败为重启后未重选动态Tab；phone-ui-2失败为把现有富文本TextView查成StaticText，附件已证明900002行存在且可见，按实际控件修正查询，不放宽内容/可见/位置断言。新增Fixture只在UITESTING显式开关下接入，正常Live不可启用。
+- 首轮lint报初始化方法长度与fixture参数对齐，正常拆分fixture工厂和对齐后lint通过（438文件0violation）。iPad同一短UI 27.092s PASS；make build、make secret-scan、git diff --check通过。正常完整Live覆盖iPhone/iPad，两个主程序/dylib均与候选匹配（reply-fix/installed-binary-proof.json），18个候选源码哈希另存；未卸载或清数据。
+
+- Live交付回查发现更关键的新证据：真实帖11082826300已存在用户发布楼层154006424005，重新打开同一回复编辑器仍恢复原12字草稿。仅移除成功alert不足以证明解决本次实网症状；用户所说“确认回复”也可能是resultUnknown提示。已请求用户辨认提示原文，尚未收到答案，未自动发送或采集正文/凭证。当前候选保留在真实回复编辑器，原草稿未动。本次实网回执原因仍UNKNOWN，暂不宣称发送后不收起问题已完全解决，不输出READY。此前成功Mock、尾页漏刷和去alert的结论仅覆盖其实际验证分支。
+
+## 2026-10-07 U08 — Live键盘恢复，READY_FOR_USER_VISUAL_REVIEW
+
+- 用户反馈回复框无法呼出键盘。正常Live回复正文已有光标、draftReady已完成、表情面板可用；同一iPhone Simulator的系统Spotlight输入框也无软键盘，排除U08草稿等待禁用输入这一假设。设备原Connect Hardware Keyboard为关闭，单独开关此项无效；经Simulator的I/O → Keyboard → Toggle Software Keyboard恢复显示，再将硬件键盘连接恢复原关闭状态后，系统搜索和Live回复均显示键盘。不将系统日志中的无iCloud账号等无关错误当作根因。
+- 本轮没有修改生产代码、布局或手势，也没有清数据、重装或发送内容。正常Live高通吧帖子11082715433回复入口已打开，系统键盘可见；表情面板→系统键盘切换直接复核通过，停在空白回复框供用户操作。截图：ignored Artifacts/VisualReview/U08/20261007-095055-live-reply-keyboard-restored.png。下条锁屏阻塞已解除。
+- 已核对17个候选源码文件哈希全部一致；沿用已安装U08候选的17项定向Unit、3条UI及lint/build结果。本轮make secret-scan、git diff --check通过，仅处理Simulator显示状态，不重复构建测试。U08继续未暂存、提交或推送，不进入U09；真实发送及真机未验证。
+
+## 2026-10-06 U08 — IMPLEMENTED，等待解锁打开Live验收入口
+
+- U07 已按用户授权精确提交 `edfb9ef7caff71e89d94fd8c473be66ba48dd8bc`，message `fix: wire production links and content actions`；37文件，未推送。用户原有模拟器清理记录、未跟踪Prompts/skill及其他排除项保持未提交。
+- 本阶段只做回复回执的相关页刷新与草稿持久化。复用U03现有保留式刷新，VirtualizedList/Pager/恢复/已验收视觉不改；不发送任何Live内容，不进入U09。
+- 已执行基线R09ComposerTests 6项PASS。新增草稿/回执及旧发送与上传状态共16项定向Unit PASS；三页范围、第三页锚点保持、父楼页刷新失败保留回执已覆盖。首次测试编译因测试传了领域post而非行model失败，改为直接构造既有target；随后测试选中跨页重复边界楼层导致页号断言失败，改选第二页独有楼层后PASS。一条方法selector漏括号仅运行0项，未作为通过证据；最终按suite运行16项。
+- 初次lint 6项（新方法长度/参数及行长）已按正常拆分修正，438文件0violation。iPhone原编辑器取消返回UI PASS；新增持久草稿UI首次因画廊入口位于设置页屏外失败，截图明确Y=1148.7，已补测试滚动到实际按钮，不改产品布局。后续测试与Live安装进行中。
+- 最终17项不同逻辑Unit通过（U08新7项，R09/R10既有10项）；iPhone取消返回25.042s、持久化重开35.998s、iPad持久化重开38.479s UI通过。后续草稿状态按key隔离、flush代次/退出清理/附件失败清理调整后7项U08 Unit再验通过；一次catch排版lint已修正，最终438文件0violation。
+- make build、make secret-scan、git diff --check通过；正常Debug的scripts/visual_review_build_install.sh U08成功，Live完整App覆盖iPhone/iPad，无卸载、清数据、签名变更。两端主程序和debug dylib与候选哈希一致（ignored Artifacts/VisualReview/U08/installed-binary-proof.json）。
+- 当前Mac锁定，CUA无法自动解锁，已请求用户解锁。Live入口导航/截图尚未完成，不把Fixture流程冒充Live手工验收；尚不输出READY。用户真实发送、真机相册及签名团队未配置、既有iPad旋转分栏回首楼限制均未改动。本阶段无新自定义动画、手势、overlay或依赖，只有发送后系统确认提示；U08未暂存、提交或推送。
+
+
 ## 2026-10-06 U07 — USER_ACCEPTED，授权提交并进入U08
 
 - 用户已确认最终外观并明确批准提交U07、开始U08。代码保持当前已安装验收候选，复用原31项不同逻辑Unit、7条设备/流程UI及各次直接视觉短回归；最终分享/回复候选19.590s UI、433文件lint/build/secret-scan/diff check已通过，不重复全套。
@@ -50,6 +368,13 @@
 - 正常Live：iPhone原登录/关注和最新发布排序仍在，真实帖子顶部吧名成功进入原生高通吧；11082237926更多菜单包含复制链接/分享/重新加载，系统分享已实际弹出并正常关闭。iPad原最新回复排序仍在，缓存帖11071998867重进仍见153993794608（第31楼），系统分享锚定右下更多入口，关闭后仍在该楼层。iPhone最终留在11082237926更多菜单，iPad留在原缓存帖31楼供操作。没有发出真实帖子/关注/点赞等写操作。
 - 范围/限制：正文、楼中楼、摘要、提及的具体链接跳转由完整生产App接Fixture进行确定性UI验证；本次正常Live未找到并遍历所有真实外链/短链组合，不冒称全部实网链接均验证。未知网页路径/查询仍交系统浏览器；保留现有5层业务路径及4层历史内容上限。只在Simulator验证，真机未验收。清理相关README/节点矩阵/导航/API证据中的过期说明，未重读或删除历史审计。
 - 当前HEAD仍8a1eedf，暂存区为空；保留先前模拟器清理记录和用户原有未跟踪Prompt/skill。U07未暂存/提交/推送，不进入U08，等待用户验收。证据在ignored Artifacts/VisualReview/U07/。
+
+## 2026-10-06 本机冗余测试模拟器清理
+
+- 用户要求清理TiebaLite多余iPhone/iPad测试设备。核对当前无xcodebuild/xctest/XCTRunner运行，XCTestDevices下37台均为Shutdown的`Clone 2 of Tieba-Perf-Test`。逐个使用`xcrun simctl --set ~/Library/Developer/XCTestDevices delete <UDID>`，全部exit0；未使用全局erase/delete all。
+- 删除后37个设备与目录均不存在，XCTestDevices占用由147,381,735,424 bytes（137.26 GiB）变为0。正常device set的15台清单完全一致：保留已登录日常iPhone17Pro/13寸iPad、Tieba-Perf-Test及U01-Forum-Sort-iPad一组隔离测试设备和其他项目设备。两台Live的App容器仍存在，未触碰账号、Keychain、历史、缓存、构建产物或runtime。
+- 目录占用已清空，但df可用空间当时仍约264GB，未宣称物理磁盘已释放137GiB。系统存在Time Machine本地快照，APFS共享块/快照可能继续保留空间；没有越界删除系统快照。前后设备清单、占用和删除回执在ignored Artifacts/Maintenance/2026-10-06-simulator-cleanup/。
+- 无App源码/配置变更、不运行构建测试、不提交推送；下次自动化继续使用保留的隔离设备，及时清理本次创建的测试克隆。
 
 ## 2026-10-04 v0.2.0beta3 — PUBLISHED_AND_VERIFIED
 

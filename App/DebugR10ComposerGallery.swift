@@ -21,14 +21,24 @@ struct DebugR10ComposerGallery: View {
         defer { preparing = false }
         let context = AuthContext.active(.init(sessionID: .init(rawValue: 10), generation: 1))
         let service = TextComposerService(repository: FixtureTextWriteRepository(), uploader: FixtureComposerImageUploader(),
-                                          imageLoader: ProductionImageLoader.production(), currentContext: { context })
+                                          imageLoader: ProductionImageLoader.production(), drafts: fixtureDrafts,
+                                          currentContext: { context })
         let target = TextComposeTarget(kind: .threadReply, forumID: 10, forumName: "固定样本", threadID: 101, quote: "图片与表情")
         do {
-            var draft = TextDraft()
-            for number in 1...count { draft.photos.append(try await Self.photo(number)) }
+            var draft = await service.drafts.restore(target: target, context: context)
+            if draft.photos.isEmpty && draft.content.isEmpty {
+                for number in 1...count { draft.photos.append(try await Self.photo(number)) }
+            }
             service.drafts.save(draft, target: target, context: context)
             host?.present(target, using: service) { _ in result = "模拟完成" }
         } catch { result = "样图读取失败" }
+    }
+
+    private var fixtureDrafts: TextComposerDrafts {
+        guard let identifier = ProcessInfo.processInfo.environment["U08_FIXTURE_DRAFT"],
+              UUID(uuidString: identifier) != nil else { return TextComposerDrafts() }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("u08-fixture-" + identifier)
+        return TextComposerDrafts(storage: ComposerDraftStorage(directory: directory), namespace: { "u08-fixture" })
     }
 
     private static func photo(_ number: Int) async throws -> ComposerPhoto {

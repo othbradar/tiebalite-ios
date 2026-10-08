@@ -1,10 +1,14 @@
 import Foundation
 
-/// The owned temporary file lives exactly as long as its in-session draft references.
+/// Temporary imports follow their references; durable draft files are owned by the draft repository.
 final class ComposerPhotoFile: Sendable, Equatable {
     let url: URL
-    init(url: URL) { self.url = url }
-    deinit { try? FileManager.default.removeItem(at: url) }
+    private let removesOnRelease: Bool
+    init(url: URL, removesOnRelease: Bool = true) {
+        self.url = url
+        self.removesOnRelease = removesOnRelease
+    }
+    deinit { if removesOnRelease { try? FileManager.default.removeItem(at: url) } }
     static func == (lhs: ComposerPhotoFile, rhs: ComposerPhotoFile) -> Bool { lhs.url == rhs.url }
 }
 

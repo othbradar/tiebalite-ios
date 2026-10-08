@@ -40,15 +40,21 @@ struct TextComposerHost: ViewModifier {
         content.sheet(item: $service.presentation, onDismiss: service.didDismiss, content: { session in
             TextComposerView(target: session.target, service: session.service) { service.completedReceipt = $0 }
         })
+        .onChange(of: service.currentContext(), initial: true) { _, _ in
+            service.drafts.accountDidChange()
+        }
     }
 }
 
 @MainActor
 struct TextComposerView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @State private var store: TextComposerStore
     private let service: TextComposerService
-    private let context: AuthContext
+    @State private var context: AuthContext
+    @State private var draftKey: ComposerDraftStorage.Key?
+    @State private var draftReady = false
     private let onSuccess: (TextWriteReceipt) -> Void
     @State private var focused = false
     @State private var selection = NSRange(location: 0, length: 0)
@@ -59,7 +65,9 @@ struct TextComposerView: View {
 
     init(target: TextComposeTarget, service: TextComposerService, onSuccess: @escaping (TextWriteReceipt) -> Void) {
         self.service = service
-        context = service.currentContext()
+        let context = service.currentContext()
+        _context = State(initialValue: context)
+        _draftKey = State(initialValue: service.drafts.key(target: target, context: context))
         self.onSuccess = onSuccess
         let store = TextComposerStore(target: target, repository: service.repository,
                                       context: context, currentContext: service.currentContext, uploader: service.uploader)
@@ -79,7 +87,7 @@ struct TextComposerView: View {
                     TiebaFlatDivider(inset: 0)
                 }
                 ComposerTextEditor(text: $store.draft.content, selection: $selection, focused: $focused,
-                                   enabled: !store.isSending, showsEmoticons: showsEmoticons, insertEmoticon: insertEmoticon)
+                                   enabled: draftReady && !store.isSending, showsEmoticons: showsEmoticons, insertEmoticon: insertEmoticon)
                 if !store.draft.photos.isEmpty {
                     ComposerPhotoGrid(photos: store.draft.photos, loader: service.imageLoader, remove: store.removePhoto)
                 }
@@ -87,7 +95,7 @@ struct TextComposerView: View {
                 status
             }
             .background(SemanticColor.background)
-            .disabled(store.isSending)
+            .disabled(store.isSending || !draftReady)
             .navigationTitle(store.target.title).navigationBarTitleDisplayMode(.inline)
             .toolbar {
 #if UITESTING
@@ -102,7 +110,7 @@ struct TextComposerView: View {
                 .tiebaFlatToolbarItem()
                 ToolbarItem(placement: .confirmationAction) {
                     Button(store.isSending ? "发送中" : (store.mediaFailure == nil ? "发送" : "重试")) { Task { await store.send() } }
-                        .disabled(!store.canSend).accessibilityIdentifier("composer.send")
+                        .disabled(!draftReady || !store.canSend).accessibilityIdentifier("composer.send")
                 }
                 .tiebaFlatToolbarItem()
             }
@@ -110,7 +118,16 @@ struct TextComposerView: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("composer.screen")
             .task(id: pickedPhotos) { await importPhotos() }
-            .onChange(of: store.draft) { _, draft in service.drafts.save(draft, target: store.target, context: context) }
+            .task {
+                store.draft = await service.drafts.restore(key: draftKey)
+                draftReady = !service.drafts.restorationFailed
+            }
+            .onChange(of: store.draft) { _, draft in
+                if draftReady, let draftKey { service.drafts.save(draft, key: draftKey) }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active { flushDraft() }
+            }
             .onChange(of: store.receipt) { _, receipt in
                 guard let receipt else { return }
                 service.drafts.clear(target: store.target, context: context)
@@ -119,10 +136,15 @@ struct TextComposerView: View {
             }
             .onDisappear {
                 store.cancelPending()
-                if store.receipt == nil { service.drafts.save(store.draft, target: store.target, context: context) }
+                flushDraft()
             }
         }
         .presentationDetents([.large])
+    }
+
+    private func flushDraft() {
+        if draftReady, store.receipt == nil, let draftKey { service.drafts.save(store.draft, key: draftKey) }
+        Task { await service.drafts.flush() }
     }
 
     private var targetHeader: some View {
@@ -213,6 +235,11 @@ struct TextComposerView: View {
     }
 #endif
 
+    private var draftStatusTitle: String {
+        guard draftKey != nil else { return "草稿暂存于当前编辑器" }
+        return service.drafts.isSaving ? "正在保存草稿" : "草稿已保留"
+    }
+
     private var status: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let progress = store.uploadProgress {
@@ -228,7 +255,8 @@ struct TextComposerView: View {
             } else if !store.target.isValid {
                 Text(TextWriteFailure.invalidTarget.message).accessibilityIdentifier("composer.invalid-target")
             }
-            Text("草稿保留在本次会话 · \(store.draft.content.count) 字 · \(store.draft.photos.count)/9 图")
+            Text(service.drafts.failure(for: draftKey) ??
+                 "\(draftStatusTitle) · \(store.draft.content.count) 字 · \(store.draft.photos.count)/9 图")
                 .foregroundStyle(SemanticColor.secondaryText).accessibilityIdentifier("composer.draft-status")
         }
         .font(Typography.font(.caption)).padding(16)

@@ -1,0 +1,149 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Synthetic receipt bytes encoded from selected fields of native AddPost/AddThread response descriptors. Error categories/account actions replay native predicates with intercepted UI effects. Not captured Live responses, full UEG processing or evidence of moderation retention.",
+  "cases": [
+    {
+      "name": "post-success",
+      "kind": "AddPost",
+      "wireBase64": "ChEIABINZml4dHVyZS1lcnJvchIKEgMxMDEaAzQwMQ==",
+      "errorCode": 0,
+      "hasPayload": true,
+      "threadID": "101",
+      "postID": "401",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "post-metadata-success",
+      "kind": "AddPost",
+      "wireBase64": "ChEIABINZml4dHVyZS1lcnJvchImEgMxMDEaAzQwMXIUGgExMgEyOgxmaXh0dXJlLXBhc3OKAQMaATI=",
+      "errorCode": 0,
+      "hasPayload": true,
+      "threadID": "101",
+      "postID": "401",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "post-error-with-ids",
+      "kind": "AddPost",
+      "wireBase64": "ChEIBRINZml4dHVyZS1lcnJvchIbEgMxMDEaAzQwMXIPIg1maXh0dXJlLXZjb2Rl",
+      "errorCode": 5,
+      "hasPayload": true,
+      "threadID": "101",
+      "postID": "401",
+      "accountAction": null,
+      "category": "captcha"
+    },
+    {
+      "name": "post-account-verification",
+      "kind": "AddPost",
+      "wireBase64": "ChQI5K7GARINZml4dHVyZS1lcnJvchIQcg46DGZpeHR1cmUtcGFzcw==",
+      "errorCode": 3250020,
+      "hasPayload": true,
+      "threadID": "",
+      "postID": "",
+      "accountAction": "verifyIdentity",
+      "category": null
+    },
+    {
+      "name": "post-account-missing-material",
+      "kind": "AddPost",
+      "wireBase64": "ChQI5K7GARINZml4dHVyZS1lcnJvchIEcgI6AA==",
+      "errorCode": 3250020,
+      "hasPayload": true,
+      "threadID": "",
+      "postID": "",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "post-forbidden",
+      "kind": "AddPost",
+      "wireBase64": "ChQI0a7GARINZml4dHVyZS1lcnJvchISchBCDmZpeHR1cmUtZGVuaWFs",
+      "errorCode": 3250001,
+      "hasPayload": true,
+      "threadID": "",
+      "postID": "",
+      "accountAction": null,
+      "category": "forbidden"
+    },
+    {
+      "name": "post-unknown-error",
+      "kind": "AddPost",
+      "wireBase64": "ChMIv4Q9Eg1maXh0dXJlLWVycm9yEgA=",
+      "errorCode": 999999,
+      "hasPayload": true,
+      "threadID": "",
+      "postID": "",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "post-negative-code",
+      "kind": "AddPost",
+      "wireBase64": "ChoI////////////ARINZml4dHVyZS1lcnJvchIKEgMxMDEaAzQwMQ==",
+      "errorCode": -1,
+      "hasPayload": true,
+      "threadID": "101",
+      "postID": "401",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "post-missing-data",
+      "kind": "AddPost",
+      "wireBase64": "ChEIABINZml4dHVyZS1lcnJvcg==",
+      "errorCode": 0,
+      "hasPayload": false,
+      "threadID": "",
+      "postID": "",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "post-missing-id",
+      "kind": "AddPost",
+      "wireBase64": "ChEIABINZml4dHVyZS1lcnJvchIFEgMxMDE=",
+      "errorCode": 0,
+      "hasPayload": true,
+      "threadID": "101",
+      "postID": "",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "post-wrong-thread",
+      "kind": "AddPost",
+      "wireBase64": "ChEIABINZml4dHVyZS1lcnJvchIKEgMxMDIaAzQwMQ==",
+      "errorCode": 0,
+      "hasPayload": true,
+      "threadID": "102",
+      "postID": "401",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "thread-success",
+      "kind": "AddThread",
+      "wireBase64": "ChEIABINZml4dHVyZS1lcnJvchIKEgM1MDEaAzYwMQ==",
+      "errorCode": 0,
+      "hasPayload": true,
+      "threadID": "501",
+      "postID": "601",
+      "accountAction": null,
+      "category": null
+    },
+    {
+      "name": "thread-error",
+      "kind": "AddThread",
+      "wireBase64": "ChEIBhINZml4dHVyZS1lcnJvchISigEPCg1maXh0dXJlLXZjb2Rl",
+      "errorCode": 6,
+      "hasPayload": true,
+      "threadID": "",
+      "postID": "",
+      "accountAction": null,
+      "category": "captcha"
+    }
+  ]
+}

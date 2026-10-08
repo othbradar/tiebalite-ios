@@ -1,0 +1,109 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Synthetic schema/encoding fixtures. post-basic business fields come from offline emulation with explicit mocks; thread-schema is NOT a native thread-builder observation. No live requests or SDK context are represented.",
+  "cases": [
+    {
+      "name": "post-basic",
+      "kind": "threadReply",
+      "command": 309731,
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "_timestamp": "9007199254740993",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "scr_w": "393.0",
+        "scr_h": "852.0",
+        "scr_dip": "3.0",
+        "sign": "fixture-sign"
+      },
+      "business": {
+        "anonymous": "0",
+        "floor_num": "0",
+        "content": "Synthetic reply",
+        "fid": "9",
+        "tid": "101",
+        "kw": "FixtureForum",
+        "vcode_tag": "12",
+        "tbs": "fixture-tbs",
+        "new_vcode": "1",
+        "is_addition": "0",
+        "is_location": "1",
+        "st_param": "pb",
+        "post_from": "0",
+        "name_show": "FixtureName",
+        "with_tail": "0",
+        "show_custom_figure": "0",
+        "send_from": "pb_reply"
+      },
+      "wireBase64": "CtABClYIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uugEMZml4dHVyZS1zaWdu8gENZml4dHVyZS10b2tlbqgCiQOwAtQGuQIAAAAAAAAIQCILZml4dHVyZS10YnMyATCCAQIxMpIBATGaAQ9TeW50aGV0aWMgcmVwbHnSAQE58gEMRml4dHVyZUZvcnVtigICcGK6AgEx6gIDMTAxggMBMKIDATC6AwEw0gMLRml4dHVyZU5hbWWABADgBACCBQhwYl9yZXBseQ=="
+    },
+    {
+      "name": "post-empty-presence",
+      "kind": "threadReply",
+      "command": 309731,
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "_timestamp": "9007199254740993",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "scr_w": "393.0",
+        "scr_h": "852.0",
+        "scr_dip": "3.0",
+        "sign": "fixture-sign"
+      },
+      "business": {
+        "anonymous": "0",
+        "floor_num": "0",
+        "content": "Synthetic reply",
+        "fid": "9",
+        "tid": "101",
+        "kw": "FixtureForum",
+        "vcode_tag": "12",
+        "tbs": "fixture-tbs",
+        "new_vcode": "1",
+        "is_addition": "0",
+        "is_location": "1",
+        "st_param": "pb",
+        "post_from": "0",
+        "name_show": "FixtureName",
+        "with_tail": "0",
+        "show_custom_figure": "0",
+        "send_from": "pb_reply",
+        "v_fid": "",
+        "v_fname": ""
+      },
+      "wireBase64": "CtYBClYIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uugEMZml4dHVyZS1zaWdu8gENZml4dHVyZS10b2tlbqgCiQOwAtQGuQIAAAAAAAAIQCILZml4dHVyZS10YnMyATCCAQIxMpIBATGaAQ9TeW50aGV0aWMgcmVwbHnSAQE54gEA6gEA8gEMRml4dHVyZUZvcnVtigICcGK6AgEx6gIDMTAxggMBMKIDATC6AwEw0gMLRml4dHVyZU5hbWWABADgBACCBQhwYl9yZXBseQ=="
+    },
+    {
+      "name": "thread-schema",
+      "kind": "thread",
+      "command": 309730,
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "_timestamp": "9007199254740993",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "scr_w": "393.0",
+        "scr_h": "852.0",
+        "scr_dip": "3.0",
+        "sign": "fixture-sign"
+      },
+      "business": {
+        "fid": "9",
+        "kw": "FixtureForum",
+        "title": "Fixture title",
+        "content": "Synthetic thread",
+        "anonymous": "0",
+        "tbs": "fixture-tbs",
+        "name_show": "FixtureName",
+        "show_custom_figure": "0",
+        "sig": "fixture-business-sig",
+        "floor": "0"
+      },
+      "wireBase64": "CsUBClYIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uugEMZml4dHVyZS1zaWdu8gENZml4dHVyZS10b2tlbqgCiQOwAtQGuQIAAAAAAAAIQBoUZml4dHVyZS1idXNpbmVzcy1zaWciC2ZpeHR1cmUtdGJzMgEwmgEQU3ludGhldGljIHRocmVhZNIBATnaAQxGaXh0dXJlRm9ydW2yAg1GaXh0dXJlIHRpdGxl2gQLRml4dHVyZU5hbWWABQA="
+    }
+  ]
+}

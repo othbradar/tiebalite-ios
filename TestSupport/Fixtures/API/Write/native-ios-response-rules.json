@@ -1,0 +1,402 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native UEG scalar error predicates and UEGPass branching with synthetic NSError data. Account/verification UI effects are intercepted, not executed. Parser state cases execute TBCServerAPI.parseBodyIsProtobuf with an explicit IDL decoder substitute and HTTP-success state. These do not execute the full model/UEG/UI completion or prove posting success. No network.",
+  "predicateCases": [
+    {
+      "code": 0,
+      "matches": []
+    },
+    {
+      "code": -1,
+      "matches": []
+    },
+    {
+      "code": 1,
+      "matches": []
+    },
+    {
+      "code": 4,
+      "matches": []
+    },
+    {
+      "code": 5,
+      "matches": [
+        "captcha"
+      ]
+    },
+    {
+      "code": 6,
+      "matches": [
+        "captcha"
+      ]
+    },
+    {
+      "code": 7,
+      "matches": []
+    },
+    {
+      "code": 1990055,
+      "matches": [
+        "realName"
+      ]
+    },
+    {
+      "code": 227001,
+      "matches": [
+        "antiAbuse"
+      ]
+    },
+    {
+      "code": 220015,
+      "matches": [
+        "illegalWords"
+      ]
+    },
+    {
+      "code": 220034,
+      "matches": [
+        "postingFrequency"
+      ]
+    },
+    {
+      "code": 230277,
+      "matches": [
+        "muted"
+      ]
+    },
+    {
+      "code": 1211067,
+      "matches": [
+        "forumMCNRestriction"
+      ]
+    },
+    {
+      "code": 3250000,
+      "matches": []
+    },
+    {
+      "code": 3250001,
+      "matches": [
+        "forbidden"
+      ]
+    },
+    {
+      "code": 3250002,
+      "matches": [
+        "forbidden"
+      ]
+    },
+    {
+      "code": 3250003,
+      "matches": [
+        "forbidden"
+      ]
+    },
+    {
+      "code": 3250004,
+      "matches": [
+        "forbidden"
+      ]
+    },
+    {
+      "code": 3250005,
+      "matches": []
+    },
+    {
+      "code": 3250012,
+      "matches": [
+        "sms"
+      ]
+    },
+    {
+      "code": 3250013,
+      "matches": [
+        "appealing"
+      ]
+    },
+    {
+      "code": 999999,
+      "matches": []
+    }
+  ],
+  "accountActionCases": [
+    {
+      "code": 0,
+      "passValue": null,
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 0,
+      "passValue": "",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 0,
+      "passValue": "fixture-pass",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 1,
+      "passValue": null,
+      "handled": true,
+      "actions": [
+        "deleteAccountAndGotoLogin"
+      ]
+    },
+    {
+      "code": 1,
+      "passValue": "",
+      "handled": true,
+      "actions": [
+        "deleteAccountAndGotoLogin"
+      ]
+    },
+    {
+      "code": 1,
+      "passValue": "fixture-pass",
+      "handled": true,
+      "actions": [
+        "deleteAccountAndGotoLogin"
+      ]
+    },
+    {
+      "code": 3250016,
+      "passValue": null,
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250016,
+      "passValue": "",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250016,
+      "passValue": "fixture-pass",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250017,
+      "passValue": null,
+      "handled": true,
+      "actions": [
+        "bindMobile:"
+      ]
+    },
+    {
+      "code": 3250017,
+      "passValue": "",
+      "handled": true,
+      "actions": [
+        "bindMobile:"
+      ]
+    },
+    {
+      "code": 3250017,
+      "passValue": "fixture-pass",
+      "handled": true,
+      "actions": [
+        "bindMobile:"
+      ]
+    },
+    {
+      "code": 3250018,
+      "passValue": null,
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250018,
+      "passValue": "",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250018,
+      "passValue": "fixture-pass",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250020,
+      "passValue": null,
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250020,
+      "passValue": "",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250020,
+      "passValue": "fixture-pass",
+      "handled": true,
+      "actions": [
+        "verifyID:"
+      ]
+    },
+    {
+      "code": 3250021,
+      "passValue": null,
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250021,
+      "passValue": "",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250021,
+      "passValue": "fixture-pass",
+      "handled": true,
+      "actions": [
+        "verifyID:"
+      ]
+    },
+    {
+      "code": 3250022,
+      "passValue": null,
+      "handled": true,
+      "actions": [
+        "modifyPWD"
+      ]
+    },
+    {
+      "code": 3250022,
+      "passValue": "",
+      "handled": true,
+      "actions": [
+        "modifyPWD"
+      ]
+    },
+    {
+      "code": 3250022,
+      "passValue": "fixture-pass",
+      "handled": true,
+      "actions": [
+        "modifyPWD"
+      ]
+    },
+    {
+      "code": 3250023,
+      "passValue": null,
+      "handled": true,
+      "actions": [
+        "verifyFace"
+      ]
+    },
+    {
+      "code": 3250023,
+      "passValue": "",
+      "handled": true,
+      "actions": [
+        "verifyFace"
+      ]
+    },
+    {
+      "code": 3250023,
+      "passValue": "fixture-pass",
+      "handled": true,
+      "actions": [
+        "verifyFace"
+      ]
+    },
+    {
+      "code": 3250024,
+      "passValue": null,
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250024,
+      "passValue": "",
+      "handled": false,
+      "actions": []
+    },
+    {
+      "code": 3250024,
+      "passValue": "fixture-pass",
+      "handled": false,
+      "actions": []
+    }
+  ],
+  "parserCases": [
+    {
+      "code": 0,
+      "body": {
+        "pid": "401",
+        "tid": "101"
+      },
+      "state": 3,
+      "decodeCount": 1,
+      "hasError": false,
+      "errorInfo": null,
+      "parsedFields": {
+        "pid": "401",
+        "tid": "101"
+      }
+    },
+    {
+      "code": 0,
+      "body": {
+        "pid": "401",
+        "tid": "101",
+        "info": {
+          "need_vcode": "1",
+          "vcode_type": "2"
+        },
+        "anti": {
+          "vcode_type": "2"
+        }
+      },
+      "state": 3,
+      "decodeCount": 1,
+      "hasError": false,
+      "errorInfo": null,
+      "parsedFields": {
+        "pid": "401",
+        "tid": "101",
+        "info": {
+          "need_vcode": "1",
+          "vcode_type": "2"
+        },
+        "anti": {
+          "vcode_type": "2"
+        }
+      }
+    },
+    {
+      "code": 1,
+      "body": {
+        "info": {
+          "block_content": "fixture-denial"
+        }
+      },
+      "state": 4,
+      "decodeCount": 1,
+      "hasError": true,
+      "errorInfo": {
+        "reason": "server return non-zero error code",
+        "errno": 1,
+        "errmsg": "fixture-error",
+        "errInfo": {
+          "block_content": "fixture-denial"
+        }
+      },
+      "parsedFields": {
+        "info": {
+          "block_content": "fixture-denial"
+        }
+      }
+    }
+  ]
+}

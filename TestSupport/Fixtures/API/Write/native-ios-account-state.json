@@ -1,0 +1,131 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Offline native newGetUserTBS and ymgScscParseFromResponseHeader execution. Synthetic memory/KV/DB and Foundation substitutes; TBS fetch is intercepted, not executed. No login, persistence or live traffic.",
+  "accountCases": [
+    {
+      "name": "warm",
+      "uid": "42",
+      "cache": {
+        "42_tbs": "fixture-warm"
+      },
+      "database": {
+        "TBS": "fixture-database",
+        "BDUSS": "fixture-session"
+      },
+      "returnedTBS": "fixture-warm",
+      "cacheAfter": {
+        "42_tbs": "fixture-warm"
+      },
+      "databaseReads": 0,
+      "interceptedFetches": []
+    },
+    {
+      "name": "database",
+      "uid": "42",
+      "cache": {},
+      "database": {
+        "TBS": "fixture-database",
+        "BDUSS": "fixture-session"
+      },
+      "returnedTBS": "fixture-database",
+      "cacheAfter": {
+        "42_tbs": "fixture-database"
+      },
+      "databaseReads": 1,
+      "interceptedFetches": []
+    },
+    {
+      "name": "missing",
+      "uid": "42",
+      "cache": {},
+      "database": {
+        "TBS": "",
+        "BDUSS": "fixture-session"
+      },
+      "returnedTBS": null,
+      "cacheAfter": {},
+      "databaseReads": 1,
+      "interceptedFetches": [
+        {
+          "userID": "42",
+          "bduss": "fixture-session"
+        }
+      ]
+    },
+    {
+      "name": "no-login-record",
+      "uid": "42",
+      "cache": {},
+      "database": null,
+      "returnedTBS": null,
+      "cacheAfter": {},
+      "databaseReads": 1,
+      "interceptedFetches": []
+    },
+    {
+      "name": "signed-out",
+      "uid": "",
+      "cache": {
+        "42_tbs": "fixture-warm"
+      },
+      "database": {
+        "TBS": "fixture-database",
+        "BDUSS": "fixture-session"
+      },
+      "returnedTBS": null,
+      "cacheAfter": {
+        "42_tbs": "fixture-warm"
+      },
+      "databaseReads": 0,
+      "interceptedFetches": []
+    },
+    {
+      "name": "wrong-account-cache",
+      "uid": "43",
+      "cache": {
+        "42_tbs": "fixture-warm"
+      },
+      "database": {
+        "TBS": "",
+        "BDUSS": "fixture-other-session"
+      },
+      "returnedTBS": null,
+      "cacheAfter": {
+        "42_tbs": "fixture-warm"
+      },
+      "databaseReads": 1,
+      "interceptedFetches": [
+        {
+          "userID": "43",
+          "bduss": "fixture-other-session"
+        }
+      ]
+    }
+  ],
+  "headerCases": [
+    {
+      "setCookie": null,
+      "expected": null
+    },
+    {
+      "setCookie": "unrelated=fixture-value; Path=/",
+      "expected": null
+    },
+    {
+      "setCookie": "__ymg_scsc=fixture-first; Path=/",
+      "expected": "fixture-first"
+    },
+    {
+      "setCookie": "__ymg_scsc=; Path=/",
+      "expected": null
+    },
+    {
+      "setCookie": "__ymg_scsc=; __ymg_scsc=fixture-second; Path=/",
+      "expected": "fixture-second"
+    },
+    {
+      "setCookie": "__ymg_scsc=fixture-first; __ymg_scsc=fixture-second; Path=/",
+      "expected": "fixture-first"
+    }
+  ]
+}

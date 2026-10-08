@@ -1,0 +1,64 @@
+{
+  "floorReply": {
+    "bodySHA256": "f75af74b817c3bcaff97e49e760ddbc85a239d9b90a3ca60c0a3b6f66464aa9d",
+    "headers": {
+      "Accept": "application/octet-stream, application/x-protobuf",
+      "Charset": "UTF-8",
+      "Content-Type": "multipart/form-data; boundary=--------7da3d81520810*",
+      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/135.0.0.0 Mobile Safari/537.36 tieba/12.35.1.0",
+      "client_user_token": "42",
+      "x_bd_data_type": "protobuf"
+    },
+    "method": "POST",
+    "rejectsRedirects": true,
+    "responseBodyLimit": 1048576,
+    "timeout": 30,
+    "url": "https://tiebac.baidu.com/c/c/post/add?cmd=309731&format=protobuf"
+  },
+  "subpostReply": {
+    "bodySHA256": "cdf4db3c8f18ae3f9b72a7d55f4cbdc71f9fd02a8c30d5eac1012664c43215ab",
+    "headers": {
+      "Accept": "application/octet-stream, application/x-protobuf",
+      "Charset": "UTF-8",
+      "Content-Type": "multipart/form-data; boundary=--------7da3d81520810*",
+      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/135.0.0.0 Mobile Safari/537.36 tieba/12.35.1.0",
+      "client_user_token": "42",
+      "x_bd_data_type": "protobuf"
+    },
+    "method": "POST",
+    "rejectsRedirects": true,
+    "responseBodyLimit": 1048576,
+    "timeout": 30,
+    "url": "https://tiebac.baidu.com/c/c/post/add?cmd=309731&format=protobuf"
+  },
+  "thread": {
+    "bodySHA256": "0d50340b7a697ff2f0d6c663d17a29f8ea962cb61366a325e895817cc29789d5",
+    "headers": {
+      "Accept": "application/json, application/x-javascript, text/json, text/plain",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "bdtb for Android 7.2.0.0",
+      "client_user_token": "42"
+    },
+    "method": "POST",
+    "rejectsRedirects": true,
+    "responseBodyLimit": 1048576,
+    "timeout": 30,
+    "url": "https://c.tieba.baidu.com/c/c/thread/add"
+  },
+  "threadReply": {
+    "bodySHA256": "68557b2755231d36dc353df2da35b2d16e553282b7c97e376b561b917a8931bb",
+    "headers": {
+      "Accept": "application/octet-stream, application/x-protobuf",
+      "Charset": "UTF-8",
+      "Content-Type": "multipart/form-data; boundary=--------7da3d81520810*",
+      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/135.0.0.0 Mobile Safari/537.36 tieba/12.35.1.0",
+      "client_user_token": "42",
+      "x_bd_data_type": "protobuf"
+    },
+    "method": "POST",
+    "rejectsRedirects": true,
+    "responseBodyLimit": 1048576,
+    "timeout": 30,
+    "url": "https://tiebac.baidu.com/c/c/post/add?cmd=309731&format=protobuf"
+  }
+}

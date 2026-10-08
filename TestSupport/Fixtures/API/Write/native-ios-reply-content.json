@@ -1,0 +1,232 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "method": "TBCReplyComposeSubmitPlugin.generatePbReplyContent",
+  "address": "0x1023deab0",
+  "scope": "First explicit submission on the native reply-compose plugin path. Executes the native content method; editor prepared text is synthetic. The predicate primitive uses host Apple Foundation (including width folding), with parity checked on iOS Simulator. Remaining Foundation primitives are closed substitutes. Does not select the runtime experiment branch, convert rich attachments, execute verification replay, upload, send, or prove server moderation.",
+  "cases": [
+    {
+      "name": "thread-preserves-server-text",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": false,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "floor-without-recipient-prompt",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "recipient-prefix",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": "回复 Fixture recipient :",
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": true,
+      "expected": "回复 #(reply, fixture-portrait, Fixture recipient) :  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "thread-ignores-recipient-prompt",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": false,
+        "recipientPrompt": "回复 Fixture recipient :",
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": true,
+      "expected": "  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "empty-server-falls-back",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "",
+        "visibleText": "visible fallback",
+        "isFloor": false,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "visible fallback"
+    },
+    {
+      "name": "nil-server-falls-back",
+      "input": {
+        "supportsServerText": true,
+        "serverText": null,
+        "visibleText": "visible fallback",
+        "isFloor": false,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "visible fallback"
+    },
+    {
+      "name": "unsupported-server-selector-falls-back",
+      "input": {
+        "supportsServerText": false,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": false,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "visible fallback"
+    },
+    {
+      "name": "no-text-is-empty",
+      "input": {
+        "supportsServerText": true,
+        "serverText": null,
+        "visibleText": null,
+        "isFloor": false,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": ""
+    },
+    {
+      "name": "empty-prompt-no-prefix",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": "",
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "fullwidth-colon-foundation-match",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": "回复 Fixture recipient ：",
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": true,
+      "expected": "回复 #(reply, fixture-portrait, Fixture recipient) :  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "missing-space-not-matching",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": "回复 Fixture recipient:",
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "prompt-must-match-entire-string",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": "prefix 回复 Fixture recipient :",
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "multiline-name",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": "回复 Fixture\nrecipient :",
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture\nrecipient"
+      },
+      "foundationPredicateMatch": true,
+      "expected": "回复 #(reply, fixture-portrait, Fixture\nrecipient) :  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "missing-recipient-values",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "  Synthetic reply\n#(face) 😀  ",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": "回复 Fixture recipient :",
+        "portrait": null,
+        "displayName": null
+      },
+      "foundationPredicateMatch": true,
+      "expected": "回复 #(reply, , ) :  Synthetic reply\n#(face) 😀  "
+    },
+    {
+      "name": "whitespace-server-is-not-empty",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "\n ",
+        "visibleText": "visible fallback",
+        "isFloor": false,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "\n "
+    },
+    {
+      "name": "long-compose-not-legacy-truncated",
+      "input": {
+        "supportsServerText": true,
+        "serverText": "文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文#(face)",
+        "visibleText": "visible fallback",
+        "isFloor": true,
+        "recipientPrompt": null,
+        "portrait": "fixture-portrait",
+        "displayName": "Fixture recipient"
+      },
+      "foundationPredicateMatch": false,
+      "expected": "文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文文#(face)"
+    }
+  ]
+}

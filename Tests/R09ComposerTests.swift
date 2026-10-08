@@ -105,7 +105,7 @@ struct R09ComposerTests {
         other.threadID = 99
         #expect(drafts.load(target: other, context: context) == TextDraft())
         #expect(drafts.load(target: target, context: .anonymous) == TextDraft())
-        #expect(drafts.load(target: target, context: context) == TextDraft())
+        #expect(drafts.load(target: target, context: context) == draft)
     }
 }
 

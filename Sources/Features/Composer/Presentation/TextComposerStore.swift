@@ -44,6 +44,7 @@ final class TextComposerStore {
         let repository = repository
         let context = context
         let task = Task {
+            try (repository as? any TextWriteRequestValidating)?.validateForSending(request)
             let prepared = try await self.uploadPhotos(request)
             try Task.checkCancellation()
             guard context == self.currentContext() else { throw TextWriteFailure.authentication }
@@ -120,47 +121,22 @@ final class TextComposerStore {
 }
 
 @MainActor
-final class TextComposerDrafts {
-    private var context: AuthContext?
-    private var drafts: [String: TextDraft] = [:]
-
-    func load(target: TextComposeTarget, context: AuthContext) -> TextDraft {
-        synchronize(context)
-        return drafts[target.id] ?? TextDraft()
-    }
-
-    func save(_ draft: TextDraft, target: TextComposeTarget, context: AuthContext) {
-        synchronize(context)
-        drafts[target.id] = draft
-    }
-
-    func clear(target: TextComposeTarget, context: AuthContext) {
-        synchronize(context)
-        drafts[target.id] = nil
-    }
-
-    private func synchronize(_ context: AuthContext) {
-        guard self.context != context else { return }
-        drafts.removeAll()
-        self.context = context
-    }
-}
-
-@MainActor
 @Observable
 final class TextComposerService {
     let repository: any TextWriteRepository
     let uploader: any ComposerImageUploading
     let imageLoader: any ImageLoading
     let currentContext: () -> AuthContext
-    let drafts = TextComposerDrafts()
+    let drafts: TextComposerDrafts
     var presentation: TextComposerSession?
     var completedReceipt: TextWriteReceipt?
     @ObservationIgnored private var completion: ((TextWriteReceipt) async -> Void)?
     @ObservationIgnored private var completionTask: Task<Void, Never>?
 
     init(repository: any TextWriteRepository, uploader: any ComposerImageUploading = UnavailableComposerUploader(),
-         imageLoader: any ImageLoading = DisabledImageLoader(), currentContext: @escaping () -> AuthContext) {
+         imageLoader: any ImageLoading = DisabledImageLoader(), drafts: TextComposerDrafts = TextComposerDrafts(),
+         currentContext: @escaping () -> AuthContext) {
+        self.drafts = drafts
         self.uploader = uploader
         self.imageLoader = imageLoader
         self.repository = repository

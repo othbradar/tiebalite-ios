@@ -1,0 +1,444 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "methods": {
+    "floor": "0x102f44cec",
+    "thread": "0x102c8e7d8",
+    "load": "0x102c8e620"
+  },
+  "scope": "Native parameter transformation and initial dispatch gating only. Prepared PB parameters and model state are synthetic; Foundation primitives are explicitly substituted. Native load dispatch is intercepted. Does not run the official app on Simulator, choose configuration, execute SDKs, send any network request, decode the follow-up response, update UI, or establish moderation outcome.",
+  "cases": [
+    {
+      "kind": "floor",
+      "name": "floor-receipt",
+      "input": {
+        "threadID": "101",
+        "postID": "430001"
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "last_pid": "430001",
+          "mark_type": 2
+        },
+        "dispatchModes": [
+          3
+        ],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [
+          "setParsedDataDict:",
+          "setParsedListItem:"
+        ],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "floor",
+      "name": "floor-keeps-encoded-string",
+      "input": {
+        "threadID": "101",
+        "postID": "00430001"
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "last_pid": "00430001",
+          "mark_type": 2
+        },
+        "dispatchModes": [
+          3
+        ],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [
+          "setParsedDataDict:",
+          "setParsedListItem:"
+        ],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "floor",
+      "name": "floor-builder-nil-inputs",
+      "input": {
+        "threadID": null,
+        "postID": null
+      },
+      "expected": {
+        "fields": {
+          "mark_type": 2
+        },
+        "dispatchModes": [
+          3
+        ],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [
+          "setParsedDataDict:",
+          "setParsedListItem:"
+        ],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "floor",
+      "name": "floor-builder-empty-inputs",
+      "input": {
+        "threadID": "",
+        "postID": ""
+      },
+      "expected": {
+        "fields": {
+          "kz": "",
+          "last_pid": "",
+          "mark_type": 2
+        },
+        "dispatchModes": [
+          3
+        ],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [
+          "setParsedDataDict:",
+          "setParsedListItem:"
+        ],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "thread",
+      "name": "thread-drops-old-page-selection",
+      "input": {
+        "base": {
+          "kz": "101",
+          "r": "30",
+          "back": "1",
+          "lz": "1",
+          "pn": "7",
+          "sort_type": "2",
+          "mark_type": "9",
+          "last_pid": "11",
+          "custom": "preserve-me"
+        },
+        "postID": "430001"
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "sort_type": "2",
+          "mark_type": 2,
+          "last_pid": 430001,
+          "custom": "preserve-me"
+        },
+        "dispatchModes": [],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 1
+      }
+    },
+    {
+      "kind": "thread",
+      "name": "thread-normalizes-numeric-id",
+      "input": {
+        "base": {
+          "kz": "101",
+          "r": "30",
+          "back": "1",
+          "lz": "1",
+          "pn": "7",
+          "sort_type": "2",
+          "mark_type": "9",
+          "last_pid": "11",
+          "custom": "preserve-me"
+        },
+        "postID": "00430001"
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "sort_type": "2",
+          "mark_type": 2,
+          "last_pid": 430001,
+          "custom": "preserve-me"
+        },
+        "dispatchModes": [],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 1
+      }
+    },
+    {
+      "kind": "thread",
+      "name": "thread-folded-comments-flag",
+      "input": {
+        "base": {
+          "kz": "101",
+          "r": "30",
+          "back": "1",
+          "lz": "1",
+          "pn": "7",
+          "sort_type": "2",
+          "mark_type": "9",
+          "last_pid": "11",
+          "custom": "preserve-me"
+        },
+        "postID": "430001",
+        "includesFoldedComments": true
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "sort_type": "2",
+          "mark_type": 2,
+          "last_pid": 430001,
+          "custom": "preserve-me",
+          "is_fold_comment_req": "1"
+        },
+        "dispatchModes": [],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 1
+      }
+    },
+    {
+      "kind": "thread",
+      "name": "thread-nil-receipt-builder",
+      "input": {
+        "base": {
+          "kz": "101",
+          "r": "30",
+          "back": "1",
+          "lz": "1",
+          "pn": "7",
+          "sort_type": "2",
+          "mark_type": "9",
+          "last_pid": "11",
+          "custom": "preserve-me"
+        },
+        "postID": null
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "sort_type": "2",
+          "mark_type": 2,
+          "last_pid": 0,
+          "custom": "preserve-me"
+        },
+        "dispatchModes": [],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 1
+      }
+    },
+    {
+      "kind": "thread",
+      "name": "thread-empty-base",
+      "input": {
+        "base": {},
+        "postID": "430001"
+      },
+      "expected": {
+        "fields": null,
+        "dispatchModes": [],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 1
+      }
+    },
+    {
+      "kind": "thread",
+      "name": "thread-nil-base",
+      "input": {
+        "base": null,
+        "postID": "430001"
+      },
+      "expected": {
+        "fields": null,
+        "dispatchModes": [],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 1
+      }
+    },
+    {
+      "kind": "thread",
+      "name": "thread-keeps-64-bit-id",
+      "input": {
+        "base": {
+          "kz": "101",
+          "r": "30",
+          "back": "1",
+          "lz": "1",
+          "pn": "7",
+          "sort_type": "2",
+          "mark_type": "9",
+          "last_pid": "11",
+          "custom": "preserve-me"
+        },
+        "postID": "9007199254740993"
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "sort_type": "2",
+          "mark_type": 2,
+          "last_pid": 9007199254740993,
+          "custom": "preserve-me"
+        },
+        "dispatchModes": [],
+        "requestCount": 0,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 1
+      }
+    },
+    {
+      "kind": "load",
+      "name": "load-state-0",
+      "input": {
+        "base": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "7",
+          "request_times": "99"
+        },
+        "serverState": 0,
+        "requestCount": 10
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "2",
+          "request_times": 11
+        },
+        "dispatchModes": [
+          3
+        ],
+        "requestCount": 11,
+        "afterReply": true,
+        "cleared": [],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "load",
+      "name": "load-state-1",
+      "input": {
+        "base": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "7",
+          "request_times": "99"
+        },
+        "serverState": 1,
+        "requestCount": 10
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "7",
+          "request_times": "99"
+        },
+        "dispatchModes": [],
+        "requestCount": 10,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "load",
+      "name": "load-state-2",
+      "input": {
+        "base": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "7",
+          "request_times": "99"
+        },
+        "serverState": 2,
+        "requestCount": 10
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "7",
+          "request_times": "99"
+        },
+        "dispatchModes": [],
+        "requestCount": 10,
+        "afterReply": false,
+        "cleared": [],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "load",
+      "name": "load-state-3",
+      "input": {
+        "base": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "7",
+          "request_times": "99"
+        },
+        "serverState": 3,
+        "requestCount": 10
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "2",
+          "request_times": 11
+        },
+        "dispatchModes": [
+          3
+        ],
+        "requestCount": 11,
+        "afterReply": true,
+        "cleared": [],
+        "preparedBaseUses": 0
+      }
+    },
+    {
+      "kind": "load",
+      "name": "load-state-4",
+      "input": {
+        "base": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "7",
+          "request_times": "99"
+        },
+        "serverState": 4,
+        "requestCount": 10
+      },
+      "expected": {
+        "fields": {
+          "kz": "101",
+          "last_pid": "430001",
+          "offset": "2",
+          "request_times": 11
+        },
+        "dispatchModes": [
+          3
+        ],
+        "requestCount": 11,
+        "afterReply": true,
+        "cleared": [],
+        "preparedBaseUses": 0
+      }
+    }
+  ]
+}

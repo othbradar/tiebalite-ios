@@ -54,11 +54,14 @@ struct TextWriteReceipt: Equatable, Sendable {
 enum TextWriteFailure: Error, Equatable, Sendable {
     case authentication, invalidTarget, invalidDraft, verificationRequired, resultUnknown
     case network, http(Int), server(Int), malformedResponse
+    case nativeImagesUnavailable, requestPreparation
 
     var message: String {
         switch self {
         case .authentication: "登录状态已失效或发生变化，请重新登录后打开编辑器。草稿已保留。"
         case .invalidTarget: "回复目标资料不完整，请返回重新加载页面。"
+        case .nativeImagesUnavailable: "本版暂不支持图片发送，文字和图片草稿已保留。"
+        case .requestPreparation: "发送准备失败，尚未提交帖子或回复。草稿已保留。"
         case .invalidDraft: "请输入正文；标题最多 31 字。"
         case .verificationRequired: "服务端要求验证码或安全验证，当前暂不支持。草稿已保留，请使用官方客户端完成验证。"
         case .resultUnknown: "尚未确认发送结果，请先返回帖子检查，避免重复发送。草稿已保留。"

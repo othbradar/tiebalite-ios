@@ -113,7 +113,7 @@ struct EndpointRequestBuilder: Sendable {
         return url
     }
 
-    private static func encode(
+    static func encode(
         _ body: EndpointRequestBody,
         codec: EndpointBodyCodec
     ) throws -> (data: Data?, contentType: String?) {
@@ -248,7 +248,7 @@ struct EndpointRequestBuilder: Sendable {
 
     private static func isSafeBoundaryByte(_ byte: UInt8) -> Bool {
         switch byte {
-        case 42, 45, 46, 48...57, 65...90, 95, 97...122:
+        case 42, 43, 45, 46, 48...57, 65...90, 95, 97...122:
             true
         default:
             false

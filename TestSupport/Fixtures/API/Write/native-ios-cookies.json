@@ -1,0 +1,167 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native addExtraCookieParams, shouldKeepAlive and shouldGoSmallFlow with synthetic network/config providers. Foundation cookie creation is substituted; no global cookie jar, HTTP DNS, account data or network is accessed. Records only selected request name/value pairs.",
+  "cases": [
+    {
+      "name": "wifi-enabled",
+      "input": {
+        "networkStatus": 1,
+        "wifiKeepAlive": true,
+        "cellularKeepAlive": false,
+        "smallFlow": false,
+        "smallFlowValue": null
+      },
+      "cookies": [
+        {
+          "name": "ka",
+          "value": "open"
+        }
+      ]
+    },
+    {
+      "name": "wifi-disabled",
+      "input": {
+        "networkStatus": 1,
+        "wifiKeepAlive": false,
+        "cellularKeepAlive": true,
+        "smallFlow": false,
+        "smallFlowValue": null
+      },
+      "cookies": []
+    },
+    {
+      "name": "cellular-enabled",
+      "input": {
+        "networkStatus": 2,
+        "wifiKeepAlive": false,
+        "cellularKeepAlive": true,
+        "smallFlow": false,
+        "smallFlowValue": null
+      },
+      "cookies": [
+        {
+          "name": "ka",
+          "value": "open"
+        }
+      ]
+    },
+    {
+      "name": "cellular-disabled",
+      "input": {
+        "networkStatus": 2,
+        "wifiKeepAlive": true,
+        "cellularKeepAlive": false,
+        "smallFlow": false,
+        "smallFlowValue": null
+      },
+      "cookies": []
+    },
+    {
+      "name": "offline",
+      "input": {
+        "networkStatus": 0,
+        "wifiKeepAlive": true,
+        "cellularKeepAlive": true,
+        "smallFlow": false,
+        "smallFlowValue": null
+      },
+      "cookies": []
+    },
+    {
+      "name": "unknown-network",
+      "input": {
+        "networkStatus": 3,
+        "wifiKeepAlive": true,
+        "cellularKeepAlive": true,
+        "smallFlow": false,
+        "smallFlowValue": null
+      },
+      "cookies": []
+    },
+    {
+      "name": "negative-network",
+      "input": {
+        "networkStatus": -1,
+        "wifiKeepAlive": true,
+        "cellularKeepAlive": true,
+        "smallFlow": false,
+        "smallFlowValue": null
+      },
+      "cookies": []
+    },
+    {
+      "name": "small-flow-only",
+      "input": {
+        "networkStatus": 0,
+        "wifiKeepAlive": false,
+        "cellularKeepAlive": false,
+        "smallFlow": true,
+        "smallFlowValue": "fx"
+      },
+      "cookies": [
+        {
+          "name": "pub_env",
+          "value": "fx"
+        }
+      ]
+    },
+    {
+      "name": "both",
+      "input": {
+        "networkStatus": 1,
+        "wifiKeepAlive": true,
+        "cellularKeepAlive": true,
+        "smallFlow": true,
+        "smallFlowValue": "fx"
+      },
+      "cookies": [
+        {
+          "name": "ka",
+          "value": "open"
+        },
+        {
+          "name": "pub_env",
+          "value": "fx"
+        }
+      ]
+    },
+    {
+      "name": "small-flow-disabled",
+      "input": {
+        "networkStatus": 0,
+        "wifiKeepAlive": false,
+        "cellularKeepAlive": false,
+        "smallFlow": false,
+        "smallFlowValue": "fx"
+      },
+      "cookies": []
+    },
+    {
+      "name": "small-flow-empty",
+      "input": {
+        "networkStatus": 0,
+        "wifiKeepAlive": false,
+        "cellularKeepAlive": false,
+        "smallFlow": true,
+        "smallFlowValue": ""
+      },
+      "cookies": [
+        {
+          "name": "pub_env",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "name": "small-flow-nil",
+      "input": {
+        "networkStatus": 0,
+        "wifiKeepAlive": false,
+        "cellularKeepAlive": false,
+        "smallFlow": true,
+        "smallFlowValue": null
+      },
+      "cookies": []
+    }
+  ]
+}

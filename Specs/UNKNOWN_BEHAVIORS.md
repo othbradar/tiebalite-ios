@@ -1,8 +1,70 @@
 # 未确认行为与安全验证计划
 
+2026-10-08 当前试用版：用户进一步授权先交付参照 iOS 请求的正常 App。文字发送现已接入 NativeLiveTextWriteRepository；账号采用包内明确的 BDUSS 登录支路，系统 UA 在本地空白 WKWebView 获取，无网络/账号注入。原版 SDK/CUID、实际实验配置、完整 Passport/跨进程账号状态、图片上传、验证挑战及 getmypost 专用读取合并仍未对齐；服务端删帖原因仍 UNKNOWN。成功关闭和当前页刷新使用现有已测试行为，不保证跨页新回复立即可见。本版不使用 Android 上传或写入回退。此前“尚未接任何 Live”记录为历史状态。
+
+2026-10-08模拟器续项：用户建议转本机模拟器。已直接核对参考IPA的Info/Mach-O：iPhoneOS、arm64、LC_BUILD_VERSION平台2，非Simulator平台；参考二进制SHA未变。本机正常与隔离测试iPhone Simulator均可用，继续用隔离Simulator验证TiebaLite代码，不将其表述为原版IPA在Simulator运行。回复后读取已追到独立/c/f/pb/getmypost（CMD309751），其参数转换与初始派发门控有16例原生封闭回放和3项Simulator Unit通过。NativeReplyFollowupParameters未接Live；PB原生基础参数提供者、折叠页面legacy分支、完整读取IDL/HTTP、结果合并、实际开关/SDK与账号来源仍UNKNOWN。没有因参数组件通过而宣称发送后立即显示或异常删除已修。
+
+2026-10-08续项：参考iPhone已连接，用户已解锁，指定安装为iOS22.11.1。当前阻碍不再是设备不可用：实际LLDB附加被系统拒绝，Time Profiler未建立采样（设备准备超时）；builtByDeveloper=true不证明可调试，未读取安装包私有凭据或修改签名/安装。已询问现有签名安装工具，以判断独立可调试参考副本的可行性，不要求再发帖。新回复completion到PB/楼中楼handler的静态顺序已追通，PB后续读取受pbMyReplySwitch控制；其运行值及下层请求/合并、楼中楼requestFakeWallData语义、真实SDK/Common和账号提供者仍UNKNOWN。未把编辑器refreshContentFromContext误当帖子刷新，未把成功路径经过UEG管理器误当成功后必需验证。详见API_EVIDENCE本轮节；Live仍未迁移，MODERATION_CAUSE_UNKNOWN保留。
+
+2026-10-07回复正文补充：22.11.1新旧回复编辑器共存，PB入口受isFoldingComment和isExperimentForPBReplyCompose控制。新提交插件第一次正文准备已独立回放并接到NativeTextWriteClient的显式内容分支；没有从目标ID猜实验状态。旧delegate的140单位截断不能盲目搬到新插件。实际用户当次分支、完整附件转换、验证重放及新插件完成回调仍UNKNOWN。参考iPhone本次devicectl为unavailable，本机无frida可执行工具；没有因此读取其他设备的个人数据或声称观察了官方运行状态。
+
+2026-10-07最新发送接线：NativeTextWriteClient已将账号内存状态→按需TBS→业务/Common/签名→HTTP→回执/响应状态连通，并以完整出站字节和请求顺序定向验证；不是App的Live Repository。新增空body保护对齐原生parser，不能让Swift默认Proto消息变成零错误码成功。仍缺实际运行时provider/持久账号、富文本和上传、完整UEG/验证、成功回调/页面刷新以及最终App接线。原生正常onCompletion成功分支通知delegate，校验分支/antiStat也有独立路径；不能把现有正ID关联或任意anti/info存在当作整套完成条件。未改安装，无Live写入，MODERATION_CAUSE_UNKNOWN保持。
+
+2026-10-07最新续项：TBS普通表单签名/编码、最终net_type对应10/25秒timeout、JSON回执与单次准备生命周期已实现并由原生合成样本/相关Unit验证。上一条“最终表单HTTP/JSON未知”已收窄；20秒仅是中间初始化值。实际账号资料来源/持久化、实际Common/SDK provider、完整UEG、富文本/上传与Live Repository接线仍缺失。正常安装未更换，没有自动发帖/上传。仅组件通过不能证明完全对齐或审核通过，MODERATION_CAUSE_UNKNOWN保持。
+
+
+2026-10-07续项：原生profile昵称UID归属及显示名/登录名回退、网络/配置条件Cookie已用原生合成回放与Swift组件验证。实际资料获取/持久账号准备、TBS表单HTTP/JSON及运行时Common/SDK、完整UEG/上传仍未接好；不把这些已验证组件等同于已切换Live或解决删帖。原TBS“端点未知”已由静态链消除，但完整网络提供者缺口仍在。
+
+2026-10-07最新边界：主要基准始终是用户指定的iOS22.11.1，Android仅作历史差异对照。已补齐有证据的Proto HTTP封装、静态Common缓存/重算、动态Common标准/优化分支及统计消费、公共字典签名作用域/大写MD5、错误码/账号动作谓词与独立原生回执子集解码。新增公共参数只接收显式provider输出，尚未取得实际运行时Common/SDK来源、原生账号持久准备和TBS完整请求；富文本/图片发送、完整UEG与业务完成调度仍未闭合，尚未切换Live。原版completion依据模型error及proc/server state，本地正ID/目标关联保护不能冒充已执行整个原版完成分支。对应定向组件通过不改变MODERATION_CAUSE_UNKNOWN，不要求用户重复试发。
+
+U08原生迁移续项（2026-10-07）：已用封闭ARM64回放核对TBS缓存/DB回退/缺失补取getter及特定Set-Cookie解析；新增单账号内存生命周期和逐请求响应捕获组件。原生账号持久元数据提供者、完整TBS请求common/签名、Live Repository切换及回执/验证调度仍未接好。旧会话拒绝/内存清理是本App约束，原版全局IDPCache清理未证实。旧Live安装/源码发送仍未改变，MODERATION_CAUSE_UNKNOWN不变。
+
+
+## U08 原生迁移当前边界（2026-10-07）
+
+已实现并定向验证普通文字业务构造及原生IDL编码，具体上下文、来源和样本限制见API_EVIDENCE。尚缺账号TBS/显示名取得与更新接入、实际入口/富文本与上传映射、Common运行时来源及签名发送闭环、响应状态账号隔离、完整回执/验证处理。Live发送与安装未切换，完整行为对齐和删除根因均未确认。
+
+补充修正：共同参数中的条件sig并不能直接证明最终业务data.sig存在；Common schema无此字段，当前IDL转换忽略未知键。独立schema测试的显式sig输入不是原生发送抓包。不得用假设备值/静态SDK替身补齐这些UNKNOWN或据此交付“完全修好”的候选。
+
+最新用户指定（2026-10-07）：接受用户确认发帖正常的去广告版为行为参考；主要基准更新为22.11.1（TBClient SHA256 `4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb`），22.7.3保留对照。用户已明确授权迁移发送行为，不再以旧beta3冻结或无现成抓包作为授权阻碍。已补核实专用TBS端点、原生签名/返回状态、新字段send_from #80及SSDKLib上下文provider边界；详见WRITE_MODERATION_COMPARISON最新节。尚未实现完整原生链路、未确定删帖原因；不把用户成功反馈说成逐字段抓包证据，也不把SDK字段存在说成必填。生产及安装未变。
+
 状态：`OPEN`
 
 Android 静态源码不是服务端或运行时证据。本文件集中记录所有 `UNKNOWN`，防止后续根据字段名、旧客户端实现或模型记忆补全协议。
+
+## 官方 22.7.3 静态差异已确认（2026-10-07）
+
+用户已提供并授权只读分析本机去广告解包；程序哈希、方法地址及分支见 WRITE_MODERATION_COMPARISON 最新节。确认 iOS 初始业务 anonymous=0、业务 tbs/账号缓存来源、iOS 公共参数、业务参与签名、额外 sig 路径和响应头状态回传均与当前 Android 参考链路有差异。AddPost现有67个字段/Common现有45个字段的编号和类型没有发现错位。官方衍生包不等于认证原始包，含注入；22.11.1 未分析。
+
+尚未确认手机当次配置分支、主机选路、完整上下文及验证值生命周期、最终请求/响应和删除触发原因。静态差异不能直接称为根因；不能只补一个常量后要求用户反复试发。现有生产协议/基线摘要/安装不变，没有读取官方账号存储、没有Live写请求。当前 `OFFICIAL_IOS_STATIC_DIFFERENCES_CONFIRMED / RUNTIME_CONTRACT_INCOMPLETE / MODERATION_CAUSE_UNKNOWN`；下节“样本路径待回复”仅保留为前次历史。
+
+## 最新复验：纯 beta3 和手机也失败，官方 iOS 成功（2026-10-07）
+
+用户已完成上次纯 beta3 覆盖后的复验，仍收到异常行为删除，并补充手机 TiebaLite 也失败；同一账号近期在官方 iOS 百度贴吧可以发布且未随后删除。下方“旧版同设备结果待用户操作”和“手机 beta3 可发送”已被此新结果更新。不能再只用 U08 版本差异或 Simulator 解释故障，也不能由此断言账号被封或某个参数触发。
+
+用户明确授权调查/对齐官方 iOS。当前链路仍来自 Android 参考，原始 beta3 的源码相等不能证明官方 iOS 协议相等。官方公开资料说明账号/设备安全处理，但没有当前发帖逐字段协议；已连接 iPhone 安装版本可读，不等于有程序包/请求样本。用户已确认官方22.11.1和22.7.3均能正常发送，现成样本路径待回复，详见 WRITE_MODERATION_COMPARISON 顶部。本轮未改生产发送行为、清数据或再次覆盖，当前状态 `OFFICIAL_IOS_EVIDENCE_NEEDED / MODERATION_CAUSE_UNKNOWN`。
+
+## 前次复验与覆盖记录（2026-10-07，后续结果见上）
+
+用户确认beta3对齐候选在电脑Simulator仍被删除。安装哈希确认是本轮候选；留存原IPA与发布记录摘要相符。新增草稿恢复到URLRequest的离线端到端对照仍相等，没有新证据定位删除原因。未改生产发送代码，不将本地通过记录当作Live留存证据；用户随后批准“覆盖”，纯beta3完整Release Simulator App已安装到原正常iPhone，登录/数据和持久草稿文件保留；尚未由代理执行任何Live发送。旧版同设备结果仍待用户操作，当前状态MODERATION_CAUSE_UNKNOWN。
+
+## 当前发送基线冻结（2026-10-07）
+
+按用户最新授权完整恢复 v0.2.0beta3 的发送、MIME/回执判定、成功关闭及当前页刷新；此前仅 Accept 对齐和后续回执修订均不再作为当前实现。下列 U08 的 MIME/成功优先改动属于已撤回的历史诊断。旧版结果未知/验证提示可能仍出现；服务端删除原因未获证实。本地持久草稿、缓存、已验收视觉保留，禁止后续擅自变更发送链路。
+
+## U08 当前 Simulator 回复被删除（2026-10-07，MODERATION_CAUSE_UNKNOWN）
+
+- 后续用户先确认一次成功并反馈自动刷新未显示，再在增加额外读取的候选中报告同类删除。两次即时可见/删除不能确定服务端因果。上轮额外读取方案现已撤回，自动刷新实网问题与服务端删帖均仍OPEN；禁止基于Mock或前一条即时成功继续声称已修复。
+
+- 用户确认工作旧版为GitHub v0.2.0beta3，当前发送设备为电脑Simulator；手机旧版可发送。无法由此区分版本、设备/环境及服务端审核因素，禁止将删帖归因为某个字段或宣称修好。
+- 已证实MIME兼容变更同时改变了出站Accept，纠正此前“请求未变”记录；当前将响应允许集合与请求Accept分离并恢复beta3发送形状。请求构造、签名、上传、认证及一次发送路径已对照；不增加重试、设备/验证数据或实网探测。独立回执解析修复保留，但成功ID仅表示即时回执，不保证后续留存。
+
+## U08 回复已发布但回执未确认（2026-10-07，根因已定位）
+
+- 用户确认服务端回复可见，但编辑器提示发送结果未知。再次手动发送的脱敏诊断显示HTTP200、208 bytes、application/protobuf、有效PB/hasData、pid正数、tid匹配、serverRejected=false；原pipeline=unsupported-content → repository=result-unknown。
+- 该次失败根因为回复接口漏收已观察的MIME，而非缺失ID或发送后会话改变。用纯合成pid401/tid101响应复现；仅为write.post补application/protobuf，不修改共享pipeline或放宽回执校验，仍不自动重发。
+- 临时诊断仅记录固定类别/布尔/计数，未保存ID值、响应、正文、URL、账号资料或凭据。完成定位后撤除代码，元数据保留于ignored Artifacts。原App内单份元数据不再更新，不清理用户数据。
+- 后续用户再次发送后实际出现verificationRequired，但回复已可见。旧decodePost把附带anti/info字段放在error/pid/tid之前检查，违反原版成功回执规则；现按API_EVIDENCE记录调整判定顺序，非零错误/无有效回执仍不能成功。本次原响应未保存，触发的具体字段值仍UNKNOWN，不猜实际vcode_type，不自动发送补样本。新候选的Live关闭/刷新仍待用户确认。
 
 ## R11 消息（2026-09-25）
 

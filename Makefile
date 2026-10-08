@@ -99,7 +99,11 @@ verify-swiftpm-lock: generate
 verify-generate: tool-versions verify-protos
 	@scripts/verify_project_generation.sh
 
-lint: tool-versions
+.PHONY: write-baseline-check
+write-baseline-check:
+	@python3 scripts/verify_write_baseline.py
+
+lint: tool-versions write-baseline-check
 	@command -v swiftlint >/dev/null 2>&1 || { echo 'swiftlint missing; run make bootstrap-tools.' >&2; exit 1; }
 	@swiftlint lint --strict --no-cache
 

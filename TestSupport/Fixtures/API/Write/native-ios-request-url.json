@@ -1,0 +1,82 @@
+{
+  "referenceSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "method": "TBCBaseModel.loadInnerWithShotConnection",
+  "block": [
+    "0x100249044",
+    "0x100249168"
+  ],
+  "cases": [
+    {
+      "input": {
+        "address": "/c/c/post/add",
+        "requestType": 3,
+        "shortAsLong": false,
+        "command": 309731
+      },
+      "output": {
+        "address": "/c/c/post/add?cmd=309731&format=protobuf",
+        "command": 309731
+      }
+    },
+    {
+      "input": {
+        "address": "c/c/thread/add",
+        "requestType": 3,
+        "shortAsLong": false,
+        "command": 309730
+      },
+      "output": {
+        "address": "c/c/thread/add?cmd=309730&format=protobuf",
+        "command": 309730
+      }
+    },
+    {
+      "input": {
+        "address": "/fixture?existing=1",
+        "requestType": 3,
+        "shortAsLong": false,
+        "command": 309731
+      },
+      "output": {
+        "address": "/fixture?existing=1&cmd=309731&format=protobuf",
+        "command": 309731
+      }
+    },
+    {
+      "input": {
+        "address": "/fixture",
+        "requestType": 1,
+        "shortAsLong": true,
+        "command": 309731
+      },
+      "output": {
+        "address": "/fixture?cmd=309731&format=protobuf",
+        "command": 309731
+      }
+    },
+    {
+      "input": {
+        "address": "/fixture",
+        "requestType": 1,
+        "shortAsLong": false,
+        "command": 309731
+      },
+      "output": {
+        "address": "/fixture",
+        "command": 0
+      }
+    },
+    {
+      "input": {
+        "address": "/fixture",
+        "requestType": 1,
+        "shortAsLong": true,
+        "command": 0
+      },
+      "output": {
+        "address": "/fixture",
+        "command": 0
+      }
+    }
+  ]
+}

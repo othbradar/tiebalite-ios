@@ -1,0 +1,213 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native TBCPersonalInfoModel completion UID guard and nickname selection/update through its nickname boundary. Synthetic profile/account fields; unrelated profile effects, database writes and notifications intercepted. No actual profile request, Passport SDK, account store or network.",
+  "cases": [
+    {
+      "name": "changed",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "Old fixture",
+        "displayName": "New fixture",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [
+          "New fixture"
+        ],
+        "saved": [
+          {
+            "userID": "42",
+            "name": "New fixture"
+          }
+        ],
+        "notifications": 1
+      }
+    },
+    {
+      "name": "unchanged",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "New fixture",
+        "displayName": "New fixture",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [],
+        "saved": [],
+        "notifications": 0
+      }
+    },
+    {
+      "name": "nil-display",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "Old fixture",
+        "displayName": null,
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [
+          "Login fixture"
+        ],
+        "saved": [
+          {
+            "userID": "42",
+            "name": "Login fixture"
+          }
+        ],
+        "notifications": 1
+      }
+    },
+    {
+      "name": "empty-display",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "Old fixture",
+        "displayName": "",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [
+          "Login fixture"
+        ],
+        "saved": [
+          {
+            "userID": "42",
+            "name": "Login fixture"
+          }
+        ],
+        "notifications": 1
+      }
+    },
+    {
+      "name": "no-names",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "Old fixture",
+        "displayName": null,
+        "loginName": null
+      },
+      "expected": {
+        "updated": [],
+        "saved": [],
+        "notifications": 0
+      }
+    },
+    {
+      "name": "empty-both",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "Old fixture",
+        "displayName": "",
+        "loginName": ""
+      },
+      "expected": {
+        "updated": [],
+        "saved": [],
+        "notifications": 0
+      }
+    },
+    {
+      "name": "wrong-user",
+      "input": {
+        "accountID": "42",
+        "profileID": "43",
+        "cachedName": "Old fixture",
+        "displayName": "New fixture",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [],
+        "saved": [],
+        "notifications": 0
+      }
+    },
+    {
+      "name": "no-user",
+      "input": {
+        "accountID": null,
+        "profileID": "42",
+        "cachedName": "Old fixture",
+        "displayName": "New fixture",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [],
+        "saved": [],
+        "notifications": 0
+      }
+    },
+    {
+      "name": "no-cached-name",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": null,
+        "displayName": "New fixture",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [
+          "New fixture"
+        ],
+        "saved": [
+          {
+            "userID": "42",
+            "name": "New fixture"
+          }
+        ],
+        "notifications": 1
+      }
+    },
+    {
+      "name": "whitespace-is-preserved",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "Old fixture",
+        "displayName": " ",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [
+          " "
+        ],
+        "saved": [
+          {
+            "userID": "42",
+            "name": " "
+          }
+        ],
+        "notifications": 1
+      }
+    },
+    {
+      "name": "literal-unicode-difference",
+      "input": {
+        "accountID": "42",
+        "profileID": "42",
+        "cachedName": "é",
+        "displayName": "é",
+        "loginName": "Login fixture"
+      },
+      "expected": {
+        "updated": [
+          "é"
+        ],
+        "saved": [
+          {
+            "userID": "42",
+            "name": "é"
+          }
+        ],
+        "notifications": 1
+      }
+    }
+  ]
+}

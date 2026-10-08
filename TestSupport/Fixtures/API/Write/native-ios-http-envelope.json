@@ -1,0 +1,74 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Offline native addExtraHttpHeaders and appendPartWithFileData execution. Synthetic UA, log IDs and response-state inputs. File-part arguments data/data/image/jpeg are from the statically traced IDPServerAPI -> BBAAFNetworking path. No system UA, cookies, SDK, final network or moderation claim.",
+  "cases": [
+    {
+      "kind": "threadReply",
+      "encodingCase": "post-basic",
+      "clientLogID": 0,
+      "state": null,
+      "userAgent": "FixtureNativeAgent",
+      "nativeHeaders": {
+        "x_bd_data_type": "protobuf",
+        "User-Agent": "FixtureNativeAgent"
+      },
+      "partHeaders": {
+        "Content-Disposition": "form-data; name=\"data\"; filename=\"data\"",
+        "Content-Type": "image/jpeg"
+      },
+      "partBase64": "CtABClYIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uugEMZml4dHVyZS1zaWdu8gENZml4dHVyZS10b2tlbqgCiQOwAtQGuQIAAAAAAAAIQCILZml4dHVyZS10YnMyATCCAQIxMpIBATGaAQ9TeW50aGV0aWMgcmVwbHnSAQE58gEMRml4dHVyZUZvcnVtigICcGK6AgEx6gIDMTAxggMBMKIDATC6AwEw0gMLRml4dHVyZU5hbWWABADgBACCBQhwYl9yZXBseQ=="
+    },
+    {
+      "kind": "threadReply",
+      "encodingCase": "post-basic",
+      "clientLogID": -1,
+      "state": null,
+      "userAgent": "FixtureNativeAgent",
+      "nativeHeaders": {
+        "x_bd_data_type": "protobuf",
+        "User-Agent": "FixtureNativeAgent"
+      },
+      "partHeaders": {
+        "Content-Disposition": "form-data; name=\"data\"; filename=\"data\"",
+        "Content-Type": "image/jpeg"
+      },
+      "partBase64": "CtABClYIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uugEMZml4dHVyZS1zaWdu8gENZml4dHVyZS10b2tlbqgCiQOwAtQGuQIAAAAAAAAIQCILZml4dHVyZS10YnMyATCCAQIxMpIBATGaAQ9TeW50aGV0aWMgcmVwbHnSAQE58gEMRml4dHVyZUZvcnVtigICcGK6AgEx6gIDMTAxggMBMKIDATC6AwEw0gMLRml4dHVyZU5hbWWABADgBACCBQhwYl9yZXBseQ=="
+    },
+    {
+      "kind": "threadReply",
+      "encodingCase": "post-basic",
+      "clientLogID": 9007199254740993,
+      "state": "fixture-state",
+      "userAgent": "FixtureNativeAgent",
+      "nativeHeaders": {
+        "x_bd_data_type": "protobuf",
+        "User-Agent": "FixtureNativeAgent",
+        "client_logid": "9007199254740993",
+        "svcp_stk": "fixture-state"
+      },
+      "partHeaders": {
+        "Content-Disposition": "form-data; name=\"data\"; filename=\"data\"",
+        "Content-Type": "image/jpeg"
+      },
+      "partBase64": "CtABClYIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uugEMZml4dHVyZS1zaWdu8gENZml4dHVyZS10b2tlbqgCiQOwAtQGuQIAAAAAAAAIQCILZml4dHVyZS10YnMyATCCAQIxMpIBATGaAQ9TeW50aGV0aWMgcmVwbHnSAQE58gEMRml4dHVyZUZvcnVtigICcGK6AgEx6gIDMTAxggMBMKIDATC6AwEw0gMLRml4dHVyZU5hbWWABADgBACCBQhwYl9yZXBseQ=="
+    },
+    {
+      "kind": "thread",
+      "encodingCase": "thread-schema",
+      "clientLogID": 42,
+      "state": "fixture-thread-state",
+      "userAgent": "FixtureNativeAgent",
+      "nativeHeaders": {
+        "x_bd_data_type": "protobuf",
+        "User-Agent": "FixtureNativeAgent",
+        "client_logid": "42",
+        "svcp_stk": "fixture-thread-state"
+      },
+      "partHeaders": {
+        "Content-Disposition": "form-data; name=\"data\"; filename=\"data\"",
+        "Content-Type": "image/jpeg"
+      },
+      "partBase64": "CsUBClYIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uugEMZml4dHVyZS1zaWdu8gENZml4dHVyZS10b2tlbqgCiQOwAtQGuQIAAAAAAAAIQBoUZml4dHVyZS1idXNpbmVzcy1zaWciC2ZpeHR1cmUtdGJzMgEwmgEQU3ludGhldGljIHRocmVhZNIBATnaAQxGaXh0dXJlRm9ydW2yAg1GaXh0dXJlIHRpdGxl2gQLRml4dHVyZU5hbWWABQA="
+    }
+  ]
+}

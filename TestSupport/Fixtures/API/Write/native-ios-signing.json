@@ -1,0 +1,260 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native merge/sign/return block 0x1024b2f94..0x1024b3458 with explicit pre-populated Common and business dictionaries. Executes the native HTTPS stoken filter and NSString MD5 formatter; Foundation and CC_MD5 have closed substitutes. Runtime account/device/SDK providers are not executed. Optional common.sig provider is an explicit opaque mock; IDL omits it. No Live traffic.",
+  "cases": [
+    {
+      "name": "reply",
+      "kind": "threadReply",
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs"
+      },
+      "business": {
+        "anonymous": "0",
+        "floor_num": "0",
+        "content": "合成文字 + & 😀",
+        "fid": "9",
+        "tid": "101",
+        "kw": "FixtureForum",
+        "vcode_tag": "12",
+        "tbs": "fixture-tbs",
+        "new_vcode": "1",
+        "is_addition": "0",
+        "is_location": "1",
+        "st_param": "pb",
+        "post_from": "0",
+        "name_show": "FixtureName",
+        "with_tail": "0",
+        "show_custom_figure": "0",
+        "send_from": "pb_reply",
+        "floor": "7"
+      },
+      "metadata": {
+        "packageVersion": "fixture-package",
+        "experimentHits": "fixture-hit",
+        "experimentMisses": "fixture-miss"
+      },
+      "opaqueSignature": null,
+      "expectedCommon": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs",
+        "package_version": "fixture-package",
+        "abtest_config_intervention": "fixture-hit^fixture-miss",
+        "sign": "C98BB3DC273B649D4288763F59DD4F33"
+      },
+      "wireBase64": "CpoCCpkBCAESBzIyLjExLjFAgYCAgICAgBBSD2ZpeHR1cmUtc2Vzc2lvbloSZml4dHVyZS1jb21tb24tdGJzugEgQzk4QkIzREMyNzNCNjQ5RDQyODg3NjNGNTlERDRGMzPyAQ1maXh0dXJlLXRva2VuwgUPZml4dHVyZS1wYWNrYWdlygUYZml4dHVyZS1oaXReZml4dHVyZS1taXNzIgtmaXh0dXJlLXRiczIBMIIBAjEykgEBMZoBFeWQiOaIkOaWh+WtlyArICYg8J+YgNIBATnyAQxGaXh0dXJlRm9ydW2KAgJwYroCATHqAgMxMDGCAwEwogMBMLoDATDSAwtGaXh0dXJlTmFtZYAEAOAEAIIFCHBiX3JlcGx5"
+    },
+    {
+      "name": "after-sign-metadata",
+      "kind": "threadReply",
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs"
+      },
+      "business": {
+        "anonymous": "0",
+        "floor_num": "0",
+        "content": "合成文字 + & 😀",
+        "fid": "9",
+        "tid": "101",
+        "kw": "FixtureForum",
+        "vcode_tag": "12",
+        "tbs": "fixture-tbs",
+        "new_vcode": "1",
+        "is_addition": "0",
+        "is_location": "1",
+        "st_param": "pb",
+        "post_from": "0",
+        "name_show": "FixtureName",
+        "with_tail": "0",
+        "show_custom_figure": "0",
+        "send_from": "pb_reply",
+        "floor": "7"
+      },
+      "metadata": {
+        "packageVersion": "fixture-package-new",
+        "experimentHits": "fixture-hit-new",
+        "experimentMisses": "fixture-miss"
+      },
+      "opaqueSignature": null,
+      "expectedCommon": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs",
+        "package_version": "fixture-package-new",
+        "abtest_config_intervention": "fixture-hit-new^fixture-miss",
+        "sign": "C98BB3DC273B649D4288763F59DD4F33"
+      },
+      "wireBase64": "CqICCqEBCAESBzIyLjExLjFAgYCAgICAgBBSD2ZpeHR1cmUtc2Vzc2lvbloSZml4dHVyZS1jb21tb24tdGJzugEgQzk4QkIzREMyNzNCNjQ5RDQyODg3NjNGNTlERDRGMzPyAQ1maXh0dXJlLXRva2VuwgUTZml4dHVyZS1wYWNrYWdlLW5ld8oFHGZpeHR1cmUtaGl0LW5ld15maXh0dXJlLW1pc3MiC2ZpeHR1cmUtdGJzMgEwggECMTKSAQExmgEV5ZCI5oiQ5paH5a2XICsgJiDwn5iA0gEBOfIBDEZpeHR1cmVGb3J1bYoCAnBiugIBMeoCAzEwMYIDATCiAwEwugMBMNIDC0ZpeHR1cmVOYW1lgAQA4AQAggUIcGJfcmVwbHk="
+    },
+    {
+      "name": "nil-metadata",
+      "kind": "threadReply",
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs"
+      },
+      "business": {
+        "anonymous": "0",
+        "floor_num": "0",
+        "content": "合成文字 + & 😀",
+        "fid": "9",
+        "tid": "101",
+        "kw": "FixtureForum",
+        "vcode_tag": "12",
+        "tbs": "fixture-tbs",
+        "new_vcode": "1",
+        "is_addition": "0",
+        "is_location": "1",
+        "st_param": "pb",
+        "post_from": "0",
+        "name_show": "FixtureName",
+        "with_tail": "0",
+        "show_custom_figure": "0",
+        "send_from": "pb_reply",
+        "floor": "7"
+      },
+      "metadata": {
+        "packageVersion": null,
+        "experimentHits": null,
+        "experimentMisses": null
+      },
+      "opaqueSignature": null,
+      "expectedCommon": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs",
+        "abtest_config_intervention": "(null)^(null)",
+        "sign": "C98BB3DC273B649D4288763F59DD4F33"
+      },
+      "wireBase64": "CvwBCnwIARIHMjIuMTEuMUCBgICAgICAEFIPZml4dHVyZS1zZXNzaW9uWhJmaXh0dXJlLWNvbW1vbi10YnO6ASBDOThCQjNEQzI3M0I2NDlENDI4ODc2M0Y1OURENEYzM/IBDWZpeHR1cmUtdG9rZW7KBQ0obnVsbCleKG51bGwpIgtmaXh0dXJlLXRiczIBMIIBAjEykgEBMZoBFeWQiOaIkOaWh+WtlyArICYg8J+YgNIBATnyAQxGaXh0dXJlRm9ydW2KAgJwYroCATHqAgMxMDGCAwEwogMBMLoDATDSAwtGaXh0dXJlTmFtZYAEAOAEAIIFCHBiX3JlcGx5"
+    },
+    {
+      "name": "unused-common-sig",
+      "kind": "threadReply",
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs"
+      },
+      "business": {
+        "anonymous": "0",
+        "floor_num": "0",
+        "content": "合成文字 + & 😀",
+        "fid": "9",
+        "tid": "101",
+        "kw": "FixtureForum",
+        "vcode_tag": "12",
+        "tbs": "fixture-tbs",
+        "new_vcode": "1",
+        "is_addition": "0",
+        "is_location": "1",
+        "st_param": "pb",
+        "post_from": "0",
+        "name_show": "FixtureName",
+        "with_tail": "0",
+        "show_custom_figure": "0",
+        "send_from": "pb_reply",
+        "floor": "7"
+      },
+      "metadata": {
+        "packageVersion": "fixture-package",
+        "experimentHits": "fixture-hit",
+        "experimentMisses": "fixture-miss"
+      },
+      "opaqueSignature": "fixture-opaque",
+      "expectedCommon": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs",
+        "package_version": "fixture-package",
+        "abtest_config_intervention": "fixture-hit^fixture-miss",
+        "sign": "C98BB3DC273B649D4288763F59DD4F33",
+        "sig": "fixture-opaque"
+      },
+      "wireBase64": "CpoCCpkBCAESBzIyLjExLjFAgYCAgICAgBBSD2ZpeHR1cmUtc2Vzc2lvbloSZml4dHVyZS1jb21tb24tdGJzugEgQzk4QkIzREMyNzNCNjQ5RDQyODg3NjNGNTlERDRGMzPyAQ1maXh0dXJlLXRva2VuwgUPZml4dHVyZS1wYWNrYWdlygUYZml4dHVyZS1oaXReZml4dHVyZS1taXNzIgtmaXh0dXJlLXRiczIBMIIBAjEykgEBMZoBFeWQiOaIkOaWh+WtlyArICYg8J+YgNIBATnyAQxGaXh0dXJlRm9ydW2KAgJwYroCATHqAgMxMDGCAwEwogMBMLoDATDSAwtGaXh0dXJlTmFtZYAEAOAEAIIFCHBiX3JlcGx5"
+    },
+    {
+      "name": "thread",
+      "kind": "thread",
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs"
+      },
+      "business": {
+        "title": "Fixture title",
+        "anonymous": "0",
+        "content": "Synthetic thread",
+        "fid": "9",
+        "kw": "FixtureForum",
+        "tbs": "fixture-tbs",
+        "vcode_tag": "12",
+        "new_vcode": "1",
+        "is_ntitle": "0",
+        "call_from": "1",
+        "can_no_forum": "0",
+        "is_hide": "1",
+        "pro_zone": "0",
+        "takephoto_num": "0",
+        "name_show": "FixtureName",
+        "is_general_tab": "0",
+        "is_forum_business_account": "0",
+        "is_pictxt": "0",
+        "is_article": "0",
+        "show_custom_figure": "0",
+        "is_question": "0",
+        "sendThreadCategory": "0"
+      },
+      "metadata": {
+        "packageVersion": "fixture-package",
+        "experimentHits": "fixture-hit",
+        "experimentMisses": "fixture-miss"
+      },
+      "opaqueSignature": null,
+      "expectedCommon": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "BDUSS": "fixture-session",
+        "stoken": "fixture-token",
+        "_timestamp": "9007199254740993",
+        "tbs": "fixture-common-tbs",
+        "package_version": "fixture-package",
+        "abtest_config_intervention": "fixture-hit^fixture-miss",
+        "sign": "4F008AB99011D9C06E6E7AAAC332EDD1"
+      },
+      "wireBase64": "CqUCCpkBCAESBzIyLjExLjFAgYCAgICAgBBSD2ZpeHR1cmUtc2Vzc2lvbloSZml4dHVyZS1jb21tb24tdGJzugEgNEYwMDhBQjk5MDExRDlDMDZFNkU3QUFBQzMzMkVERDHyAQ1maXh0dXJlLXRva2VuwgUPZml4dHVyZS1wYWNrYWdlygUYZml4dHVyZS1oaXReZml4dHVyZS1taXNzIgtmaXh0dXJlLXRiczIBMDoBMEoBMIIBAjEykgEBMZoBEFN5bnRoZXRpYyB0aHJlYWTSAQE52gEMRml4dHVyZUZvcnVt6gEBMaICATCqAgExsgINRml4dHVyZSB0aXRsZcoCATDyAwEw+gMBMNoEC0ZpeHR1cmVOYW1l6gQBMPoEATCABQCYBQA="
+    }
+  ]
+}

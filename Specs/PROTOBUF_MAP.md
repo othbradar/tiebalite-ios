@@ -1,5 +1,11 @@
 # Protobuf 映射与生成图
 
+## U08 原生写入请求的独立 schema（迁移中）
+
+在既有Android234文件闭包之外新增 `Config/Protobuf/NativeWrite.proto`，仅转录用户指定22.11.1程序descriptor中Common、AddPost DataReq、AddThread DataReq与各自请求外壳的字段事实；本轮补充两类原生响应共有的error/data、回执与验证字段子集，未导入Android响应类型。来源、编号及验证边界见API_EVIDENCE顶部。使用独立输入SHA锁及同一固定protoc/SwiftProtobuf工具链，生成 `NativeWrite.pb.swift`；总输出235文件，原Android生成Swift内容未变。生成metadata保留Android input_count=234并独立记录native_write_input_count=1与参考程序SHA。
+
+两个新请求保持proto2 optional存在性。三组纯合成IDL fixture由原始descriptor/Python Protobuf独立编码，Swift逐字节比较；不将schema等价写成实际HTTP发送或完整原生流程已对齐。Live尚未使用新生成类型。
+
 状态：`STAGE19A_IMAGE_PROJECTION_AND_207_FILE_CLOSURE_VERIFIED`
 
 Android 基线：`4.0-dev@5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`。

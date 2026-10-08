@@ -59,12 +59,11 @@ final class AppCompositionRoot {
         switch environment.readingDataSourceMode {
 #if DEBUG
         case .fixture:
+            let replySource = Self.replyFixtureIfRequested()
             currentAccountStore = CurrentAccountStore(repository: FixtureCurrentAccountRepository())
             notificationsStore = NotificationsStore(repository: FixtureNotificationsRepository())
             notificationTargetRepository = FixtureNotificationTargetRepository()
-            textComposer = TextComposerService(repository: FixtureTextWriteRepository(), currentContext: {
-                .active(.init(sessionID: .init(rawValue: 1), generation: 1))
-            })
+            textComposer = Self.fixtureComposer(writer: replySource ?? FixtureTextWriteRepository())
             self.browsingHistoryRepository = browsingHistoryRepository ?? InMemoryBrowsingHistoryRepository()
             self.appSettingsRepository = appSettingsRepository ?? InMemoryAppSettingsRepository()
             self.followedForumsRepository = followedForumsRepository ?? FixtureFollowedForumsRepository()
@@ -76,8 +75,9 @@ final class AppCompositionRoot {
             self.recommendationRepository = recommendationRepository ?? FixtureRecommendationRepository()
             searchRepository = FixtureSearchRepository()
             let reading = Self.readingRepositories(
-                threads: threadReaderRepository ?? FixtureThreadReaderRepository(), subposts: FixtureSubpostsRepository(),
-                cache: forumHomeCache.map { ($0, scheduler) }, environment: environment, auth: resolvedAuthContextProvider)
+                threads: replySource ?? threadReaderRepository ?? FixtureThreadReaderRepository(), subposts: FixtureSubpostsRepository(),
+                cache: (replySource == nil ? forumHomeCache : ContentPageCache(directory: nil)).map { ($0, scheduler) },
+                environment: environment, auth: resolvedAuthContextProvider)
             subpostsRepository = reading.subposts
             self.threadReaderRepository = reading.threads
             self.userProfileRepository = userProfileRepository ?? FixtureUserProfileRepository()
@@ -88,10 +88,10 @@ final class AppCompositionRoot {
             notificationsStore = NotificationsStore(repository: LiveNotificationsRepository(
                 client: environment.httpClient, authContextProvider: resolvedAuthContextProvider))
             notificationTargetRepository = LiveNotificationTargetRepository(client: environment.httpClient)
-            textComposer = TextComposerService(repository: LiveTextWriteRepository(
-                client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
-                uploader: LiveComposerImageUploader(client: environment.httpClient, authContextProvider: resolvedAuthContextProvider),
+            textComposer = TextComposerService(
+                repository: NativeLiveTextWriteRepository.production(auth: resolvedAuthContextProvider),
                 imageLoader: environment.imageLoader,
+                drafts: Self.makeDrafts(auth: resolvedAuthContextProvider),
                 currentContext: { resolvedAuthContextProvider.context() })
             self.browsingHistoryRepository = browsingHistoryRepository ?? JSONBrowsingHistoryRepository.production()
             self.appSettingsRepository = appSettingsRepository ?? UserDefaultsAppSettingsRepository()
@@ -121,6 +121,28 @@ final class AppCompositionRoot {
                 )
         }
         self.notificationCounts = notificationCounts ?? notificationsStore
+    }
+
+#if DEBUG
+    private static func fixtureComposer(writer: any TextWriteRepository) -> TextComposerService {
+        TextComposerService(repository: writer, currentContext: {
+            .active(.init(sessionID: .init(rawValue: 1), generation: 1))
+        })
+    }
+
+    private static func replyFixtureIfRequested() -> (any TextWriteRepository & ThreadReaderRepository)? {
+#if UITESTING
+        if ProcessInfo.processInfo.environment["U08_REPLY_REFRESH"] == "1" { return FixtureReplyRefreshRepository() }
+#endif
+        return nil
+    }
+#endif
+
+    private static func makeDrafts(auth: SessionAuthContextProvider) -> TextComposerDrafts {
+        TextComposerDrafts(storage: ComposerDraftStorage.production(), namespace: {
+            guard case .active = auth.context() else { return nil }
+            return auth.contentCacheContext.namespace
+        })
     }
 
     private static var contentCacheDirectory: URL? {
