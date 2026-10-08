@@ -19,6 +19,16 @@ enum NativeWriteHTTPRequest {
                             context: NativeWriteHTTPContext, boundary: String) throws -> HTTPRequest {
         guard !context.userAgent.isEmpty else { throw HTTPRequestValidationError.invalidHeader }
         let bytes = try NativeWriteRequestEncoder.encode(kind: kind, business: business, common: common)
+        let path = kind == .thread ? "/c/c/thread/add" : "/c/c/post/add"
+        return try protobufRequest(endpoint: (path, NativeWriteRequestEncoder.command(for: kind)), bytes: bytes,
+                                   context: context, boundary: boundary, responseBodyLimit: 1_024 * 1_024)
+    }
+
+    /// Shared native short-connection envelope, including CMD309751 reads.
+    /// Callers supply an evidence-backed command and its matching native IDL.
+    static func protobufRequest(endpoint: (path: String, command: Int), bytes: Data, context: NativeWriteHTTPContext,
+                                boundary: String, responseBodyLimit: Int) throws -> HTTPRequest {
+        guard !context.userAgent.isEmpty else { throw HTTPRequestValidationError.invalidHeader }
         let body = EndpointRequestBody.multipartBinary(
             boundary: boundary, fields: [],
             part: MultipartBinaryPart(name: "data", filename: "data", mimeType: "image/jpeg", data: bytes))
@@ -34,16 +44,14 @@ enum NativeWriteHTTPRequest {
         if context.clientLogID != 0 && context.clientLogID != -1 {
             headers["client_logid"] = String(context.clientLogID)
         }
-        let path = kind == .thread ? "/c/c/thread/add" : "/c/c/post/add"
         // TBCBaseModel's short-connection Proto branch routes the binary body
         // by command and requests the matching Protobuf response on the URL.
-        let command = NativeWriteRequestEncoder.command(for: kind)
-        guard let url = URL(string: "https://tiebac.baidu.com\(path)?cmd=\(command)&format=protobuf") else {
+        guard let url = URL(string: "https://tiebac.baidu.com\(endpoint.path)?cmd=\(endpoint.command)&format=protobuf") else {
             throw EndpointRequestBuilderError.invalidURL
         }
         // Native multipart does not infer an outgoing Accept header from the
         // decoder's response MIME policy, nor duplicate Common in form fields.
         return try HTTPRequest(method: .post, url: url, headers: headers, body: encoded.data,
-                               timeout: context.timeout, responseBodyLimit: 1_024 * 1_024)
+                               timeout: context.timeout, responseBodyLimit: responseBodyLimit)
     }
 }

@@ -7,6 +7,7 @@ struct SubpostsView: View {
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    var readingEntry: ThreadReadingEntry = .unspecified
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var composeTarget: TextComposeTarget?
@@ -88,7 +89,9 @@ struct SubpostsView: View {
                 isThreadAuthor: isThreadAuthor, imageLoader: imageLoader, readingTextSize: readingTextSize,
                 onOpenMedia: onOpenMedia, onOpenUser: onOpenUser, onOpenExternalLink: openExternalLink, identifier: "subposts.reply.\(item.id)",
                 reply: {
-                    if let intent = store.replyIntent(for: item) { composeTarget = .reply(intent, document: item.document) }
+                    if let intent = store.replyIntent(for: item) {
+                        composeTarget = .reply(intent, document: item.document, readingEntry: readingEntry)
+                    }
                 })
         case .footer(let phase, let hasMore):
             footer(phase, hasMore: hasMore)

@@ -99,6 +99,11 @@ struct AppSceneRoot: View {
         .task {
             await featureStores.settingsStore.loadIfNeeded()
         }
+        .task(id: scenePhase) {
+            if scenePhase == .background, case .live = compositionRoot.environment.readingDataSourceMode {
+                await NativeWriteBackgroundCleanup.run()
+            }
+        }
         .onChange(of: featureStores.settingsStore.settings) { _, _ in
             compositionRoot.contentPrefetchEnvironment.cancelAll()
         }

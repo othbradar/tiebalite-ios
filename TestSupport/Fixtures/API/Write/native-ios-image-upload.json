@@ -1,0 +1,565 @@
+{
+  "referenceSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native uploadChunk:saveOrigin: at 0x10214f384; synthetic Foundation/provider values. Stopped before accessAPI. Common/signing executes native with synthetic OS/SDK/account inputs. Excludes compression, HTTP and server.",
+  "cases": [
+    {
+      "name": "reply-single",
+      "input": {
+        "chunk": {
+          "imgMd5": "0123456789ABCDEF0123456789ABCDEF",
+          "imageData": "synthetic-bytes",
+          "isFinish": 1,
+          "chunkCurrNum": 1,
+          "imageWidth": 640,
+          "imageHeight": 480,
+          "dataSize": 600000,
+          "smlImageWidth": 0,
+          "smlImageHeight": 0
+        },
+        "model": {
+          "shouldAddWaterMark": 0,
+          "isSensitive": 0,
+          "isBjh": 0,
+          "barName": "FixtureForum"
+        },
+        "watermark": 0,
+        "saveOrigin": 0
+      },
+      "expected": {
+        "api": "/c/s/uploadPicture",
+        "fields": {
+          "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+          "isFinish": "1",
+          "chunkNo": "1",
+          "width": "640",
+          "size": "600000",
+          "height": "480",
+          "smallWidth": "0",
+          "smallHeight": "0",
+          "alt": "json",
+          "saveOrigin": "0",
+          "pic_water_type": "3",
+          "is_bjh": "0",
+          "small_flow_fname": "FixtureForum"
+        },
+        "files": {
+          "chunk": "synthetic-bytes"
+        }
+      }
+    },
+    {
+      "name": "reply-intermediate",
+      "input": {
+        "chunk": {
+          "imgMd5": "0123456789ABCDEF0123456789ABCDEF",
+          "imageData": "synthetic-bytes",
+          "isFinish": 0,
+          "chunkCurrNum": 1,
+          "imageWidth": 640,
+          "imageHeight": 480,
+          "dataSize": 600000,
+          "smlImageWidth": 0,
+          "smlImageHeight": 0
+        },
+        "model": {
+          "shouldAddWaterMark": 0,
+          "isSensitive": 0,
+          "isBjh": 0,
+          "barName": "FixtureForum"
+        },
+        "watermark": 0,
+        "saveOrigin": 0
+      },
+      "expected": {
+        "api": "/c/s/uploadPicture",
+        "fields": {
+          "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+          "isFinish": "0",
+          "chunkNo": "1",
+          "width": "640",
+          "size": "600000",
+          "height": "480",
+          "smallWidth": "0",
+          "smallHeight": "0",
+          "alt": "json",
+          "saveOrigin": "0",
+          "pic_water_type": "3",
+          "is_bjh": "0",
+          "small_flow_fname": "FixtureForum"
+        },
+        "files": {
+          "chunk": "synthetic-bytes"
+        }
+      }
+    },
+    {
+      "name": "no-forum",
+      "input": {
+        "chunk": {
+          "imgMd5": "0123456789ABCDEF0123456789ABCDEF",
+          "imageData": "synthetic-bytes",
+          "isFinish": 1,
+          "chunkCurrNum": 1,
+          "imageWidth": 640,
+          "imageHeight": 480,
+          "dataSize": 600000,
+          "smlImageWidth": 0,
+          "smlImageHeight": 0
+        },
+        "model": {
+          "shouldAddWaterMark": 0,
+          "isSensitive": 0,
+          "isBjh": 0,
+          "barName": ""
+        },
+        "watermark": 0,
+        "saveOrigin": 0
+      },
+      "expected": {
+        "api": "/c/s/uploadPicture",
+        "fields": {
+          "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+          "isFinish": "1",
+          "chunkNo": "1",
+          "width": "640",
+          "size": "600000",
+          "height": "480",
+          "smallWidth": "0",
+          "smallHeight": "0",
+          "alt": "json",
+          "saveOrigin": "0",
+          "pic_water_type": "3",
+          "is_bjh": "0"
+        },
+        "files": {
+          "chunk": "synthetic-bytes"
+        }
+      }
+    },
+    {
+      "name": "forum-watermark",
+      "input": {
+        "chunk": {
+          "imgMd5": "0123456789ABCDEF0123456789ABCDEF",
+          "imageData": "synthetic-bytes",
+          "isFinish": 1,
+          "chunkCurrNum": 1,
+          "imageWidth": 640,
+          "imageHeight": 480,
+          "dataSize": 600000,
+          "smlImageWidth": 0,
+          "smlImageHeight": 0
+        },
+        "model": {
+          "shouldAddWaterMark": 1,
+          "isSensitive": 0,
+          "isBjh": 0,
+          "barName": "FixtureForum"
+        },
+        "watermark": 2,
+        "saveOrigin": 0
+      },
+      "expected": {
+        "api": "/c/s/uploadPicture",
+        "fields": {
+          "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+          "isFinish": "1",
+          "chunkNo": "1",
+          "width": "640",
+          "size": "600000",
+          "height": "480",
+          "smallWidth": "0",
+          "smallHeight": "0",
+          "alt": "json",
+          "saveOrigin": "0",
+          "pic_water_type": "2",
+          "forum_name": "FixtureForum",
+          "is_bjh": "0",
+          "small_flow_fname": "FixtureForum"
+        },
+        "files": {
+          "chunk": "synthetic-bytes"
+        }
+      }
+    },
+    {
+      "name": "name-watermark",
+      "input": {
+        "chunk": {
+          "imgMd5": "0123456789ABCDEF0123456789ABCDEF",
+          "imageData": "synthetic-bytes",
+          "isFinish": 1,
+          "chunkCurrNum": 1,
+          "imageWidth": 640,
+          "imageHeight": 480,
+          "dataSize": 600000,
+          "smlImageWidth": 0,
+          "smlImageHeight": 0
+        },
+        "model": {
+          "shouldAddWaterMark": 1,
+          "isSensitive": 0,
+          "isBjh": 0,
+          "barName": "FixtureForum"
+        },
+        "watermark": 1,
+        "saveOrigin": 0
+      },
+      "expected": {
+        "api": "/c/s/uploadPicture",
+        "fields": {
+          "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+          "isFinish": "1",
+          "chunkNo": "1",
+          "width": "640",
+          "size": "600000",
+          "height": "480",
+          "smallWidth": "0",
+          "smallHeight": "0",
+          "alt": "json",
+          "saveOrigin": "0",
+          "pic_water_type": "1",
+          "user_name": "FixtureName",
+          "is_bjh": "0",
+          "small_flow_fname": "FixtureForum"
+        },
+        "files": {
+          "chunk": "synthetic-bytes"
+        }
+      }
+    },
+    {
+      "name": "watermark-off",
+      "input": {
+        "chunk": {
+          "imgMd5": "0123456789ABCDEF0123456789ABCDEF",
+          "imageData": "synthetic-bytes",
+          "isFinish": 1,
+          "chunkCurrNum": 1,
+          "imageWidth": 640,
+          "imageHeight": 480,
+          "dataSize": 600000,
+          "smlImageWidth": 0,
+          "smlImageHeight": 0
+        },
+        "model": {
+          "shouldAddWaterMark": 1,
+          "isSensitive": 0,
+          "isBjh": 0,
+          "barName": "FixtureForum"
+        },
+        "watermark": 3,
+        "saveOrigin": 0
+      },
+      "expected": {
+        "api": "/c/s/uploadPicture",
+        "fields": {
+          "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+          "isFinish": "1",
+          "chunkNo": "1",
+          "width": "640",
+          "size": "600000",
+          "height": "480",
+          "smallWidth": "0",
+          "smallHeight": "0",
+          "alt": "json",
+          "saveOrigin": "0",
+          "pic_water_type": "0",
+          "is_bjh": "0",
+          "small_flow_fname": "FixtureForum"
+        },
+        "files": {
+          "chunk": "synthetic-bytes"
+        }
+      }
+    }
+  ],
+  "forms": [
+    {
+      "name": "standard",
+      "input": {
+        "sampleID": "fixture-dynamic",
+        "hasBrowseModeProvider": true,
+        "browseMode": "1",
+        "clientID": "fixture-client",
+        "extra": "fixture-extra",
+        "personalizedSwitch": "1",
+        "storedPersonalizedSwitch": "0",
+        "networkType": "1",
+        "userAgent": "FixtureIOSAgent",
+        "sessionValue": "fx",
+        "secondaryValue": "fx",
+        "opaqueSDKValue": "fixture-sdk",
+        "tbs": "fx",
+        "diac": "fixture-diac",
+        "launchScheme": "fixture-launch",
+        "launchType": 2,
+        "timestampSeconds": 1700000000.125,
+        "activeTimestampSeconds": 1699999000.25,
+        "signOptimizationEnabled": false,
+        "signForumOnly": false,
+        "signAll": false,
+        "keepAlive": true,
+        "smallFlow": false,
+        "api": "/c/s/uploadPicture"
+      },
+      "staticContext": {
+        "clientVersion": "22.11.1",
+        "systemVersion": "FixtureOS",
+        "deviceScore": "fixture-score",
+        "deviceFamily": "FixtureFamily",
+        "devicePlatform": "FixturePlatform",
+        "channel": "fixture-channel",
+        "cuid": "fixture-cuid",
+        "legoVersion": "fixture-lego",
+        "browserCuid": "fixture-bba-cuid",
+        "browserInstanceID": "fixture-bba-iid",
+        "advertisingID": "fixture-idfa",
+        "sampleID": "fixture-sample",
+        "vendorID": "fixture-idfv",
+        "mac": "fixture-mac",
+        "eventDay": "20260102",
+        "sdkVersion": "fixture-sdk",
+        "frameworkVersion": "fixture-core",
+        "gameVersion": "fixture-game",
+        "pureMode": "0",
+        "miniAppMode": "1",
+        "privacyPolicyShown": true,
+        "screenWidth": 393.0,
+        "screenHeight": 852.0,
+        "screenScale": 3.0,
+        "imageQuality": 2
+      },
+      "business": {
+        "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+        "isFinish": "1",
+        "chunkNo": "1",
+        "width": "640",
+        "size": "600000",
+        "height": "480",
+        "smallWidth": "0",
+        "smallHeight": "0",
+        "alt": "json",
+        "saveOrigin": "0",
+        "pic_water_type": "3",
+        "is_bjh": "0",
+        "small_flow_fname": "FixtureForum"
+      },
+      "metrics": {
+        "api": "c/f/pb/page",
+        "logid": 9007199254740993,
+        "cost": 0.125,
+        "result": -1,
+        "uploadBytes": 128,
+        "downloadBytes": 512
+      },
+      "expected": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "_os_version": "FixtureOS",
+        "device_score": "fixture-score",
+        "brand": "FixtureFamily",
+        "brand_type": "FixturePlatform",
+        "model": "FixturePlatform",
+        "from": "fixture-channel",
+        "cuid": "fixture-cuid",
+        "lego_lib_version": "fixture-lego",
+        "shoubai_cuid": "fixture-bba-cuid",
+        "idfa": "fixture-idfa",
+        "sample_id": "fixture-dynamic",
+        "idfv": "fixture-idfv",
+        "mac": "fixture-mac",
+        "event_day": "20260102",
+        "sdk_ver": "fixture-sdk",
+        "framework_ver": "fixture-core",
+        "naws_game_ver": "fixture-game",
+        "scr_w": "393.0",
+        "scr_h": "852.0",
+        "q_type": "2",
+        "scr_dip": "3.0",
+        "pure_mode": "0",
+        "xcx_mode": "1",
+        "cmode": "1",
+        "_client_id": "fixture-client",
+        "extra": "fixture-extra",
+        "personalized_rec_switch": "1",
+        "net_type": "1",
+        "user_agent": "FixtureIOSAgent",
+        "BDUSS": "fx",
+        "stoken": "fx",
+        "z_id": "fixture-sdk",
+        "_timestamp": "1700000000125",
+        "active_timestamp": "1699999000250",
+        "ka": "open",
+        "m_api": "c/f/pb/page",
+        "m_logid": "9007199254740993",
+        "m_cost": "0.125000",
+        "m_result": "-1",
+        "m_size_u": "128",
+        "m_size_d": "512",
+        "subapp_type": "tieba",
+        "tbs": "fx",
+        "diac": "fixture-diac",
+        "start_scheme": "fixture-launch",
+        "start_type": "2",
+        "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+        "isFinish": "1",
+        "chunkNo": "1",
+        "width": "640",
+        "size": "600000",
+        "height": "480",
+        "smallWidth": "0",
+        "smallHeight": "0",
+        "alt": "json",
+        "saveOrigin": "0",
+        "pic_water_type": "3",
+        "is_bjh": "0",
+        "small_flow_fname": "FixtureForum",
+        "sign": "1C691E07C6CCA58C7B1DA2CA675CB601"
+      }
+    },
+    {
+      "name": "optimized",
+      "input": {
+        "sampleID": "fixture-dynamic",
+        "hasBrowseModeProvider": true,
+        "browseMode": "1",
+        "clientID": "fixture-client",
+        "extra": "fixture-extra",
+        "personalizedSwitch": "1",
+        "storedPersonalizedSwitch": "0",
+        "networkType": "1",
+        "userAgent": "FixtureIOSAgent",
+        "sessionValue": "fx",
+        "secondaryValue": "fx",
+        "opaqueSDKValue": "fixture-sdk",
+        "tbs": "fx",
+        "diac": "fixture-diac",
+        "launchScheme": "fixture-launch",
+        "launchType": 2,
+        "timestampSeconds": 1700000000.125,
+        "activeTimestampSeconds": 1699999000.25,
+        "signOptimizationEnabled": true,
+        "signForumOnly": false,
+        "signAll": true,
+        "keepAlive": true,
+        "smallFlow": false,
+        "api": "/c/s/uploadPicture"
+      },
+      "staticContext": {
+        "clientVersion": "22.11.1",
+        "systemVersion": "FixtureOS",
+        "deviceScore": "fixture-score",
+        "deviceFamily": "FixtureFamily",
+        "devicePlatform": "FixturePlatform",
+        "channel": "fixture-channel",
+        "cuid": "fixture-cuid",
+        "legoVersion": "fixture-lego",
+        "browserCuid": "fixture-bba-cuid",
+        "browserInstanceID": "fixture-bba-iid",
+        "advertisingID": "fixture-idfa",
+        "sampleID": "fixture-sample",
+        "vendorID": "fixture-idfv",
+        "mac": "fixture-mac",
+        "eventDay": "20260102",
+        "sdkVersion": "fixture-sdk",
+        "frameworkVersion": "fixture-core",
+        "gameVersion": "fixture-game",
+        "pureMode": "0",
+        "miniAppMode": "1",
+        "privacyPolicyShown": true,
+        "screenWidth": 393.0,
+        "screenHeight": 852.0,
+        "screenScale": 3.0,
+        "imageQuality": 2
+      },
+      "business": {
+        "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+        "isFinish": "1",
+        "chunkNo": "1",
+        "width": "640",
+        "size": "600000",
+        "height": "480",
+        "smallWidth": "0",
+        "smallHeight": "0",
+        "alt": "json",
+        "saveOrigin": "0",
+        "pic_water_type": "3",
+        "is_bjh": "0",
+        "small_flow_fname": "FixtureForum"
+      },
+      "metrics": {
+        "api": "c/f/pb/page",
+        "logid": 9007199254740993,
+        "cost": 0.125,
+        "result": -1,
+        "uploadBytes": 128,
+        "downloadBytes": 512
+      },
+      "expected": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "_os_version": "FixtureOS",
+        "device_score": "fixture-score",
+        "brand": "FixtureFamily",
+        "brand_type": "FixturePlatform",
+        "model": "FixturePlatform",
+        "from": "fixture-channel",
+        "cuid": "fixture-cuid",
+        "lego_lib_version": "fixture-lego",
+        "shoubai_cuid": "fixture-bba-cuid",
+        "idfa": "fixture-idfa",
+        "sample_id": "fixture-dynamic",
+        "idfv": "fixture-idfv",
+        "mac": "fixture-mac",
+        "event_day": "20260102",
+        "sdk_ver": "fixture-sdk",
+        "framework_ver": "fixture-core",
+        "naws_game_ver": "fixture-game",
+        "scr_w": "393.0",
+        "scr_h": "852.0",
+        "q_type": "2",
+        "scr_dip": "3.0",
+        "pure_mode": "0",
+        "xcx_mode": "1",
+        "cmode": "1",
+        "_client_id": "fixture-client",
+        "extra": "fixture-extra",
+        "personalized_rec_switch": "1",
+        "net_type": "1",
+        "user_agent": "FixtureIOSAgent",
+        "BDUSS": "fx",
+        "stoken": "fx",
+        "z_id": "fixture-sdk",
+        "_timestamp": "1700000000125",
+        "active_timestamp": "1699999000250",
+        "ka": "open",
+        "m_api": "c/f/pb/page",
+        "m_logid": "9007199254740993",
+        "m_cost": "0.125000",
+        "m_result": "-1",
+        "m_size_u": "128",
+        "m_size_d": "512",
+        "subapp_type": "tieba",
+        "tbs": "fx",
+        "diac": "fixture-diac",
+        "start_scheme": "fixture-launch",
+        "start_type": "2",
+        "resourceId": "0123456789ABCDEF0123456789ABCDEF",
+        "isFinish": "1",
+        "chunkNo": "1",
+        "width": "640",
+        "size": "600000",
+        "height": "480",
+        "smallWidth": "0",
+        "smallHeight": "0",
+        "alt": "json",
+        "saveOrigin": "0",
+        "pic_water_type": "3",
+        "is_bjh": "0",
+        "small_flow_fname": "FixtureForum",
+        "sign": "1C691E07C6CCA58C7B1DA2CA675CB601"
+      }
+    }
+  ]
+}

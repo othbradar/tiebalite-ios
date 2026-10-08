@@ -5,6 +5,11 @@ import Observation
 @Observable
 final class AppNavigationStore {
     private(set) var state: AppNavigationState
+    private var readingEntries: [AppFeatureScope: [RouteIdentity: ThreadReadingEntry]] = [:]
+
+    func readingEntry(for route: RouteIdentity, scope: AppFeatureScope) -> ThreadReadingEntry {
+        readingEntries[scope]?[route] ?? .unspecified
+    }
 
     init(initialState: AppNavigationState = AppNavigationState()) {
         state = initialState
@@ -18,19 +23,23 @@ final class AppNavigationStore {
     }
 
     @discardableResult
-    func push(_ route: RouteIdentity, in root: RootID) -> Bool {
+    func push(_ route: RouteIdentity, in root: RootID, readingEntry: ThreadReadingEntry = .unspecified) -> Bool {
         var candidate = state.routes(for: root)
         if let existingIndex = candidate.firstIndex(of: route) {
             candidate = Array(candidate.prefix(through: existingIndex))
         } else {
             candidate.append(route)
         }
-        return replaceRoutes(candidate, in: root)
+        guard replaceRoutes(candidate, in: root) else { return false }
+        recordReadingEntry(readingEntry, route: route, scope: .root(root))
+        return true
     }
 
     @discardableResult
-    func replaceRootDetail(_ route: RouteIdentity, in root: RootID) -> Bool {
-        return replaceRoutes([route], in: root)
+    func replaceRootDetail(_ route: RouteIdentity, in root: RootID, readingEntry: ThreadReadingEntry = .unspecified) -> Bool {
+        guard replaceRoutes([route], in: root) else { return false }
+        recordReadingEntry(readingEntry, route: route, scope: .root(root))
+        return true
     }
 
     @discardableResult
@@ -54,6 +63,7 @@ final class AppNavigationStore {
 
     func openSettingsRoute(_ route: SettingsRoute) {
         state.replaceSettingsPath([route])
+        readingEntries[.settings] = [:]
     }
 
     @discardableResult
@@ -69,15 +79,22 @@ final class AppNavigationStore {
             return false
         }
         state.replaceSettingsPath(candidate)
+        pruneSettingsReadingEntries()
         return true
     }
 
     func pushSettingsContent(_ route: RouteIdentity) {
-        pushSettingsRoute(.content(route))
+        pushSettingsContent(route, readingEntry: .unspecified)
+    }
+
+    func pushSettingsContent(_ route: RouteIdentity, readingEntry: ThreadReadingEntry) {
+        guard pushSettingsRoute(.content(route)) else { return }
+        recordReadingEntry(readingEntry, route: route, scope: .settings)
     }
 
     func replaceSettingsPathFromSystem(_ path: [SettingsRoute]) {
         state.replaceSettingsPath(path)
+        pruneSettingsReadingEntries()
     }
 
     @discardableResult
@@ -88,6 +105,7 @@ final class AppNavigationStore {
                 return false
             }
             state.replaceRoutes([route], for: root)
+            readingEntries[.root(root)] = [:]
             state.selectTab(root.tab)
             return true
         }
@@ -98,7 +116,13 @@ final class AppNavigationStore {
         guard let command = DeepLinkParser.parse(url) else {
             return false
         }
-        return apply(command)
+        guard apply(command) else { return false }
+        if url.scheme?.lowercased() == "https",
+           case let .replaceRootDetail(root, route) = command,
+           case .thread = route {
+            recordReadingEntry(.universalLink, route: route, scope: .root(root))
+        }
+        return true
     }
 
     private func replaceRoutes(
@@ -109,6 +133,18 @@ final class AppNavigationStore {
             return false
         }
         state.replaceRoutes(routes, for: root)
+        readingEntries[.root(root)] = readingEntries[.root(root)]?.filter { routes.contains($0.key) }
         return true
+    }
+
+    private func recordReadingEntry(_ entry: ThreadReadingEntry, route: RouteIdentity, scope: AppFeatureScope) {
+        switch route {
+        case .thread, .subposts, .notification: readingEntries[scope, default: [:]][route] = entry
+        default: break
+        }
+    }
+
+    private func pruneSettingsReadingEntries() {
+        readingEntries[.settings] = readingEntries[.settings]?.filter { state.settingsPath.contains(.content($0.key)) }
     }
 }

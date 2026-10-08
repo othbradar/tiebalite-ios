@@ -1,5 +1,141 @@
 # API / Protobuf 证据
 
+## 2026-10-08 图片发送迁移（SDK/Passport 按用户要求跳过）
+
+同 SHA iOS22.11.1：TBCReplyComposeImageUploadCoordinator._drive(0x102395c44)串行创建TBCImageUpload，成功(0x102396630)保存picInfo。TBCImageUploadModel.uploadChunk:saveOrigin:(0x10214f384)使用/c/s/uploadPicture和chunk文件；业务字典含原始imgMd5作为resourceId、chunkNo、isFinish、width/height、size、smallWidth/smallHeight、alt=json、saveOrigin。普通回复delegate未实现水印回调，默认shouldAddWaterMark=0→pic_water_type=3；barName非空写small_flow_fname，不凭空加forum_name/groupId。六个显式合成输入执行原ARM64方法至accessAPI前，未联网。
+
+补充实际资源ID来源：TBCImageUpload.uploadImage 在0x10214cf3c调用NSData.MD5String；BBACommonDigest category的0x1026592d8实现以%02X(0x102659364)逐字节格式化，明确为大写。上传字段转为大写，现有草稿稳定ID仍保留小写，不更换业务身份。reply coordinator的barNameForImageUpload(0x102396520)转发barName，保留实际吧名。
+
+TBCImageUpload.sliceImageAndUploadChunks(0x10214d158)读取imageChunkSize(KiB)，缺配置0时使用0x7a800=501760字节；从1开始递增chunkCurrNum。普通chunk未设置small尺寸，保持对象零值。TBCImageUploadModel.generatedPicInfo(0x102150c14)生成#(pic,picID,orgPicWidth,orgPicHeight)。finishRequest(0x10214fbec)读取error_code、picId及picInfo/originPic，不能由本地文件名或请求尺寸伪造成功。保留本App对缺失/错误回执的拒绝约束。
+
+IDPServerAPI.bba_uploadWithMethod…(0x102663bb4)把files的key同时用作fileName/asKey，MIME=image/jpeg。因此文件段为chunk/chunk/image/jpeg；数据独立于表单签名。timeoutWithURL:params:(0x102663f98)对上传返回120秒；小于1024字节文件的后置分支改为Wi-Fi10/其他25。原生普通Common/签名以uploadPicture API另行回放标准与优化两分支，结果为业务+Common合并签名，无Proto查询、无Proto元数据后缀。SDK/账号/设备输入均为显式合成替身，不能当真实身份生成。
+
+主题图片另有TBCUploadImageManager.startUploadImage(0x102156b08)→TBCNewImageUploader路径；它仍使用TBCImageUploadModel(0x102154244)，但并发/原图/水印受配置控制。本App本次只接普通无水印JPEG字段分支，串行请求，不声称原版主题上传调度一致。TBCUploadImagePlugin.spliceContentTextWithImageStr(0x1018cf000)的非混排分支直接追加服务器图片串，混排分支替换(_ImageToUpload_)；本App原编辑器正文+换行图片序列仍保留，完整混排转换不在本次闭合范围。
+
+本轮接线范围为既有编辑器选择的、已有本地准备策略产出的JPEG，按用户点击发送串行上传，全部成功后交给既有iOS正文/发送链。原图片导入的2560/1920/1080限额及0.95 JPEG策略是已批准App内存策略，并非原生压缩逐字节复刻；不将原图/动图/元数据处理、原版选图后后台提前上传或其可配置重试称为完成。本App保留用户点击才上传、取消/换账号失效、失败留稿且不自动重发的约束。原生配置实际值未知时仅使用上述明确默认值，不搬Android上传参数。
+
+## 2026-10-08 Build11 系统日期 provider 与剩余路径复核
+
+CODE_EVIDENCE：同 SHA 的 iOS22.11.1，commonStaticParametersNew 在 0x1024b16f4 调用 NSDate.date，0x1024b170c 创建 NSDateFormatter，只在 0x1024b171c 设置 `YYYYMMdd`，0x1024b1730 格式化该日期，0x1024b1750 写入 event_day。缓存分支对应 0x10024a37c/0x10024a388/0x10024a3ac；没有在这些方法内设置 locale/calendar/timeZone。原有 ARM64 Common 回放明确替代日期格式器，因此此前只能证明字段转交，不能证明 App 已提供日期。
+
+当前 App 使用已声明的 recomputed 分支，但 runtime 的 eventDay 一直 nil。Build11 提供实际当前日期，创建新 Foundation formatter、只设置同一格式，其余使用系统默认。保留大写 Y 的 week-year 语义，不换成 yyyy、不固定 UTC、不缓存到下一天。不改 Common 缓存选路、签名算法、网络次数/顺序或成功处理。固定 provider 接线测试验证连续两次显式请求的 Common 与 Proto 日期；固定日期及 UTC/上海、en_US_POSIX/en_GB 验证跨日/跨周年行为，不读取真实账号或联网。
+
+本轮另外复核的边界（未据此添加请求）：`iOStbclient` 分支 0x1021ab26c 赋31，不能套给 `com.baidu.tieba`。后者经 checkJumpToBaiduMatrix→checkJumpToMatrixPB(0x1021b674c)，buildWithNavigationController…fromType(0x10249d1bc)本身不赋 pbEnterType；QQ/shoubai/问答等 URL 字段还有后续覆盖。不能把通用 jumpToPB 的14或 Universal Link 的32直接用于搜索和全部 Scheme。搜索由 TBCWebSearchNewViewController 的 Web 跳转驱动，缺实际结果 URL 与完整消息消费链，仍 OPEN。
+
+getmypost 基础 provider(0x102ca65b4)依赖 schema、页面/广告/推送/实验服务；pbMyReplySwitch(0x101cca4a0)读取 `pb_reply_switch`，回复完成(0x102d7660c)按该开关选择专用读取。开关实际值及完整 provider 未闭合，不能把默认缺配置返回0等同于当次真实配置，也不将当前普通刷新改成无条件专用请求。静态窗口保存在 ignored build11 证据目录，完整 SDK/Passport、挑战续发、替代 HTTP 引擎和图片发送仍未完成。
+
+## 2026-10-08 默认 AF HTTP 分派与统计边界
+
+CODE_EVIDENCE：同SHA22.11.1的BBAAPIRequestManager.sharedInstance块0x10462d568构造BBAAFNetworkingRequestManager；IDPBBARequest继承BBANormalAPIRequest/BBABaseAPIRequest，基类isUseNewRequestManager(0x104610c4c)返回0。默认数据及上传会话分别在0x10462a018/0x10462a340安装AFHTTPResponseSerializer；其init(0x104314db0)明确设置acceptableStatusCodes为200起100个索引，acceptableContentTypes=nil。validateResponse:data:error:(0x104314e60)在范围外构造AF响应错误code=-1011；不是HTTP成功包中业务error=0就允许通过。
+
+原生TBCBBARequestManager completion/failure块0x10269a354/0x10269a598分别交付已完成/失败状态，失败进入已证实parser state4（除timeout以外统计result=-1、不记录完整字节）。成功传输且业务无错误时，非200但仍被默认AF接受的201等状态写入统计result；业务错误保持业务码优先，空/畸形body保留-3。统计不决定业务回执，不能将result=201当作帖子拒绝，也不能将HTTP503的合法形状body当作成功。采用原范围拒绝、只补实测统计及非200已解析统计；取消/旧账号/无measurement不制造统计。
+
+固定fixture已独立执行native AF validator的9个HTTP状态及parser的54种组合，Foundation对象/诊断文案为显式合成替身，AF NSError合并helper执行原指令；网络、SDK和实际引擎远程配置不执行。BBANSURLSession/Turbo等可配置替代引擎仍为独立边界，不能把默认AF的对齐称为所有原生引擎都已复刻。fixture重新生成一致性及定向执行结果记入TASK_STATE。
+
+## 2026-10-08 外部 Web 帖子入口来源
+
+CODE_EVIDENCE：同SHA TBCRedirector.parseUniversalLink:navigationController:(0x1021cfe2c)校验输入/导航容器后，于0x1021cfed4把来源全局值设32；其普通PB分支0x1021d1110调用checkPBUrl。后者0x1021b1c5c读取该值作为jumpToPB:…enterType:的x6；闭包0x1021b3290赋给pbEnterType，再由既有已回放transPBReplyEnterTypeToStringParam映射32→post_from=5。源码窗口在ignored build10/entry-*。
+
+本App仅对现有DeepLinkParser已接受的外部HTTPS帖子链接记录独立来源32，不扩展URL接受范围、不改导航结构/缓存/草稿ID；普通scheme/搜索/正文内部链接不能因此都推断为Universal Link。来源随原route移除，编辑器继续冻结当前来源。搜索由Web页面及额外URL参数驱动，尚缺确定的实际入口样本；不把通用jumpToPB的14或外部32套给所有搜索结果。
+
+## 2026-10-08 页面来源传到回复模型
+
+同SHA22.11.1的TBCHomePageViewController.homepageFeedCellGotoPbPageWithCell在0x1028d5430给pbEnterType=3，普通feed click及comment按钮同值；TBCPBContainerViewController.handleParamsDict:fromSource:needTransfer在source=3分支0x102c4d23c明确setIsFrsGoin=1、pbEnterType=5；TBCUserHistoryViewController.didSelectObject:atIndexPath在0x1030af46c赋30。新编辑器TBCReplyComposeSubmitPlugin.sendMsgHandler:msgContent从compose model读取pbEnterType并在0x1023df00c原值交给回复模型；普通PB addReplyView在0x102cff4d4传递同属性，lazySetupViews在0x102d2a87c传给replyModel。最后transPBReplyEnterTypeToStringParam(0x10245e8a8)的已回放映射分别3→post_from=2、5→3、30→11。
+
+消息入口继续核对：TBCMessageReplyViewController.selectReplyItem:floorInfo:clickRange在0x102b57094赋37，originThreadDidSelectWithItem在0x102b58800赋29；分别映射post_from=12/4。TBCPersonMessageViewController在viewDidLoad的0x102b792dc设置标题“@我的”，loadData在0x102b7ab0c调用loadAt:page，模型0x102b77458设置/c/u/feed/atme，证实不是按类名猜测功能。其对应两种点击在0x102b7c328/0x102b7df40都赋39，映射13。调用窗口保存在ignored notification-entry-contexts.txt。
+
+实际入口保存这些来源，随当前路由传到打开编辑器时的目标快照；不向业务ThreadID、缓存键、草稿ID或既有RouteIdentity增加来源。通知来源捕获实际Pager页面kind，不从之后的当前Tab倒推；进入楼中楼继续继承，返回移除路由时清理元数据。未知/搜索/外部链接仍走原unspecified=0，不能声称全入口完成。TBCRedirector的两处14来自通用jumpToPB路径，不能直接当搜索入口；未据此设置搜索来源。页面/楼中楼/通知生命周期与七种来源的Mock实际请求验证接线，不发真实评论。
+
+## 2026-10-08 原生网络失败统计与剩余边界核查
+
+同SHA22.11.1：IDPServerAPI.bba_handleRequest的failure block 0x102665170检查isCancelled：取消置state5，否则state4；默认retryHandleRequestWithFailed(0x1026649bc)返回0。普通IDP处理0x1026647b8同样传递3/4/5状态。commonHandleRequest 0x102664a9c在解析前记录实际netCost。TBCServerAPI.parseBodyIsProtobuf 0x1024b62d4读取request.error.code，-1001→m_result=-2，其余失败→-1；state5→-4。失败分支没有更新传输字节，不能把部分传输当完整字节。
+
+generate_network_failure_metrics.py用明确的transport state输入封闭回放14例；包括5个网络失败、1个取消和8个已完成HTTP响应解析边界。文件native-ios-network-failure-metrics.json保留SHA及替身范围：未执行BBA传输库、真实网络或SDK。已完成HTTP有效包状态非200覆盖统计为HTTP码；空body仍-3。BBA底层HTTP可接受状态分派尚未执行验证，此部分暂不扩展生产成功判断。网络失败接线仅观察原一次请求耗时，在既有取消/账号检查后交给下一次显式请求消费；保留取消不发布、无自动重试的本App约束。实现/测试结果以TASK_STATE本轮记录为准。
+
+公开SDK核查：[百度iOS安全SDK文档](https://cloud.baidu.com/doc/AFD/s/xjwvy4rv4)当前提供HTSSDKLib静态库并要求上传应用申请AppKey/SecretKey。包内22.11.1使用SSDKLib与CUID/账号事件输入；不能证明公共最新版与包内同版本，更不能用伪造标识或其他App身份补齐。已通过隔离Chrome读取公开文档，不读取个人登录或发帖。完整SDK/Passport、运行配置、页面入口、挑战完成及定向读取生产接线继续逐项核查，不将其判为已完成。
+
+用户本轮明确答复：没有TiebaLite对应SDK接入包或应用注册资料。这里缺少的是本App可用接入条件，不是把官方IPA误称为SDK，也不是说公开SDK不存在。没有复制官方App的AppKey/SecretKey/设备身份或加入伪造provider。
+
+其余边界的直接核查：TBCUEGManager.showSmsVerifyH5(0x101c8cc0c)先注册TBCSmsVerify JS handler再经TBCRedirector展示URL；UEGPassManager.verifyID(0x1021fd714)调用PASSControllerFactory并设置scene=tieba_ueg，reSendRequest(0x1021fe428)把完成返回的authsid合入原reqParams再提交。没有可核验的实际挑战完成数据/SDK回调时不自动续发。PB provider仍读取schema、TBCDeviceService、TBCAdCommomParamService、TBCAppContext和push统计，pbMyReplySwitch的当次值未知；不能把已有普通刷新或仅PbList组件标成完整getmypost生产链。
+
+HTTP补充：BBAAFNetworkingRequestManager.createDataSession(0x104629ef4)/createUploadSession(0x10462a1a4)安装AFHTTPResponseSerializer，另一BBANSURLSessionRequestManager.handleTaskCompletion(0x104631330)自行设置statusCode并交parseResponseData后分派成功/失败。实际选路/完整异常分派没有封闭回放，不能从已完成HTTP的parser样本推导全部HTTP失败均用同一result。生产HTTP接受/拒绝条件保持，本轮只接已证URL加载失败统计；原生取消统计-4仅为参考，本App取消和失效账号继续不发布统计。
+
+
+## 2026-10-08 原生响应解析失败统计（Build7用户确认回复成功后续接）
+
+参考仍为22.11.1同SHA。TBCServerAPI.parseBodyIsProtobuf: 0x1024b5db0进入时先记录api/netCost及传输字节；空body在0x1024b62c8记录result=-3，IDL返回nil在0x1024b6ad4记录-3，JSON非字典及缺error_code/error.errno分别在0x1024b6e34/0x1024b6d0c记录-3。有效IDL字典但没有data时不会因此设置解析失败：0x1024b6748检查的是IDL返回字典，非payload。正errorNum仍记录原码，非正归零；这不代表业务已发送成功。
+
+generate_parse_failure_metrics.py实际执行上述原生parser，10个合成边界固定为native-ios-parse-failure-metrics.json；Foundation/IDL输出显式替代，断言/告警/日志出口仅记录，不执行网络或SDK。两轮未声明的原生日志调用使回放失败，明确补日志替身后10例完成；不把替身IDL称为任意wire的原生解码验证。Swift以相应合成wire交叉验证解析统计，业务回执/草稿/成功关闭保持原判断。无有效测量不估算；取消/旧账号不得发布统计；HTTP拒绝、实际网络失败及全局遥测仍未对齐。
+
+
+## U08 原生回复续接状态的落盘范围（2026-10-08）
+
+同一 iOS22.11.1 SHA 的 `IDPCache.sharedCache`(0x10025f1cc)明确使用 default_cache、storagePolicy=2；`setObj:forKey:`(0x102babd68)先写内存再写磁盘，`saveInner:forKey:`(0x102bac0ac)对字符串调用 saveString。`objectForKey:`(0x102bac2c0)先读内存，未命中读磁盘并回填内存。`generate_state_cache.py`封闭执行这些真实分支和 memoryKey 的 MD5 变换，底层内存/文件、时钟及性能日志为明确合成替身，三个策略的差异及清空内存后读回均可重放；没有读取官方缓存。
+
+此前已证回复/主题 handleVerify 把单个解析值以 svcp_stk 键交给该共享缓存，因此仅 NativeWriteSession 内存不等同原版生命周期。initWithNameSpace:storagePolicy:(0x102bab6e0)在没有配置时写入3600秒，配置已有但缺失该键的默认值为10800秒；不能混为一个固定全局TTL。原版后台 cleanBackground(0x102baaebc)先清内存，首次或距上次清理超过600秒再清磁盘；查找本身不判过期。下游 syncCleanExpiredFiles 是独立清理边界。文件分支 cleanExpiredFiles:fileName:expire:expiredKeys:currentDate:(0x102bb1dd8)使用NSFileModificationDate，仅 modification+expire < now 才删除；封闭回放5例涵盖负年龄/零/过期前/精确边界/边界后。
+
+本App使用自身受保护账号伴随记录保存该单值及更新时间，不保存完整Set-Cookie，不复制官方全局缓存、不读取官方账号标识。兼容旧version1账号记录。后台采用本App新建缓存的3600秒默认策略；不把SDK运行时配置/跨账号全局共享/全部缓存管理器迁移称作已完成。账号切换/登出仍必须隔离，写后持久化失败不能改变已确定的发送结果或自动重发。
+
+另外本轮只读确认 PB 基础provider(0x102ca65b4)合并 schema→页面→统计→翻页四组参数，并包含广告/设备/同步配置服务；不能用空字典冒充完全提供。pbMyReplySwitch→findType(0x101ccbf2c)缺少配置对象时返回0，普通主题 handler 在该分支不派发 getmypost。现阶段未擅自启用生产定向读取，NativeReplyReadClient 仍未Live接线；此为明确剩余差异。
+
+## 2026-10-08 U08 续接：账号/TBS 普通表单的回包统计与请求编号
+
+用户确认Build5回复正常后授权继续对齐并生成新版IPA。仍使用同SHA的22.11.1。TBCServerAPI.parseBodyIsProtobuf:的JSON分支0x1024b6498–6558、0x1024b6e68–71c8：error_code非零优先，否则取error/errno；JSON非零负码也写入result，不沿用Proto的非正归零规则。JSON logid经numberAtPath:（0x10265afdc）取得：NSNumber直接使用，NSString先doubleValue再装箱，其他类型缺失；最后unsignedLongLongValue。不能用出站编号替代服务端logid，数字JSON与大整数字符串也不能强行统一精度。
+
+IDPServerAPI.accessAPI:WithParams:files:requestMethod:completionBlock:（0x1026641b4，调用点0x1026643e4）在普通表单选路前调用addExtraHttpHeaders。TBCServerAPI实现0x10025d3ec在requestCMD=0时不加Proto标志，clientLogID非0/非-1时加client_logid。当前NativeAccountPreparation漏接已有runtime编号；TBS原实现已有该头。本次只补账号表单漏项，不变UA、body编码、普通签名或端点。
+
+generate_form_metrics.py封闭执行原生JSON parser、numberAtPath和普通头分支，12个统计样本、4个头样本固定于native-ios-form-metrics.json，重生成逐字节一致；既有4个Proto度量样本未变。Foundation标量操作是明确合成替身，网络/日志均拦截；不是实网发送。NativePreparationHTTPClient接入现有账号→可选TBS→一次写入顺序；度量仅在当前账号且未取消、HTTP成功且有效JSON错误码包中接受，既有业务decoder的成败规则不变。统计所有权从首次准备开始绑定，覆盖准备失败、尚无client时切换账号的清理。新增7项Unit及已有4套直接回归共40项通过，Mock观察首轮有TBS时2次请求，缺TBS时3次请求，没有自动重试。没有真实请求，SDK/验证/回执定向读取等其余缺口不据此标通过。
+
+## 2026-10-08 U08 续接：实际写请求传输统计
+
+同 SHA iOS 22.11.1：IDPRequest.dispatchRequestDidFinishCollectingMetrics:（0x102656ef4）的块0x102656f68只采用resourceFetchType=1（networkLoad）的事务；顺序覆盖，取最后一次，不累加。IDPRequestMetric.requestMetricWithTransactionMetrics:（0x102657988，关键0x102657a58–a94）分别将URLSession的headerBytes与bodyBytes相加。普通stream读取保持原字节/超时/重定向拒绝/容量限制，仅原生写入可选择按请求独立的delegate收集；没有共享可串号的全局最近记录。
+
+IDPServerAPI.commonHandleRequestWithResponseData:requestHeaders:（0x102664a9c）在解析前以当前绝对时钟减startTime记录netCost。TBCServerAPI.parseBodyIsProtobuf:（0x1024b5db0）去掉API第一个前导斜杠、乘1000换成毫秒、成功传输取上述字节数，解析正errorno写result，非正值保持0。generate_transfer_metrics.py封闭执行该原生parser的4组合成样本，Foundation标量/字典访问显式替换；不执行网络或SDK。Error描述符只有errorno/errmsg/usermsg，不能用出站client_logid填充回包logid。
+
+本批接线仅限同账号、未取消、HTTP成功且已完成Proto解析并有payload的新帖/回复结果进入下一次Common消费。账号/TBS JSON、传输或畸形响应失败时的原生全局统计覆盖尚未迁移，不宣称全部统计生命周期一致。缺少系统transactionMetrics时保留缺失，不按payload大小估算；迟到度量不追改已完成请求。数据不落盘、不记录正文/头部值或设备地址。修改共享loader仅增加显式delegate重载，旧入口仍用自身delegate；WRITE_BASELINE保留原摘要，以精确逆向差异记录用户当前授权。
+
+最终统计组件6项Unit通过，相关发送/传输/Live adapter/诊断共5套件40个不同用例通过；短UI只验证Mock成功关闭和草稿清除。按用户请求产出0.2.0(5)未签名设备试用IPA，候选源码/包内字节/Release隔离通过；包证据在ignored Artifacts/Releases/U08-native-alignment-20261008/package-verification.json。仍有下述SDK/验证/定向读取接线缺口，不是完整原生对齐或真实发送验证。
+
+## 2026-10-08 U08 续接：原生回执定向读取组件
+
+继续使用下节同一 iOS 22.11.1 可执行文件/SHA，不改变 Live 发送次数、参数或完成回调。NativeReplyReadProtocol / NativeReplyReadClient 新增 CMD309751 的独立读取边界：`/c/f/pb/getmypost?cmd=309751&format=protobuf`，由原生 PbList 描述符生成请求/响应，单次请求、无重试；拒绝错误账号、错误主题、缺失目标和过期/取消结果。参数仍必须由调用方提供，组件没有生产调用者。
+
+- `scripts/fixtures/native_write/generate_reply_read.py` 从原生描述符独立生成 3 个请求和 8 个响应合成样本。`native-ios-reply-read.json` 覆盖大于 Double 精确范围的 ID、first_floor 标签6、post_list标签7、page标签8，以及错误/空/错主题/缺目标/缺分页/不支持的内容类型。重新生成逐字节相同；不是抓取真实内容或网络验收。
+- 原生响应外壳使用专用 ReplyReadResponse；thread/forum/user/post/page 的内部 payload 复用已有只读 DTO 前，`verify_reply_read_dtos.py` 按原生 client.proto 核对递归闭包：70 个消息、698 个已用字段的 tag/cardinality/type/message 类型。唯一例外 PbContent.type 原生 uint32、既有 int32，适配器拒绝超出 Int32 正值范围的内容类型。既有 PBPageDomainMapper 仅作为内存中的领域映射器使用，没有调用 Android 端点、请求构造器或响应外壳解析。
+- 原生复杂字段 ad_param/app_transmit_data/push_info 未取得完整 provider，显式拒绝，不能静默忽略后声称完整页面对齐。基础 PB provider、pbMyReplySwitch/入口选路、完整 Common/签名输入、返回数据与阅读缓存的合并仍未闭合。新客户端不写缓存、不改变锚点、不自行准备账号或重发回复。共享 HTTP 封装仅抽取函数，原写入字节回归保持。
+- 直接验证：最终读取套件 6 项、HTTP 套件 6 项通过；先前组合的读取/HTTP/发送客户端 20 项通过。每次测试均为 Mock。当前正常 Live 仍是已验收候选，没有据组件结果安装半成品或声明发送后刷新已修复。
+
+### GitHub 补充检索（2026-10-08）
+
+已检索原生 iOS 发帖/回复、PbListReqIdl、TBCUEG 及 Passport 等对应实现，未找到可核验且能填补上述 provider/验证恢复缺口的开源实现。范围是本轮检索，不能解释为所有实现均不存在。
+
+- [TiebaPure-iOS，固定提交 6bf728b](https://github.com/infinityf4p/TiebaPure-iOS/tree/6bf728bcdc231137b728ccb9ca99b3b192ddd03d)：SwiftUI 前端，但 `TiebaRequestBuilder.swift` 的 `_client_type=2` / `bdtb for Android`，`TiebaContentSubmissionAPI.swift` 的 client_type=2 及 upload_client_type=2 表明发送采用 Android 参数；不作为本次 iOS 行为来源、不导入代码。
+- [toamdou/TiebaLite-IOS](https://github.com/toamdou/TiebaLite-IOS)：README 明确发帖/回复/楼中楼尚未实现，不能补本次发送链路。
+
+## 2026-10-08 U08 前六项续接：账号、页面数量与实际网络上下文
+
+授权为用户“先把前6项与原版不一致的做一下对齐，图片先等前面的做好了再做”。基线 b5266dd；参考仍为用户指定 iOS 22.11.1 / SHA256 4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb。没有更换到 Android 写入协议，也没有真实发布/上传。
+
+### 已接入的有据差异
+
+- **账号/TBS**：沿用此前已证实的账号优先、缺 TBS 才补取、profile 完成按 UID 更新昵称规则。NativeWriteAccountVault 将本 App 已成功准备的 UID/TBS/原始昵称放入独立 WhenUnlockedThisDeviceOnly Keychain 条目；使用现有稳定账号 namespace 隔离。同 namespace 重启复用，显式登录/登出清理此伴随条目；旧 AuthContext 的迟到保存不能进入写请求或清除新账号条目。串行化存储事务防止 actor 在 read/delete 间重入。不是 Passport 数据库复刻，不读取官方 App 容器/身份，不改登录凭证格式、access group 或签名配置。
+- **昵称来源**：原生 account-name 回放中 uNameShow/uName 的 UTF-16 选择和 UID 保护保持。ProfileProtocol 只额外保留已有读取结果的原始 name_show/name，视图 displayName 的归一化和兜底不变；writer 不使用 UI fallback 更新账号、不追加 profile 请求。原有只读资料协议未在本轮迁移，不能把该域数据复用称为完整原生账号链路。
+- **页面数量**：线程回复模型 0x102d6c5c8 / 0x102d6c740 取 pbListItem.iReplayNum；TBCPBListItem.init 0x101ba11dc / 0x101ba1390 将其映射为 thread/reply_num。楼中楼模型 0x102f5b270 / 0x102f5b388 取 pbItem.iReplayNum；TBCPBCellItem.init 0x101b954a4 / 0x101b95534 映射 sub_post_number。编辑器打开时冻结 snapshot.replyCount / subposts.totalCount，发送时进入已有 business.floor（只参与字典/签名，不是 Proto 楼层字段），不减一、不改变目标/草稿 ID。0x102f5b3fc 明确给 floorNum 字符串 "0"；不得用界面楼层数字替换。pageEntryType 各真实入口语义仍未验证，继续原默认 0，不标为全入口已齐。
+- **网络环境**：NSStringUtils.netTypeForReport 0x10024aa80、字符串表 0x10c109920，以及 detailNetTypeNameByType 0x10219eb28 / 表 0x10c107678：无网络空串，Wi-Fi=1，OTHER=0，2G/3G/4G/5G=2/3/4/5。用本 App NWPathMonitor 的首次状态和当前数据 SIM 的 radio access technology 得到该值，不取运营商/订户 ID。复用原先证明的 Wi-Fi 10 秒、其余 25 秒超时。Common int32 的空 net_type 与已有 personalized_rec_switch 一样，仅签名后在线格式转为显式 0；其余非法数字仍拒绝。
+- **语言头**：AFHTTPRequestSerializer block 0x10430e6b0，以 Float 的 1 + index * -0.1、格式 `%@;q=%0.1g` 输出，包含 q=0.5 项后结束，逗号空格连接。保留本 App 实际 Locale.preferredLanguages。
+- **请求编号**：IDPClientLogIDProduter.getClientLogID 0x100268b8c / 初始化 0x10005a380：首个本地时间截断为秒乘1000，再逐次加1。封闭 ARM64 执行合成时间1000.999实际返回1000001/1000002/1000003（ignored six-client-log-proof.json）。使用本进程序列，不复制官方 App 的编号，不以该编号冒充响应 m_logid。
+
+### 定向读取的新证据与未接入边界
+
+命令309751通过原版 IDL factory 0x1024df4f0 的实际分支到 0x1024e1b34，构造函数0x103b38cac/0x103b3a548；vtable0x10c1a1690/0x10c1a18e8的 RTTI 分别为 tbclient::PbList::PbListReqIdl / PbListResIdl，解析目标 TBCPBListItem。请求描述符 pbList/pbListReq.proto offset0xa7381ec，1196bytes；响应 offset0xa738725，4844bytes。关键字段 kz2/int64、last_pid4/int64、mark_type8/int32、request_times36/int32；响应 first_floor6/Post、post_list7/Post、page8/Page。
+
+不能因为接口名 getmypost 而使用 getMyPost/getMyPostReq.proto：后者 thread_id/post_id 等字段不同。普通主题分支还调用 TBCPBRequestParamsUtils.requestParamsToDictionary...（0x102ca65b4），读取页面来源、会话请求计数、广告/实验等实际 provider；现有跟随参数回放将这一步作为显式输入，未验证其完整生产输入。当前没有把不完整字典或 Android PBPage 构造器拼进原生后续读取。原 getmypost 组件仍未生产接入，既有成功关闭/当前页 reload/refresh 不变，不能标记第6项完成。
+
+### 仍未完成的前六项范围
+
+完整 Passport/安全 SDK 的提供者及初始化、CUID/z_id/UA配置/实验选路、实际传输统计和响应状态完整作用域，以及验证码/短信等完成后的恢复仍缺可用移植契约。参考 IPA 为 iPhoneOS 程序，不是可供 Simulator 链接的 SDK；既有封闭回放只拦截 provider/发送出口，不构成真实 SDK 执行证据。继续保留 UNKNOWN，不以空值、伪造身份、估算包大小或自动重发填补。图片完全留后续；本批代码是部分对齐，不是前六项全部完成。
+
+
 ## 2026-10-08 U08 — 试用版发送前整数编码失败
 
 用户截图中的账号资料失败提示过于宽泛。一次显式、仅账号准备的本机检查观察到 `/c/s/login` HTTP 200、error_code=0，user.id/anti.tbs 为字符串且现有解码成功；不保存响应正文或凭据，没有执行写请求。临时检查入口已经移除。

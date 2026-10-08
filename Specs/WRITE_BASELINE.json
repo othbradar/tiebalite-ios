@@ -80,7 +80,25 @@
       "path": "Sources/Core/Models/TextComposeTargets.swift",
       "start": null,
       "end": null,
-      "sha256": "43fadbbedc329d5aa3b4b4255046981a51752c65e8a2d1e20a374ebc7bc32636"
+      "sha256": "43fadbbedc329d5aa3b4b4255046981a51752c65e8a2d1e20a374ebc7bc32636",
+      "authorizedNativeMigration": {
+        "authorization": "2026-10-08 用户要求先对齐前六项；仅向编辑器快照传入原生回复数量上下文，不改目标ID、视觉、缓存或读取行为。 本轮用户要求逐项继续对齐，增加已查证iOS页面来源的编辑器快照传递；原摘要不变。",
+        "evidence": "Specs/API_EVIDENCE.md — U08 前六项续接：原生 PB thread/reply_num 和楼中楼 sub_post_number 来源。 Specs/API_EVIDENCE.md — 2026-10-08 页面来源传到回复模型。",
+        "inverseEdits": [
+          {
+            "from": "    static func reply(_ intent: SubpostReplyIntent, document: ThreadContentDocument,\n                      readingEntry: ThreadReadingEntry = .unspecified) -> Self {",
+            "to": "    static func reply(_ intent: SubpostReplyIntent, document: ThreadContentDocument) -> Self {"
+          },
+          {
+            "from": "                          recipient: intent.author, quote: quote(document), replyCount: intent.replyCount, readingEntry: readingEntry)",
+            "to": "                          recipient: intent.author, quote: quote(document), replyCount: intent.replyCount)"
+          },
+          {
+            "from": "                          recipient: intent.author, quote: quote(document), replyCount: intent.replyCount)",
+            "to": "                          recipient: intent.author, quote: quote(document))"
+          }
+        ]
+      }
     },
     {
       "path": "Sources/Core/Models/ReadingContentCache.swift",
@@ -92,7 +110,25 @@
       "path": "Sources/Features/Composer/Presentation/ThreadComposeTarget.swift",
       "start": null,
       "end": null,
-      "sha256": "0c65228f76ec1d434c9a8bcf500f2267d8e0404f5e8c6ee45e03b5f592d44925"
+      "sha256": "0c65228f76ec1d434c9a8bcf500f2267d8e0404f5e8c6ee45e03b5f592d44925",
+      "authorizedNativeMigration": {
+        "authorization": "2026-10-08 用户要求先对齐前六项；仅向编辑器快照传入原生回复数量上下文，不改目标ID、视觉、缓存或读取行为。 本轮用户要求逐项继续对齐，增加已查证iOS页面来源的编辑器快照传递；原摘要不变。",
+        "evidence": "Specs/API_EVIDENCE.md — U08 前六项续接：原生 PB thread/reply_num 和楼中楼 sub_post_number 来源。 Specs/API_EVIDENCE.md — 2026-10-08 页面来源传到回复模型。",
+        "inverseEdits": [
+          {
+            "from": "    static func reply(snapshot: ThreadReaderSnapshot, post: ThreadReaderPostRowModel? = nil,\n                      readingEntry: ThreadReadingEntry = .unspecified) -> Self {",
+            "to": "    static func reply(snapshot: ThreadReaderSnapshot, post: ThreadReaderPostRowModel? = nil) -> Self {"
+          },
+          {
+            "from": "                          quote: post.map { quote($0.document) } ?? snapshot.title, replyCount: Int(snapshot.replyCount),\n                          readingEntry: readingEntry)",
+            "to": "                          quote: post.map { quote($0.document) } ?? snapshot.title, replyCount: Int(snapshot.replyCount))"
+          },
+          {
+            "from": "                          quote: post.map { quote($0.document) } ?? snapshot.title, replyCount: Int(snapshot.replyCount))",
+            "to": "                          quote: post.map { quote($0.document) } ?? snapshot.title)"
+          }
+        ]
+      }
     },
     {
       "path": "Sources/Features/ThreadReader/Presentation/ThreadReaderStore.swift",
@@ -104,13 +140,37 @@
       "path": "Sources/Features/Subposts/Presentation/SubpostsStore.swift",
       "start": null,
       "end": null,
-      "sha256": "a869699f922690f128df84b786ea8b99ad28529c20279bd16beb95b723fd81b3"
+      "sha256": "a869699f922690f128df84b786ea8b99ad28529c20279bd16beb95b723fd81b3",
+      "authorizedNativeMigration": {
+        "authorization": "2026-10-08 用户要求先对齐前六项；仅向编辑器快照传入原生回复数量上下文，不改目标ID、视觉、缓存或读取行为。",
+        "evidence": "Specs/API_EVIDENCE.md — U08 前六项续接：原生 PB thread/reply_num 和楼中楼 sub_post_number 来源。",
+        "inverseEdits": [
+          {
+            "from": "        return .init(route: route, forumID: snapshot.forumID, forumName: snapshot.forumName, subPostID: item.id,\n                     author: item.author, replyCount: snapshot.totalCount)",
+            "to": "        return .init(route: route, forumID: snapshot.forumID, forumName: snapshot.forumName, subPostID: item.id, author: item.author)"
+          }
+        ]
+      }
     },
     {
       "path": "Sources/Core/Networking/URLSessionHTTPClient.swift",
       "start": null,
       "end": null,
-      "sha256": "2ac3392dc6529280e5f4d4eedb87aa6bb8a5305f57daebf1b4a807c6ad89155e"
+      "sha256": "2ac3392dc6529280e5f4d4eedb87aa6bb8a5305f57daebf1b4a807c6ad89155e",
+      "authorizedNativeMigration": {
+        "authorization": "2026-10-08 用户要求继续原生iOS请求对齐；仅增加显式任务delegate重载以收集原版传输统计，原入口行为不变。",
+        "evidence": "Specs/API_EVIDENCE.md — 实际写请求传输统计；IDPRequest 0x102656ef4、IDPRequestMetric 0x102657988。",
+        "inverseEdits": [
+          {
+            "from": "        try await data(for: request, maximumByteCount: maximumByteCount, delegate: self)\n    }\n\n    func data(for request: URLRequest, maximumByteCount: Int,\n              delegate: any URLSessionTaskDelegate) async throws -> (Data, URLResponse) {\n",
+            "to": ""
+          },
+          {
+            "from": "            delegate: delegate\n",
+            "to": "            delegate: self\n"
+          }
+        ]
+      }
     },
     {
       "path": "Sources/Core/Session/SessionAuthContextProvider.swift",

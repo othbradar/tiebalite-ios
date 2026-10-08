@@ -5,6 +5,12 @@ import Testing
 @testable import TiebaLite
 
 struct U08NativeWriteEncodingTests {
+    @Test func emptyOfflineNetworkTypeKeepsNativeExplicitZero() throws {
+        let bytes = try NativeWriteRequestEncoder.encode(kind: .threadReply, business: [:], common: ["net_type": ""])
+        let common = try TiebaNativeWrite_PostRequest(serializedBytes: bytes).data.common
+        #expect(common.hasNetType && common.netType == 0)
+    }
+
     @Test func emptyPersonalizedSwitchKeepsNativeExplicitZeroPresence() throws {
         #expect(("" as NSString).intValue == 0)
         for kind in [TextComposeTarget.Kind.threadReply, .thread] {

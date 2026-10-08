@@ -4,6 +4,30 @@ import Testing
 @testable import TiebaLite
 
 struct URLSessionHTTPClientTests {
+    @Test func measuredLoaderRetainsBoundedTransportAndRejectsRedirects() async throws {
+        let url = try #require(URL(string: "https://native-transfer-fixture.invalid/reply"))
+        HarnessURLProtocol.register(.response(statusCode: 200, headers: [:], body: Data([1, 2, 3])), for: url)
+        let configuration = URLSessionHTTPClient.makeEphemeralConfiguration()
+        configuration.protocolClasses = [HarnessURLProtocol.self]
+        let loader = NativeWriteMeasuredLoader(base: URLSessionDataLoader(configuration: configuration))
+        let result = try await loader.measuredData(for: URLRequest(url: url), maximumByteCount: 3)
+        #expect(result.data == Data([1, 2, 3]))
+        // URLProtocol is not a networkLoad. Missing real metrics remain absent.
+        #expect(result.measurement == nil)
+        await #expect(throws: HTTPClientError.responseTooLarge(limit: 2)) {
+            try await loader.measuredData(for: URLRequest(url: url), maximumByteCount: 2)
+        }
+        let delegate = NativeWriteTransferDelegate()
+        let session = URLSession(configuration: configuration)
+        let task = session.dataTask(with: url)
+        defer { task.cancel(); session.invalidateAndCancel() }
+        let response = try #require(HTTPURLResponse(url: url, statusCode: 302, httpVersion: nil, headerFields: nil))
+        delegate.urlSession(session, task: task, willPerformHTTPRedirection: response,
+                            newRequest: URLRequest(url: url)) { redirected in
+            #expect(redirected == nil)
+        }
+    }
+
     @Test
     func ephemeralConfigurationDisablesSharedCookiesAndCache() {
         let configuration = URLSessionHTTPClient.makeEphemeralConfiguration()

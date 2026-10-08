@@ -1,0 +1,236 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native parser with successful transport; IDL output and Foundation are explicit synthetic inputs.",
+  "cases": [
+    {
+      "name": "protobuf-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "rawHex": ""
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "protobuf-decode-nil",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "rawHex": "ff"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "protobuf-missing-data",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "rawHex": "0a00"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 0,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "protobuf-rejected-missing-data",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "rawHex": "0a020805"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "json-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "rawHex": ""
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "json-invalid-utf8",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "rawHex": "ff"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "json-invalid",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "rawHex": "7b"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "json-array",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "rawHex": "5b5d"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "json-missing-code",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "rawHex": "7b226c6f676964223a3939397d"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "json-null-code",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "rawHex": "7b226572726f725f636f6465223a6e756c6c2c226572726f72223a7b226572726e6f223a5b5d7d2c226c6f676964223a3939397d"
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    }
+  ]
+}

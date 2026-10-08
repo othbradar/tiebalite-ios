@@ -1,5 +1,57 @@
 # ADR-0027：文字发帖与回复
 
+### 2026-10-08 Build12 普通静态图片发送试用
+
+用户明确允许开始图片并跳过SDK/Passport。本次复用现有编辑器、文件准备、草稿与iOS账号/运行时/传输边界，增加原生普通JPEG上传适配，删除Live对所有图片的一概阻止。按点击发送逐图、逐块上传；只在有效服务器picId/尺寸到达后生成图片token，全部上传成功后仍使用原文字发送业务链一次提交。没有Android上传回退。旧上传回执没有iOS来源标记时不能绕过预检。
+
+普通图片字段和Common签名由同SHA原生指令回放核对，MD5字段大写，默认分块501760、chunk文件名及MIME/超时依据独立iOS证据。取消、账号变化和进度回调返回后复核；文件在后台读取，校验大小和内容摘要后冻结数据。不重复读取照片库、不改变已有压缩/外观/发送后的刷新/缓存，也没有新动画、手势、overlay或依赖。失败保留草稿，用户主动重试可复用同次编辑器内已完成的iOS图片结果。
+
+本次为普通静态JPEG可测试子集；原版原图/GIF/元数据/混排、选图提前上传、主题并发、水印/运行配置尚未完全对齐。SDK/Passport遵照本轮要求跳过，不能把剩余独立缺口都归入该跳过项。相关验证和包信息见TASK_STATE。
+
+### 2026-10-08 Build11 系统日期 provider
+
+用户确认 Build10 评论成功，授权继续后，本轮补已证实但尚未接入 runtime 的 event_day。每次构造 recomputed Common 时使用当前日期及新建 Foundation DateFormatter，只设原生 YYYYMMdd；不固定时区/日历/locale，不把大写周历年份修正成另一种格式。日期 provider 可注入以作确定性测试，缺失 SDK 仍不伪造。发送 URL、次数、顺序、签名算法、成功关闭和刷新保持；没有 UI、手势、动画、overlay、依赖或图片变更。
+
+Scheme/搜索来源与 getmypost 本轮继续定向核查，但未取得足以接入生产的完整入口/配置契约；保留现有路径，不能据此声称完整对齐。详见 API_EVIDENCE 与 TASK_STATE。
+
+### 2026-10-08 默认 HTTP 分派和外部 HTTPS 来源
+
+沿用原有200..<300传输接受范围；本轮补默认AF原生链路的统计：非2xx带实测耗时的失败记录为-1且不计完整字节，已接受非200且业务成功记录HTTP状态，业务错误/解析失败仍优先。统计只供下一次显式请求消费，取消、账号变化和无measurement不补造值；回执成功判断、发送次数、签名算法和普通刷新不变。可配置替代引擎不在本轮验证范围。
+
+现有DeepLinkParser接受的外部HTTPS帖子链接增加独立来源32，映射post_from=5；不拓宽链接语法或改变导航容器/路由身份。关闭路由清理来源，编辑器冻结它。scheme、搜索、正文内部链接没有同等证据，保留原值，不能套用32。详细原生方法地址及证据在API_EVIDENCE。本轮没有视觉、动画、手势、overlay或依赖变化。
+
+
+### 2026-10-08 网络失败统计和页面来源续接
+
+用户授权逐项继续对齐。原一次URLSession加载失败按实测耗时记录native result（timeout=-2，其他网络失败=-1），传输层先解包原错误再执行既有HTTP错误映射；不改变回执、不重试，取消/旧账号不发布。Debug观察器保持原错误类别且不输出底层错误正文。没有实际测量时不估算。
+
+页面来源是独立、短期的导航元数据：推荐3、吧首页5、历史30、回复通知内容37/引用主题29、提及通知39；进入编辑器时冻结，后续按原生映射参与post_from。实际通知页面kind随点击传递，子楼页继承，不用全局当前Tab推断。已有RouteIdentity、导航容器/语法、缓存和草稿身份不变，退出路由清理来源。未知搜索/外链仍为既有0，未宣称已对齐。
+
+用户确认没有SDK/Passport接入包或注册资料，完整SDK/账号验证续发仍受外部接入条件限制。原生getmypost生产provider/选路和结果合并、HTTP引擎分派、未知入口仍未齐，图片按前序要求继续延期；不得为了“全部完成”制造配置、身份、验证成功或自动写请求。验证结果见TASK_STATE最新项。
+
+### 2026-10-08 解析统计与业务回执继续分离
+
+用户确认Build7回复成功后继续对齐。采用原生parser的解析失败统计：已成功传输的空/畸形回包记录-3及实际测量；有效IDL字典是否含payload不控制统计发布。统计存在不能改变发送成功判定、清草稿或诱发重试。取消/失效账号必须先拒绝，缺测量保持未知；HTTP拒绝/真实网络失败尚未接入，不能用解析失败的-3覆盖所有错误。仅三处Core接线，无UI或刷新策略变化。原生回放10例和37项相关Unit通过，详见TASK_STATE。
+
+### 2026-10-08 回复响应状态的持久化续接
+
+已证实原生自定义续接头背后的IDPCache为内存+磁盘，不能仅在NativeWriteSession存活。NativeWriteAccountVault以兼容version1的可选字段保存单个NativeWriteResponseState及更新时间，不留完整Cookie。账号元数据更新保留该值；每次实际发送在TBS准备与账号落盘之后读回，账号/取消复核后才进入头部。仅新解析的非空状态更新写入时间；无新头不刷新年龄。存储失败按原生先内存后磁盘语义保留本进程值，并以状态标记可观测，不让已成功发送变成“结果未知”。
+
+Live scene后台事件触发默认过期清理，不添加定时器/延迟/请求；不在读取时擅自过期。只删响应字段，保留账号/TBS/昵称；不碰内容缓存、草稿或阅读状态。与原生全局default_cache不同，本App保持按账号隔离和显式登出清理；后台清理采用原生新建缓存缺配置默认值3600秒/600秒事件节流，官方远程配置不伪造。正常登录Keychain格式/access group不改。全套SDK、验证码恢复及getmypost生产接线仍未齐。
+
+
+2026-10-08 用户授权的前六项局部续接：原生准备账号的本 App Keychain 伴随记录、原始昵称（不取 UI fallback）、页面回复总数、真实网络类型/超时/语言权重/本进程编号已接入；不新增网络资料请求、不改正文发送出口和视觉。完整 SDK/Passport、验证恢复及 getmypost 生产读取仍未完成；图片保持延期，本轮不作为“前六项全部对齐”交付，不覆盖已验收 Live。证据与验证见 TASK_STATE 最新项及 API_EVIDENCE。
+
+## 2026-10-08 当前接线与证据更正
+
+用户确认Build5回复正常并授权继续后，NativePreparationHTTPClient复用现有传输，接入账号/TBS的有效JSON回包统计；请求顺序和业务decoder保持。原生JSON错误码不套用Proto负码归零，logid按numberAtPath的NSNumber/字符串转换区分。统计所有权从准备开始绑定AuthContext，覆盖首次准备失败后切换账号的边界。账号普通表单补发已有runtime的非0/非-1 client_logid，TBS已有该头不重复改动。只接受实际measurement，没有时不估算。UI、草稿、回执和刷新不变；SDK/验证/定向读取仍未全部完成。
+
+本次继续授权下新增实际写请求度量：现有URLSessionDataLoader增加可选显式delegate重载，默认入口不变；NativeWriteMeasuredLoader按请求收集系统事务字节，NativeTextWriteClient只在同账号且有效Proto payload解析后将统计写入runtime，下一次Common按既有规则消费。Debug观察器透明转交度量；账号切换清除旧统计。原生错误码、成功回执、编辑器与页面刷新不改，没有新增请求或重试。账号/TBS/失败统计以及其余SDK/验证/定向读取缺口仍保留，不据本项实施声明全部对齐。
+
+用户已验收并提交文字试用候选 b5266dd；生产 Composer 已使用 NativeLiveTextWriteRepository，本次普通主题回复有用户实发及白名单成功回执证据。下方“尚未切换 Live”仅描述当时组件迁移状态，不能再作为当前接线结论。完整账号/SDK/验证/上传及原生回复后定向读取仍有缺口，见 WRITE_MODERATION_COMPARISON 的 2026-10-08 对照。
+
+短连接 Proto URL 必须包含 cmd 与 format=protobuf。原先“无 cmd/format 查询”的表述没有最终 URL 证据，已被 0x100249044–0x100249168 原生地址块回放及已验收修复取代；无外层普通表单字段这一结论保留。
+
 ## 2026-10-07 后续授权：迁移至用户指定的原生22.11.1行为
 
 用户已明确授权持续完成原生发送对齐，本节优先于下方beta3冻结决定。当前先落地有来源的文字业务构造和原生IDL编码及定向回归；生产Live发送仍保留旧路径，直到账号准备、Common/签名、响应状态和验证形成完整接线。不得仅重置旧摘要冒充对齐，不自动进行真实发帖、回复、上传或重试；不改变已验收外观、草稿和阅读行为。
@@ -14,6 +66,8 @@
 
 ### 原生回复后读取边界
 
+2026-10-08 续接：NativeReplyReadProtocol/NativeReplyReadClient 已覆盖已证实的 PbList IDL 子集、原生短连接 HTTP、目标返回校验与单次读取/取消/账号隔离。只读 payload DTO 经独立 iOS 描述符核对后复用，不复用 Android 请求或响应外壳。复杂页面 provider 未知时拒绝。该组件仍未生产调用；以下完整页面上下文、选路、返回结果与缓存合并条件仍适用，不据组件测试追加 Live 请求。
+
 原生新回复的页面handler可在pbMyReplySwitch开启时进入独立getmypost读取；它不等同普通下拉刷新或先前U08追加同页读取的推测方案。NativeReplyFollowupParameters只准备原生已证字段及初始server state门控后的计数，既不启动请求，也不复用Android PB字段来补齐iOS基础上下文。调用方必须提供有效回执、实际原生分支和账号内请求所有权，才能提交返回的计数/派发计划。未完成完整IDL/HTTP、结果合并及SDK/账号准备前，不接现有Live，不清阅读缓存/草稿，不改变阅读锚点。
 
 ### 原生回执边界
@@ -26,7 +80,7 @@ NativeWriteResponseRules采用原生错误码谓词和账号动作分支；Nativ
 
 ### 原生 HTTP 封装边界
 
-NativeWriteHTTPRequest只接收已准备的业务、Common及HTTP上下文，不产生账号或设备身份、不计算未知签名，不自行发送。复用现有body编码；原生Proto路径使用单个data/data/image/jpeg文件段、无额外表单和cmd/format查询，UA/语言/logID/timeout必须显式传入，实际Content-Length由编码字节计算。允许的响应MIME不能隐式改变出站Accept。响应大小上限沿用写端点1MiB；一次提交，无应用层重试。
+NativeWriteHTTPRequest只接收已准备的业务、Common及HTTP上下文，不产生账号或设备身份、不计算未知签名，不自行发送。复用现有body编码；原生Proto路径使用单个data/data/image/jpeg文件段，无额外普通表单，URL 包含相应 cmd 和 format=protobuf 查询；UA/语言/logID/timeout必须显式传入，实际Content-Length由编码字节计算。允许的响应MIME不能隐式改变出站Accept。响应大小上限沿用写端点1MiB；一次提交，无应用层重试。
 
 共享EndpointRequestBuilder仅两处差异：encode从private变为模块内可用，boundary允许合法的+。WRITE_BASELINE保留beta3原摘要，通过声明的两处精确逆向编辑验证，其他改动仍失败；不是重置摘要或关闭基线保护。当前仅组件迁移，不切换Live，未闭合的Common/SDK/账号/回执不能由这些组件测试代替。
 

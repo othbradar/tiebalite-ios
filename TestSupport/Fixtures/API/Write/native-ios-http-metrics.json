@@ -1,0 +1,1403 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Replay default AF status validation and native parser metrics offline.\n\nThe accepted 22.11.1 singleton constructs BBAAFNetworkingRequestManager.\nIts AFHTTPResponseSerializer default range is 200..<300, content types nil.\nOnly Foundation objects and diagnostics are substituted; native validation,\nerror construction, parser control flow execute. No network or SDK executes.\nAlternate configured engines are outside this default-path fixture.\n",
+  "statusValidation": [
+    {
+      "statusCode": 199,
+      "accepted": false,
+      "errorCode": -1011
+    },
+    {
+      "statusCode": 200,
+      "accepted": true,
+      "errorCode": null
+    },
+    {
+      "statusCode": 201,
+      "accepted": true,
+      "errorCode": null
+    },
+    {
+      "statusCode": 204,
+      "accepted": true,
+      "errorCode": null
+    },
+    {
+      "statusCode": 299,
+      "accepted": true,
+      "errorCode": null
+    },
+    {
+      "statusCode": 300,
+      "accepted": false,
+      "errorCode": -1011
+    },
+    {
+      "statusCode": 401,
+      "accepted": false,
+      "errorCode": -1011
+    },
+    {
+      "statusCode": 429,
+      "accepted": false,
+      "errorCode": -1011
+    },
+    {
+      "statusCode": 503,
+      "accepted": false,
+      "errorCode": -1011
+    }
+  ],
+  "cases": [
+    {
+      "name": "http-199-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 199,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-199-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 199,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-199-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 199,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-199-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 199,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-199-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 199,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-199-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 199,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-200-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 200,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 0,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-200-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 200,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-200-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 200,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-200-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 200,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 0,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-200-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 200,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-200-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 200,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 201,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 201,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 201,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 201,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 201,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 201,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-201-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 201,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-201-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 201,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-204-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 204,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 204,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-204-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 204,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-204-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 204,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-204-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 204,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 204,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-204-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 204,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-204-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 204,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-299-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 299,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 299,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-299-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 299,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 123,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-299-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 299,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-299-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 299,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 299,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-299-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 299,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 5,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-299-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 299,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-300-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 300,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-300-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 300,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-300-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 300,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-300-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 300,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-300-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 300,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-300-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 300,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-401-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 401,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-401-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 401,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-401-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 401,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-401-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 401,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-401-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 401,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-401-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 401,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-429-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 429,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-429-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 429,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-429-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 429,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-429-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 429,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-429-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 429,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-429-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 429,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-False-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 503,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-False-rejected",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 503,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-False-empty",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": false,
+        "statusCode": 503,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-True-success",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 503,
+        "bodyKind": "success",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-True-rejected",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 503,
+        "bodyKind": "rejected",
+        "errorCode": 5
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-True-empty",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "protobuf": true,
+        "statusCode": 503,
+        "bodyKind": "empty",
+        "errorCode": 0
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    }
+  ]
+}

@@ -1,8 +1,86 @@
+import Foundation
 import Testing
 @testable import TiebaLite
 
 @MainActor
 struct AppNavigationStoreTests {
+    @Test func incomingWebThreadKeepsNativeUniversalLinkOriginUntilItsRouteIsRemoved() throws {
+        let thread = RouteIdentity.thread(try #require(ThreadID(101)))
+        let store = AppNavigationStore()
+        store.openSettingsRoute(.history)
+        store.pushSettingsContent(thread, readingEntry: .history)
+        #expect(store.replaceRootDetail(thread, in: .recommendations, readingEntry: .recommendations))
+        #expect(store.handleExternalURL(try #require(URL(string: "https://tieba.baidu.com/p/101"))))
+        #expect(store.state.routes(for: .recommendations) == [thread])
+        #expect(store.readingEntry(for: thread, scope: .root(.recommendations)).rawValue == 32)
+        #expect(store.readingEntry(for: thread, scope: .settings) == .history)
+        #expect(store.replacePathFromSystem([], in: .recommendations))
+        #expect(store.readingEntry(for: thread, scope: .root(.recommendations)) == .unspecified)
+    }
+
+    @Test func rejectedWebLinksAndUnprovenSchemeDoNotReuseUniversalLinkOrigin() throws {
+        let thread = RouteIdentity.thread(try #require(ThreadID(101)))
+        let store = AppNavigationStore()
+        #expect(store.handleExternalURL(try #require(URL(string: "https://tieba.baidu.com/p/101"))))
+        let state = store.state
+        #expect(!store.handleExternalURL(try #require(URL(string: "https://example.invalid/p/101"))))
+        #expect(store.state == state)
+        #expect(store.readingEntry(for: thread, scope: .root(.recommendations)).rawValue == 32)
+        #expect(store.handleExternalURL(try #require(URL(string: "com.baidu.tieba://unidispatch/pb?tid=101"))))
+        #expect(store.readingEntry(for: thread, scope: .root(.recommendations)) == .unspecified)
+    }
+
+    @Test func notificationEntryPreservesExactTargetAndResetsAfterReturn() throws {
+        let target = NotificationTarget(threadID: 101, postID: 303, isSubpost: true)
+        let route = RouteIdentity.notification(target)
+        let store = AppNavigationStore()
+        for kind in NotificationKind.allCases {
+            let entry = ThreadReadingEntry.notification(kind, opensQuotedThread: false)
+            #expect(store.push(route, in: .notifications, readingEntry: entry))
+            #expect(store.readingEntry(for: route, scope: .root(.notifications)) == entry)
+            #expect(store.state.routes(for: .notifications) == [.notification(target)])
+            #expect(store.replacePathFromSystem([], in: .notifications))
+            #expect(store.readingEntry(for: route, scope: .root(.notifications)) == .unspecified)
+        }
+    }
+
+    @Test func readingOriginFollowsItsPathWithoutChangingIdentityOrLeakingToReentry() throws {
+        let thread = RouteIdentity.thread(try #require(ThreadID(101)))
+        let subposts = RouteIdentity.subposts(threadID: try #require(ThreadID(101)), postID: try #require(PostID(303)))
+        let forum = RouteIdentity.forum(try #require(ForumRoute("fixture")))
+        let store = AppNavigationStore()
+        #expect(store.push(thread, in: .recommendations, readingEntry: .recommendations))
+        #expect(store.push(forum, in: .followedForums))
+        #expect(store.push(thread, in: .followedForums, readingEntry: .forum))
+        #expect(store.readingEntry(for: thread, scope: .root(.recommendations)) == .recommendations)
+        #expect(store.readingEntry(for: thread, scope: .root(.followedForums)) == .forum)
+        #expect(store.push(subposts, in: .followedForums, readingEntry: .forum))
+        #expect(store.readingEntry(for: subposts, scope: .root(.followedForums)) == .forum)
+        #expect(store.replacePathFromSystem([forum, thread], in: .followedForums))
+        #expect(store.readingEntry(for: thread, scope: .root(.followedForums)) == .forum)
+        #expect(store.readingEntry(for: subposts, scope: .root(.followedForums)) == .unspecified)
+        #expect(store.replacePathFromSystem([forum], in: .followedForums))
+        #expect(store.push(thread, in: .followedForums))
+        #expect(store.readingEntry(for: thread, scope: .root(.followedForums)) == .unspecified)
+        #expect(store.state.routes(for: .followedForums) == [forum, thread])
+        #expect(store.state.routes(for: .recommendations) == [thread])
+    }
+
+    @Test func settingsHistoryOriginIsIndependentAndExternalNavigationClearsPreviousOrigin() throws {
+        let thread = RouteIdentity.thread(try #require(ThreadID(101)))
+        let store = AppNavigationStore()
+        store.openSettingsRoute(.history)
+        store.pushSettingsContent(thread, readingEntry: .history)
+        #expect(store.readingEntry(for: thread, scope: .settings) == .history)
+        #expect(store.replaceRootDetail(thread, in: .recommendations, readingEntry: .recommendations))
+        #expect(store.readingEntry(for: thread, scope: .root(.recommendations)) == .recommendations)
+        #expect(store.apply(.replaceRootDetail(root: .recommendations, route: thread)))
+        #expect(store.readingEntry(for: thread, scope: .root(.recommendations)) == .unspecified)
+        #expect(store.readingEntry(for: thread, scope: .settings) == .history)
+        store.replaceSettingsPathFromSystem([.history])
+        #expect(store.readingEntry(for: thread, scope: .settings) == .unspecified)
+    }
+
     @Test
     func rootsKeepIndependentPathsAndCurrentTabReselectionIsANoOp() throws {
         let forum = try #require(ForumRoute("swiftui"))

@@ -1,0 +1,344 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Replay native failure/completed-HTTP parser branches with synthetic inputs.\n\nTransport state is explicit input: this does not emulate the BBA HTTP library,\nSDKs, network, retries or credentials. Byte counters start at their consumed\nzero state, matching the next-request lifecycle. Cancellation is evidence only;\nthe app deliberately suppresses cancelled/old-account metric publication.\n",
+  "cases": [
+    {
+      "name": "state-4-error--1001",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 4,
+        "errorCode": -1001
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -2,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "state-4-error--1009",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 4,
+        "errorCode": -1009
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "state-4-error--1005",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 4,
+        "errorCode": -1005
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "state-4-error--1200",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 4,
+        "errorCode": -1200
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "state-4-error-None",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 4,
+        "errorCode": null
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -1,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "state-5-error--999",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 5,
+        "errorCode": -999
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -4,
+          "uploadBytes": 0,
+          "downloadBytes": 0
+        },
+        "state": 5,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-False-valid-False",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 201,
+        "protobuf": false,
+        "valid": false
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-False-valid-True",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 201,
+        "protobuf": false,
+        "valid": true
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 201,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-False-valid-False",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 503,
+        "protobuf": false,
+        "valid": false
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-False-valid-True",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 503,
+        "protobuf": false,
+        "valid": true
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/s/tbs",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 503,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-True-valid-False",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 201,
+        "protobuf": true,
+        "valid": false
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-201-proto-True-valid-True",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 201,
+        "protobuf": true,
+        "valid": true
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 201,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 1
+      }
+    },
+    {
+      "name": "http-503-proto-True-valid-False",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 503,
+        "protobuf": true,
+        "valid": false
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": -3,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 4,
+        "decodeCount": 0
+      }
+    },
+    {
+      "name": "http-503-proto-True-valid-True",
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1800,
+        "downloadBytes": 700,
+        "state": 3,
+        "statusCode": 503,
+        "protobuf": true,
+        "valid": true
+      },
+      "expected": {
+        "metrics": {
+          "api": "c/c/post/add",
+          "logid": 0,
+          "cost": 250.0,
+          "result": 503,
+          "uploadBytes": 1800,
+          "downloadBytes": 700
+        },
+        "state": 3,
+        "decodeCount": 1
+      }
+    }
+  ]
+}

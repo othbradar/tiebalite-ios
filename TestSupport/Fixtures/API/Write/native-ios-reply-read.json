@@ -1,0 +1,89 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "command": 309751,
+  "requests": [
+    {
+      "name": "floor",
+      "business": {
+        "kz": "101",
+        "last_pid": "430001",
+        "mark_type": "2"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "fixture-sign",
+        "_timestamp": "9007199254740993"
+      },
+      "wireBase64": "Ci0KIwgBEgcyMi4xMS4xQIGAgICAgIAQugEMZml4dHVyZS1zaWduEGUgsZ8aQAI="
+    },
+    {
+      "name": "thread",
+      "business": {
+        "kz": "101",
+        "last_pid": "430001",
+        "mark_type": "2",
+        "request_times": "11",
+        "session_request_times": "3",
+        "offset": "2",
+        "fr": "frs"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "fixture-sign",
+        "_timestamp": "9007199254740993"
+      },
+      "wireBase64": "CjkKIwgBEgcyMi4xMS4xQIGAgICAgIAQugEMZml4dHVyZS1zaWduEGUgsZ8aQAKgAguyAgNmcnO4AgM="
+    },
+    {
+      "name": "wide-id",
+      "business": {
+        "kz": "9007199254740993",
+        "last_pid": "9007199254740995",
+        "mark_type": "2"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "fixture-sign",
+        "_timestamp": "9007199254740993"
+      },
+      "wireBase64": "CjkKIwgBEgcyMi4xMS4xQIGAgICAgIAQugEMZml4dHVyZS1zaWduEIGAgICAgIAQIIOAgICAgIAQQAI="
+    }
+  ],
+  "responses": [
+    {
+      "name": "success",
+      "wireBase64": "CgIIABLWAQo8CGUQZRoORml4dHVyZSB0aHJlYWQgPZIBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHEhAICRIMRml4dHVyZUZvcnVtKiMQKhoLRml4dHVyZU5hbWUiD0ZpeHR1cmUgRGlzcGxhebgBBzpVCLGfGhg9IIDiz6oGKhoIABIWU3ludGhldGljIG5hdGl2ZSByZXBseboBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHqgIECAMoA0IIGAMoAzAAcAM="
+    },
+    {
+      "name": "server-rejected",
+      "wireBase64": "CgIIBRLWAQo8CGUQZRoORml4dHVyZSB0aHJlYWQgPZIBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHEhAICRIMRml4dHVyZUZvcnVtKiMQKhoLRml4dHVyZU5hbWUiD0ZpeHR1cmUgRGlzcGxhebgBBzpVCLGfGhg9IIDiz6oGKhoIABIWU3ludGhldGljIG5hdGl2ZSByZXBseboBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHqgIECAMoA0IIGAMoAzAAcAM="
+    },
+    {
+      "name": "empty-data",
+      "wireBase64": "CgIIAA=="
+    },
+    {
+      "name": "wrong-thread",
+      "wireBase64": "CgIIABKeAQoECGYQZhIQCAkSDEZpeHR1cmVGb3J1bSojECoaC0ZpeHR1cmVOYW1lIg9GaXh0dXJlIERpc3BsYXm4AQc6VQixnxoYPSCA4s+qBioaCAASFlN5bnRoZXRpYyBuYXRpdmUgcmVwbHm6ASMQKhoLRml4dHVyZU5hbWUiD0ZpeHR1cmUgRGlzcGxhebgBB6oCBAgDKANCCBgDKAMwAHAD"
+    },
+    {
+      "name": "missing-target",
+      "wireBase64": "CgIIABJ/CjwIZRBlGg5GaXh0dXJlIHRocmVhZCA9kgEjECoaC0ZpeHR1cmVOYW1lIg9GaXh0dXJlIERpc3BsYXm4AQcSEAgJEgxGaXh0dXJlRm9ydW0qIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHQggYAygDMABwAw=="
+    },
+    {
+      "name": "missing-page",
+      "wireBase64": "CgIIABLMAQo8CGUQZRoORml4dHVyZSB0aHJlYWQgPZIBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHEhAICRIMRml4dHVyZUZvcnVtKiMQKhoLRml4dHVyZU5hbWUiD0ZpeHR1cmUgRGlzcGxhebgBBzpVCLGfGhg9IIDiz6oGKhoIABIWU3ludGhldGljIG5hdGl2ZSByZXBseboBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHqgIECAMoAw=="
+    },
+    {
+      "name": "unsigned-content-kind",
+      "wireBase64": "CgIIABLhAQo8CGUQZRoORml4dHVyZSB0aHJlYWQgPZIBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHEhAICRIMRml4dHVyZUZvcnVtKiMQKhoLRml4dHVyZU5hbWUiD0ZpeHR1cmUgRGlzcGxhebgBBzpgCLGfGhg9IIDiz6oGKiUI/////w8SHU11c3Qgbm90IGJlY29tZSBvcmRpbmFyeSB0ZXh0ugEjECoaC0ZpeHR1cmVOYW1lIg9GaXh0dXJlIERpc3BsYXm4AQeqAgQIAygDQggYAygDMABwAw=="
+    },
+    {
+      "name": "success-first-floor",
+      "wireBase64": "CgIIABKqAgo8CGUQZRoORml4dHVyZSB0aHJlYWQgPZIBIxAqGgtGaXh0dXJlTmFtZSIPRml4dHVyZSBEaXNwbGF5uAEHEhAICRIMRml4dHVyZUZvcnVtKiMQKhoLRml4dHVyZU5hbWUiD0ZpeHR1cmUgRGlzcGxhebgBBzJUCK0CGAEggOLPqgYqGggAEhZTeW50aGV0aWMgbmF0aXZlIHJlcGx5ugEjECoaC0ZpeHR1cmVOYW1lIg9GaXh0dXJlIERpc3BsYXm4AQeqAgQIAygDOlUIsZ8aGAIggOLPqgYqGggAEhZTeW50aGV0aWMgbmF0aXZlIHJlcGx5ugEjECoaC0ZpeHR1cmVOYW1lIg9GaXh0dXJlIERpc3BsYXm4AQeqAgQIAygDQgYYASgBMAA="
+    }
+  ]
+}

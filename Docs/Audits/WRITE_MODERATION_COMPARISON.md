@@ -1,5 +1,75 @@
 # 发布后删除通知：iOS 参考行为与迁移差异
 
+## 2026-10-08 逐项对齐的当前范围
+
+本轮新增已证URL加载失败统计（实测耗时，timeout=-2/其他=-1），不改变请求次数、错误映射、回执或成功后的普通刷新。推荐/吧首页/历史和两类通知的实际点击来源传到编辑器及原生post_from；引用主题和回复内容按原版分别处理，目标ID与路由/草稿身份不变。具体原版符号、七种来源及网络14样本范围见API_EVIDENCE最新项。
+
+尚未完成：搜索/通用外链的实际入口分支、完整HTTP引擎异常分派、SDK/CUID/z_id/远程配置、完整Passport、验证码/短信完成续发、getmypost基础页面provider/运行开关/生产读取及合并。图片按前序要求仍延期。用户明确没有本App对应SDK接入包或应用注册资料，此条件不能靠复用官方App身份或本地假回调替代。不是“全部对齐完成”，没有新的实发/审核因果证据；既有账号隔离、取消保护和正常Live安装保持。
+
+## 2026-10-08 Build7人工回复成功后的解析统计对照
+
+用户报告Build7回复仍成功，服务端长期审核原因仍UNKNOWN。本轮原生parser确认空/畸形响应写result=-3，有效IDL缺payload按errorNum写统计；三个Core文件只补该差异。10例离线原生控制流、37项相关Unit及1条Mock UI通过，生成未签名Build8供测试；未自动实发。HTTP/真实网络失败、SDK/Passport/远程配置、全部入口、验证续发、getmypost生产读取合并仍未齐；图片继续延期。本轮无新证据支持将此前删除归因某字段或宣称审核问题全面修复。
+
+## 2026-10-08 Build7 续接（Build6用户确认回复成功）
+
+本轮修正第4项一个已证差异：原版IDPCache的回复续接值可跨内存失效/进程重开，本App此前仅在NativeWriteSession保留。现接到本App账号伴随Keychain记录；单值、同账号、无新头保留旧值，后台按新建缓存默认策略清理。三个缓存策略和五个修改时间边界由原生代码封闭回放；未读取真实官方缓存或凭证。存储失败不推翻远端已确定的回执、也不自动重发。
+
+第6项定向确认：完整PB provider在0x102ca65b4依赖页面及多个全局provider，pb_reply_switch缺对象的返回值为0。没有据局部静态字段把getmypost无条件接入；原普通成功关闭/刷新保持。私有SDK/Passport、验证恢复、页面来源枚举和生产定向读取/合并仍是未完成项，不能把此IPA称作“所有剩余对齐完成”。
+
+
+## 2026-10-08 前六项实施中的更新
+
+下方已提交候选对照保持为历史基线，本轮源码按新授权局部推进：
+
+| 用户前六项 | 本轮实际结果 | 剩余差异 |
+| --- | --- | --- |
+| 1 地址/Proto/multipart/常规签名 | 保留既有回归基线；仅空网络类型在签名后按原生 int32 转换为显式0 | 不扩展原生全部传输选路 |
+| 2 账号准备/TBS/昵称 | 同账号重启复用受保护元数据，缺TBS才取；只消费同UID的原始昵称，不使用UI兜底，不增加资料请求 | Passport主登录及全局账号生命周期未复刻 |
+| 3 页面上下文 | 冻结实际 thread.reply_num / 父楼 sub_post_number，进入原生签名字段floor；floor_num继续参考入口明确的0 | 各入口pageEntryType语义仍未全证实 |
+| 4 运行时/UA/网络/统计 | 当前网络类型、原生语言权重、10/25秒超时、本进程client_logid（含补齐账号表单头）；已解析且有payload的写请求及有效账号/TBS JSON回包的实际统计进入下一次Common，准备失败后换账号也隔离 | CUID/z_id/UA配置/实验provider、网络/畸形回包失败统计覆盖、响应状态完整作用域未完成 |
+| 5 验证后继续 | 保留已验证分类与草稿，不假造挑战完成或自动重发 | Passport/验证码/短信完成契约及UI尚未实现 |
+| 6 回执ID定向读取 | 已实现CMD309751→PbList请求/响应及单次读取组件；合成fixture/目标核对/取消/账号隔离通过 | 基础PB提供者、完整Common输入、实验选路、生产读取/合并尚未接线；原成功关闭/当前页刷新保持 |
+
+证据及具体符号见 Specs/API_EVIDENCE.md 的同日“前六项续接”。本批不能称为前六项全部对齐；参考IPA不是可供Simulator直接链接的SDK，静态/封闭回放不等于完整运行时契约。没有修改图片、外观或自动真实发布；没有把SDK空值误报为官方当次返回空值。
+
+后续按用户要求检索 GitHub：TiebaPure-iOS 固定提交6bf728b虽是SwiftUI，发送仍用Android客户端字段；toamdou/TiebaLite-IOS尚未实现回复。未导入这些发送实现，没有用开源项目名称代替iOS协议证据。新读取组件的独立iOS描述符验证、70消息/698字段DTO核对及明确未接入边界见API_EVIDENCE最新项。
+
+## 2026-10-08 已验收候选与 iOS 22.11.1 的逐项对照
+
+核对代码为 `b5266dd9e5034df7ca3592e3216510ccda60769e`；参考为用户指定 22.11.1 主程序，SHA256 `4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb`。结论：普通文字主题回复已真实成功，但整个回复生命周期尚未完全对齐。下面以当前生产接线为准，覆盖旧记录中“尚未接入 Live”的时间性描述；不修改已验收实现。
+
+### 本轮实际证据
+
+- 读取此前用户显式发送留下的白名单诊断：账号准备 1 次，HTTP200/JSON error_code0；回复请求 1 次，HTTP200/549bytes/Protobuf errorno0、payload 存在、tid/pid 均为正。结合用户截图中第 8 楼可见，确认本次成功，不只是 Mock。error 子消息存在但 errorno=0，不代表服务端拒绝。未读取或保留原始响应、ID 值、正文、凭证；没有新发任何实网请求。
+- 对 SHA 校验后的参考程序重新执行地址块 6 例及普通主题/楼层/楼中楼业务函数 3 例，结果与已提交 fixture 一致；每个业务回放只抵达 1 次被拦截的发送出口。Foundation、账号和配置仍是显式合成输入，不是官方 App 整体运行或成对抓包。
+- 重新从当前参考程序反汇编 UA（0x10025d578）、reply init（0x10245bf94）、主题回复完成处理（0x102d7660c）。原始有界输出与统计仅在 ignored accepted-chain-*.asm/json；原版真实运行时的配置值仍未观测。
+
+### 已核对的一致部分及边界
+
+| 环节 | 已核对事实 | 范围限制 |
+| --- | --- | --- |
+| 回复地址与编码 | `/c/c/post/add?cmd=309731&format=protobuf`；iOS 独立 proto2 描述符；data/data/image/jpeg 单文件段及 x_bd_data_type | 已证实所选 HTTPS 短连接 Proto 分支；不是全部原生传输选路 |
+| 业务构造 | 三类回复的目标 ID、引用关系、send_from 等在相同合成上下文下与原生输出一致 | 不代表生产页面传入的上下文与原版相同 |
+| 常规签名 | 业务覆盖公共字段、literal 键排序、原值拼接、UTF-8 MD5 大写；标准分支元数据在签名后追加 | 算法/作用域一致不等于所有运行时输入值或分支选择一致 |
+| 普通回执 | Proto 解析，正 errorno 拒绝；不因附带 anti/info 单独制造失败；当前真实成功回执已验证 | 正 ID/目标关联是本 App 的额外保护；完整原生业务回调/验证处理未等同 |
+
+### 确定差异与未完成接线
+
+| 环节 | 原版 iOS 已有证据 | 当前生产实现与缺口 |
+| --- | --- | --- |
+| 账号/TBS 生命周期 | newGetUserTBS 优先账号 KV/登录 DB，缺失再补取；profile 完成按 UID 更新显示名；另外存在显式 BDUSS 登录支路 | NativeLiveTextWriteRepository.preparedClient 每个新进程/新 AuthContext 首次发送前走该登录支路，随后仅内存复用。没有复现 Passport/持久账号准备；nameShow 目前取 login.user.name，acceptProfileName 尚无生产调用 |
+| 页面来源上下文 | postPBContentAndFloor 使用控制器给出的 pbEnterType、floor_num、回复数和容器/级别 | NativeLiveTextWriteRepository:55–57 固定 pageEntryType=0、floorNumber="0"、replyCount=nil，容器由 kind 简化选择。普通默认场景可以吻合，但所有入口/楼层不能声称一致；这不是目标 tid/pid 串错的证据 |
+| 编辑器正文来源 | 新旧编辑器由场景/实验选择；新插件优先 currentTextForServer，另有附件转换和验证重放 | 当前固定新插件首次提交分支，把本 App 原文字串同时当 serverText/visibleText；纯文字规则已对照，复杂富文本与原版运行时选路未齐 |
+| 公共参数/provider | 原生静态缓存/重算、动态标准/优化分支从实际账号/设备/SDK/配置提供者取值 | NativeWriteAppRuntime:46–67 中 CUID、z_id、渠道、SDK/实验元数据、net_type 等未接入；固定 recomputed/standard。使用本 App 实际系统与设备值本身不应被当作错误；缺少的是同类提供者和生命周期证据，不应复制另一 App 的身份值 |
+| UA/请求头/网络环境 | 原生 UA 可优先使用 custom/cache 值，否则组合系统 UA、版本、bbaCUID、skin；HTTP 还存在条件 Cookie、AF/TurboNet 等分支 | 本 App 本地 WKWebView UA 加版本，uniqueId/skin 为 `(null)`；语言头为直接列表、clientLogID=0、条件 Cookie 关闭、URLSession 传输。不能将匹配的 multipart 样本说成整个 HTTP 环境一致；原版当次条件头是否存在未知 |
+| 请求统计 | 原生公共参数可以消费上次请求的 m_api/m_logid/m_cost 等 | 本 App requestMetrics 初始化空值，目前仅有读取/消费回写，没有传输完成后填入实际统计的生产接线 |
+| 响应状态保存 | 原生写模型从响应提取指定状态，交给 IDPCache，后续 customHeaders 回传 svcp_stk | 字符串提取/回传已实现，但只存在于当前 NativeWriteSession；持久性/全局作用域与原版不同，原版跨账号清理规则未知 |
+| 验证/异常恢复 | TBCUEG/Pass 管理器按错误码进入账号、短信、验证码等流程，编辑器还可按相应路径继续 | 只实现有依据的分类，返回提示并保留草稿；没有相应 SDK/验证交互与验证后恢复，不自动重发 |
+| 发送后读取 | 原生 pbMyReplySwitch 开启时按父楼或新 pid 定向读取，主题路径可用 `/c/f/pb/getmypost` CMD309751；楼中楼有独立后续模型 | ThreadReaderView:56 忽略回执参数后调用 store.reload，SubpostsView:50 调 store.refresh。NativeReplyFollowupParameters 仅组件，无生产调用；没有接通原生定向读取/结果合并。不能据 reload 的名称推断现有位置恢复必然坏了 |
+| 图片上传 | 参考有完整附件/上传链 | 当前 NativeLiveTextWriteRepository:31–34 在发送前拒绝图片，保留草稿；此能力未对齐 |
+
+本轮仅修改对照记录及过时 ADR 表述，无生产代码、请求、签名、UI、手势、动画、依赖或安装变化。沿用当前候选的既有定向 Unit/UI/build 结果，没有重跑整套测试。源码检索一次 zsh 未匹配通配符，改为目录内 rg -g 后完成；不影响上述证据。没有据一次成功推断其他入口、长期审核留存或完整 iOS 行为已经通过。
+
 ## 2026-10-07 原生客户端发送组件连通
 
 - NativeTextWriteClient连接已有账号/TBS、业务、Common/签名、HTTP与回执组件，没有调用旧Android账号准备或在失败时回退。四类目标5组完整出站字节对照独立原生组合/IDL样本一致；有效TBS只发1个写请求，缺失时1个TBS成功后才发1个写请求。受控网络用例覆盖取消、并行send拒绝、换账号晚返回、解析后状态回传及格式错误不覆盖旧状态。

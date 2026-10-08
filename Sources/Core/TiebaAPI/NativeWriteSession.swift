@@ -105,6 +105,13 @@ final class NativeWriteSession {
         if let state { responseState = state }
     }
 
+    /// Read-through of this account's protected cache, including eviction. A
+    /// missing response header uses acceptParsedResponseState instead.
+    func restoreResponseState(_ state: NativeWriteResponseState?, for requestContext: AuthContext) throws {
+        _ = try authorization(for: requestContext)
+        responseState = state
+    }
+
     /// Applies a decoded profile update to the owning account. It neither loads
     /// a profile on send nor changes TBS or any in-flight preparation operation.
     @discardableResult

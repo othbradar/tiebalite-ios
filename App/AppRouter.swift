@@ -80,7 +80,9 @@ enum AppRouter {
             for: route,
             scope: .root(root),
             openRoute: { navigation.push($0, in: root) },
-            dependencies: dependencies
+            dependencies: dependencies,
+            readingEntry: navigation.readingEntry(for: route, scope: .root(root)),
+            openReadingRoute: { route, entry in navigation.push(route, in: root, readingEntry: entry) }
         )
     }
 
@@ -89,13 +91,17 @@ enum AppRouter {
         for route: RouteIdentity,
         scope: AppFeatureScope,
         openRoute: @escaping (RouteIdentity) -> Void,
-        dependencies: AppRouteDependencies
+        dependencies: AppRouteDependencies,
+        readingEntry: ThreadReadingEntry = .unspecified,
+        openReadingRoute: ((RouteIdentity, ThreadReadingEntry) -> Void)? = nil
     ) -> some View {
+        let openReading = openReadingRoute ?? { route, _ in openRoute(route) }
         Group {
             switch route {
             case let .notification(target):
                 if let store = dependencies.featureStores.notificationDestination(for: target) {
-                    NotificationDestination(store: store, dependencies: dependencies, openRoute: openRoute)
+                    NotificationDestination(store: store, dependencies: dependencies, openRoute: openRoute,
+                                            readingEntry: readingEntry, openReadingRoute: openReading)
                 }
             case .search:
                 searchDestination(
@@ -113,6 +119,7 @@ enum AppRouter {
                     accountAvatar: dependencies.currentAccountAvatar,
                     readingTextSize:
                         dependencies.featureStores.settingsStore.readingTextSize,
+                    readingEntry: readingEntry,
                     onOpenMedia: dependencies.onOpenMedia,
                     onOpenUser: { openRoute(.userProfile($0)) },
                     onDisplayed: {
@@ -121,12 +128,12 @@ enum AppRouter {
                     },
                     onOpenSubposts: { source in
                         guard let threadID = ThreadID(source.threadID), let postID = PostID(source.postID) else { return }
-                        openRoute(.subposts(threadID: threadID, postID: postID))
+                        openReading(.subposts(threadID: threadID, postID: postID), readingEntry)
                     }
                 )
             case let .forum(forum):
                 ForumHomeDestination(
-                    forum: forum, scope: scope, dependencies: dependencies, openRoute: openRoute
+                    forum: forum, scope: scope, dependencies: dependencies, openRoute: openRoute, openReadingRoute: openReading
                 )
                 .ignoresSafeArea(.container, edges: .bottom)
             case let .userProfile(profileRoute):
@@ -148,7 +155,7 @@ enum AppRouter {
                     SubpostsView(
                         store: store, imageLoader: dependencies.imageLoader,
                         readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
-                        onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) })
+                        onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) }, readingEntry: readingEntry)
                         .ignoresSafeArea(.container, edges: .bottom)
                 } else {
                     SubpostsUnavailableView(threadID: threadID, postID: postID)

@@ -1,0 +1,250 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native JSON parser metrics and non-Proto header branch; synthetic data, no network.",
+  "cases": [
+    {
+      "name": "login-success",
+      "input": {
+        "api": "/c/s/login",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":0,\"logid\":9007199254740993}"
+      },
+      "expected": {
+        "api": "c/s/login",
+        "logid": 9007199254740993,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "tbs-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":\"0\",\"logid\":\"9007199254740993\",\"tbs\":\"fixture\"}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 9007199254740992,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "login-rejected",
+      "input": {
+        "api": "/c/s/login",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":5,\"logid\":1234}"
+      },
+      "expected": {
+        "api": "c/s/login",
+        "logid": 1234,
+        "cost": 250.0,
+        "result": 5,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "negative-json-error",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":-7,\"logid\":1235}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 1235,
+        "cost": 250.0,
+        "result": -7,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "nested-error",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":0,\"error\":{\"errno\":6},\"logid\":1236}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 1236,
+        "cost": 250.0,
+        "result": 6,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "primary-error-wins",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":5,\"error\":{\"errno\":6}}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 0,
+        "cost": 250.0,
+        "result": 5,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "missing-logid",
+      "input": {
+        "api": "/c/s/login",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":\"0\"}"
+      },
+      "expected": {
+        "api": "c/s/login",
+        "logid": 0,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "null-logid",
+      "input": {
+        "api": "/c/s/login",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":0,\"logid\":null}"
+      },
+      "expected": {
+        "api": "c/s/login",
+        "logid": 0,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "invalid-logid-type",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":0,\"logid\":[\"invalid\"]}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 0,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "decimal-logid",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":0,\"logid\":\"123.75\"}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 123,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "nested-only-success",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error\":{\"errno\":0},\"logid\":8}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 8,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    },
+    {
+      "name": "nonnumeric-logid",
+      "input": {
+        "api": "/c/s/tbs",
+        "durationSeconds": 0.25,
+        "uploadBytes": 1750,
+        "downloadBytes": 650,
+        "responseJSON": "{\"error_code\":0,\"logid\":\"no-number\"}"
+      },
+      "expected": {
+        "api": "c/s/tbs",
+        "logid": 0,
+        "cost": 250.0,
+        "result": 0,
+        "uploadBytes": 1750,
+        "downloadBytes": 650
+      }
+    }
+  ],
+  "headers": [
+    {
+      "clientLogID": 0,
+      "expected": {
+        "User-Agent": "fixture-agent"
+      }
+    },
+    {
+      "clientLogID": -1,
+      "expected": {
+        "User-Agent": "fixture-agent"
+      }
+    },
+    {
+      "clientLogID": 1000001,
+      "expected": {
+        "User-Agent": "fixture-agent",
+        "client_logid": "1000001"
+      }
+    },
+    {
+      "clientLogID": -2,
+      "expected": {
+        "User-Agent": "fixture-agent",
+        "client_logid": "-2"
+      }
+    }
+  ]
+}

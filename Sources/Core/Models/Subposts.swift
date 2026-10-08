@@ -37,6 +37,7 @@ struct SubpostReplyIntent: Equatable, Sendable {
     let forumName: String
     let subPostID: Int64
     let author: TiebaUserVisuals
+    var replyCount: Int?
 }
 
 protocol SubpostsRepository: Sendable {

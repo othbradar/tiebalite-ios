@@ -1,0 +1,74 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native parsed Protobuf transport metrics; synthetic inputs, no network, no moderation claim.",
+  "cases": [
+    {
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.125,
+        "errorCode": 0,
+        "uploadBytes": 1800,
+        "downloadBytes": 700
+      },
+      "expected": {
+        "api": "c/c/post/add",
+        "logid": 0,
+        "cost": 125.0,
+        "result": 0,
+        "uploadBytes": 1800,
+        "downloadBytes": 700
+      }
+    },
+    {
+      "input": {
+        "api": "/c/c/thread/add",
+        "durationSeconds": 1.5,
+        "errorCode": 5,
+        "uploadBytes": 2500,
+        "downloadBytes": 810
+      },
+      "expected": {
+        "api": "c/c/thread/add",
+        "logid": 0,
+        "cost": 1500.0,
+        "result": 5,
+        "uploadBytes": 2500,
+        "downloadBytes": 810
+      }
+    },
+    {
+      "input": {
+        "api": "/c/c/post/add",
+        "durationSeconds": 0.03125,
+        "errorCode": -1,
+        "uploadBytes": 1930,
+        "downloadBytes": 512
+      },
+      "expected": {
+        "api": "c/c/post/add",
+        "logid": 0,
+        "cost": 31.25,
+        "result": 0,
+        "uploadBytes": 1930,
+        "downloadBytes": 512
+      }
+    },
+    {
+      "input": {
+        "api": "c/c/post/add",
+        "durationSeconds": 0.0,
+        "errorCode": 0,
+        "uploadBytes": 0,
+        "downloadBytes": 0
+      },
+      "expected": {
+        "api": "c/c/post/add",
+        "logid": 0,
+        "cost": 0.0,
+        "result": 0,
+        "uploadBytes": 0,
+        "downloadBytes": 0
+      }
+    }
+  ]
+}

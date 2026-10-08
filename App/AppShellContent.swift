@@ -115,10 +115,13 @@ struct AppShellContent {
         switch root {
         case .notifications:
             NotificationsView(store: featureStores.notificationsStore, imageLoader: environment.imageLoader,
-                              openLogin: onOpenLogin, openTarget: { open(.notification($0), in: root, regular: regular) },
-                              openThread: { rawID in
+                              openLogin: onOpenLogin, openTarget: { target, kind in
+                                  open(.notification(target), in: root, regular: regular,
+                                       readingEntry: .notification(kind, opensQuotedThread: false))
+                              }, openThread: { rawID, kind in
                                   guard let threadID = ThreadID(rawID) else { return }
-                                  open(.thread(threadID), in: root, regular: regular)
+                                  open(.thread(threadID), in: root, regular: regular,
+                                       readingEntry: .notification(kind, opensQuotedThread: true))
                               })
         case .recommendations:
             RecommendationsAppRootView(
@@ -133,7 +136,7 @@ struct AppShellContent {
                     guard let route = AppRouter.threadRoute(for: recommendation),
                           case let .thread(threadID) = route else { return }
                     _ = featureStores.threadReaderStore(for: root, threadID: threadID)
-                    open(route, in: root, regular: regular)
+                    open(route, in: root, regular: regular, readingEntry: .recommendations)
                 }
             )
             .environment(\.openURL, ContentLinkHandler.action { open($0, in: root, regular: regular) })
@@ -160,11 +163,11 @@ struct AppShellContent {
         }
     }
 
-    private func open(_ route: RouteIdentity, in root: RootID, regular: Bool) {
+    private func open(_ route: RouteIdentity, in root: RootID, regular: Bool, readingEntry: ThreadReadingEntry = .unspecified) {
         if regular {
-            navigation.replaceRootDetail(route, in: root)
+            navigation.replaceRootDetail(route, in: root, readingEntry: readingEntry)
         } else {
-            navigation.push(route, in: root)
+            navigation.push(route, in: root, readingEntry: readingEntry)
         }
     }
 }

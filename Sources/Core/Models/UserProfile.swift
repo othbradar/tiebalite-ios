@@ -84,6 +84,9 @@ struct UserProfile: Equatable, Sendable {
     let totalAgreeCount: Int?
     let displayTiebaID: String?
     let visuals: TiebaUserVisuals?
+    // Raw account fields, separate from displayName's UI fallback/normalization.
+    let accountDisplayName: String?
+    let accountLoginName: String?
 
     init(
         userID: UserID,
@@ -97,7 +100,9 @@ struct UserProfile: Equatable, Sendable {
         threadCount: Int?,
         totalAgreeCount: Int?,
         displayTiebaID: String?,
-        visuals: TiebaUserVisuals? = nil
+        visuals: TiebaUserVisuals? = nil,
+        accountDisplayName: String? = nil,
+        accountLoginName: String? = nil
     ) {
         self.userID = userID
         self.displayName = displayName
@@ -111,6 +116,8 @@ struct UserProfile: Equatable, Sendable {
         self.totalAgreeCount = totalAgreeCount
         self.displayTiebaID = displayTiebaID
         self.visuals = visuals
+        self.accountDisplayName = accountDisplayName
+        self.accountLoginName = accountLoginName
     }
 }
 

@@ -3,6 +3,7 @@ import Foundation
 enum NativeWriteAPI: String, Sendable {
     case account = "/c/s/login"
     case tbs = "/c/s/tbs"
+    case imageUpload = "/c/s/uploadPicture"
     case reply = "/c/c/post/add"
     case thread = "/c/c/thread/add"
 }
@@ -59,31 +60,40 @@ enum NativeTextWriteClientError: Error, Equatable, Sendable {
 /// The native account -> optional TBS -> business/Common -> HTTP -> parsed-state
 /// chain. Prepared content and runtime providers are explicit dependencies. This
 /// does not fall back to the legacy login/write protocol, execute verification,
-/// upload media, dismiss the composer, or assert a moderation outcome.
+/// dismiss the composer, or assert a moderation outcome.
 @MainActor
 final class NativeTextWriteClient {
     private let session: NativeWriteSession
     private let context: AuthContext
     private let runtime: any NativeWriteRuntimeProviding
-    private let readClient: URLSessionHTTPClient
+    private let readClient: NativePreparationHTTPClient
     private let transport: NativeWriteTransport
+    private let persistAccount: (TextWriteAccount) async throws -> Void
+    private let loadResponseState: ((TextWriteAccount) async throws -> NativeWriteResponseState?)?
     private var common = NativeWriteCommonParameters()
     private var isSending = false
     private(set) var didStartWrite = false
+    private(set) var receivedResponseState: NativeWriteResponseState?
 
     init(session: NativeWriteSession, context: AuthContext, runtime: any NativeWriteRuntimeProviding,
-         loader: any HTTPDataLoading) {
+         loader: any HTTPDataLoading, persistAccount: @escaping (TextWriteAccount) async throws -> Void = { _ in },
+         loadResponseState: ((TextWriteAccount) async throws -> NativeWriteResponseState?)? = nil) {
         self.session = session
         self.context = context
         self.runtime = runtime
-        readClient = URLSessionHTTPClient(loader: loader)
+        readClient = NativePreparationHTTPClient(loader: loader, runtime: runtime) {
+            _ = try session.authorization(for: context)
+        }
         transport = NativeWriteTransport(loader: loader)
+        self.persistAccount = persistAccount
+        self.loadResponseState = loadResponseState
     }
 
     func send(_ request: TextWriteRequest, content: NativeWriteContent,
               origin: NativeWriteOrigin) async throws -> NativeWriteDecodedResponse {
         guard !isSending else { throw NativeTextWriteClientError.alreadySending }
         didStartWrite = false
+        receivedResponseState = nil
         try validate(request, origin: origin)
         let preparedContent = try content.preparedText(for: request.target)
         try Task.checkCancellation()
@@ -91,16 +101,7 @@ final class NativeTextWriteClient {
         isSending = true
         defer { isSending = false }
 
-        let account = try await session.prepareTBS(using: readClient) { operation in
-            let values = try runtimeValues(for: .tbs, authorization: operation.authorization, account: nil)
-            var metrics = runtime.requestMetrics
-            let fields = try common.prepareTBS(values.common, authorization: operation.authorization, metrics: &metrics)
-            runtime.requestMetrics = metrics
-            return try NativeTBSRequest.make(parameters: fields, context: .init(
-                userAgent: values.http.userAgent, acceptLanguage: values.http.acceptLanguage,
-                clientLogID: values.http.clientLogID, cookies: values.http.cookies))
-        }
-        try Task.checkCancellation()
+        let account = try await preparedAccount()
         let authorization = try session.authorization(for: context)
         let business = try businessFields(request, content: preparedContent, account: account, origin: origin)
         let api: NativeWriteAPI = request.target.kind == .thread ? .thread : .reply
@@ -118,18 +119,80 @@ final class NativeTextWriteClient {
         _ = try session.authorization(for: context)
         try Task.checkCancellation()
         didStartWrite = true
-        let result = try await transport.execute(outgoing)
+        let result = try await transport.execute(outgoing) { [self] metrics in
+            try Task.checkCancellation()
+            _ = try session.authorization(for: context)
+            runtime.requestMetrics = metrics
+        }
         try Task.checkCancellation()
         _ = try session.authorization(for: context)
+        let decoded = try decodeResponse(result, api: api)
+        try session.acceptParsedResponseState(result.state, for: context)
+        receivedResponseState = result.state
+        return decoded
+    }
+
+    func upload(_ photo: ComposerPhoto, forumName: String,
+                progress: @escaping @Sendable (Double) async -> Void) async throws -> UploadedComposerPhoto {
+        guard !isSending else { throw NativeTextWriteClientError.alreadySending }
+        try Task.checkCancellation()
+        _ = try session.authorization(for: context)
+        isSending = true
+        defer { isSending = false }
+        let account = try await preparedAccount()
+        let uploader = NativeImageUploadClient(client: readClient, validateAuthorization: { [self] in
+            _ = try session.authorization(for: context)
+        }, makeRequest: { [self] photo, chunk, final, bytes in
+            let authorization = try session.authorization(for: context)
+            let values = try runtimeValues(for: .imageUpload, authorization: authorization, account: account)
+            let business = NativeImageUploadProtocol.fields(photo: photo, chunk: chunk, final: final, forumName: forumName)
+            var metrics = runtime.requestMetrics
+            let fields = try common.prepareImageUpload(values.common, business: business, metrics: &metrics)
+            runtime.requestMetrics = metrics
+            return try NativeImageUploadProtocol.request(fields: fields, bytes: bytes, runtime: values)
+        })
+        return try await uploader.upload(photo, progress: progress)
+    }
+
+    private func preparedAccount() async throws -> TextWriteAccount {
+        let account = try await session.prepareTBS(using: readClient) { operation in
+            let values = try runtimeValues(for: .tbs, authorization: operation.authorization, account: nil)
+            var metrics = runtime.requestMetrics
+            let fields = try common.prepareTBS(values.common, authorization: operation.authorization, metrics: &metrics)
+            runtime.requestMetrics = metrics
+            return try NativeTBSRequest.make(parameters: fields, context: .init(
+                userAgent: values.http.userAgent, acceptLanguage: values.http.acceptLanguage,
+                clientLogID: values.http.clientLogID, cookies: values.http.cookies))
+        }
+        try await persistAccount(account)
+        if let loadResponseState {
+            let state = try await loadResponseState(account)
+            try Task.checkCancellation()
+            try session.restoreResponseState(state, for: context)
+        }
+        try Task.checkCancellation()
+        return account
+    }
+
+    private func decodeResponse(_ result: NativeWriteResponse, api: NativeWriteAPI) throws -> NativeWriteDecodedResponse {
         guard (200..<300).contains(result.response.statusCode) else {
             throw HTTPClientError.server(statusCode: result.response.statusCode)
         }
-        // The native parser rejects an empty body before invoking IDL. Swift
-        // Protobuf otherwise creates a default envelope with a zero error code.
-        guard !result.response.body.isEmpty else { throw HTTPClientError.malformedResponse }
-        let decoded = try NativeWriteResponseDecoder.decode(result.response.body)
-        try session.acceptParsedResponseState(result.state, for: context)
-        return decoded
+        do {
+            // Empty bytes must not become SwiftProtobuf's default success envelope.
+            guard !result.response.body.isEmpty else { throw HTTPClientError.malformedResponse }
+            let decoded = try NativeWriteResponseDecoder.decode(result.response.body)
+            if let measurement = result.measurement {
+                runtime.requestMetrics = measurement.parsedMetrics(
+                    api: api.rawValue, errorCode: decoded.errorCode, statusCode: result.response.statusCode)
+            }
+            return decoded
+        } catch {
+            if let measurement = result.measurement {
+                runtime.requestMetrics = measurement.parseFailureMetrics(api: api.rawValue)
+            }
+            throw error
+        }
     }
 
     private func runtimeValues(for api: NativeWriteAPI, authorization: SessionAuthorization,

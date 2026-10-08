@@ -4,8 +4,8 @@ struct NotificationsView: View {
     @Bindable var store: NotificationsStore
     let imageLoader: any ImageLoading
     let openLogin: () -> Void
-    let openTarget: (NotificationTarget) -> Void
-    let openThread: (Int64) -> Void
+    let openTarget: (NotificationTarget, NotificationKind) -> Void
+    let openThread: (Int64, NotificationKind) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var refreshTask: Task<Void, Never>?
 
@@ -32,7 +32,7 @@ struct NotificationsView: View {
                     externalSelectionGeneration: $store.selectionGeneration, contentGeneration: { _ in 0 },
                     content: { kind in
                     NotificationsListView(store: store.page(kind), imageLoader: imageLoader,
-                                          openTarget: openTarget, openThread: openThread)
+                                          openTarget: { openTarget($0, kind) }, openThread: { openThread($0, kind) })
                 })
                 .accessibilityIdentifier("notifications.pager")
             } else {

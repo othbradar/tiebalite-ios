@@ -7,6 +7,7 @@ struct ThreadReaderView: View {
     let imageLoader: any ImageLoading
     let accountAvatar: ImageResourceDescriptor?
     let readingTextSize: ReadingTextSizePreference
+    let readingEntry: ThreadReadingEntry
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
     let onDisplayed: (ThreadReaderSnapshot) async -> Void
@@ -22,6 +23,7 @@ struct ThreadReaderView: View {
         imageLoader: any ImageLoading,
         accountAvatar: ImageResourceDescriptor? = nil,
         readingTextSize: ReadingTextSizePreference = .standard,
+        readingEntry: ThreadReadingEntry = .unspecified,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void,
         onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in },
         onDisplayed: @escaping (ThreadReaderSnapshot) async -> Void = { _ in },
@@ -31,6 +33,7 @@ struct ThreadReaderView: View {
         self.imageLoader = imageLoader
         self.accountAvatar = accountAvatar
         self.readingTextSize = readingTextSize
+        self.readingEntry = readingEntry
         self.onOpenMedia = onOpenMedia
         self.onOpenUser = onOpenUser
         self.onDisplayed = onDisplayed
@@ -49,7 +52,7 @@ struct ThreadReaderView: View {
             if store.state.snapshot != nil {
                 ThreadReaderReplyBar(imageLoader: imageLoader, accountAvatar: accountAvatar,
                                      threadID: store.threadID, reload: { Task { await store.reload() } }, onCompose: {
-                    if let snapshot = store.state.snapshot { composeTarget = .reply(snapshot: snapshot) }
+                    if let snapshot = store.state.snapshot { composeTarget = .reply(snapshot: snapshot, readingEntry: readingEntry) }
                 })
             }
         }
@@ -156,7 +159,7 @@ struct ThreadReaderView: View {
                         onOpenExternalLink: { intent in
                             if let url = URL(string: intent.destination.absoluteString) { openURL(url) }
                         },
-                        onReply: { post in composeTarget = .reply(snapshot: snapshot, post: post) },
+                        onReply: { post in composeTarget = .reply(snapshot: snapshot, post: post, readingEntry: readingEntry) },
                         requestNextPage: requestNextPage
                     )
                 }

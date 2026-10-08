@@ -10,6 +10,9 @@ struct TextComposeTarget: Identifiable, Equatable, Sendable {
     var subpostID: Int64 = 0
     var recipient: TiebaUserVisuals?
     var quote: String = ""
+    // Snapshot taken when opening the editor; excluded from draft/route identity.
+    var replyCount: Int?
+    var readingEntry: ThreadReadingEntry = .unspecified
 
     var id: String { "\(kind.rawValue).\(forumID).\(threadID).\(postID).\(subpostID)" }
     var title: String {

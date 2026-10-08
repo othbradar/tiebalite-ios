@@ -1,0 +1,62 @@
+{
+  "referenceExecutableSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "sharedCachePolicy": 2,
+  "scope": "Native dispatch, synthetic memory/disk adapters; no real persistence.",
+  "cases": [
+    {
+      "storagePolicy": 0,
+      "beforeRestart": "fixture-state",
+      "afterRestart": null,
+      "events": [
+        "write-memory",
+        "read-memory",
+        "read-memory"
+      ]
+    },
+    {
+      "storagePolicy": 1,
+      "beforeRestart": "fixture-state",
+      "afterRestart": "fixture-state",
+      "events": [
+        "write-disk",
+        "read-disk",
+        "read-disk"
+      ]
+    },
+    {
+      "storagePolicy": 2,
+      "beforeRestart": "fixture-state",
+      "afterRestart": "fixture-state",
+      "events": [
+        "write-memory",
+        "write-disk",
+        "read-memory",
+        "read-memory",
+        "read-disk",
+        "write-memory"
+      ]
+    }
+  ],
+  "expiry": [
+    {
+      "ageSeconds": -1,
+      "removed": false
+    },
+    {
+      "ageSeconds": 0,
+      "removed": false
+    },
+    {
+      "ageSeconds": 3599,
+      "removed": false
+    },
+    {
+      "ageSeconds": 3600,
+      "removed": false
+    },
+    {
+      "ageSeconds": 3601,
+      "removed": true
+    }
+  ]
+}

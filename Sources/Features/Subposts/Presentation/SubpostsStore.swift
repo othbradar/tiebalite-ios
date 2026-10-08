@@ -97,7 +97,8 @@ final class SubpostsStore {
 
     func replyIntent(for item: Subpost) -> SubpostReplyIntent? {
         guard let snapshot, snapshot.items.contains(where: { $0.id == item.id }), snapshot.forumID > 0 else { return nil }
-        return .init(route: route, forumID: snapshot.forumID, forumName: snapshot.forumName, subPostID: item.id, author: item.author)
+        return .init(route: route, forumID: snapshot.forumID, forumName: snapshot.forumName, subPostID: item.id,
+                     author: item.author, replyCount: snapshot.totalCount)
     }
 
     func cancel() {

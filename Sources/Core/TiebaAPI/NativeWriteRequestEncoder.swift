@@ -17,8 +17,8 @@ enum NativeWriteRequestEncoder {
         // standard Common builder emits an empty string when this setting is
         // unavailable; native IDL writes a present zero. Normalize only at the
         // wire boundary, after signing the original (empty-string) dictionary.
-        if encodedCommon["personalized_rec_switch"]?.isEmpty == true {
-            encodedCommon["personalized_rec_switch"] = "0"
+        for key in ["personalized_rec_switch", "net_type"] where encodedCommon[key]?.isEmpty == true {
+            encodedCommon[key] = "0"
         }
         fields["common"] = encodedCommon
         let json = try JSONSerialization.data(withJSONObject: ["data": fields], options: [.sortedKeys])

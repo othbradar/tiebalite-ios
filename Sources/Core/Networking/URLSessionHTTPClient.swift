@@ -154,9 +154,14 @@ final class URLSessionDataLoader: NSObject, HTTPDataLoading,
         for request: URLRequest,
         maximumByteCount: Int
     ) async throws -> (Data, URLResponse) {
+        try await data(for: request, maximumByteCount: maximumByteCount, delegate: self)
+    }
+
+    func data(for request: URLRequest, maximumByteCount: Int,
+              delegate: any URLSessionTaskDelegate) async throws -> (Data, URLResponse) {
         let (bytes, response) = try await session.bytes(
             for: request,
-            delegate: self
+            delegate: delegate
         )
         if response.expectedContentLength > Int64(maximumByteCount) {
             throw HTTPClientError.responseTooLarge(limit: maximumByteCount)

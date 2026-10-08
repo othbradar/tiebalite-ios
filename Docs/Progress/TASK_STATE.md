@@ -1,5 +1,139 @@
 # TASK_STATE
 
+## 2026-10-08 U08 — 用户批准提交 Build12，随后继续剩余 iOS 对齐
+
+- 用户已确认文字和单张静态图片回复成功，明确授权先提交当前候选再继续。提交前715份Build12生产输入摘要全部一致，沿用已记录定向Unit/UI、lint/build及归档结果；本次重新执行secret-scan和git diff --check均通过。
+- 精确清单96份U08源码/生成IDL/合成fixture/测试/证据脚本及文档；排除原有Prompts、技能agents目录、Python缓存、Artifacts、凭证和Android submodule。不使用git add -A，不推送。后续修改与此候选分开，SDK/Passport继续跳过，现有外观、草稿、账号和缓存保持。
+
+## 2026-10-08 U08 — 用户确认 Build12 图片回复成功，剩余差异复核
+
+- USER_REPORTED + SCREENSHOT_VISIBLE：用户确认图片发送成功，截图可见一条文字加单张静态图片的回复。不记录真实正文或图片本体，不扩大为原图/GIF、多图、所有发送目标或长期审核留存通过。
+- 当前715份Build12生产输入摘要全部一致，HEAD仍b5266dd9e5034df7ca3592e3216510ccda60769e。本轮只复核代码/证据并更新本记录；未修改生产实现，未重复构建/测试、真实发送、暂存、提交或推送。
+- 仍有已知差异：图片准备仍为静态JPEG，未闭合原图/GIF/透明度及原生完整压缩和元数据策略；图片统一追加正文末尾，未实现原生图文混排；发送时串行上传，未复刻选图提前上传、主题并发和可配置水印/原图策略；getmypost组件未接完整页面provider、实际开关及生产合并；搜索/正文/Scheme来源仍不完整；实际运行配置和可选替代网络引擎未完整接入。SDK/Passport及依赖它的验证完成续发按用户要求暂缓，不将其他差异都归因于SDK。
+- 多图、新主题带图、楼层/楼中楼带图的现有Mock覆盖保留，尚无本轮用户逐项实发确认；它们属于待实测范围，不标为接口未实现。已成功的普通文字与静态图片发送链保持。
+
+## 2026-10-08 U08 — Build12 普通静态图片发送接线，SDK/Passport按用户要求跳过
+
+- 用户确认评论发送正常，现明确允许图片部分。本轮以HEAD b5266dd9e5034df7ca3592e3216510ccda60769e及同SHA iOS22.11.1为准，未使用Android补未知上传字段，保留全部原U08/用户改动。未暂存、提交、推送/U09。相对Build11共10份生产输入变化，含新增NativeImageUploadProtocol/Client；无视觉、动画、手势、overlay、依赖、VirtualizedList/Pager/图片显示Loader/阅读恢复改动。
+- 原生证据：reply coordinator→TBCImageUpload→TBCImageUploadModel；resourceId是上传字节MD5的大写(原生%02X)，保持草稿原稳定ID；默认chunk501760、chunkNo从1、small尺寸0、无水印pic_water_type3、saveOrigin0及实际吧名。multipart chunk/chunk/image/jpeg，>=1024字节120秒、小块沿现有网络超时；原生6个业务输入+2个Common/签名分支离线重放，重生成fixture逐字节一致。具体符号/地址在API_EVIDENCE顶部。
+- 复用原生账号/TBS/Common/签名/传输与现有编辑器上传入口。磁盘后台读取并核对大小、JPEG标记/摘要，冻结数据后逐图逐块；只接受服务器最终picId/原尺寸，全部成功后沿原正文链发送一次。取消、进度回调后、账号变化都复核，不自动重发；失败留稿，主动重试复用当前编辑器已成功的iOS图片。旧Android回执无来源标记不能绕过预检。文字发送的原准备代码只抽取为共用方法，顺序、URL、参数、回执、成功关闭及普通刷新保留；真实上传/发帖0次。
+- 基线15项PASS。预检实际red12项中11过1失败(图片仍全部被拒绝)，接线后最终相关Unit去重54个方法PASS；包括原文字链回归。Mock例：两图三块为账号1+上传3+回复1；中途失败不发正文、显式重试只上传未完成图片再发1次；切账号/取消无正文与旧回执，缺最终图片/文件变更/准确块边界/实际ImageIO准备文件/四种发送目标通过。没有全部Unit/quality-fast/quality或无关矩阵。
+- iPhone短UI最终4PASS(独立Tab40.516秒、系统返回18.583秒、Mock成功关闭24.363秒、图片选择/删除/失败重试31.163秒)；iPad2PASS(系统路由29.342秒、图片草稿键盘旋转24.090秒)。不把iPad此检查扩大为原U03旋转分栏回首楼已修。lint517文件0违规/WRITE_BASELINE23项PASS，原摘要未改；make generate/build、secret-scan、diff check、Release archive/隔离通过。原有AppIntents元数据和方向warning保留，不改签名/BundleID/Keychain配置。
+- 中间失败：新增API枚举遗漏Debug switch导致首次编译失败；补case后单方法selector实际没运行测试，改suite才取得上述行为red。新测试async断言/try及5处lint格式错误修复；首轮21个方法20过1失败是测试错用另一fixture的楼层301/302，改实际202/303后通过。旧R10 UI入口未滚到设置测试入口，其后即时断言未等待系统键盘消失；只修测试路径和可观察等待，未删产品断言或改生产界面。若干只读旧文件名/通配符/正则检索失败，改实际路径继续，无源码影响。
+- Build12 IPA归档核验：Artifacts/Releases/U08-native-alignment-build12-20261008/TiebaLite-U08-native-alignment-build12-20261008-ios18-arm64-unsigned.ipa；0.2.0(12)，iPhoneOS/arm64/iOS18+/iPhone与iPad，未签名；7,100,800字节，SHA256=26679f7674d5d5ae869b89ad600e8f308c72476cc24ad83b72f6be480709f382。715份生产输入摘要归档前后相同，140份包文件与archive一致，ZIP CRC/可执行位/版本/平台验证通过。用户仍需自行签名和手动验证真实上传发送。
+- **边界**：只闭合普通静态JPEG可试用链，不声称图片全对齐。原图/GIF/元数据/完整压缩配置、混排、选图提前上传、主题并发/水印和实际配置仍未完成；现有App JPEG内存准备策略保持。SDK/Passport本轮跳过；验证码续发、getmypost完整provider/开关/合并、搜索/正文/Scheme完整来源和替代引擎仍保留前轮缺口。不伪造SDK身份，不把组件通过称为服务端审核留存通过。
+- Simulator已覆盖常用iPhone17Pro(70D93841-1FEB-445A-8FAD-B1C29B981D5D)完整Debug Live 0.2.0(12)，无Fixture参数启动。make build及Build12命令行版本覆盖构建通过，Simulator签名/Keychain entitlement通过；安装前后1563份持久文件逐相对路径摘要一致，主程序/debug dylib与本轮构建一致，715份源输入仍一致。不卸载/erase/清数据/Keychain。CUA两次均报告Mac锁定，已异步请求解锁，尚未打开生产编辑器或做本轮Live GUI验收；因此不输出READY或声称已人工验收。证据build12/simulator-installed.json，打包/测试说明见release目录TESTING_NOTES.md。
+
+## 2026-10-08 U08 — Build10 用户确认评论正常，Build11 补系统日期 provider 并交付 IPA
+
+- USER_REPORTED：用户确认上一版评论发送正常并授权继续补齐/生成 IPA；不扩大为完整 SDK、所有入口或长期审核留存通过。HEAD 仍 b5266dd9e5034df7ca3592e3216510ccda60769e，当前全部 U08/用户改动保留，未暂存/提交/推送/U09。开始时712份Build10生产输入摘要全部相同；本轮仅2份生产输入变化：App/NativeWriteAppRuntime.swift 与新增 Sources/Core/TiebaAPI/NativeWriteEventDay.swift。直接测试修改 U08NativeRuntimeContextTests；证据/ADR/UNKNOWN 同步顶部记录。
+- 同 SHA iOS22.11.1 原生重算路径明确 NSDate.date→新 NSDateFormatter→YYYYMMdd→event_day。原有模型和IDL已支持，但App runtime一直nil。补实际日期provider，每次构造请求重新格式化，保留系统locale/calendar/timeZone及大写周历年份；测试注入固定provider/日期。不改staticMode选路、签名算法、目标、URL/次数/顺序、回执优先级、成功关闭/普通刷新或图片；无新视觉、动画、手势、overlay、依赖。没有真实发帖/回复/上传或读取个人凭据。
+- 定向补查搜索/Scheme和专用回复读取：iOStbclient的31不能套给com.baidu.tieba；Matrix构造还受URL参数和消息消费链影响，搜索走Web跳转，继续OPEN。getmypost的完整PB provider和pb_reply_switch实际值没有闭合，不强制替换当前普通刷新。具体地址与证据边界见API_EVIDENCE。SDK/完整Passport/配置、验证续发、替代引擎及图片发送仍未完成，不声称全对齐。
+- 基线3套件30项PASS。首次新增测试因对非可选TimeZone结果冗余#require导致编译失败；修测试后 event-day-red-fixed 实际4PASS/1FAIL，失败为请求 event_day=nil。接线后 event-day-green 25项PASS，补账号/TBS接线检查后 event-day-final 6项PASS，两组合计26个不同相关方法通过；不重复累计。跨日/跨周年、账号/TBS/回复字段、Proto、静态Common/签名固定样本与Mock Live发送覆盖。中间只读旧文件名检索不存在，定位真实路径后继续，未改无关代码。
+- 隔离iPhone UI 1条PASS，25.084秒：Mock发送成功自动关闭且只清已发送草稿。没有页面/导航修改，不重跑iPad矩阵；原已知iPad旋转分栏回首楼仍未修。make generate/build、secret-scan、diff check通过；最终lint513文件0违规/WRITE_BASELINE23项PASS。新增账号测试曾有1处参数缩进lint失败，修空格后通过；原摘要未更新。没有跑全部Unit/quality-fast/quality/长矩阵。
+- 设备Release archive及Release隔离通过；IPA：Artifacts/Releases/U08-native-alignment-build11-20261008/TiebaLite-U08-native-alignment-build11-20261008-ios18-arm64-unsigned.ipa，0.2.0(11)、iPhoneOS/arm64/iOS18+/iPhone与iPad、未签名，7,088,846字节；SHA256=6afcf7d089fbfb345a080aa172805412361ecad9c711596be19bdca7777e1182。713份输入归档前后一致，140份包文件与archive逐字节一致，ZIP CRC/执行权限/平台/版本/无签名核验通过。保留已有AppIntents提取跳过和方向声明warning，没有改团队/BundleID/Keychain/工程签名。最新请求为IPA交付，本轮不操作正常Live安装或个人数据；需用户自行签名手动测试，不能直接安装IPA到Simulator。详细交付及限制见release目录TESTING_NOTES.md。
+
+## 2026-10-08 U08 — Build10 默认 HTTP 统计与外部 HTTPS 来源续接，试用包及Simulator已交付
+
+- 用户要求继续未完成对齐并生成IPA/安装Simulator；本机HEAD b5266dd9e5034df7ca3592e3216510ccda60769e，所有原U08/用户文件保留，暂存区未动，不提交/推送/U09。以用户指定iOS22.11.1同SHA为依据，不使用Android补未知字段。SDK接入资料用户已明确没有，完整目标仍未完成。
+- 默认AF manager/serializer实际接受200..<300；本轮保留既有传输范围与业务成功判定，补非2xx失败实测统计-1/零完整字节，以及接受的非200业务成功统计HTTP状态。业务错误、空体解析失败优先级保持；取消/账号变化/无measurement不发布，下一次显式请求消费一次，不重试或追加网络请求。9个HTTP状态及54个JSON/Proto/成功/拒绝/空体组合执行原生指令，Foundation及诊断文案明确合成，AF NSError合并helper执行原指令；重生成与fixture逐字节相同。
+- 原版Universal Link→checkPBUrl→pbEnterType来源32→post_from=5已追通；只为现有解析器接受的外部HTTPS帖子链接增加短期来源。无路由/草稿/缓存身份、导航容器或布局变化；route移除清理，编辑器冻结来源。搜索/正文内部/scheme不套用32。相对Build9共6份生产输入变化，712份候选输入列表已记录。
+- 基线相关统计通过；HTTP red实际复现2个方法失败，修复后48项/6套件通过（错误写入不存在的U08NativeWriteHTTPTests selector未执行，不计该套件）。来源red实际2项失败；首轮green35项中34通过，唯一新测试未先打开历史页导致其设置路径未建立，补正确前提；测试格式调整曾漏try编译失败。最终entry-green-final2包含导航、deep-link、Live写入、页面上下文、真实HTTPRequest套件及HTTP新测试，共39项0失败。保留各日志，不把重叠套件简单累加。
+- lint首轮新测试2处格式违规，修后512文件0违规，WRITE_BASELINE23项通过，未改基线摘要；secret-scan/diff check通过。原生回放初期因未明确Foundation常量/拷贝替身未完成，补显式对象后成功，不放宽未知调用校验。最初测试有postID类型与Foundation导入编译错误，均只修测试。一次只读scripts/build.sh路径不存在，改读实际run_xcodebuild.sh，无源码影响。
+- 无视觉、字体、图标、动画、手势、overlay、依赖或真实写请求；图片发送继续延期。尚缺安全SDK/完整Passport/运行配置、挑战完成续发、getmypost完整provider/开关/生产读取合并、其余来源及可配置替代HTTP引擎。后几项仍有独立证据和接线工作，不全部归因于SDK；不声称完整对齐或长期留存已通过。
+
+
+- 本轮最终相关Unit去重72个方法通过；iPhone短UI5条通过（150.216秒），iPad普通split旋转/Tab路径短UI1条通过（59.210秒），并不覆盖原已知帖子旋转回首楼缺陷。make build、Debug Build10、设备archive、Release隔离、Simulator Keychain entitlement、secret-scan、diff check通过。只跑定向范围，没有全量Unit/quality-fast/quality/长矩阵。
+- IPA：Artifacts/Releases/U08-native-alignment-build10-20261008/TiebaLite-U08-native-alignment-build10-20261008-ios18-arm64-unsigned.ipa，0.2.0(10)、arm64/iPhoneOS/iOS18+/iPhone与iPad、未签名；7,088,631字节，SHA256=00b63978fa36955cfdbde23c213ee6cbedf112f11b66d3942933c05ec66ca1da。712份源码输入归档前后及Simulator构建后一致；140份包文件与archive逐字节相等，ZIP CRC、版本/平台、可执行权限、无签名均核验。原有AppIntents元数据及界面方向archive警告保留；不改团队、BundleID、Keychain或工程签名，真机未运行。
+- 已覆盖常用iPhone17Pro(70D93841-1FEB-445A-8FAD-B1C29B981D5D)完整Live App，主可执行文件及debug dylib与本轮Build10相同；安装前后以相对路径摘要验证1514份持久文件一致（含4份草稿、1504份缓存），之后才无Fixture参数启动。不卸载/清数据/Keychain。UI确认已登录、最近逛吧/历史保留，重开刚才真实帖子并停空白回复编辑器，未输入/点发送，真实写操作0次。CUA可选listWindows接口不可用后用getApp定位窗口，一次AX元素过期后刷新成功，无代码修改。证据simulator-installed.json及release目录TESTING_NOTES；仍为局部试用交付，不输出完整对齐READY，未暂存/提交/推送。
+
+## 2026-10-08 U08 — 按用户要求覆盖安装 Build9 到常用 iPhone Simulator
+
+- 仅构建安装：712份候选源码摘要与Build9 IPA记录完全相同；以命令行CURRENT_PROJECT_VERSION=9构建Debug iPhoneSimulator完整Live App成功，沿用现有签名/Bundle ID/Keychain配置，Keychain entitlement检查通过。不改生产源码，不重复已有定向测试，不暂存/提交/推送。
+- 覆盖安装至常用iPhone17Pro（70D93841-1FEB-445A-8FAD-B1C29B981D5D），安装后主可执行文件及debug dylib与本轮构建SHA256相同，版本0.2.0(9)。首次安装后的校验因误要求Simulator数据容器路径不变而中止；未启动前再次覆盖，以相对路径及文件摘要核对10份持久文件（含4份草稿文件）相同。不卸载、不清数据或Keychain；忽略目录内保留安装核验记录。
+- 正常无Fixture参数启动，UI确认已登录，原最近逛吧和排序可见；打开高通吧真实帖子并停在空白回复编辑器，未输入内容/点击发送/执行上传。此次仅供用户手动试用，不改变上轮完整对齐仍未完成的结论。安装证据：Artifacts/VisualReview/U08/official-ios-22.11.1/build9-simulator/installation-verification.json。构建日志成功；一次只读旧文件名检索不存在后改读实际ComposerDraftStorage，无源码影响。
+
+## 2026-10-08 U08 — 逐项续接网络失败及实际页面来源；完整对齐仍未完成
+
+- 用户要求逐项做到完成，本轮继续以本机HEAD b5266dd9e5034df7ca3592e3216510ccda60769e及iOS22.11.1同SHA参考为准。保留所有既有未提交U08、用户文件和Android submodule；未暂存/提交/推送/U09。没有自动实发、上传、重试、清数据或操作正常Live安装。用户明确答复：没有TiebaLite对应的SDK接入包或应用注册资料。
+- 网络失败：同SHA原生parser封闭回放14个合成边界，5网络错误及1取消、8已完成HTTP解析；底层传输/SDK不在回放范围。生产在现有URLSession加载器记录实际失败耗时，超时result=-2/其他URL加载失败=-1，字节不估算。传输collector先还原原错误再走既有HTTP映射，账号/TBS/写请求的有效账号检查后才发布下次Common统计；取消/失效账号不发布，不改变回执或请求次数。Debug仅保留原错误类别，底层错误脱敏。
+- 页面来源：新增ThreadReadingEntry，推荐3、吧首页5、历史30、回复通知内容37/引用主题29、提及通知39；通知通过实际Pager页面kind传递，进入楼中楼继承，编辑器打开时冻结，再进入原生post_from。只增加随路由移除的来源元数据，不改RouteIdentity/语法/导航容器/缓存或草稿ID。未知搜索/外链仍为既有0。对应Core/ThreadReader/Subposts/Notifications及App边界接线，无外观、字号、图标、动画、手势、overlay或依赖改动。
+- 证据补充：原版“@我的”标题、loadAt及/c/u/feed/atme链确认后才映射39；未根据类名推断。通用jumpToPB中的14不能直接证明搜索来源，未套用。已核查SMS展示先注册JS handler、Passport验证返回authsid后才重新提交原请求；无实际SDK完成契约不伪造验证成功。AF serializer和BBA/NSURLSession另有HTTP状态分派，未把parser样本强推成全引擎一致。官方公开安全SDK要求应用接入资料，缺口及具体符号见API_EVIDENCE顶端。
+- 定向Unit：network-metrics-baseline 16PASS；red 1项/2断言FAIL后green17PASS。network-metrics-final 56项中55PASS，唯一新测试错误要求零字节字段写字符串0；native Common正确省略，改断言为has字段false后network-metrics-final-fixed6PASS，生产不改。page-origin-red 1项/3断言FAIL，green23PASS。notification-origin-red 1项/2断言FAIL，green29PASS。最终相关日志去重78个测试方法均PASS，无未解决测试失败；不重复已通过缓存测试。
+- UI：origin-network-ui iPhone5PASS（设置路径、独立Tab、系统返回、通知引用主题/精确回复楼层、Mock成功收起且只清发送草稿），166.267秒；origin-network-ipad1条系统返回PASS，19.342秒。都是隔离Simulator/Mock，无真机或Live发送验证，不把它们扩大为原已知iPad旋转回首楼通过。
+- make build通过；make lint最终511文件0违规、23项WRITE_BASELINE通过；secret-scan/diff check通过。原beta3摘要保持，仅对本次授权的两个目标工厂来源参数新增精确逆向许可。中间lint参数缩进/复杂度违规已修；一次文档patch标题不匹配无落盘，核对标题后完成。原解析失败10样本在生成器扩展后重生成逐字节一致。公开文档隔离Chrome已关闭，未读取个人浏览器数据。
+- **仍未完成**：SDK/CUID/z_id/真实配置及完整Passport（用户确认没有接入资料）、搜索/外链真实来源、完整HTTP异常分派、验证挑战完成续发、getmypost页面provider/实际开关/生产读取合并。后几项也有独立证据/接线工作，不能全部归因于SDK。图片按前序要求延期，不把这一轮已完成子集称为全部完成；正常Live保持原候选，不输出READY。
+- Build9试用IPA已归档核验：Artifacts/Releases/U08-native-alignment-build9-20261008/TiebaLite-U08-native-alignment-build9-20261008-ios18-arm64-unsigned.ipa；0.2.0(9)、arm64/iPhoneOS/iOS18+、iPhone/iPad、未签名，7,087,634字节，SHA256=b186fe4dfc5a2713bfe0f4a91c46c2a49d3b0054dfeb37743a564732c51a9abc。712份源码前后摘要一致、140份包文件与archive相等，ZIP CRC/可执行位/平台/版本/Release隔离通过。仅archive命令覆盖构建号/禁用签名，不改团队、Bundle ID、Keychain或Simulator签名；保留Build8。两条原有archive警告仍为AppIntents元数据和界面方向。真机未运行，完整未完成项及实际失败/通过结果见同目录TESTING_NOTES.md。
+
+## 2026-10-08 U08 — Build7用户确认回复仍成功；解析失败统计续接，Build8试用IPA
+
+- USER_REPORTED：用户确认Build7回复仍成功，要求继续剩余对齐并列出缺口。HEAD仍b5266dd9e5034df7ca3592e3216510ccda60769e，保留前轮未提交改动和用户文件；未暂存/提交/推送/U09。Build7候选710份包输入核对后只有本轮三个生产文件变化，外观、草稿、登录、缓存、恢复、图片、导航和当前Live安装未动。
+- 原生parseBodyIsProtobuf在成功传输但空body/IDL失败/JSON非字典/缺错误码时仍记录统计result=-3；有效IDL字典缺data仍按errorNum记录，不等于业务成功。用同SHA原生ARM64控制流回放10个合成边界，未知调用失败封闭，Foundation/IDL输出明确替身，无网络/SDK。两轮因未声明日志/告警primitive失败，补明确日志出口后完成；重新生成fixture逐字节一致。
+- 最小实现仅NativeTextWriteClient、NativePreparationResponseMetrics、NativeWriteTransferMeasurement：保留实际字节/耗时，解析失败统计由下一次显式请求消费；没有测量不估算，取消/账号有效性检查仍先于统计发布。有效JSON/Proto、业务回执、发送次数/签名算法/正文/成功关闭/当前页普通刷新保持。没有新UI、动画、手势、overlay、依赖或真实写请求。
+- 先跑基线failure-metrics-baseline 13项/2套件PASS。red首次测试漏try编译失败（failure-metrics-red），修正后failure-metrics-red-actual 16项/22断言FAIL，证明丢统计；修复后failure-metrics-green 37项/4套件PASS（Transfer8、Preparation8、Client11、Live10）。1条Mock iPhone UI成功自动收起/只清已发送草稿PASS，24.430秒；未新改界面，不重复iPad/全部Unit/quality-fast/quality/性能矩阵。lint首轮1处测试参数缩进修正后506文件0违规、23项write-baseline通过；make build/secret-scan/diff check PASS。一次文档patch标题不匹配无落盘，按实际标题修正。
+- 原生HTTP非成功/网络失败统计仍未完成；不能将本轮解析失败子集称为全部错误生命周期对齐。其余真实SDK/CUID/z_id/远程配置、完整Passport、页面来源枚举、验证完成续发、getmypost基础provider/运行开关/生产定向读取合并仍OPEN；原版全局缓存配置/跨账号生命周期未照搬，本App保留账号隔离。图片继续延期。当前普通文字实发成功不外推成全部入口/服务端长期留存通过。
+- Build8 IPA：Artifacts/Releases/U08-native-alignment-build8-20261008/TiebaLite-U08-native-alignment-build8-20261008-ios18-arm64-unsigned.ipa，0.2.0(8)、arm64/iPhoneOS/iOS18+、iPhone/iPad、未签名，7,093,864字节，SHA256=63ec5d9a1d65e8e40919069a6553ff131ee2fbe58b496b7ee56022aff914a9f1。710源码摘要归档前后不变，140包文件与archive相等，ZIP CRC/平台/权限/无签名/Release隔离通过；归档仅命令行覆盖构建号和禁用签名，不改project.yml/BundleID/Keychain/团队。既有AppIntents元数据与方向警告保留。真机未执行，本轮真实发帖/回复/上传0次。候选只是局部续接，不输出READY或宣称全部对齐；细节及失败命令见TESTING_NOTES.md/本轮日志。
+
+
+## 2026-10-08 U08 — Build6用户确认回复成功；续接状态持久化，交付Build7试用IPA
+
+- USER_REPORTED：用户本轮确认“回复仍然成功”，要求继续剩余对齐并编译IPA。修改前710列表前身的709份Build6候选源码摘要全一致；仅新测试/分析脚本先行添加。HEAD仍b5266dd9e5034df7ca3592e3216510ccda60769e，保留原未提交U08/用户改动和Android submodule，不改已验收外观/图片/内容缓存/阅读恢复/导航。
+- 本轮先沿第6项定向读取核查：PB基础provider 0x102ca65b4合并schema、页面、统计与翻页并依赖多个原生配置/SDK服务；pbMyReplySwitch→findType缺对象返回0。没有用空值或Android builder强行接Live，当前成功后的reload/refresh保持。该完整生产路径仍OPEN。
+- 找到并修正第4项确定差异：原版回复响应单值经IDPCache默认策略2写内存及磁盘、失去内存后读回；此前本App仅留NativeWriteSession。NativeWriteAccountVault向兼容version1记录增加可选响应字段/时间，NativeTextWriteClient在TBS/账号准备后读回、当前lease复核后转交头部；收到新的已解析非空值才更新时间。账号元数据保存不抹状态，缺新头不延寿。后台Scene事件采用原生新建缓存3600秒默认值、600秒事件节流清理响应字段，无定时器、重试或额外联网。
+- 存储先保留本进程值后落盘；写后存储失败用非敏感状态标记可观测，不能把已确定成功变成结果未知或重复发送。仍按本App账号隔离，登出只删除原伴随记录；未复制原版全局跨账号缓存，也未伪造远程expiry配置。没有读取真实官方容器/Cookie/正文或修改登录Keychain格式、Bundle ID、签名配置。生产仅7文件含新增App/NativeWriteBackgroundCleanup，源码/请求签名/次数/成功关闭/普通刷新不扩展；无新视觉、动画、手势、overlay或依赖。
+- 同SHA原生封闭回放3种cache策略及5个NSFileModificationDate过期边界；底层文件/时钟/日志与MD5原语明确合成替代，无网络。fixture重生成逐字节一致。state-cache-baseline 13项/2套件PASS；首次单测selector漏括号实际0项（不计通过），修正后state-cache-red-actual 1项/1断言FAIL证明重启丢续接头。初步green 24项/3套件PASS；扩展测试首次因TextWriteAccount非Equatable编译失败，改逐字段断言后state-cache-final-unit-fixed 42项/5套件PASS；新增过期边界后state-cache-expiry-unit 7项PASS。本轮共43个不同相关Unit通过，不重复累计。
+- UI：iPhone state-cache-ui 2项PASS（主页面/返回40.582秒，Mock成功关闭/清已发草稿25.002秒）；iPad state-cache-ipad 1项短路由PASS（19.665秒）。均隔离Simulator，不是Live实发。make generate/build通过；lint首轮5处格式/复杂度问题已修，最终506文件0违规、23项WRITE_BASELINE PASS；secret-scan/diff check通过。原生回放首轮缺MD5替身，补明确原语后通过；定向只读旧路径不存在时查真实位置继续，未修改无关文件。未跑全部Unit/quality-fast/quality/长矩阵。
+- 新包：Artifacts/Releases/U08-native-alignment-build7-20261008/TiebaLite-U08-native-alignment-build7-20261008-ios18-arm64-unsigned.ipa。0.2.0(Build7)、arm64、iPhoneOS/iOS18+、iPhone/iPad、未签名；仅归档命令覆盖构建号及禁用签名。SHA256=827c6ff46f0ecc0f91bc58beb590312b3d1675239068d4a8d540254db2a9de48，7,093,758字节。710份候选源码归档前后摘要一致，140份包内文件与archive逐字节一致，ZIP CRC/版本/平台/执行权限/无签名/Release隔离通过。归档保留既有AppIntents提取跳过、全方向声明两条warning，未改导航设置。
+- 完整对齐仍未完成：私有SDK/Passport/实际配置provider、页面入口枚举、验证完成后继续、getmypost生产读取及合并、全部失败统计与官方全局缓存生命周期仍OPEN，图片继续延期。本包为局部对齐试用版，不能称“剩余全部完成”。仅用户手动实发，本轮真实写请求0次，未操作当前Live安装或个人数据。未暂存、提交、推送、发布GitHub或进入U09，不输出READY。安装说明/限制/实际测试见同目录TESTING_NOTES.md。
+
+## 2026-10-08 U08 — 用户反馈 Build5 回复正常；账号/TBS 统计续接并产出 Build6 IPA
+
+- USER_REPORTED：用户反馈上一版“回复没问题”，授权继续对齐并生成新版IPA。记录为本次人工回复成功，不扩大成所有入口、全部原生SDK或长期审核留存通过。HEAD仍b5266dd，保留前轮及用户全部未提交改动；图片继续延期。
+- 本轮仅改3个既有生产文件NativeAccountPreparation/NativeLiveTextWriteRepository/NativeTextWriteClient，新增NativePreparationHTTPClient/NativePreparationResponseMetrics。原版普通表单头的非0/非-1 client_logid补入账号请求；账号/TBS有效JSON包的实际字节、耗时、原生JSON error_code/error.errno优先级及logid转换接入下一次Common。HTTP成功但业务账号/TBS缺失仍失败，不因统计存在而宣称发送成功；当前账号/取消检查前后围住度量接受。首次准备失败而尚无client时的统计所有权也绑定AuthContext，换账号清理旧值。
+- 未增加账号/TBS/写请求次数、重试或真实探测；请求顺序、业务decoder、正文/签名算法、回执判定、成功关闭和页面刷新不变。没有改外观、图片、缓存、恢复、导航、Pager/Viewer，无新手势、动画、overlay或依赖。WRITE_BASELINE原23摘要及精确许可保持，本轮不修改其规则。
+- 同SHA的iOS22.11.1 parser及numberAtPath封闭回放12个合成JSON统计、普通请求头4例；数字logid与字符串经double转换的精度差异按原生保留。生成器复用既有统计回放类（仅把旧CLI置于main保护下），旧4个Proto统计和新fixture重生成逐字节相同。无真实正文、凭据、设备标识或网络执行。
+- 验证：form-metrics-baseline 16项/2套件PASS。新用例red 2项失败/11处断言，其中9处为真实统计缺口；另2处无编号fixture却要求有头，最终将fixture设为明确1000001并加强为精确头值断言。首轮green 40项只剩这2处测试输入错误；改测试输入后form-metrics-green-final 40项/5套件PASS（新增7项，原统计6、Live10、Client11、TBS准备6）。未放宽生产判定/断言。lint首轮4处测试行长违规，修后504文件0违规/23项基线PASS。make generate/build、secret scan、git diff --check通过。
+- 短UI form-metrics-ui 1项PASS，24.523秒：Mock发送成功自动关闭编辑器，只清已发送草稿。没有布局修改，不重复iPad矩阵；没有真机或Live发送自动化，真实写请求0次。未跑全量Unit、quality-fast、quality或长矩阵。只读检索两次旧文件名不存在/一次日志尚未生成，改用真实位置完成；未据此更改实现。
+- 设备Release归档成功，0.2.0(Build6)、arm64、iOS18+、iPhone/iPad、未签名，仍仅命令覆盖CURRENT_PROJECT_VERSION=6和禁用签名。project.yml、Bundle ID和Keychain配置不变；正常已安装App未操作。保留Build5包，新包Artifacts/Releases/U08-native-alignment-build6-20261008/TiebaLite-U08-native-alignment-build6-20261008-ios18-arm64-unsigned.ipa，SHA256=62a851791d6ea9f616a2f15eae3c44858ae60188a889d94def091787e660997e。709份源码摘要未变，140份包内文件与archive相同，ZIP CRC/平台/架构/可执行位/版本/Release隔离通过。两条既有archive warning仍为AppIntents元数据跳过和界面方向声明，未改导航或方向策略。
+- 完整对齐仍未完成：SDK/Passport/实际配置provider、验证后继续、原生getmypost页面provider/选路/读取合并，以及网络失败/畸形回包的全局统计仍OPEN。Build6供用户自行签名和手动测试，不保证审核留存；不输出READY。没有暂存、提交、推送、上传GitHub或进入U09。
+
+## 2026-10-08 U08 — 实际传输统计接入，已产出真机试用 IPA；完整对齐仍未完成
+
+- 继续用户授权的前六项对齐及“编译ipa我测试”。HEAD仍b5266dd；保留此前账号持久化、页面上下文和原生定向读取组件。根据同SHA的iOS22.11.1，补齐原生写请求的实际URLSession传输统计：最后一次networkLoad的请求/响应header+body字节、解析前耗时、原生parser的API/result投影，交由下次Common一次性消费。独立ARM64 parser回放4组合成样本；无正文、凭据或伪造SDK身份。
+- 只对同账号、未取消、HTTP成功、Proto可解析且有payload的写响应接入；账号切换清旧统计，迟到回调不追改已完成请求。共享URLSessionDataLoader仅添加显式delegate重载，普通入口、原请求/正文/超时/大小限制/重定向拒绝保持。DEBUG观察器透明转交统计；WRITE_BASELINE保留23个原摘要，仅新增精确逆向授权差异。账号/TBS JSON和传输/解析失败的原生全局统计覆盖仍未齐，不把局部指标接入说成全部生命周期一致。
+- 定向验证：continue-baseline 9项PASS；行为red用例3项中1项失败（4个断言证明统计未保存及未进入下一请求）；修后transfer-green-final 23项/3套件、transfer-lifecycle 20项/3套件PASS。最后增加hasPayload边界后transfer-final-unit 6项PASS；受影响5套件合计40个不同Unit用例，重跑不重复累计。短UI transfer-ui 1项PASS（24.559秒），只验证Mock成功关闭及清已发送草稿。make generate/build通过；最终lint 501文件0违规/23项基线PASS，secret-scan、diff check通过。未跑全量Unit/quality-fast/quality，真实发帖/回复/上传0次。
+- 中间失败保留：首次生成器缺Foundation变参字典stub，改复用已有模拟器后成功；最初测试Data.range参数标签错误导致编译失败，修正后取得上述实际行为red；第一次green测试跨文件引用private测试协议导致编译失败，改在原测试文件内复用后通过。没有放宽断言或修改生产可见性。原生URLSession回调探针证明不能依赖async bytes的didComplete回调收尾，采用一次性实际metrics快照，缺失时为nil，不补估算值或计时等待。
+- 真机Release archive成功，命令仅本次覆盖CURRENT_PROJECT_VERSION=5及禁用代码签名，project.yml/Bundle ID/Keychain/Simulator签名配置不变。0.2.0(5)、arm64、iOS18+、iPhone/iPad、未签名IPA：Artifacts/Releases/U08-native-alignment-20261008/TiebaLite-U08-native-alignment-20261008-ios18-arm64-unsigned.ipa。SHA256=d857020d5c9ddf8de9615c5df896c3d9de4c2151b1c8387856ff52d49119f365。707份候选源文件摘要未变；140份包内文件与archive逐字节一致；ZIP CRC/设备平台/架构/版本/可执行位校验及原Release隔离规则通过（仅将校验输入路径改为本次device archive）。
+- archive保留两条warning：无AppIntents依赖而跳过元数据提取、现有界面方向声明不满足全方向。没有为消除warning改变iPad导航/方向策略。IPA需用户自行签名安装；本轮没有真机运行或实发验收，不声明审核留存已修复，也未覆盖当前正常Live安装。图片继续延期。
+- **未完成项**：完整Passport/安全SDK与实际配置provider、验证完成后的恢复、原生getmypost基础PB provider/实验选路/生产读取及列表合并仍OPEN。此包是包含已验证部分的试用版，不是“前六项完全对齐版”。无新视觉、动画、手势、overlay或生产依赖；未暂存、提交、推送或进入U09，保留全部用户数据和原有改动，不输出READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-08 U08 — 原生定向读取组件通过，已检索 GitHub，Live 接线仍未完成
+
+- 继续用户授权的前六项对齐，HEAD仍b5266dd，保留此前账号/TBS/页面数量/网络上下文改动。本轮新增NativeReplyReadProtocol/Client、原生ReplyRead Proto子集、fixture生成/DTO核对工具与6项测试；共享NativeWriteHTTPRequest只抽取原有封装，已有写入字节/头/URL回归保持。没有改页面、回复正文/判定/次数/刷新接线、图片、缓存或恢复；无新增动画、手势、overlay、生产依赖。
+- 从同SHA的iOS22.11.1包核对CMD309751→PbList，新增3个请求/8个响应独立合成样本，重生成逐字节相同。共享只读payload DTO闭包按原生描述符核对70消息/698字段；唯一uint32内容类型差异显式拒绝越界。专用原生响应外壳解码，复用既有纯领域映射，不调用Android请求构造器。组件验证实际目标存在、单次请求、防重复、取消、旧账号结果拒绝和失败不重试，不写缓存/进度。
+- **尚未完成第6项Live行为**：基础PB参数provider、实验开关/选路、Common实际输入、回执定向结果与列表/缓存合并未闭合；ad_param等未知复杂provider输入拒绝，不补造。普通发送后的现有reload/refresh保持。完整SDK/Passport、验证后继续和传输统计等前轮缺口仍OPEN，图片延期。不把组件成功等同前六项完成或审核留存已修复。
+- 已按要求检索GitHub：TiebaPure-iOS固定提交6bf728b的SwiftUI外壳下发送使用client_type2/Android UA；toamdou/TiebaLite-IOS未实现发帖/回复。未找到可核验的对应原生provider/验证恢复实现，未导入这些代码；精确链接与范围写入API_EVIDENCE。
+- 定向验证：followup-baseline 12项/2套件PASS；reply-read-unit-fixed 20项/3套件PASS；新增异步客户端后reply-read-client 6项PASS；补first_floor/内容类型样本后的reply-read-final 6项PASS，原封装最终reply-read-http-final 6项PASS（重叠不累计为独立用例）。最终lint 498文件0违规/23项发送基线PASS，make generate-protos/generate/build、secret-scan、git diff --check通过。所有HTTP为Mock，真实发帖/回复/上传0次；没有UI变化，沿用前轮短UI结果，不新增Live或iPad验收声明。
+- 中间失败如实保留：首次原生fixture生成缺依赖（ThemeColorInfo后AppTransmitData），改投影闭包后成功；generate在更新Proto但未重新生成时因漂移退出，generate-protos后通过；首次新测试错用domain post.source导致编译失败，改真实id后通过；lint首次6项格式违规修后通过。最后组合命令误写HTTP套件名，仅运行6项读取测试，随后用正确U08NativeWriteHTTPRequestTests单独跑6项通过。一次文档patch上下文不匹配整体未应用，修正后成功。
+- 当前正常Live仍保留此前用户已验收的安装，本轮未覆盖半成品、未操作真实发送、未读取个人正文/凭据、未清理账号/历史/缓存/草稿。未暂存、提交、推送或进入U09。记录和证据完成，完整对齐仍未完成，不输出READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-08 U08 — 前六项部分对齐，未完成全部范围，Live 保持已验收版本
+
+- 用户授权在 b5266dd 基础上先对齐前六项，图片延后。实际修改本 App 原生准备账号/TBS 的 Keychain 伴随存储（稳定账号 namespace；只同账号复用；登录/登出清理自身条目；序列化条件删除防重入）、同 UID 原始昵称复用、编辑器打开时冻结回复总数并转交已证实的签名字典字段。UI fallback 不进入账号名，资料只读请求/视觉不变，不增加任何资料请求。
+- Runtime 读取本 App 当前网络类型/活动 SIM 无敏感标识的 radio technology，Wi-Fi10秒/其他25秒；补 AF 语言权重和本进程 client_logid。空 net_type 经原生 int32 的签名后显式零转换，不改签名前字典。保留 URL、multipart、标准签名、回执判定、现有成功收起及当前页刷新；图片、缓存、恢复、导航、样式不改。WRITE_BASELINE 仅新增3处页面数量接线的精确逆向许可，23个旧摘要保持。
+- 纠正一个静态假设：楼中楼原生 floorNum 明确为"0"，没有改成界面楼层。新增查证 CMD309751 的 factory/vtable 为 PbListReqIdl/PbListResIdl，排除不同的同名 GetMyPost。该定向读取仍依赖未接通的基础页面 provider/选路/结果合并，生产未追加请求。详见 API_EVIDENCE 和 WRITE_MODERATION_COMPARISON 顶部。
+- **范围未完成**：第一项既有编码基线保留，第二/三项及第四项部分真实值已接；完整 Passport/SDK、各页面入口枚举、UA/实验配置/传输统计/响应状态完整作用域、第五项验证后继续和第六项定向读取仍 OPEN。参考为 device IPA，不能直接作为 Simulator SDK；缺少可运行的 provider/挑战完成契约，不能用空值/假身份/估算统计/自动重发补齐。未进入图片阶段，不宣称前六项已对齐或审核结果已修复。
+- 定向验证：baseline 9项PASS。账号首次red为缺新类型/测试脚手架编译失败（不是行为失败证据），修后11项PASS。six-items-network-red 8项中空net_type因malformedNumber失败1项；修后core-green 26项/5套件PASS。direct-regression 33项/5套件PASS（与前轮有重叠，含原生客户端/签名/业务）；最后隔离原始昵称及UI fallback后profile-final 14项/3套件PASS。所有HTTP为Mock，真实发帖/回复/上传0次；原生编号封闭ARM64回放1000.999→1000001/2/3，与本地实现一致。
+- 短UI：首次误用配置名Smoke导致无可测试bundle（exit70，不计通过）；改正确UI Smoke后six-items-ui-final 1项PASS，24.528秒，验证Mock成功关闭/草稿/现有刷新。没有新增iPad视觉/真机/Live发送验证；本轮无布局/手势变化。lint首次3项样式违规，修后495文件0 violation，发送基线23项PASS；make generate、make build、secret-scan、diff check通过。未跑全量Unit/quality-fast/quality或长矩阵。几次只读检索因旧路径/未匹配通配符失败，改精确路径后完成；没有据此修改用户文件。
+- 未覆盖正常Live安装（仍为此前已验收发送候选），没有清除/读取个人凭据、草稿正文、账号或缓存，没有新手势/动画/overlay/依赖。保留所有用户原有改动和前次对照文档；未暂存、提交、推送或进入U09。此状态不输出 READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-08 U08 — 按用户要求只读对照已提交回复链路
+
+- 当前 HEAD b5266dd9e5034df7ca3592e3216510ccda60769e，生产工作树没有变更。重新对照用户指定 iOS22.11.1/SHA4f0cb74c… 的地址、回复模型、UA、完成回调和当前接线；原生离线地址6例/回复业务3例与现有 fixture 一致，每个业务出口拦截一次，不运行官方完整 App，不发送网络请求。
+- 读取本次用户发送的已有白名单元数据：account 一次 HTTP200/JSON0，reply 一次 HTTP200/549bytes/Proto0，payload 和正 tid/pid 存在。结合用户截图确认这一次主题回复成功；不保留正文、ID 值或凭据。hasError 表示 error 子消息存在，不将 errorno0 解释为错误。
+- 结论为“文字主题回复已打通，但完整链路未完全对齐”。确定缺口包括持久账号/昵称来源、固定页面上下文、运行时 Common/SDK/配置与请求统计、条件请求环境、响应状态作用域、验证恢复、原生 getmypost 后续读取和图片上传；细项和源码位置写入 Docs/Audits/WRITE_MODERATION_COMPARISON.md。没有借对照追加参数/请求或修改已验收发送行为。
+- 仅更新该对照记录、TASK_STATE 和 ADR-0027；更正 ADR 中已过时的“无 cmd/format 查询”和“未接入 Live”结论。没有新 UI/动画/手势/overlay/依赖，没有重装、构建、Unit/UI 重跑或真实发送；沿用同一候选已有验证。一次 zsh 源码路径通配符未匹配，已改用目录内 rg -g 完成检索。未暂存、提交、推送或进入 U09。
+
 ## 2026-10-08 U08 — USER_ACCEPTED，用户批准提交当前候选
 
 - 用户在确认本轮模拟器真实主题回复成功、原帖第 8 楼可见后，明确要求“现在先提交”。提交范围为当前已安装候选的草稿持久化、原生 iOS 文字发送链路、URL 路由修复及对应回归/证据；验收后生产代码未变，沿用已有构建和定向结果，不重复全套测试。

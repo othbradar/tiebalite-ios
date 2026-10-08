@@ -12,6 +12,11 @@
 /// Reference SHA256: 4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb
 /// See Specs/API_EVIDENCE.md. No application code or runtime values are included.
 
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#else
+import Foundation
+#endif
 import SwiftProtobuf
 
 // If the compiler emits an error on this type, it is because this file
@@ -2806,6 +2811,498 @@ public nonisolated struct TiebaNativeWrite_ThreadData: @unchecked Sendable {
   fileprivate var _storage = _StorageClass.defaultInstance
 }
 
+/// CMD309751 PbList request/response boundary from the same native executable.
+/// Complex ad/push providers remain unsupported at the caller boundary.
+public nonisolated struct TiebaNativeWrite_ReplyReadRequest: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var data: TiebaNativeWrite_ReplyReadData {
+    get {_data ?? TiebaNativeWrite_ReplyReadData()}
+    set {_data = newValue}
+  }
+  /// Returns true if `data` has been explicitly set.
+  public var hasData: Bool {self._data != nil}
+  /// Clears the value of `data`. Subsequent reads from it will return its default value.
+  public mutating func clearData() {self._data = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _data: TiebaNativeWrite_ReplyReadData? = nil
+}
+
+public nonisolated struct TiebaNativeWrite_ReplyReadData: @unchecked Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var common: TiebaNativeWrite_Common {
+    get {_storage._common ?? TiebaNativeWrite_Common()}
+    set {_uniqueStorage()._common = newValue}
+  }
+  /// Returns true if `common` has been explicitly set.
+  public var hasCommon: Bool {_storage._common != nil}
+  /// Clears the value of `common`. Subsequent reads from it will return its default value.
+  public mutating func clearCommon() {_uniqueStorage()._common = nil}
+
+  public var kz: Int64 {
+    get {_storage._kz ?? 0}
+    set {_uniqueStorage()._kz = newValue}
+  }
+  /// Returns true if `kz` has been explicitly set.
+  public var hasKz: Bool {_storage._kz != nil}
+  /// Clears the value of `kz`. Subsequent reads from it will return its default value.
+  public mutating func clearKz() {_uniqueStorage()._kz = nil}
+
+  public var pn: Int32 {
+    get {_storage._pn ?? 0}
+    set {_uniqueStorage()._pn = newValue}
+  }
+  /// Returns true if `pn` has been explicitly set.
+  public var hasPn: Bool {_storage._pn != nil}
+  /// Clears the value of `pn`. Subsequent reads from it will return its default value.
+  public mutating func clearPn() {_uniqueStorage()._pn = nil}
+
+  public var lastPid: Int64 {
+    get {_storage._lastPid ?? 0}
+    set {_uniqueStorage()._lastPid = newValue}
+  }
+  /// Returns true if `lastPid` has been explicitly set.
+  public var hasLastPid: Bool {_storage._lastPid != nil}
+  /// Clears the value of `lastPid`. Subsequent reads from it will return its default value.
+  public mutating func clearLastPid() {_uniqueStorage()._lastPid = nil}
+
+  public var r: Int32 {
+    get {_storage._r ?? 0}
+    set {_uniqueStorage()._r = newValue}
+  }
+  /// Returns true if `r` has been explicitly set.
+  public var hasR: Bool {_storage._r != nil}
+  /// Clears the value of `r`. Subsequent reads from it will return its default value.
+  public mutating func clearR() {_uniqueStorage()._r = nil}
+
+  public var back: Int32 {
+    get {_storage._back ?? 0}
+    set {_uniqueStorage()._back = newValue}
+  }
+  /// Returns true if `back` has been explicitly set.
+  public var hasBack: Bool {_storage._back != nil}
+  /// Clears the value of `back`. Subsequent reads from it will return its default value.
+  public mutating func clearBack() {_uniqueStorage()._back = nil}
+
+  public var lz: Int32 {
+    get {_storage._lz ?? 0}
+    set {_uniqueStorage()._lz = newValue}
+  }
+  /// Returns true if `lz` has been explicitly set.
+  public var hasLz: Bool {_storage._lz != nil}
+  /// Clears the value of `lz`. Subsequent reads from it will return its default value.
+  public mutating func clearLz() {_uniqueStorage()._lz = nil}
+
+  public var markType: Int32 {
+    get {_storage._markType ?? 0}
+    set {_uniqueStorage()._markType = newValue}
+  }
+  /// Returns true if `markType` has been explicitly set.
+  public var hasMarkType: Bool {_storage._markType != nil}
+  /// Clears the value of `markType`. Subsequent reads from it will return its default value.
+  public mutating func clearMarkType() {_uniqueStorage()._markType = nil}
+
+  public var tabType: String {
+    get {_storage._tabType ?? String()}
+    set {_uniqueStorage()._tabType = newValue}
+  }
+  /// Returns true if `tabType` has been explicitly set.
+  public var hasTabType: Bool {_storage._tabType != nil}
+  /// Clears the value of `tabType`. Subsequent reads from it will return its default value.
+  public mutating func clearTabType() {_uniqueStorage()._tabType = nil}
+
+  public var tabID: UInt64 {
+    get {_storage._tabID ?? 0}
+    set {_uniqueStorage()._tabID = newValue}
+  }
+  /// Returns true if `tabID` has been explicitly set.
+  public var hasTabID: Bool {_storage._tabID != nil}
+  /// Clears the value of `tabID`. Subsequent reads from it will return its default value.
+  public mutating func clearTabID() {_uniqueStorage()._tabID = nil}
+
+  public var topPid: Int64 {
+    get {_storage._topPid ?? 0}
+    set {_uniqueStorage()._topPid = newValue}
+  }
+  /// Returns true if `topPid` has been explicitly set.
+  public var hasTopPid: Bool {_storage._topPid != nil}
+  /// Clears the value of `topPid`. Subsequent reads from it will return its default value.
+  public mutating func clearTopPid() {_uniqueStorage()._topPid = nil}
+
+  public var stType: String {
+    get {_storage._stType ?? String()}
+    set {_uniqueStorage()._stType = newValue}
+  }
+  /// Returns true if `stType` has been explicitly set.
+  public var hasStType: Bool {_storage._stType != nil}
+  /// Clears the value of `stType`. Subsequent reads from it will return its default value.
+  public mutating func clearStType() {_uniqueStorage()._stType = nil}
+
+  public var upSchema: String {
+    get {_storage._upSchema ?? String()}
+    set {_uniqueStorage()._upSchema = newValue}
+  }
+  /// Returns true if `upSchema` has been explicitly set.
+  public var hasUpSchema: Bool {_storage._upSchema != nil}
+  /// Clears the value of `upSchema`. Subsequent reads from it will return its default value.
+  public mutating func clearUpSchema() {_uniqueStorage()._upSchema = nil}
+
+  public var logParams: String {
+    get {_storage._logParams ?? String()}
+    set {_uniqueStorage()._logParams = newValue}
+  }
+  /// Returns true if `logParams` has been explicitly set.
+  public var hasLogParams: Bool {_storage._logParams != nil}
+  /// Clears the value of `logParams`. Subsequent reads from it will return its default value.
+  public mutating func clearLogParams() {_uniqueStorage()._logParams = nil}
+
+  public var yuelaouLocate: String {
+    get {_storage._yuelaouLocate ?? String()}
+    set {_uniqueStorage()._yuelaouLocate = newValue}
+  }
+  /// Returns true if `yuelaouLocate` has been explicitly set.
+  public var hasYuelaouLocate: Bool {_storage._yuelaouLocate != nil}
+  /// Clears the value of `yuelaouLocate`. Subsequent reads from it will return its default value.
+  public mutating func clearYuelaouLocate() {_uniqueStorage()._yuelaouLocate = nil}
+
+  public var queryWord: String {
+    get {_storage._queryWord ?? String()}
+    set {_uniqueStorage()._queryWord = newValue}
+  }
+  /// Returns true if `queryWord` has been explicitly set.
+  public var hasQueryWord: Bool {_storage._queryWord != nil}
+  /// Clears the value of `queryWord`. Subsequent reads from it will return its default value.
+  public mutating func clearQueryWord() {_uniqueStorage()._queryWord = nil}
+
+  public var daIdfa: String {
+    get {_storage._daIdfa ?? String()}
+    set {_uniqueStorage()._daIdfa = newValue}
+  }
+  /// Returns true if `daIdfa` has been explicitly set.
+  public var hasDaIdfa: Bool {_storage._daIdfa != nil}
+  /// Clears the value of `daIdfa`. Subsequent reads from it will return its default value.
+  public mutating func clearDaIdfa() {_uniqueStorage()._daIdfa = nil}
+
+  public var adContextList: String {
+    get {_storage._adContextList ?? String()}
+    set {_uniqueStorage()._adContextList = newValue}
+  }
+  /// Returns true if `adContextList` has been explicitly set.
+  public var hasAdContextList: Bool {_storage._adContextList != nil}
+  /// Clears the value of `adContextList`. Subsequent reads from it will return its default value.
+  public mutating func clearAdContextList() {_uniqueStorage()._adContextList = nil}
+
+  public var adExtParams: String {
+    get {_storage._adExtParams ?? String()}
+    set {_uniqueStorage()._adExtParams = newValue}
+  }
+  /// Returns true if `adExtParams` has been explicitly set.
+  public var hasAdExtParams: Bool {_storage._adExtParams != nil}
+  /// Clears the value of `adExtParams`. Subsequent reads from it will return its default value.
+  public mutating func clearAdExtParams() {_uniqueStorage()._adExtParams = nil}
+
+  public var adBearPbBanner: String {
+    get {_storage._adBearPbBanner ?? String()}
+    set {_uniqueStorage()._adBearPbBanner = newValue}
+  }
+  /// Returns true if `adBearPbBanner` has been explicitly set.
+  public var hasAdBearPbBanner: Bool {_storage._adBearPbBanner != nil}
+  /// Clears the value of `adBearPbBanner`. Subsequent reads from it will return its default value.
+  public mutating func clearAdBearPbBanner() {_uniqueStorage()._adBearPbBanner = nil}
+
+  public var adBearPbComment: String {
+    get {_storage._adBearPbComment ?? String()}
+    set {_uniqueStorage()._adBearPbComment = newValue}
+  }
+  /// Returns true if `adBearPbComment` has been explicitly set.
+  public var hasAdBearPbComment: Bool {_storage._adBearPbComment != nil}
+  /// Clears the value of `adBearPbComment`. Subsequent reads from it will return its default value.
+  public mutating func clearAdBearPbComment() {_uniqueStorage()._adBearPbComment = nil}
+
+  public var adExternalBannerInfo: String {
+    get {_storage._adExternalBannerInfo ?? String()}
+    set {_uniqueStorage()._adExternalBannerInfo = newValue}
+  }
+  /// Returns true if `adExternalBannerInfo` has been explicitly set.
+  public var hasAdExternalBannerInfo: Bool {_storage._adExternalBannerInfo != nil}
+  /// Clears the value of `adExternalBannerInfo`. Subsequent reads from it will return its default value.
+  public mutating func clearAdExternalBannerInfo() {_uniqueStorage()._adExternalBannerInfo = nil}
+
+  public var adExternalInfo: String {
+    get {_storage._adExternalInfo ?? String()}
+    set {_uniqueStorage()._adExternalInfo = newValue}
+  }
+  /// Returns true if `adExternalInfo` has been explicitly set.
+  public var hasAdExternalInfo: Bool {_storage._adExternalInfo != nil}
+  /// Clears the value of `adExternalInfo`. Subsequent reads from it will return its default value.
+  public mutating func clearAdExternalInfo() {_uniqueStorage()._adExternalInfo = nil}
+
+  public var gameID: String {
+    get {_storage._gameID ?? String()}
+    set {_uniqueStorage()._gameID = newValue}
+  }
+  /// Returns true if `gameID` has been explicitly set.
+  public var hasGameID: Bool {_storage._gameID != nil}
+  /// Clears the value of `gameID`. Subsequent reads from it will return its default value.
+  public mutating func clearGameID() {_uniqueStorage()._gameID = nil}
+
+  public var cid: String {
+    get {_storage._cid ?? String()}
+    set {_uniqueStorage()._cid = newValue}
+  }
+  /// Returns true if `cid` has been explicitly set.
+  public var hasCid: Bool {_storage._cid != nil}
+  /// Clears the value of `cid`. Subsequent reads from it will return its default value.
+  public mutating func clearCid() {_uniqueStorage()._cid = nil}
+
+  public var position: Int32 {
+    get {_storage._position ?? 0}
+    set {_uniqueStorage()._position = newValue}
+  }
+  /// Returns true if `position` has been explicitly set.
+  public var hasPosition: Bool {_storage._position != nil}
+  /// Clears the value of `position`. Subsequent reads from it will return its default value.
+  public mutating func clearPosition() {_uniqueStorage()._position = nil}
+
+  public var gameFid: String {
+    get {_storage._gameFid ?? String()}
+    set {_uniqueStorage()._gameFid = newValue}
+  }
+  /// Returns true if `gameFid` has been explicitly set.
+  public var hasGameFid: Bool {_storage._gameFid != nil}
+  /// Clears the value of `gameFid`. Subsequent reads from it will return its default value.
+  public mutating func clearGameFid() {_uniqueStorage()._gameFid = nil}
+
+  public var gameFname: String {
+    get {_storage._gameFname ?? String()}
+    set {_uniqueStorage()._gameFname = newValue}
+  }
+  /// Returns true if `gameFname` has been explicitly set.
+  public var hasGameFname: Bool {_storage._gameFname != nil}
+  /// Clears the value of `gameFname`. Subsequent reads from it will return its default value.
+  public mutating func clearGameFname() {_uniqueStorage()._gameFname = nil}
+
+  public var searchQuery: String {
+    get {_storage._searchQuery ?? String()}
+    set {_uniqueStorage()._searchQuery = newValue}
+  }
+  /// Returns true if `searchQuery` has been explicitly set.
+  public var hasSearchQuery: Bool {_storage._searchQuery != nil}
+  /// Clears the value of `searchQuery`. Subsequent reads from it will return its default value.
+  public mutating func clearSearchQuery() {_uniqueStorage()._searchQuery = nil}
+
+  public var topicID: Int64 {
+    get {_storage._topicID ?? 0}
+    set {_uniqueStorage()._topicID = newValue}
+  }
+  /// Returns true if `topicID` has been explicitly set.
+  public var hasTopicID: Bool {_storage._topicID != nil}
+  /// Clears the value of `topicID`. Subsequent reads from it will return its default value.
+  public mutating func clearTopicID() {_uniqueStorage()._topicID = nil}
+
+  public var topicFid: Int64 {
+    get {_storage._topicFid ?? 0}
+    set {_uniqueStorage()._topicFid = newValue}
+  }
+  /// Returns true if `topicFid` has been explicitly set.
+  public var hasTopicFid: Bool {_storage._topicFid != nil}
+  /// Clears the value of `topicFid`. Subsequent reads from it will return its default value.
+  public mutating func clearTopicFid() {_uniqueStorage()._topicFid = nil}
+
+  public var mountBotUk: String {
+    get {_storage._mountBotUk ?? String()}
+    set {_uniqueStorage()._mountBotUk = newValue}
+  }
+  /// Returns true if `mountBotUk` has been explicitly set.
+  public var hasMountBotUk: Bool {_storage._mountBotUk != nil}
+  /// Clears the value of `mountBotUk`. Subsequent reads from it will return its default value.
+  public mutating func clearMountBotUk() {_uniqueStorage()._mountBotUk = nil}
+
+  public var requestTimes: Int32 {
+    get {_storage._requestTimes ?? 0}
+    set {_uniqueStorage()._requestTimes = newValue}
+  }
+  /// Returns true if `requestTimes` has been explicitly set.
+  public var hasRequestTimes: Bool {_storage._requestTimes != nil}
+  /// Clears the value of `requestTimes`. Subsequent reads from it will return its default value.
+  public mutating func clearRequestTimes() {_uniqueStorage()._requestTimes = nil}
+
+  public var broadcastID: Int64 {
+    get {_storage._broadcastID ?? 0}
+    set {_uniqueStorage()._broadcastID = newValue}
+  }
+  /// Returns true if `broadcastID` has been explicitly set.
+  public var hasBroadcastID: Bool {_storage._broadcastID != nil}
+  /// Clears the value of `broadcastID`. Subsequent reads from it will return its default value.
+  public mutating func clearBroadcastID() {_uniqueStorage()._broadcastID = nil}
+
+  public var fr: String {
+    get {_storage._fr ?? String()}
+    set {_uniqueStorage()._fr = newValue}
+  }
+  /// Returns true if `fr` has been explicitly set.
+  public var hasFr: Bool {_storage._fr != nil}
+  /// Clears the value of `fr`. Subsequent reads from it will return its default value.
+  public mutating func clearFr() {_uniqueStorage()._fr = nil}
+
+  public var sessionRequestTimes: Int32 {
+    get {_storage._sessionRequestTimes ?? 0}
+    set {_uniqueStorage()._sessionRequestTimes = newValue}
+  }
+  /// Returns true if `sessionRequestTimes` has been explicitly set.
+  public var hasSessionRequestTimes: Bool {_storage._sessionRequestTimes != nil}
+  /// Clears the value of `sessionRequestTimes`. Subsequent reads from it will return its default value.
+  public mutating func clearSessionRequestTimes() {_uniqueStorage()._sessionRequestTimes = nil}
+
+  public var shoubaiCuid: String {
+    get {_storage._shoubaiCuid ?? String()}
+    set {_uniqueStorage()._shoubaiCuid = newValue}
+  }
+  /// Returns true if `shoubaiCuid` has been explicitly set.
+  public var hasShoubaiCuid: Bool {_storage._shoubaiCuid != nil}
+  /// Clears the value of `shoubaiCuid`. Subsequent reads from it will return its default value.
+  public mutating func clearShoubaiCuid() {_uniqueStorage()._shoubaiCuid = nil}
+
+  public var fromForumID: UInt32 {
+    get {_storage._fromForumID ?? 0}
+    set {_uniqueStorage()._fromForumID = newValue}
+  }
+  /// Returns true if `fromForumID` has been explicitly set.
+  public var hasFromForumID: Bool {_storage._fromForumID != nil}
+  /// Clears the value of `fromForumID`. Subsequent reads from it will return its default value.
+  public mutating func clearFromForumID() {_uniqueStorage()._fromForumID = nil}
+
+  public var floorNum: UInt32 {
+    get {_storage._floorNum ?? 0}
+    set {_uniqueStorage()._floorNum = newValue}
+  }
+  /// Returns true if `floorNum` has been explicitly set.
+  public var hasFloorNum: Bool {_storage._floorNum != nil}
+  /// Clears the value of `floorNum`. Subsequent reads from it will return its default value.
+  public mutating func clearFloorNum() {_uniqueStorage()._floorNum = nil}
+
+  public var aladdinSrcID: Int64 {
+    get {_storage._aladdinSrcID ?? 0}
+    set {_uniqueStorage()._aladdinSrcID = newValue}
+  }
+  /// Returns true if `aladdinSrcID` has been explicitly set.
+  public var hasAladdinSrcID: Bool {_storage._aladdinSrcID != nil}
+  /// Clears the value of `aladdinSrcID`. Subsequent reads from it will return its default value.
+  public mutating func clearAladdinSrcID() {_uniqueStorage()._aladdinSrcID = nil}
+
+  public var appLaunchFrom: String {
+    get {_storage._appLaunchFrom ?? String()}
+    set {_uniqueStorage()._appLaunchFrom = newValue}
+  }
+  /// Returns true if `appLaunchFrom` has been explicitly set.
+  public var hasAppLaunchFrom: Bool {_storage._appLaunchFrom != nil}
+  /// Clears the value of `appLaunchFrom`. Subsequent reads from it will return its default value.
+  public mutating func clearAppLaunchFrom() {_uniqueStorage()._appLaunchFrom = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+public nonisolated struct TiebaNativeWrite_ReplyReadResponse: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var error: TiebaNativeWrite_ResponseError {
+    get {_error ?? TiebaNativeWrite_ResponseError()}
+    set {_error = newValue}
+  }
+  /// Returns true if `error` has been explicitly set.
+  public var hasError: Bool {self._error != nil}
+  /// Clears the value of `error`. Subsequent reads from it will return its default value.
+  public mutating func clearError() {self._error = nil}
+
+  public var data: TiebaNativeWrite_ReplyReadResponseData {
+    get {_data ?? TiebaNativeWrite_ReplyReadResponseData()}
+    set {_data = newValue}
+  }
+  /// Returns true if `data` has been explicitly set.
+  public var hasData: Bool {self._data != nil}
+  /// Clears the value of `data`. Subsequent reads from it will return its default value.
+  public mutating func clearData() {self._data = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _error: TiebaNativeWrite_ResponseError? = nil
+  fileprivate var _data: TiebaNativeWrite_ReplyReadResponseData? = nil
+}
+
+/// Message payload bytes are decoded only by independently schema-checked DTOs.
+/// No Android request, command or response envelope is reused.
+public nonisolated struct TiebaNativeWrite_ReplyReadResponseData: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var thread: Data {
+    get {_thread ?? Data()}
+    set {_thread = newValue}
+  }
+  /// Returns true if `thread` has been explicitly set.
+  public var hasThread: Bool {self._thread != nil}
+  /// Clears the value of `thread`. Subsequent reads from it will return its default value.
+  public mutating func clearThread() {self._thread = nil}
+
+  public var forum: Data {
+    get {_forum ?? Data()}
+    set {_forum = newValue}
+  }
+  /// Returns true if `forum` has been explicitly set.
+  public var hasForum: Bool {self._forum != nil}
+  /// Clears the value of `forum`. Subsequent reads from it will return its default value.
+  public mutating func clearForum() {self._forum = nil}
+
+  public var userList: [Data] = []
+
+  public var firstFloor: Data {
+    get {_firstFloor ?? Data()}
+    set {_firstFloor = newValue}
+  }
+  /// Returns true if `firstFloor` has been explicitly set.
+  public var hasFirstFloor: Bool {self._firstFloor != nil}
+  /// Clears the value of `firstFloor`. Subsequent reads from it will return its default value.
+  public mutating func clearFirstFloor() {self._firstFloor = nil}
+
+  public var postList: [Data] = []
+
+  public var page: Data {
+    get {_page ?? Data()}
+    set {_page = newValue}
+  }
+  /// Returns true if `page` has been explicitly set.
+  public var hasPage: Bool {self._page != nil}
+  /// Clears the value of `page`. Subsequent reads from it will return its default value.
+  public mutating func clearPage() {self._page = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _thread: Data? = nil
+  fileprivate var _forum: Data? = nil
+  fileprivate var _firstFloor: Data? = nil
+  fileprivate var _page: Data? = nil
+}
+
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate nonisolated let _protobuf_package = "TiebaNativeWrite"
@@ -5252,6 +5749,488 @@ nonisolated extension TiebaNativeWrite_ThreadData: SwiftProtobuf.Message, SwiftP
       }
       if !storagesAreEqual {return false}
     }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension TiebaNativeWrite_ReplyReadRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReplyReadRequest"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}data\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._data) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._data {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: TiebaNativeWrite_ReplyReadRequest, rhs: TiebaNativeWrite_ReplyReadRequest) -> Bool {
+    if lhs._data != rhs._data {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReplyReadData"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}common\0\u{1}kz\0\u{1}pn\0\u{3}last_pid\0\u{1}r\0\u{1}back\0\u{1}lz\0\u{3}mark_type\0\u{3}tab_type\0\u{3}tab_id\0\u{3}top_pid\0\u{3}st_type\0\u{3}up_schema\0\u{3}log_params\0\u{3}yuelaou_locate\0\u{3}query_word\0\u{3}da_idfa\0\u{4}\u{2}ad_context_list\0\u{3}ad_ext_params\0\u{4}\u{2}ad_bear_pb_banner\0\u{3}ad_bear_pb_comment\0\u{3}ad_external_banner_info\0\u{3}ad_external_info\0\u{3}game_id\0\u{1}cid\0\u{1}position\0\u{3}game_fid\0\u{3}game_fname\0\u{3}search_query\0\u{4}\u{2}topic_id\0\u{3}topic_fid\0\u{3}mount_bot_uk\0\u{3}request_times\0\u{3}broadcast_id\0\u{1}fr\0\u{3}session_request_times\0\u{3}shoubai_cuid\0\u{3}from_forum_id\0\u{3}floor_num\0\u{3}aladdin_src_id\0\u{3}app_launch_from\0")
+
+  fileprivate class _StorageClass {
+    var _common: TiebaNativeWrite_Common? = nil
+    var _kz: Int64? = nil
+    var _pn: Int32? = nil
+    var _lastPid: Int64? = nil
+    var _r: Int32? = nil
+    var _back: Int32? = nil
+    var _lz: Int32? = nil
+    var _markType: Int32? = nil
+    var _tabType: String? = nil
+    var _tabID: UInt64? = nil
+    var _topPid: Int64? = nil
+    var _stType: String? = nil
+    var _upSchema: String? = nil
+    var _logParams: String? = nil
+    var _yuelaouLocate: String? = nil
+    var _queryWord: String? = nil
+    var _daIdfa: String? = nil
+    var _adContextList: String? = nil
+    var _adExtParams: String? = nil
+    var _adBearPbBanner: String? = nil
+    var _adBearPbComment: String? = nil
+    var _adExternalBannerInfo: String? = nil
+    var _adExternalInfo: String? = nil
+    var _gameID: String? = nil
+    var _cid: String? = nil
+    var _position: Int32? = nil
+    var _gameFid: String? = nil
+    var _gameFname: String? = nil
+    var _searchQuery: String? = nil
+    var _topicID: Int64? = nil
+    var _topicFid: Int64? = nil
+    var _mountBotUk: String? = nil
+    var _requestTimes: Int32? = nil
+    var _broadcastID: Int64? = nil
+    var _fr: String? = nil
+    var _sessionRequestTimes: Int32? = nil
+    var _shoubaiCuid: String? = nil
+    var _fromForumID: UInt32? = nil
+    var _floorNum: UInt32? = nil
+    var _aladdinSrcID: Int64? = nil
+    var _appLaunchFrom: String? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _common = source._common
+      _kz = source._kz
+      _pn = source._pn
+      _lastPid = source._lastPid
+      _r = source._r
+      _back = source._back
+      _lz = source._lz
+      _markType = source._markType
+      _tabType = source._tabType
+      _tabID = source._tabID
+      _topPid = source._topPid
+      _stType = source._stType
+      _upSchema = source._upSchema
+      _logParams = source._logParams
+      _yuelaouLocate = source._yuelaouLocate
+      _queryWord = source._queryWord
+      _daIdfa = source._daIdfa
+      _adContextList = source._adContextList
+      _adExtParams = source._adExtParams
+      _adBearPbBanner = source._adBearPbBanner
+      _adBearPbComment = source._adBearPbComment
+      _adExternalBannerInfo = source._adExternalBannerInfo
+      _adExternalInfo = source._adExternalInfo
+      _gameID = source._gameID
+      _cid = source._cid
+      _position = source._position
+      _gameFid = source._gameFid
+      _gameFname = source._gameFname
+      _searchQuery = source._searchQuery
+      _topicID = source._topicID
+      _topicFid = source._topicFid
+      _mountBotUk = source._mountBotUk
+      _requestTimes = source._requestTimes
+      _broadcastID = source._broadcastID
+      _fr = source._fr
+      _sessionRequestTimes = source._sessionRequestTimes
+      _shoubaiCuid = source._shoubaiCuid
+      _fromForumID = source._fromForumID
+      _floorNum = source._floorNum
+      _aladdinSrcID = source._aladdinSrcID
+      _appLaunchFrom = source._appLaunchFrom
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularMessageField(value: &_storage._common) }()
+        case 2: try { try decoder.decodeSingularInt64Field(value: &_storage._kz) }()
+        case 3: try { try decoder.decodeSingularInt32Field(value: &_storage._pn) }()
+        case 4: try { try decoder.decodeSingularInt64Field(value: &_storage._lastPid) }()
+        case 5: try { try decoder.decodeSingularInt32Field(value: &_storage._r) }()
+        case 6: try { try decoder.decodeSingularInt32Field(value: &_storage._back) }()
+        case 7: try { try decoder.decodeSingularInt32Field(value: &_storage._lz) }()
+        case 8: try { try decoder.decodeSingularInt32Field(value: &_storage._markType) }()
+        case 9: try { try decoder.decodeSingularStringField(value: &_storage._tabType) }()
+        case 10: try { try decoder.decodeSingularUInt64Field(value: &_storage._tabID) }()
+        case 11: try { try decoder.decodeSingularInt64Field(value: &_storage._topPid) }()
+        case 12: try { try decoder.decodeSingularStringField(value: &_storage._stType) }()
+        case 13: try { try decoder.decodeSingularStringField(value: &_storage._upSchema) }()
+        case 14: try { try decoder.decodeSingularStringField(value: &_storage._logParams) }()
+        case 15: try { try decoder.decodeSingularStringField(value: &_storage._yuelaouLocate) }()
+        case 16: try { try decoder.decodeSingularStringField(value: &_storage._queryWord) }()
+        case 17: try { try decoder.decodeSingularStringField(value: &_storage._daIdfa) }()
+        case 19: try { try decoder.decodeSingularStringField(value: &_storage._adContextList) }()
+        case 20: try { try decoder.decodeSingularStringField(value: &_storage._adExtParams) }()
+        case 22: try { try decoder.decodeSingularStringField(value: &_storage._adBearPbBanner) }()
+        case 23: try { try decoder.decodeSingularStringField(value: &_storage._adBearPbComment) }()
+        case 24: try { try decoder.decodeSingularStringField(value: &_storage._adExternalBannerInfo) }()
+        case 25: try { try decoder.decodeSingularStringField(value: &_storage._adExternalInfo) }()
+        case 26: try { try decoder.decodeSingularStringField(value: &_storage._gameID) }()
+        case 27: try { try decoder.decodeSingularStringField(value: &_storage._cid) }()
+        case 28: try { try decoder.decodeSingularInt32Field(value: &_storage._position) }()
+        case 29: try { try decoder.decodeSingularStringField(value: &_storage._gameFid) }()
+        case 30: try { try decoder.decodeSingularStringField(value: &_storage._gameFname) }()
+        case 31: try { try decoder.decodeSingularStringField(value: &_storage._searchQuery) }()
+        case 33: try { try decoder.decodeSingularInt64Field(value: &_storage._topicID) }()
+        case 34: try { try decoder.decodeSingularInt64Field(value: &_storage._topicFid) }()
+        case 35: try { try decoder.decodeSingularStringField(value: &_storage._mountBotUk) }()
+        case 36: try { try decoder.decodeSingularInt32Field(value: &_storage._requestTimes) }()
+        case 37: try { try decoder.decodeSingularInt64Field(value: &_storage._broadcastID) }()
+        case 38: try { try decoder.decodeSingularStringField(value: &_storage._fr) }()
+        case 39: try { try decoder.decodeSingularInt32Field(value: &_storage._sessionRequestTimes) }()
+        case 40: try { try decoder.decodeSingularStringField(value: &_storage._shoubaiCuid) }()
+        case 41: try { try decoder.decodeSingularUInt32Field(value: &_storage._fromForumID) }()
+        case 42: try { try decoder.decodeSingularUInt32Field(value: &_storage._floorNum) }()
+        case 43: try { try decoder.decodeSingularInt64Field(value: &_storage._aladdinSrcID) }()
+        case 44: try { try decoder.decodeSingularStringField(value: &_storage._appLaunchFrom) }()
+        default: break
+        }
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      try { if let v = _storage._common {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+      } }()
+      try { if let v = _storage._kz {
+        try visitor.visitSingularInt64Field(value: v, fieldNumber: 2)
+      } }()
+      try { if let v = _storage._pn {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 3)
+      } }()
+      try { if let v = _storage._lastPid {
+        try visitor.visitSingularInt64Field(value: v, fieldNumber: 4)
+      } }()
+      try { if let v = _storage._r {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 5)
+      } }()
+      try { if let v = _storage._back {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 6)
+      } }()
+      try { if let v = _storage._lz {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 7)
+      } }()
+      try { if let v = _storage._markType {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 8)
+      } }()
+      try { if let v = _storage._tabType {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 9)
+      } }()
+      try { if let v = _storage._tabID {
+        try visitor.visitSingularUInt64Field(value: v, fieldNumber: 10)
+      } }()
+      try { if let v = _storage._topPid {
+        try visitor.visitSingularInt64Field(value: v, fieldNumber: 11)
+      } }()
+      try { if let v = _storage._stType {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 12)
+      } }()
+      try { if let v = _storage._upSchema {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 13)
+      } }()
+      try { if let v = _storage._logParams {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 14)
+      } }()
+      try { if let v = _storage._yuelaouLocate {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 15)
+      } }()
+      try { if let v = _storage._queryWord {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 16)
+      } }()
+      try { if let v = _storage._daIdfa {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 17)
+      } }()
+      try { if let v = _storage._adContextList {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 19)
+      } }()
+      try { if let v = _storage._adExtParams {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 20)
+      } }()
+      try { if let v = _storage._adBearPbBanner {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 22)
+      } }()
+      try { if let v = _storage._adBearPbComment {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 23)
+      } }()
+      try { if let v = _storage._adExternalBannerInfo {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 24)
+      } }()
+      try { if let v = _storage._adExternalInfo {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 25)
+      } }()
+      try { if let v = _storage._gameID {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 26)
+      } }()
+      try { if let v = _storage._cid {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 27)
+      } }()
+      try { if let v = _storage._position {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 28)
+      } }()
+      try { if let v = _storage._gameFid {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 29)
+      } }()
+      try { if let v = _storage._gameFname {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 30)
+      } }()
+      try { if let v = _storage._searchQuery {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 31)
+      } }()
+      try { if let v = _storage._topicID {
+        try visitor.visitSingularInt64Field(value: v, fieldNumber: 33)
+      } }()
+      try { if let v = _storage._topicFid {
+        try visitor.visitSingularInt64Field(value: v, fieldNumber: 34)
+      } }()
+      try { if let v = _storage._mountBotUk {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 35)
+      } }()
+      try { if let v = _storage._requestTimes {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 36)
+      } }()
+      try { if let v = _storage._broadcastID {
+        try visitor.visitSingularInt64Field(value: v, fieldNumber: 37)
+      } }()
+      try { if let v = _storage._fr {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 38)
+      } }()
+      try { if let v = _storage._sessionRequestTimes {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 39)
+      } }()
+      try { if let v = _storage._shoubaiCuid {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 40)
+      } }()
+      try { if let v = _storage._fromForumID {
+        try visitor.visitSingularUInt32Field(value: v, fieldNumber: 41)
+      } }()
+      try { if let v = _storage._floorNum {
+        try visitor.visitSingularUInt32Field(value: v, fieldNumber: 42)
+      } }()
+      try { if let v = _storage._aladdinSrcID {
+        try visitor.visitSingularInt64Field(value: v, fieldNumber: 43)
+      } }()
+      try { if let v = _storage._appLaunchFrom {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 44)
+      } }()
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: TiebaNativeWrite_ReplyReadData, rhs: TiebaNativeWrite_ReplyReadData) -> Bool {
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._common != rhs_storage._common {return false}
+        if _storage._kz != rhs_storage._kz {return false}
+        if _storage._pn != rhs_storage._pn {return false}
+        if _storage._lastPid != rhs_storage._lastPid {return false}
+        if _storage._r != rhs_storage._r {return false}
+        if _storage._back != rhs_storage._back {return false}
+        if _storage._lz != rhs_storage._lz {return false}
+        if _storage._markType != rhs_storage._markType {return false}
+        if _storage._tabType != rhs_storage._tabType {return false}
+        if _storage._tabID != rhs_storage._tabID {return false}
+        if _storage._topPid != rhs_storage._topPid {return false}
+        if _storage._stType != rhs_storage._stType {return false}
+        if _storage._upSchema != rhs_storage._upSchema {return false}
+        if _storage._logParams != rhs_storage._logParams {return false}
+        if _storage._yuelaouLocate != rhs_storage._yuelaouLocate {return false}
+        if _storage._queryWord != rhs_storage._queryWord {return false}
+        if _storage._daIdfa != rhs_storage._daIdfa {return false}
+        if _storage._adContextList != rhs_storage._adContextList {return false}
+        if _storage._adExtParams != rhs_storage._adExtParams {return false}
+        if _storage._adBearPbBanner != rhs_storage._adBearPbBanner {return false}
+        if _storage._adBearPbComment != rhs_storage._adBearPbComment {return false}
+        if _storage._adExternalBannerInfo != rhs_storage._adExternalBannerInfo {return false}
+        if _storage._adExternalInfo != rhs_storage._adExternalInfo {return false}
+        if _storage._gameID != rhs_storage._gameID {return false}
+        if _storage._cid != rhs_storage._cid {return false}
+        if _storage._position != rhs_storage._position {return false}
+        if _storage._gameFid != rhs_storage._gameFid {return false}
+        if _storage._gameFname != rhs_storage._gameFname {return false}
+        if _storage._searchQuery != rhs_storage._searchQuery {return false}
+        if _storage._topicID != rhs_storage._topicID {return false}
+        if _storage._topicFid != rhs_storage._topicFid {return false}
+        if _storage._mountBotUk != rhs_storage._mountBotUk {return false}
+        if _storage._requestTimes != rhs_storage._requestTimes {return false}
+        if _storage._broadcastID != rhs_storage._broadcastID {return false}
+        if _storage._fr != rhs_storage._fr {return false}
+        if _storage._sessionRequestTimes != rhs_storage._sessionRequestTimes {return false}
+        if _storage._shoubaiCuid != rhs_storage._shoubaiCuid {return false}
+        if _storage._fromForumID != rhs_storage._fromForumID {return false}
+        if _storage._floorNum != rhs_storage._floorNum {return false}
+        if _storage._aladdinSrcID != rhs_storage._aladdinSrcID {return false}
+        if _storage._appLaunchFrom != rhs_storage._appLaunchFrom {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension TiebaNativeWrite_ReplyReadResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReplyReadResponse"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}error\0\u{1}data\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._error) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._data) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._error {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._data {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: TiebaNativeWrite_ReplyReadResponse, rhs: TiebaNativeWrite_ReplyReadResponse) -> Bool {
+    if lhs._error != rhs._error {return false}
+    if lhs._data != rhs._data {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension TiebaNativeWrite_ReplyReadResponseData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReplyReadResponseData"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}thread\0\u{1}forum\0\u{4}\u{3}user_list\0\u{3}first_floor\0\u{3}post_list\0\u{1}page\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularBytesField(value: &self._thread) }()
+      case 2: try { try decoder.decodeSingularBytesField(value: &self._forum) }()
+      case 5: try { try decoder.decodeRepeatedBytesField(value: &self.userList) }()
+      case 6: try { try decoder.decodeSingularBytesField(value: &self._firstFloor) }()
+      case 7: try { try decoder.decodeRepeatedBytesField(value: &self.postList) }()
+      case 8: try { try decoder.decodeSingularBytesField(value: &self._page) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._thread {
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._forum {
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 2)
+    } }()
+    if !self.userList.isEmpty {
+      try visitor.visitRepeatedBytesField(value: self.userList, fieldNumber: 5)
+    }
+    try { if let v = self._firstFloor {
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 6)
+    } }()
+    if !self.postList.isEmpty {
+      try visitor.visitRepeatedBytesField(value: self.postList, fieldNumber: 7)
+    }
+    try { if let v = self._page {
+      try visitor.visitSingularBytesField(value: v, fieldNumber: 8)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: TiebaNativeWrite_ReplyReadResponseData, rhs: TiebaNativeWrite_ReplyReadResponseData) -> Bool {
+    if lhs._thread != rhs._thread {return false}
+    if lhs._forum != rhs._forum {return false}
+    if lhs.userList != rhs.userList {return false}
+    if lhs._firstFloor != rhs._firstFloor {return false}
+    if lhs.postList != rhs.postList {return false}
+    if lhs._page != rhs._page {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

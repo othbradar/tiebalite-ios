@@ -1,8 +1,9 @@
 extension TextComposeTarget {
-    static func reply(_ intent: SubpostReplyIntent, document: ThreadContentDocument) -> Self {
+    static func reply(_ intent: SubpostReplyIntent, document: ThreadContentDocument,
+                      readingEntry: ThreadReadingEntry = .unspecified) -> Self {
         TextComposeTarget(kind: .subpostReply, forumID: intent.forumID, forumName: intent.forumName,
                           threadID: intent.route.threadID, postID: intent.route.postID, subpostID: intent.subPostID,
-                          recipient: intent.author, quote: quote(document))
+                          recipient: intent.author, quote: quote(document), replyCount: intent.replyCount, readingEntry: readingEntry)
     }
 
     static func quote(_ document: ThreadContentDocument) -> String {

@@ -10,6 +10,15 @@ struct NativeWriteCommonContext: Sendable {
 struct NativeWriteCommonParameters: Sendable {
     private var staticParameters = NativeWriteStaticCommonParameters()
 
+    mutating func prepareImageUpload(_ context: NativeWriteCommonContext, business: [String: String],
+                                     metrics: inout NativeWriteRequestMetrics) throws -> [String: String] {
+        guard context.dynamicValues.api == NativeWriteAPI.imageUpload.rawValue else { throw NativeTBSError.invalidRequestContext }
+        let fields = staticParameters.parameters(context.staticValues, mode: context.staticMode)
+        let common = NativeWriteDynamicCommonParameters.prepare(
+            staticFields: fields, business: business, context: context.dynamicValues, metrics: &metrics)
+        return NativeWriteSigning.tbsForm(common, business: business)
+    }
+
     mutating func prepare(_ context: NativeWriteCommonContext, business: [String: String],
                           metrics: inout NativeWriteRequestMetrics) -> [String: String] {
         let staticFields = staticParameters.parameters(context.staticValues, mode: context.staticMode)

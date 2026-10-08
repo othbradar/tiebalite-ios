@@ -1,5 +1,35 @@
 # 未确认行为与安全验证计划
 
+2026-10-08 Build12：用户已授权图片，SDK/Passport本轮明确跳过。普通静态JPEG的iOS分块字段/Common签名/HTTP/回执/编辑器接线已实现，验证结果见TASK_STATE；先前“图片延期/全部禁止”是历史状态。仍未对齐：原图/GIF/元数据与完整压缩provider、混排、原版选图后提前上传及主题并发/水印/运行配置。既有App内存限额JPEG策略、点击才上传和失败不自动重发是明确保留的App行为；不能称为图片所有行为一致。getmypost完整provider/选路/合并、其他页面来源及替代引擎仍保留前轮缺口；验证码完成续发未实现。真实上传/发帖留待用户手动验证，服务端审核留存仍UNKNOWN。
+
+## 2026-10-08 Build11 边界更新
+
+用户确认 Build10 评论发送正常。本轮补齐 event_day 的真实系统日期 provider：原生 NSDate/NSDateFormatter + YYYYMMdd 已有明确指令证据，当前 runtime 不再遗漏。它不依赖私有 SDK，不代表其他空 provider 一并解决。Common 缓存/重算的真实远程开关仍未知，保留已声明的 recomputed 试用选择。
+
+搜索/正文内部/Scheme 来源仍需实际入口与完整消息消费链；本轮确认 iOStbclient 与 com.baidu.tieba 分支不能混用，未随意赋14/31/32。getmypost 仍缺基础 PB provider、pb_reply_switch 实际值与生产列表合并；缺配置默认0不能作为运行配置证据。完整 SDK/Passport、挑战完成续发、可配置替代 HTTP 引擎仍 OPEN，图片延期。保留普通成功关闭/刷新，不把本包称为完整对齐或审核留存保证。
+
+## 2026-10-08 Build10 边界更新
+
+默认BBAAFNetworkingRequestManager的HTTP状态分派已确认并通过原生回放：200..<300接受，其他走失败；补齐实测统计，不改变业务成功判定。外部HTTPS帖子入口32→post_from=5已有静态完整传递证据并接入，不能再把所有外链一概记为未知。
+
+仍OPEN：搜索/正文内部/scheme真实来源；BBANSURLSession/Turbo等可配置替代引擎的完整分派；getmypost基础PB provider、实际开关和生产读取/列表合并；验证挑战完成后的续发。以上有独立证据/接线工作，不能全部归因于SDK缺失。安全SDK/CUID/z_id、完整Passport和原版运行配置仍缺TiebaLite自身可用接入资料，用户已答复没有；不复制官方App身份或伪造provider。图片发送按用户前序要求延期。Build10仍为部分对齐文字试用版，不能称完整对齐或保证服务端长期留存。
+
+
+2026-10-08 当前逐项对齐：已补实际URL加载失败统计（timeout=-2/其他=-1），以及推荐、吧首页、历史、回复通知内容/引用、提及通知的来源传递；未知搜索/外链仍为既有0。取消/换账号不发布统计是本App保护，不冒称原版全局行为。完整HTTP异常分派受AF/BBA引擎选择影响，未凭parser回放统一修改。用户明确没有TiebaLite安全SDK/Passport接入包或应用注册资料；完整SDK/CUID/z_id/配置、Passport及验证完成续发存在外部接入缺口。getmypost生产PB provider/开关/读取合并未完成，图片继续延期。普通回复已由用户多次确认成功，不等于这些缺口或长期审核留存已通过。
+
+2026-10-08 Build7用户确认回复仍成功。新增证据已收窄“畸形响应统计”缺口：原生空body、IDL失败、JSON非字典/缺码记录-3；有效IDL字典缺data仍记录errorNum统计，但不能据此宣布发布成功。现已补对应统计并通过37项定向Unit及1条Mock UI，HTTP/网络失败、全局遥测、SDK/Passport/远程配置、页面来源、验证完成续发和getmypost生产读取合并仍OPEN；图片延期。全部对齐尚未完成。
+
+2026-10-08 Build7续接：用户报告Build6回复仍成功。已查实 svcp_stk 使用IDPCache默认策略2（内存+磁盘），本App补同账号受保护持久化与后台事件清理，保留旧账号格式和本App账号隔离；清理采用原生新建缓存默认3600秒及600秒事件节流，不等于迁移官方远程配置/全局跨账号共享。缓存策略3例、文件修改时间过期边界5例有独立原生回放。写后存储失败不改已解析回执、不重发。私有SDK/Passport、验证恢复、页面入口枚举、PB provider/同步配置/生产定向读取合并仍OPEN，图片仍延期。
+
+
+2026-10-08 Build6续接：用户报告Build5回复正常，仅记作该次实测，不外推为全部入口或长期留存。已补账号普通表单client_logid及有效账号/TBS JSON回包统计，非零JSON错误码（含负码）、numberAtPath的logid精度规则有原生回放；首次账号准备失败后再换账号也不能带出旧统计。HTTP失败/畸形回包/传输失败的全局统计、SDK/Passport/验证恢复/原生定向读取合并仍OPEN；不改变业务成功判断、刷新或实发次数。图片继续延期。
+
+2026-10-08 实际统计续接：原生写请求已补独立URLSession任务度量，取最后一次networkLoad的头部+正文实际字节和开始到解析前的耗时，按native parser规则进入下一次Common；取消/账号变化/缺payload或畸形响应不发布新统计。范围仅成功传输且可解析的新帖/回复，不包含账号/TBS JSON和网络失败统计，不能说全局生命周期完全一致。完整SDK/Passport、验证恢复、第6项Live页面参数/选择/合并仍OPEN。本轮用户要求IPA测试，交付只能注明上述边界，不能称为完全对齐或审核留存已验证。
+
+2026-10-08 继续对齐与 GitHub 检索：原生 CMD309751 的 PbList 请求/响应及单次读取客户端已实现并通过组件测试，但基础页面 provider、实验选路、Common 实际输入和缓存/列表合并仍未接入 Live。请求中未知复杂 provider 显式拒绝，不用 Android 字段代替。GitHub 中 TiebaPure-iOS 的发送实际使用 Android 参数，另一个 TiebaLite-IOS 未实现回复；本轮未找到可补齐原生 SDK/Passport/验证恢复的对应实现。原成功发送安装保留，图片仍延期。具体证据见 API_EVIDENCE 最新项；不能称第6项或前六项已完成。
+
+2026-10-08 前六项续接：当前源码已补本 App 准备账号/TBS 的受保护跨进程复用、同 UID 原始昵称复用、页面回复总数快照、网络类型/超时、原生语言权重及本地 client_logid；未改已有 UI。旧“只在内存复用”描述是历史候选。新增查实 getmypost CMD309751 使用 PbListReqIdl/PbListResIdl，非同名 GetMyPost；但 PB 基础上下文提供者/实验选路/响应合并尚未接通。第4项的私有 SDK/实际统计、第5项验证完成契约和第6项生产定向读取仍 OPEN，不以部分对齐冒称前六项完成，图片保持延期。
+
 2026-10-08 当前试用版：用户进一步授权先交付参照 iOS 请求的正常 App。文字发送现已接入 NativeLiveTextWriteRepository；账号采用包内明确的 BDUSS 登录支路，系统 UA 在本地空白 WKWebView 获取，无网络/账号注入。原版 SDK/CUID、实际实验配置、完整 Passport/跨进程账号状态、图片上传、验证挑战及 getmypost 专用读取合并仍未对齐；服务端删帖原因仍 UNKNOWN。成功关闭和当前页刷新使用现有已测试行为，不保证跨页新回复立即可见。本版不使用 Android 上传或写入回退。此前“尚未接任何 Live”记录为历史状态。
 
 2026-10-08模拟器续项：用户建议转本机模拟器。已直接核对参考IPA的Info/Mach-O：iPhoneOS、arm64、LC_BUILD_VERSION平台2，非Simulator平台；参考二进制SHA未变。本机正常与隔离测试iPhone Simulator均可用，继续用隔离Simulator验证TiebaLite代码，不将其表述为原版IPA在Simulator运行。回复后读取已追到独立/c/f/pb/getmypost（CMD309751），其参数转换与初始派发门控有16例原生封闭回放和3项Simulator Unit通过。NativeReplyFollowupParameters未接Live；PB原生基础参数提供者、折叠页面legacy分支、完整读取IDL/HTTP、结果合并、实际开关/SDK与账号来源仍UNKNOWN。没有因参数组件通过而宣称发送后立即显示或异常删除已修。

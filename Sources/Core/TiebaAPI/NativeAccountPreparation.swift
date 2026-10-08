@@ -10,6 +10,9 @@ enum NativeAccountPreparation {
         headers["User-Agent"] = runtime.http.userAgent
         headers["Accept-Language"] = runtime.http.acceptLanguage
         headers["Content-Type"] = "application/x-www-form-urlencoded"
+        if runtime.http.clientLogID != 0 && runtime.http.clientLogID != -1 {
+            headers["client_logid"] = String(runtime.http.clientLogID)
+        }
         return try HTTPRequest(method: .post, url: url, headers: headers, body: NativeTBSRequest.encode(parameters),
                                timeout: parameters["net_type"] == "1" ? 10 : 25, responseBodyLimit: 1_024 * 1_024)
     }

@@ -4,6 +4,18 @@ import Testing
 @testable import TiebaLite
 
 struct U08NativeWriteDiagnosticTests {
+    @Test func debugObserverPreservesMeasurementsWithoutAnotherRequest() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let base = DiagnosticFixtureLoader()
+        let measured = DiagnosticMeasuredFixtureLoader(base: base)
+        let loader = DebugNativeWriteDataLoader(base: measured, diagnostics: DebugNativeWriteDiagnostics(directory: directory))
+        let result = try await loader.measuredData(for: fixtureRequest(), maximumByteCount: 1_024)
+        #expect(result.measurement == .init(durationSeconds: 0.25, uploadBytes: 123, downloadBytes: 456))
+        #expect(await base.requests.count == 1)
+        #expect(try recorded(directory).count == 1)
+    }
+
     @Test func metadataDistinguishesProtobufJSONAndMissingReceiptWithoutExportingValues() throws {
         var envelope = TiebaNativeWrite_Response()
         let sample = "NeverExportThisValue"
@@ -85,6 +97,15 @@ struct U08NativeWriteDiagnosticTests {
         try JSONDecoder().decode(
             [DebugNativeWriteDiagnostics.Event].self,
             from: Data(contentsOf: directory.appendingPathComponent("NativeWriteDiagnostics-v1.json")))
+    }
+}
+
+private struct DiagnosticMeasuredFixtureLoader: NativeWriteTransferLoading {
+    let base: DiagnosticFixtureLoader
+    func measuredData(for request: URLRequest, maximumByteCount: Int) async throws -> NativeWriteMeasuredData {
+        let result = try await base.data(for: request, maximumByteCount: maximumByteCount)
+        return .init(data: result.0, response: result.1,
+                     measurement: .init(durationSeconds: 0.25, uploadBytes: 123, downloadBytes: 456))
     }
 }
 

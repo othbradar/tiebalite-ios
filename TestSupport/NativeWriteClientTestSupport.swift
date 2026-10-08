@@ -92,6 +92,7 @@ final class NativeClientFixtureRuntime: NativeWriteRuntimeProviding {
     var requestMetrics: NativeWriteRequestMetrics
     private(set) var requestedAPIs: [NativeWriteAPI] = []
     var mismatchedAccount = false
+    var clientLogID: Int64 = 0
     private let fixture: NativeClientFixture
     private let sample: NativeClientSample
 
@@ -118,7 +119,7 @@ final class NativeClientFixtureRuntime: NativeWriteRuntimeProviding {
                           metadata: .init(packageVersion: fixture.metadata.packageVersion,
                                           experimentHits: fixture.metadata.experimentHits,
                                           experimentMisses: fixture.metadata.experimentMisses)),
-            http: .init(userAgent: "FixtureNativeAgent", acceptLanguage: nil, clientLogID: 0, timeout: 19,
+            http: .init(userAgent: "FixtureNativeAgent", acceptLanguage: nil, clientLogID: clientLogID, timeout: 19,
                         responseState: .init(headerValue: "__ymg_scsc=fixture-must-not-override;"),
                         cookies: .init(networkStatus: 0, wifiKeepAlive: false, cellularKeepAlive: false,
                                        smallFlow: false, smallFlowValue: nil)),

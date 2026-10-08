@@ -154,7 +154,9 @@ enum ProfileProtocol {
                 levelID: visualFields.levelID,
                 isBawu: visualFields.isBawu,
                 bawuType: visualFields.bawuType
-            )
+            ),
+            accountDisplayName: user.nameShow,
+            accountLoginName: user.name
         )
     }
 

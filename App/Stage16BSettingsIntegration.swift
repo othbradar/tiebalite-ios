@@ -133,7 +133,7 @@ struct SettingsRouteDestinationView: View {
         case .history:
             BrowsingHistoryView(
                 store: featureStores.browsingHistoryStore,
-                openRoute: navigation.pushSettingsContent
+                openRoute: { navigation.pushSettingsContent($0, readingEntry: .history) }
             )
         case .licenses:
             OpenSourceLicensesView()
@@ -142,7 +142,9 @@ struct SettingsRouteDestinationView: View {
                 for: contentRoute,
                 scope: .settings,
                 openRoute: navigation.pushSettingsContent,
-                dependencies: routeDependencies
+                dependencies: routeDependencies,
+                readingEntry: navigation.readingEntry(for: contentRoute, scope: .settings),
+                openReadingRoute: { navigation.pushSettingsContent($0, readingEntry: $1) }
             )
 #if DEBUG
         case .componentGallery:

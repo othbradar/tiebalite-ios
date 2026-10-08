@@ -26,6 +26,7 @@ struct UploadedComposerPhoto: Equatable, Sendable {
     let picID: String
     let width: Int
     let height: Int
+    var source: String?
     var token: String { "#(pic,\(picID),\(width),\(height))" }
 }
 

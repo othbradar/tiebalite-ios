@@ -4,6 +4,8 @@ struct NotificationDestination: View {
     @Bindable var store: NotificationDestinationStore
     let dependencies: AppRouteDependencies
     let openRoute: (RouteIdentity) -> Void
+    let readingEntry: ThreadReadingEntry
+    let openReadingRoute: (RouteIdentity, ThreadReadingEntry) -> Void
     @State private var retry: UInt64 = 0
 
     var body: some View {
@@ -13,11 +15,12 @@ struct NotificationDestination: View {
                     store: thread, imageLoader: dependencies.imageLoader,
                     accountAvatar: dependencies.currentAccountAvatar,
                     readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
+                    readingEntry: readingEntry,
                     onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) },
                     onDisplayed: { await dependencies.featureStores.browsingHistoryStore.recordThread($0) },
                     onOpenSubposts: { source in
                         if let thread = ThreadID(source.threadID), let post = PostID(source.postID) {
-                            openRoute(.subposts(threadID: thread, postID: post))
+                            openReadingRoute(.subposts(threadID: thread, postID: post), readingEntry)
                         }
                     })
             } else if store.failed {

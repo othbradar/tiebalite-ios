@@ -5,6 +5,68 @@ import Testing
 
 @MainActor
 struct U08NativeLiveWriteTests {
+    @Test func nativeImagePreflightAcceptsUnuploadedPhotoWithoutStartingRequests() throws {
+        let setup = try makeSetup()
+        let photo = ComposerPhoto(id: "fixture", file: .init(url: URL(fileURLWithPath: "/fixture-unused"), removesOnRelease: false),
+                                  width: 640, height: 480, byteCount: 100)
+        let request = TextWriteRequest(target: R09WriteFixture.target(.threadReply), draft: .init(content: "Image", photos: [photo]))
+        #expect(throws: Never.self) { try setup.repository.validateForSending(request) }
+    }
+    @Test func pageOriginReachesNativeReplyWithoutChangingTargetOrRequestCount() async throws {
+        let origins: [(ThreadReadingEntry, String)] = [
+            (.recommendations, "2"), (.forum, "3"), (.history, "11"), (.universalLink, "5"),
+            (.notification(.replies, opensQuotedThread: false), "12"),
+            (.notification(.replies, opensQuotedThread: true), "4"),
+            (.notification(.mentions, opensQuotedThread: false), "13"),
+            (.notification(.mentions, opensQuotedThread: true), "13")
+        ]
+        for (entry, expected) in origins {
+            let setup = try makeSetup()
+            var target = R09WriteFixture.target(.threadReply)
+            let identity = target.id
+            target.readingEntry = entry
+            #expect(target.id == identity)
+            let frozenTarget = target
+            let task = Task { try await setup.repository.send(.init(target: frozenTarget, draft: .init(content: "Fixture")),
+                                                              context: setup.auth.context()) }
+            let account = try await next(setup.http)
+            try await setup.http.succeed(account.id, with: accountResponse)
+            let write = try await next(setup.http)
+            let fields = try post(write.request)
+            #expect(fields.postFrom == expected)
+            #expect(fields.tid == String(target.threadID) && fields.content == "Fixture")
+            try await setup.http.succeed(write.id, with: .init(statusCode: 200, body: NativeClientFixture.response()))
+            #expect(try await task.value.postID == 401)
+            #expect(await setup.http.events().count == 4)
+        }
+    }
+
+    @Test func newAccountCannotSendPreviousAccountsTransferStatistics() async throws {
+        let fixture = try NativeClientFixture.load()
+        let runtime = NativeClientFixtureRuntime(fixture: fixture, sample: try #require(fixture.cases.first { $0.kind == "threadReply" }))
+        let setup = try makeSetup(runtime: runtime)
+        for changingAccount in [false, true] {
+            if changingAccount {
+                runtime.requestMetrics = .init(api: "c/c/post/add", logID: 42, cost: 100, result: 0, uploadBytes: 123, downloadBytes: 456)
+                setup.auth.install(try #require(SessionCredential(bduss: "other", stoken: "other")))
+            }
+            let store = composer(setup)
+            let task = Task { await store.send() }
+            let account = try await next(setup.http)
+            if changingAccount {
+                let form = try #require(String(data: account.request.body ?? Data(), encoding: .utf8))
+                #expect(!form.contains("m_api=") && !form.contains("m_logid="))
+            }
+            try await setup.http.succeed(account.id, with: accountResponse)
+            let write = try await next(setup.http)
+            #expect(try !post(write.request).common.hasMApi)
+            try await setup.http.succeed(write.id, with: .init(statusCode: 200, body: NativeClientFixture.response()))
+            await task.value
+            #expect(store.receipt != nil)
+        }
+        #expect(await setup.http.events().count == 8)
+    }
+
     @Test func composerUsesIOSAccountPreparationAndOneNativeWriteThenReusesSession() async throws {
         let setup = try makeSetup()
         let store = composer(setup)
@@ -51,14 +113,14 @@ struct U08NativeLiveWriteTests {
         #expect(await setup.http.pendingCalls().isEmpty)
     }
 
-    @Test func cachedPhotoCannotSlipThroughTheTextOnlyPreflight() async throws {
+    @Test func legacyImageReceiptCannotSlipThroughNativePreflight() async throws {
         let setup = try makeSetup()
         let store = composer(setup)
         store.draft.photos = [.init(
             id: "fixture", file: .init(url: URL(fileURLWithPath: "/fixture-unused"), removesOnRelease: false),
             width: 1, height: 1, byteCount: 1, uploaded: .init(picID: "old-upload", width: 1, height: 1))]
         await store.send()
-        #expect(store.failure == .nativeImagesUnavailable)
+        #expect(store.mediaFailure == ImageUploadFailure.invalidImage.message)
         #expect(store.draft.photos.count == 1 && store.receipt == nil)
         #expect(await setup.http.events().isEmpty)
     }
@@ -86,7 +148,7 @@ struct U08NativeLiveWriteTests {
     }
 
     @Test func localRuntimeUsesSystemUAAndNeverFabricatesMissingSDKIdentity() async throws {
-        let runtime = NativeWriteAppRuntime()
+        let runtime = NativeWriteAppRuntime(readNetworkType: { "1" })
         try await runtime.prepare()
         let result = try runtime.context(for: .reply, authorization: .init(bduss: "fx", stoken: "fy"),
                                          account: .init(userID: "42", tbs: "fixture-tbs"))
@@ -98,7 +160,7 @@ struct U08NativeLiveWriteTests {
     }
 
     @Test func productionRuntimeCanEncodeReplyBeforeAnyWrite() async throws {
-        let runtime = NativeWriteAppRuntime()
+        let runtime = NativeWriteAppRuntime(readNetworkType: { "1" })
         try await runtime.prepare()
         let account = TextWriteAccount(userID: "42", tbs: "fixture-tbs")
         let values = try runtime.context(for: .reply, authorization: .init(bduss: "fx", stoken: "fy"), account: account)
@@ -120,7 +182,7 @@ struct U08NativeLiveWriteTests {
     }
 
     @Test func productionRuntimeReachesOneMockWriteAndComposerSuccess() async throws {
-        let setup = try makeSetup(runtime: NativeWriteAppRuntime())
+        let setup = try makeSetup(runtime: NativeWriteAppRuntime(readNetworkType: { "1" }))
         let store = composer(setup)
         let task = Task { await store.send() }
         let account = try await next(setup.http)

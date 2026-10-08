@@ -88,9 +88,10 @@ final class AppCompositionRoot {
             notificationsStore = NotificationsStore(repository: LiveNotificationsRepository(
                 client: environment.httpClient, authContextProvider: resolvedAuthContextProvider))
             notificationTargetRepository = LiveNotificationTargetRepository(client: environment.httpClient)
+            let nativeWriter = NativeLiveTextWriteRepository.production(
+                auth: resolvedAuthContextProvider, currentProfile: { [currentAccountStore] in currentAccountStore.profile })
             textComposer = TextComposerService(
-                repository: NativeLiveTextWriteRepository.production(auth: resolvedAuthContextProvider),
-                imageLoader: environment.imageLoader,
+                repository: nativeWriter, uploader: nativeWriter, imageLoader: environment.imageLoader,
                 drafts: Self.makeDrafts(auth: resolvedAuthContextProvider),
                 currentContext: { resolvedAuthContextProvider.context() })
             self.browsingHistoryRepository = browsingHistoryRepository ?? JSONBrowsingHistoryRepository.production()
@@ -243,7 +244,7 @@ final class AppCompositionRoot {
         )
         let loginWebSession = LoginWebSession()
         let sessionStore = SessionStore(
-            credentialStore: KeychainSessionCredentialStore(),
+            credentialStore: NativeWriteCredentialStore(base: KeychainSessionCredentialStore(), accounts: .shared),
             authContextProvider: authContextProvider,
             websiteDataCleaner: loginWebSession
         )

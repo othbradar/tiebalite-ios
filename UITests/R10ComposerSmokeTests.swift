@@ -6,8 +6,7 @@ final class R10ComposerSmokeTests: XCTestCase {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         let app = UITestHarness.launch(scenario: .fixtureReadingFlow, startingTab: .settings)
-        UITestHarness.tap(.debugOpenGallery, in: app)
-        app.buttons["r10.gallery.open"].tap()
+        openPhotoGallery(app)
         app.buttons["r10.select.1"].tap()
         let editor = app.textViews["composer.body"]
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
@@ -45,8 +44,7 @@ final class R10ComposerSmokeTests: XCTestCase {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         let app = UITestHarness.launch(scenario: .fixtureReadingFlow, startingTab: .settings)
-        UITestHarness.tap(.debugOpenGallery, in: app)
-        app.buttons["r10.gallery.open"].tap()
+        openPhotoGallery(app)
         for count in [1, 4, 5] {
             app.buttons["r10.select.\(count)"].tap()
             let editor = app.textViews["composer.body"]
@@ -69,7 +67,7 @@ final class R10ComposerSmokeTests: XCTestCase {
             XCTAssertFalse(app.descendants(matching: .any)["composer.preview"].exists)
             UITestHarness.attachSafeVisualEvidence(app: app, name: "R10 four photos and official emoticons")
             app.buttons["composer.toggle-emoticons"].tap()
-            XCTAssertFalse(app.scrollViews["composer.emoticons"].exists)
+            XCTAssertTrue(app.scrollViews["composer.emoticons"].waitForNonExistence(timeout: 5))
             // UITESTING gallery owns only Fixture repositories; this cannot publish to Live.
             app.buttons["composer.send"].tap()
             let upload = app.progressIndicators["composer.uploading"]
@@ -91,8 +89,7 @@ final class R10ComposerSmokeTests: XCTestCase {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         let app = UITestHarness.launch(scenario: .fixtureReadingFlow, startingTab: .settings)
-        UITestHarness.tap(.debugOpenGallery, in: app)
-        app.buttons["r10.gallery.open"].tap()
+        openPhotoGallery(app)
         app.buttons["r10.select.4"].tap()
         let editor = app.textViews["composer.body"]
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
@@ -116,4 +113,20 @@ final class R10ComposerSmokeTests: XCTestCase {
         XCTAssertTrue(editor.isHittable)
         UITestHarness.attachSafeVisualEvidence(app: app, name: "R10 iPad four photos keyboard landscape")
     }
+
+    @MainActor
+    private func openPhotoGallery(_ app: XCUIApplication) {
+        UITestHarness.tapTab(.settings, in: app)
+        let settings = app.buttons["personal.open-settings"]
+        if settings.exists { settings.tap() }
+        let gallery = app.buttons["app.debug.open-component-gallery"]
+        XCTAssertTrue(gallery.waitForExistence(timeout: 5))
+        for _ in 0..<4 where !gallery.isHittable { app.swipeUp() }
+        XCTAssertTrue(gallery.isHittable)
+        gallery.tap()
+        let photos = app.buttons["r10.gallery.open"]
+        XCTAssertTrue(photos.waitForExistence(timeout: 5))
+        photos.tap()
+    }
+
 }

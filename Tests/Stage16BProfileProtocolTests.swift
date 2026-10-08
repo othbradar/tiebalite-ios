@@ -5,6 +5,22 @@ import Testing
 @testable import TiebaLite
 
 struct Stage16BProfileProtocolTests {
+    @Test func accountNamesRemainRawWhilePublicDisplayKeepsItsExistingFallback() throws {
+        var wire = Tieba_Profile_ProfileResponse()
+        wire.data.user.id = 42
+        wire.data.user.nameShow = "  Native name  "
+        wire.data.user.name = "Login name"
+        let route = try #require(UserProfileRoute(userID: 42, fallbackDisplayName: "Fallback"))
+        let profile = try ProfileProtocol.map(wire, requestedRoute: route)
+        #expect(profile.accountDisplayName == "  Native name  ")
+        #expect(profile.accountLoginName == "Login name")
+        wire.data.user.nameShow = ""
+        wire.data.user.name = ""
+        let empty = try ProfileProtocol.map(wire, requestedRoute: route)
+        #expect(empty.displayName == "Fallback")
+        #expect(empty.accountDisplayName?.isEmpty == true && empty.accountLoginName?.isEmpty == true)
+    }
+
     @Test
     func requestUsesLockedAnonymousProfileContractWithoutCredentials() async throws {
         let route = try #require(UserProfileRoute(
