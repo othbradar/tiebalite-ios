@@ -42,4 +42,10 @@ xcodebuild archive -project TiebaLite.xcodeproj -scheme TiebaLite \
 
 SDK/Passport及安全验证续发按用户约定暂不接入；图片原图/透明度/完整压缩与元数据、图文混排/提前并发上传等仍有差异；GIF真实动画与多图/其他发送目标待分别实测。服务端审核留存不由一次发送成功保证。缺失楼层号保持未知，正文样式已恢复正确。具体见本版发行说明及UNKNOWN_BEHAVIORS。
 
-远端Release正文、标签和附件digest在发布完成后补记回执。
+## 发布完成回执
+
+- 发布准备提交：`504bef4cf14d1835fef35b4c51e9e6452a3ab703`。main及注释标签v0.2.0beta4已原子推送；远端tag解引用与归档源码相同，发布后不移动标签。
+- [GitHub Release](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta4)：ID `407592777`，发布时间`2026-10-09T06:39:20Z`；公共API确认draft=false、prerelease=true。正文与准备好的发行说明逐字核对一致（仅统一换行）。
+- IPA附件ID `624111545`，7,163,003 bytes，state=uploaded；GitHub digest为`sha256:4aa54e2f18265d6c76dc62f159556a004fba4dce366fd7ab91cf865911d38ad9`，与本地一致。
+- SHA256SUMS附件ID `624126147`，112 bytes，state=uploaded；GitHub digest为`sha256:0e69a06c5e74c4a4af31475167c13613dbf54b429890f6552a2c7cf10626c015`，与本地一致。Release恰有这两个手动上传附件。
+- 可复核公共回执保存在ignored `Artifacts/Releases/v0.2.0beta4/published-verification.json`。本节与TASK_STATE是发布后的纯文档回执，不改变已验收代码、IPA或现有用户数据。

@@ -1,5 +1,11 @@
 # TASK_STATE
 
+## 2026-10-09 v0.2.0beta4 — PUBLISHED_AND_VERIFIED
+
+- 已验收修复提交1b696746、发布准备提交504bef4已推送main；注释标签v0.2.0beta4解引用为504bef4cf14d1835fef35b4c51e9e6452a3ab703，远端一致。发布后的本条仅补回执，不移动标签、不重新构建或变更生产代码。
+- Chrome已发布[GitHub Release](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta4)，Release ID407592777，2026-10-09T06:39:20Z，draft=false、prerelease=true。公共API核对正文与准备文件一致，两个附件均uploaded，字节数及远端SHA256 digest与本地产物一致。
+- IPA为0.2.0(Build17)、iOS/iPadOS18+、arm64未签名真机包；SHA256=4aa54e2f18265d6c76dc62f159556a004fba4dce366fd7ab91cf865911d38ad9。发布说明已列新增功能、修复和剩余边界，完整校验见Docs/Audits/RELEASE_0_2_0_BETA_4.md。未安装/卸载Simulator、未真实发送、未改用户数据或进入下一阶段。
+
 ## 2026-10-09 v0.2.0beta4 — RELEASE_PREPARED
 
 - 用户验收39份文件已精确提交1b696746c1280b45149cd67b7957059b6228fe06并推送main，720份生产输入仍与Build16相同。本次发布准备仅版本Build17及README/发布说明/构建记录，不追加功能。
