@@ -1,7 +1,7 @@
 import CoreFoundation
 import Foundation
 
-/// Ordinary JPEG upload from the verified iOS 22.11.1 image model.
+/// Ordinary JPEG/GIF upload from the verified iOS 22.11.1 image model.
 enum NativeImageUploadProtocol {
     static let chunkSize = 501_760 // Native fallback when imageChunkSize is zero.
     static let receiptSource = "ios-22.11.1"

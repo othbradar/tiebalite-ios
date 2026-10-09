@@ -32,14 +32,21 @@ struct NativeImageUploadClient {
 private actor NativeUploadFileReader {
     func read(_ photo: ComposerPhoto) throws -> Data {
         try Task.checkCancellation()
-        guard photo.byteCount > 0, photo.byteCount <= 5_242_880, photo.width > 0, photo.height > 0,
+        guard photo.byteCount > 0, photo.byteCount < ComposerGIFData.byteLimit, photo.width > 0, photo.height > 0,
               try photo.file.url.resourceValues(forKeys: [.fileSizeKey]).fileSize == photo.byteCount else {
             throw ImageUploadFailure.invalidImage
         }
         let bytes = try Data(contentsOf: photo.file.url)
-        guard bytes.count == photo.byteCount, bytes.starts(with: [0xff, 0xd8, 0xff]),
+        guard bytes.count == photo.byteCount,
               Insecure.MD5.hash(data: bytes).map({ String(format: "%02x", $0) }).joined() == photo.id else {
             throw ImageUploadFailure.invalidImage
+        }
+        if ComposerGIFData.hasHeader(bytes) {
+            try ComposerGIFData.validate(bytes, width: photo.width, height: photo.height)
+        } else {
+            guard bytes.count <= 5_242_880, bytes.starts(with: [0xff, 0xd8, 0xff]) else {
+                throw ImageUploadFailure.invalidImage
+            }
         }
         try Task.checkCancellation()
         return bytes

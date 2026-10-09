@@ -1,5 +1,29 @@
 # TASK_STATE
 
+## 2026-10-09 U08 — 用户批准提交 Build13，剩余差异复核
+
+- 用户要求“现在先提交，目前还剩哪些没对齐”。提交前716份Build13生产输入摘要全部一致，沿用已有18项相关Unit、iPhone/iPad各1项短UI、lint/build/归档结果；本次重新执行make secret-scan及git diff --check均通过，没有重复测试、重新安装或真实发送。
+- 本条随Build13的11份GIF实现、测试、合成fixture/生成脚本及证据文档精确提交；不含原有Prompts、技能agents、Python缓存、Artifacts、凭证或Android submodule。不推送，不继续修改发送行为；无新增外观、手势、动画、overlay或依赖变化。
+- 未对齐项仍为：原图/PNG透明度、原生完整静态压缩与AIGC元数据；正文与图片混排；选图后提前上传、新主题并发上传及可配置水印/原图策略；getmypost基础PB输入/实际开关/生产读取合并；搜索、正文内部与Scheme入口的完整来源传递；实际远程配置及可选替代网络引擎。SDK/Passport和依赖它的验证后续发按用户要求跳过。
+- 区分实现缺口与验收缺口：普通文字及单张静态图已由用户确认发送成功；GIF编码保留/草稿/上传已实现且离线回归通过，但GIF真实上传和服务端动画尚待用户验证。多图、新主题及楼层/楼中楼带图缺逐项实发确认，不能称为对应接口尚未实现，也不能把一次成功扩大为长期审核留存保证。
+
+## 2026-10-09 U08 — Build13 Live 回复入口已就绪
+
+- 用户解锁 Mac 后继续交付。重新核对已安装版本0.2.0(13)，主程序/debug dylib与本轮候选一致；716份生产输入摘要均未变化，沿用上节已执行的定向验证，没有重复构建或测试。
+- CUA实际打开完整Live App：首页→吧首页→真实帖子→回复编辑器。截图确认回复主题、空白正文、图片/表情入口及0字/0图草稿状态可见；将App留在该编辑器。未输入正文、选择图片或点击发送，没有清理账号、缓存或既有草稿；本次未验证软件键盘弹出。
+- 本轮仅补交付记录，未新增生产修改、暂存、提交或推送。READY_FOR_USER_VISUAL_REVIEW仅表示Build13可供人工检查；GIF真实上传及服务端动画仍待用户验证，其他未对齐项及SDK/Passport跳过范围保持下节记录。
+
+## 2026-10-09 U08 — 已提交 Build12；Build13 GIF 原编码路径续接，IPA/Simulator 已交付
+
+- 用户授权“先提交，然后继续修改没有对齐的部分”。精确96文件提交成功：846e4bc（feat: align native iOS write requests and image uploads），未推送；Build12的715份输入与已验收候选一致，提交前secret-scan/diff check通过，沿用原定向结果。原有Prompts、技能agents、Python缓存、Artifacts及Android submodule未纳入。
+- 后续本轮只闭合GIF格式差异：原版reply coordinator的imageType==2、编码数据传递和严格小于10 MiB条件已查证；同SHA原指令离线重放5个类型与5个大小输入，重生成逐字节一致。GIF导入不再取首帧编码成JPEG，现有后台actor保存原编码字节；草稿重建、上传前摘要/尺寸/容器验证及原生串行分块贯通。最终固定chunk/chunk/image/jpeg封装保持原生证据，不额外猜GIF字段。静态JPEG压缩/5 MiB限制、目标/正文/账号/发送次数/普通刷新不变；没有视觉、动画、手势、overlay、新依赖或Loader/VirtualizedList/Pager/缓存恢复修改。
+- 修改生产输入4份：新增ComposerGIFData；ComposerPhotoPreparation新增GIF分支与共用落盘；NativeImageUploadClient只扩展格式预检；NativeImageUploadProtocol仅说明注释。测试新增U08NativeGIFUploadTests，证据fixture/生成脚本及API_EVIDENCE/UNKNOWN/ADR同步；本轮增量尚未暂存、提交或推送。
+- 基线U08NativeImageSendTests 7PASS。GIF红测实际4项中3FAIL/1PASS，确认转JPEG及JPEG-only预检；green11PASS，新增原生边界/本地缩略图/保留JPEG限额回归后final-unit-fixed11PASS，合计去重18个相关方法通过。包含完整JPEG发送、取消/切账号、重试/目标、GIF分块逐字节相等、10 MiB边界、草稿重开帧数、损坏或被替换文件拒绝。iPhone选图/删除/失败重试UI1PASS(32.663秒)，iPad图片草稿/键盘旋转UI1PASS(23.897秒)，均隔离Fixture/Mock，真实上传/发帖0次；不代表旧U03旋转分栏回首楼修复。
+- make lint最终519文件0违规、WRITE_BASELINE23项通过；make build、secret-scan、git diff --check、设备archive及Release隔离通过。中间失败：首次红测选项拼写为-only-test-configuration:Unit，实际未运行；改正确分离参数后取得red。新增缩略图测试漏解包可选pixelSize导致首次final-unit编译失败，修测试后通过。若干只读旧路径/通配符检索不存在，改实际路径继续。make simulator-keychain-entitlement依赖build会恢复工程默认构建号，安装前再次覆盖13并校验；未改工程版本/签名配置。原AppIntents与方向warning保留。没有全量Unit/quality-fast/quality。
+- IPA：Artifacts/Releases/U08-native-alignment-build13-20261009/TiebaLite-U08-native-alignment-build13-20261009-ios18-arm64-unsigned.ipa，0.2.0(13)、iPhoneOS/arm64/iOS18+/iPhone和iPad，未签名，7,169,128字节，SHA256=6694f75ef7b5ca28ac5487d802eda88dadd9e8c3165d71400877ca6ac627766f。716份生产输入归档及安装时一致，140份包文件与archive逐字节一致，ZIP/执行权限/版本/平台通过。
+- 已覆盖常用iPhone17Pro（70D93841-1FEB-445A-8FAD-B1C29B981D5D）完整正常Live Build13，无Fixture启动参数；签名/Keychain entitlement验证，已安装主程序/debug dylib与候选相同。安装前后Documents、Application Support和Preferences内10份持久文件摘要一致；没有卸载、erase或清缓存/Keychain。CUA报告Mac锁定，已请求解锁，尚未打开回复入口或完成本轮Live视觉检查，不输出READY；用户可自行签名IPA测试。
+- 剩余：GIF真实上传及服务端动画展示待用户检查；原图/PNG透明度、完整静态压缩及AIGC元数据重建仍未闭合，提前上传/并发/水印/混排、getmypost完整provider/开关/合并、搜索/正文/Scheme来源及运行配置/替代引擎继续OPEN。SDK/Passport及依赖它的验证续发继续按用户要求跳过；不得将本轮说成全部对齐。
+
 ## 2026-10-08 U08 — 用户批准提交 Build12，随后继续剩余 iOS 对齐
 
 - 用户已确认文字和单张静态图片回复成功，明确授权先提交当前候选再继续。提交前715份Build12生产输入摘要全部一致，沿用已记录定向Unit/UI、lint/build及归档结果；本次重新执行secret-scan和git diff --check均通过。

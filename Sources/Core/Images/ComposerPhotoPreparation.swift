@@ -16,6 +16,13 @@ actor ComposerPhotoPreparation {
               width > 0, height > 0, Int64(width) * Int64(height) <= 120_000_000 else {
             throw ImageUploadFailure.invalidImage
         }
+        if CGImageSourceGetType(source) as String? == UTType.gif.identifier {
+            guard size < ComposerGIFData.byteLimit else { throw ImageUploadFailure.tooLarge }
+            let bytes = try Data(contentsOf: file.url)
+            try ComposerGIFData.validate(bytes, width: width, height: height)
+            try Task.checkCancellation()
+            return try save(bytes, width: width, height: height, extension: "gif")
+        }
         for maximum in [2_560, 1_920, 1_080] {
             try Task.checkCancellation()
             let options: [CFString: Any] = [
@@ -32,13 +39,16 @@ actor ComposerPhotoPreparation {
             CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.95] as CFDictionary)
             guard CGImageDestinationFinalize(destination) else { throw ImageUploadFailure.invalidImage }
             guard bytes.length <= 5_242_880 else { continue }
-            let data = bytes as Data
-            let id = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined()
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("composer-\(UUID().uuidString).jpg")
-            try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
-            return ComposerPhoto(id: id, file: ComposerPhotoFile(url: url), width: image.width,
-                                 height: image.height, byteCount: data.count)
+            return try save(bytes as Data, width: image.width, height: image.height, extension: "jpg")
         }
         throw ImageUploadFailure.tooLarge
+    }
+
+    private func save(_ data: Data, width: Int, height: Int, extension suffix: String) throws -> ComposerPhoto {
+        try Task.checkCancellation()
+        let id = Insecure.MD5.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("composer-\(UUID().uuidString).\(suffix)")
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+        return ComposerPhoto(id: id, file: ComposerPhotoFile(url: url), width: width, height: height, byteCount: data.count)
     }
 }

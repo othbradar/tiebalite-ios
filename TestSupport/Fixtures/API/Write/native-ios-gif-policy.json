@@ -1,0 +1,48 @@
+{
+  "referenceSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "scope": "Native imageType == 2 predicate and post-metadata GIF size decision only; synthetic length/provider, no codec, image, SDK or network execution.",
+  "types": [
+    {
+      "imageType": null,
+      "gif": false
+    },
+    {
+      "imageType": 0,
+      "gif": false
+    },
+    {
+      "imageType": 1,
+      "gif": false
+    },
+    {
+      "imageType": 2,
+      "gif": true
+    },
+    {
+      "imageType": 3,
+      "gif": false
+    }
+  ],
+  "sizes": [
+    {
+      "byteCount": 1,
+      "accepted": true
+    },
+    {
+      "byteCount": 5242880,
+      "accepted": true
+    },
+    {
+      "byteCount": 10485759,
+      "accepted": true
+    },
+    {
+      "byteCount": 10485760,
+      "accepted": false
+    },
+    {
+      "byteCount": 10485761,
+      "accepted": false
+    }
+  ]
+}

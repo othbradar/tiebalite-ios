@@ -1,5 +1,13 @@
 # API / Protobuf 证据
 
+## 2026-10-09 GIF 编码数据保留
+
+CODE_EVIDENCE：同 SHA iOS22.11.1，TBCReplyComposeImageUploadCoordinator.imageUpload:shouldGifAtIndex:(0x102396458)检查runningMeta.imageType == 2；gifDataAtIndex:(0x1023964a8)返回imageGifData。TBCImageUpload.uploadGifImage…(0x10214c5e0)对编码数据调用filterImageMetaWithData:originalMetaData:，用imageWithData仅取得尺寸，再对同一份编码数据计算MD5并送入分块，不经过静态JPEG压缩。0x10214c874比较长度0xa00000，只有小于10 MiB才继续；主题新Uploader同样在0x102152f10比较该值。合成原指令回放的类型与严格大小边界见native-ios-gif-policy.json及generate_gif_policy.py，未运行真实上传。
+
+filterImageMetaWithData:originalMetaData:(0x101cd8614)在无originalMetaData时返回输入NSData；有metadata时保留/重写AIGC信息。当前增量保持选择到的GIF编码字节（包括已有扩展数据），不调用JPEG编码，不声称完成原生AIGC元数据重建。sliceImageAndUploadChunks(0x10214d4a8)将isGif置1；uploadChunks(0x10214dbc8)令GIF跳过水印，缺saveOrigin delegate的普通回复仍为0。最终仍由同一TBCImageUploadModel传输；IDP上传的chunk/chunk/image/jpeg固定封装不因GIF更改。禁止因扩展名自行改成另一MIME或增加未经证实的GIF请求字段。
+
+本轮仅闭合普通GIF选择→草稿→原编码分块路径。原静态图JPEG准备、原图配置/元数据、提前上传/并发/混排、SDK/Passport及其他发送分支的缺口仍按原记录保留。不会将GIF保留误写为所有图片已原图上传；图片显示/保存系统独立不变。
+
 ## 2026-10-08 图片发送迁移（SDK/Passport 按用户要求跳过）
 
 同 SHA iOS22.11.1：TBCReplyComposeImageUploadCoordinator._drive(0x102395c44)串行创建TBCImageUpload，成功(0x102396630)保存picInfo。TBCImageUploadModel.uploadChunk:saveOrigin:(0x10214f384)使用/c/s/uploadPicture和chunk文件；业务字典含原始imgMd5作为resourceId、chunkNo、isFinish、width/height、size、smallWidth/smallHeight、alt=json、saveOrigin。普通回复delegate未实现水印回调，默认shouldAddWaterMark=0→pic_water_type=3；barName非空写small_flow_fname，不凭空加forum_name/groupId。六个显式合成输入执行原ARM64方法至accessAPI前，未联网。
