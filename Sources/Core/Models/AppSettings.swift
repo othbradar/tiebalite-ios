@@ -15,6 +15,9 @@ struct AppSettingsSnapshot: Codable, Equatable, Sendable {
     var readingTextSize: ReadingTextSizePreference
     var contentPrefetch: ContentPrefetchMode = .unmetered
     var forumSort = ForumSortPreferences()
+    var resumeThreadReading: Bool?
+
+    var resumesThreadReading: Bool { resumeThreadReading ?? true }
 
     static let defaults = AppSettingsSnapshot(
         appearance: .system,

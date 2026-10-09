@@ -187,3 +187,12 @@ extension ReadingTextSizePreference {
         }
     }
 }
+
+extension SettingsStore: ThreadReadingPreferences {
+    var resumesThreadReading: Bool { settings.resumesThreadReading }
+
+    func setResumesThreadReading(_ enabled: Bool) {
+        settings.resumeThreadReading = enabled
+        persistCurrentSettings()
+    }
+}

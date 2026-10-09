@@ -46,6 +46,14 @@ final class NotificationDestinationStore {
         threadID: Int64, through postID: Int64, repository: any ThreadReaderRepository
     ) async throws -> ThreadReaderStore {
         let store = ThreadReaderStore(threadID: threadID, repository: repository)
+        if repository.supportsPostLookup {
+            await store.locatePost(postID)
+            guard let anchor = store.listPresentation?.rows.first(where: { $0.post?.source.postID == postID })?.id else {
+                throw ThreadReaderLoadFailure.unavailable
+            }
+            store.setInitialReadAnchor(anchor)
+            return store
+        }
         await store.loadIfNeeded()
         while true {
             try Task.checkCancellation()

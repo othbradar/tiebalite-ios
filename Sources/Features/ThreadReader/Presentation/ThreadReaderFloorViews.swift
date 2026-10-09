@@ -188,6 +188,7 @@ struct ThreadReaderReplyBar: View {
     let imageLoader: any ImageLoading
     var accountAvatar: ImageResourceDescriptor?
     let threadID: Int64
+    var readingControls: ThreadReaderStore?
     let reload: () -> Void
     var onCompose: () -> Void = {}
 
@@ -205,7 +206,11 @@ struct ThreadReaderReplyBar: View {
                 .frame(minHeight: 44)
                 .accessibilityIdentifier("thread-reader.compose")
                 if let url = PublicContentURL.thread(threadID) {
-                    LinkActionsMenu(url: url, identifier: "thread-reader.compose.more", reload: reload)
+                    if let readingControls {
+                        ThreadReadingMenu(store: readingControls, url: url, reload: reload)
+                    } else {
+                        LinkActionsMenu(url: url, identifier: "thread-reader.compose.more", reload: reload)
+                    }
                 }
             }
             .buttonStyle(.plain).foregroundStyle(SemanticColor.secondaryText)

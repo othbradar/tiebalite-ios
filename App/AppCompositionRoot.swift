@@ -180,7 +180,7 @@ final class AppCompositionRoot {
     func makeBrowsingHistoryStore() -> BrowsingHistoryStore {
         BrowsingHistoryStore(
             repository: browsingHistoryRepository,
-            clock: environment.clock
+            clock: environment.clock, readingCache: threadReaderRepository as? any ReadingContentCacheAccess
         )
     }
 
@@ -216,7 +216,8 @@ final class AppCompositionRoot {
         ThreadReaderStore(
             threadID: threadID,
             repository: threadReaderRepository, prefetch: makeContentPrefetchSession(),
-            replyFollowup: textComposer.repository as? any ReplyFollowupLoading
+            replyFollowup: textComposer.repository as? any ReplyFollowupLoading,
+            readingPreferences: sharedSettingsStore
         )
     }
 

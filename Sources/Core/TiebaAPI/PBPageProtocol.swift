@@ -20,11 +20,13 @@ struct PBPageRequestInput: Equatable, Sendable {
     let threadID: Int64
     let pageNumber: Int
     let postID: Int64
+    let query: ThreadReadingQuery
 
     init(
         threadID: Int64,
         pageNumber: Int = 0,
-        postID: Int64 = 0
+        postID: Int64 = 0,
+        query: ThreadReadingQuery = .init()
     ) throws {
         guard threadID > 0 else {
             throw PBPageProtocolError.invalidThreadID
@@ -38,6 +40,7 @@ struct PBPageRequestInput: Equatable, Sendable {
         self.threadID = threadID
         self.pageNumber = pageNumber
         self.postID = postID
+        self.query = query
     }
 }
 
@@ -91,8 +94,8 @@ enum PBPageProtocol {
         data.mark = 0
         data.back = 0
         data.kz = input.threadID
-        data.lz = 0
-        data.r = 0
+        data.lz = input.query.onlyAuthor ? 1 : 0
+        data.r = input.query.order == .descending ? 1 : 0
         data.pid = input.postID
         data.withFloor = 1
         data.floorRn = 4

@@ -1342,3 +1342,10 @@ RUNTIME_EVIDENCE（用户手动，2026-09-27）：用户确认“这回发成功
 - 发送成功的原顺序：清对应草稿 → 记录回执 → 收起编辑器 → sheet didDismiss 执行一次回调。帖子用原 reload，楼中楼用原 refresh；均按原 U03 当前阅读页机制保留已加载范围/锚点。撤回 U08 的 target 回调、lastReplyReceipt、父楼/末页选择、dirtyPages 和成功后追读新页；没有额外同页读/轮询/重发。
 - TextComposerStore 发送主体、TextComposerService present/didDismiss、账号准备、签名/编码、四类目标、上传、网络和 Session 的既有代码与 beta3 对照一致。保留 U08 本地草稿落盘及图片文件所有权、草稿恢复就绪门槛、账户隔离清理；不将这些明确的本地存储差异或 U07 已验收外观说成全 App 字节一致。账号变化新增的强制关闭编辑器已撤回。
 - Specs/WRITE_BASELINE.json 固定 beta3 源码/接线摘要；make write-baseline-check 纳入 lint。AGENTS.md 禁止今后未经新的明确授权改变这条链路或更新基线。没有任何 Live 发送、上传、重发或审核探测。源码/Mock 通过不证明服务端删帖原因已解决，MODERATION_CAUSE_UNKNOWN 保留。
+
+## U09 — PBPage 长帖读取模式（2026-10-09，CODE_EVIDENCE）
+
+沿用锁定 Android 只读 PBPage adapter，不修改已冻结的 iOS 写入/上传链。
+`MixedTiebaApiImpl.kt::pbPageFlow` 1316–1379 明确 lz=seeLz?1:0、r=sortType、pn=page、pid=postId；`ThreadViewModel.kt::ThreadSortType` 1280 为ASC0/DESC1，`getNextPagePostId` 56–70 为倒序取pids首个、正序排除已载后取末个。`ThreadPage.kt` 825跳页使用pn=N/pid默认0；1489倒序下一页为totalPage-currentPageMax，正序currentPageMax+1。该调用端公式不足以证明响应current_page使用正序物理页号。2026-10-09实际两条长帖的倒序首屏均为pn=0/r=1/current_page=1/total_page=2/new_total_page=2/has_more=1，回复楼层已倒序；此前total-current+1换算推断已被实测否定并移除。当前直接保留服务端current_page及行顺序，仍严格核对请求页码和帖子身份；总页数缺失不影响已知当前页校验，不本地反转/过滤。
+
+全部查询身份为all/author × ascending/descending，默认键仍all-ascending以兼容U03。首屏/分页/跳页/刷新/预载使用同一查询；pn0首屏，非相邻页只请求目标pn一次。历史/阅读位置只来自有效视口，不由预载更新。合成Proto覆盖四种请求和倒序页/游标；Live倒序首屏元数据已核对，用户已确认只看楼主正常、修复后倒序正常；Fixture与用户验收分别记录，不扩大为所有组合通过。

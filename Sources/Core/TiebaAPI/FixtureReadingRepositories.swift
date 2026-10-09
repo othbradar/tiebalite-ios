@@ -41,6 +41,7 @@ struct FixtureRecommendationRepository: RecommendationRepository {
 }
 
 struct FixtureThreadReaderRepository: ThreadReaderRepository {
+    let supportsPostLookup = true
     private let failsNextPage: Bool
 
     init(failsNextPage: Bool = false) {
@@ -57,11 +58,20 @@ struct FixtureThreadReaderRepository: ThreadReaderRepository {
         }) else {
             throw FixtureReadingRepositoryError.threadNotFound
         }
+        if request.isPostLookup {
+            let pages = [FixtureThreadReaderPages.firstPage(from: seed)]
+                + (2...5).map { FixtureThreadReaderPages.subsequentPage(from: seed, pageNumber: $0) }
+            guard let page = pages.first(where: { $0.posts.contains { $0.id.postID == request.postID } }) else {
+                throw FixtureReadingRepositoryError.unavailable
+            }
+            return page
+        }
+        if request.query != .init() { return try FixtureLongThreadPages.page(seed: seed, request: request) }
         switch request.pageNumber {
-        case 0:
+        case 0, 1:
             return FixtureThreadReaderPages.firstPage(from: seed)
         case 2...5:
-            guard request.postID == FixtureThreadReaderPages.nextPostID(
+            guard request.postID == 0 || request.postID == FixtureThreadReaderPages.nextPostID(
                 for: seed,
                 afterPage: request.pageNumber - 1
             ) else {

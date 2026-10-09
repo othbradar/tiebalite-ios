@@ -1,5 +1,31 @@
 # TASK_STATE
 
+## 2026-10-09 U09 — USER_ACCEPTED / 提交授权
+
+- 用户确认只看楼主及修复后的倒序正常，随后明确“现在提交”。当前713份生产输入与已安装的去诊断候选逐份摘要一致，沿用上文定向Unit/UI及lint/build结果，不重复测试或改实现。
+- 本次提交只纳入U09读取模式、跳页/目标定位、独立查询缓存/阅读进度、设置/历史接线、直接测试和对应证据/ADR，共29份文件；保留所有用户原有提示词/技能目录/Python临时缓存，排除Artifacts、凭据、IDE文件及Android submodule。
+- 提交前复核diff、secret-scan及精确暂存清单。提交题目为feat: add long-thread reading controls，完整SHA记录在Git及本轮提交回执；不推送、不进入U10。
+- 边界继续保留：用户反馈不等于全部Live组合通过；真实非相邻跳页/进程重开组合未补齐人工证据，既有iPad旋转进入分栏回首楼问题及SDK/Passport缺口不在本阶段修复。
+
+## 2026-10-09 U09 — 倒序页码修复，用户确认正常
+
+- USER_REPORTED：用户确认只看楼主正常；本轮修复后再次明确“倒序修好了”。不将此反馈扩大为所有页码/进程重开/模式组合均已人工验收。
+- 根因：把 Android 调用端的下一页公式误当作 PBPage 响应页码语义，对倒序 current_page 再做 total-current+1 换算。实际两条长帖的倒序首屏为 pn0/r1/current1/total2/newTotal2/has_more1，回复楼层已倒序；合法首屏被换成第2页，触发严格页码不匹配，显示“无法跳转”。
+- 最小修复：删除该换算，直接使用服务端当前页；保留页码/帖子身份严格校验、服务器行序和查询隔离。总页数缺失不再阻止已知当前页。未改界面、VirtualizedList/恢复、写入/上传/账号准备，无新动画、手势、overlay或依赖。临时仅记录页码/楼层号的诊断已从最终源码移除。
+- 直接验证：3个总页数参数的旧实现回归全部失败（reverse-red），修复后 U09 与 Stage11PBPageProtocol 共15个方法通过（reverse-green），含服务端顺序/倒序游标、非相邻页和错页拒绝；既有相关 iPhone/iPad UI 结果沿用，无 UI 接线变化后重复全套。Live 首屏修复版已实际读取成功，用户已确认效果。
+- 收尾检查：make lint（530文件0违规）、make build、make secret-scan、git diff --check通过，写链路基线23项仍通过。完整正常 Live App 的去诊断候选已覆盖安装，主程序/debug dylib/Info.plist与构建逐字节匹配，713份输入摘要已记录；已通过原登录态打开真实帖子并留在阅读工具菜单；无卸载/清缓存/Keychain/草稿，无真实发送。证据在 ignored Artifacts/VisualReview/U09/reverse-*；未暂存、提交、推送或进入U10。
+
+## 2026-10-09 U09 — 定向验证通过，Live 长帖检查待解锁
+
+- 用户仅授权进入U09，读取COMMON/U09及相关规格/ADR；实际HEAD为02b32c9366d28923defc02d274d30f0e57a7c2d1。新增ThreadReadingQuery、ThreadReaderNavigation/ReadingMenu，接通PBPage服务端lz/r/pn/pid、独立查询缓存/位置、非相邻页跳转、回首楼、继续阅读设置及历史楼层摘要。默认all-ascending键不变；不在生产本地过滤或倒排，不抓全部前置页。现有明确postID消息目标优先并单次定位；既有严格深链白名单和未实现的收藏入口未扩展。
+- 修改范围为读取领域/Repository/Store、现有菜单、Settings/History/Composition接线及直接Fixture/测试；VirtualizedList、初始恢复和视口保持、Pager、MediaViewer、写入/上传/账号/签名未改。显式模式/页导航成功才递增确定性readingSession并替换表实例；普通刷新、分页、图片和返回不增加会话。没有新增外观设计、手势、动画、overlay或依赖；页码输入/错误使用系统alert。
+- 原失败UI证明新跳页落到页尾：page=4、anchor对应帖子ID=0、目标正文frame=(inf,inf,0,0)。根因是nil历史目标与footer的nil postID相等，误选footer；改为目标非nil才查找，否则取目标页首个真实帖子。直接断言保留目标47楼可见、回首楼可见，无延时/重复滚动/虚拟列表改动。
+- 最终Unit：U09八个方法（清理/账号变化为双参数）及U03三页磁盘恢复一条共9个方法PASS；R11目标定位8项PASS；Stage11PBPageProtocol7项最终PASS。UI：iPhone U09模式/跳4页/回首楼/无效页1条PASS，iPad对应1条PASS；已有消息定位、U03深处重进/图片往返、U08Mock发送成功关闭/清对应草稿各1条PASS。没有代理实发、全量Unit、quality-fast/quality或长矩阵。
+- 中间失败保留：移动Store辅助方法后的private访问编译错误已修；lint参数对齐/复杂度等已修；系统alert同名父子AX节点导致第一次UI定位失败，改firstMatch；随后真实跳页目标不可见失败经上述根因修复通过。此前U03不带括号selector未匹配，已用完整方法selector实际执行，不将未匹配计为通过。
+- make lint最终530文件0违规、make build、secret-scan、git diff --check通过。WRITE_BASELINE23项PASS；原beta3摘要和旧迁移许可保留，三个共享只读文件的U09差异新增唯一匹配的精确逆向片段，逐字还原本轮HEAD后仍执行原检查。NativeLiveTextWriteRepository、NativeTextWriteClient及普通模式成功处理函数体与HEAD相同。
+- 使用原visual_review_build_install.sh U09覆盖完整正常Live App，复用.build/DerivedData以避免重复占盘；版本仍0.2.0(17)，不改发布版本/签名/Bundle ID/Keychain。安装主程序/debug dylib/Info.plist与候选逐字节一致，713份生产输入摘要已记录。无uninstall/erase/清登录、缓存或草稿；CUA看到原账户和最近吧，打开真实吧首页后Mac锁屏，工具无法继续操作，已请求解锁。尚不宣称真实长帖模式/非相邻页/进程重开验收完成。
+- 证据：ignored Artifacts/VisualReview/U09下unit-final、unit-navigation、protocol-final、ui-phone、ui-jump-green、ui-ipad的xcresult/log，以及lint-pass/build/secret-scan/install-live与installed-source-manifest。保留用户原有Prompt/skill/Python缓存、Android submodule不动；未暂存、提交、推送或进入U10。
+
 ## 2026-10-09 v0.2.0beta4 — PUBLISHED_AND_VERIFIED
 
 - 已验收修复提交1b696746、发布准备提交504bef4已推送main；注释标签v0.2.0beta4解引用为504bef4cf14d1835fef35b4c51e9e6452a3ab703，远端一致。发布后的本条仅补回执，不移动标签、不重新构建或变更生产代码。

@@ -6,6 +6,8 @@ final class BrowsingHistoryStore {
     private(set) var state: BrowsingHistoryState = .idle
     private(set) var persistenceIssue: BrowsingHistoryPersistenceIssue?
 
+    private(set) var readingFloors: [Int64: Int] = [:]
+    private let readingCache: (any ReadingContentCacheAccess)?
     private let repository: any BrowsingHistoryRepository
     private let clock: any AppClock
     @ObservationIgnored private var loadTask: Task<Void, Never>?
@@ -13,8 +15,9 @@ final class BrowsingHistoryStore {
 
     init(
         repository: any BrowsingHistoryRepository,
-        clock: any AppClock
+        clock: any AppClock, readingCache: (any ReadingContentCacheAccess)? = nil
     ) {
+        self.readingCache = readingCache
         self.repository = repository
         self.clock = clock
     }
@@ -212,5 +215,20 @@ final class BrowsingHistoryStore {
         }
         state = .failed
         loadTask = nil
+    }
+}
+
+extension BrowsingHistoryStore {
+    func refreshReadingFloors() async {
+        guard let readingCache else { return }
+        let context = readingCache.cacheContext
+        var floors: [Int64: Int] = [:]
+        for entry in entries {
+            guard case let .thread(id) = entry.identity else { continue }
+            if let floor = await readingCache.readingPosition(.init(threadID: id))?.floorNumber, floor > 0 {
+                floors[id] = floor
+            }
+        }
+        if readingCache.cacheContext == context { readingFloors = floors }
     }
 }

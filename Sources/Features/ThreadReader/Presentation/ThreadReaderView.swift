@@ -51,7 +51,8 @@ struct ThreadReaderView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if store.state.snapshot != nil {
                 ThreadReaderReplyBar(imageLoader: imageLoader, accountAvatar: accountAvatar,
-                                     threadID: store.threadID, reload: { Task { await store.reload() } }, onCompose: {
+                                     threadID: store.threadID, readingControls: store,
+                                     reload: { Task { await store.reload() } }, onCompose: {
                     if let snapshot = store.state.snapshot { composeTarget = .reply(snapshot: snapshot, readingEntry: readingEntry) }
                 })
             }
@@ -127,6 +128,7 @@ struct ThreadReaderView: View {
     @ViewBuilder
     private func reader(_ snapshot: ThreadReaderSnapshot) -> some View {
         if let presentation = store.listPresentation {
+            let readingSession = store.readingSession
             VirtualizedList(
                 items: store.configuredRows(textSize: readingTextSize),
                 backgroundColor: .systemBackground,
@@ -136,9 +138,9 @@ struct ThreadReaderView: View {
                 contentVersion: VirtualListContentRevision(owner: ObjectIdentifier(store), revision: store.listRevision,
                                                            configuration: readingTextSize),
                 initialRestorationScope: AnyHashable(ThreadReaderRestorationScope(
-                    threadID: store.threadID, context: store.cacheContext)),
+                    threadID: store.threadID, context: store.cacheContext, query: store.query)),
                 onPrefetch: { rowIDs in
-                    guard rowIDs.contains(where: {
+                    guard readingSession == store.readingSession, rowIDs.contains(where: {
                         presentation.prefetchRowIDs.contains($0)
                     }) else {
                         return
@@ -146,8 +148,10 @@ struct ThreadReaderView: View {
                     store.prefetchNextPage()
                     requestNextPage()
                 },
-                onScrollSettled: store.setReadAnchor,
-                onRefresh: { await store.reload() },
+                onScrollSettled: { anchor in
+                    if readingSession == store.readingSession { store.setReadAnchor(anchor) }
+                },
+                onRefresh: { if readingSession == store.readingSession { await store.reload() } },
                 rowContent: { configuredRow in
                     ThreadReaderRowView(
                         row: configuredRow.row,
@@ -164,6 +168,7 @@ struct ThreadReaderView: View {
                     )
                 }
             )
+            .id(readingSession) // Only an explicit mode/page navigation starts a new list session.
             .background(SemanticColor.background)
             .accessibilityElement(children: .contain)
         } else {
@@ -312,4 +317,5 @@ enum ThreadReaderAccessibilityID {
 private struct ThreadReaderRestorationScope: Hashable {
     let threadID: Int64
     let context: ContentCacheContext
+    let query: ThreadReadingQuery
 }

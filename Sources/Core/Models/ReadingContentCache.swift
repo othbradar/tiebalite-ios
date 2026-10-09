@@ -19,6 +19,7 @@ struct ReadingPosition: Codable, Equatable, Sendable {
     let identity: ReadingCacheIdentity
     let postID: Int64
     let locator: ReadingPageLocator
+    var floorNumber: Int?
 }
 
 struct ReadingCacheTicket: Equatable, Sendable {
@@ -45,6 +46,8 @@ protocol ReadingContentCacheAccess: ThreadReaderRepository, SubpostsRepository {
     func ticket() async -> ReadingCacheTicket
     func isValid(_ ticket: ReadingCacheTicket) async -> Bool
     func restoreThread(_ threadID: Int64) async -> CachedReading<ThreadReaderSnapshot>?
+    func restoreThread(_ threadID: Int64, query: ThreadReadingQuery) async -> CachedReading<ThreadReaderSnapshot>?
+    func readingPosition(_ identity: ReadingCacheIdentity) async -> ReadingPosition?
     func restoreSubposts(_ route: SubpostsRoute) async -> CachedReading<SubpostsPage>?
     func refreshThread(_ request: ThreadReaderPageRequest) async throws -> ThreadReaderSnapshot
     func refreshSubposts(_ route: SubpostsRoute, page: Int) async throws -> SubpostsPage
@@ -54,6 +57,10 @@ protocol ReadingContentCacheAccess: ThreadReaderRepository, SubpostsRepository {
 }
 
 extension ReadingContentCacheAccess {
+    func restoreThread(_ threadID: Int64, query: ThreadReadingQuery) async -> CachedReading<ThreadReaderSnapshot>? {
+        query == .init() ? await restoreThread(threadID) : nil
+    }
+    func readingPosition(_ identity: ReadingCacheIdentity) async -> ReadingPosition? { nil }
     func mergeReplyPosts(_ update: ReplyPostUpdate, ticket: ReadingCacheTicket) async {}
     func mergeReplyPage(_ page: ThreadReaderSnapshot, ticket: ReadingCacheTicket) async -> ReadingPageLocator? { nil }
 }

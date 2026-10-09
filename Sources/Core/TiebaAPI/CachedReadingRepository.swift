@@ -29,6 +29,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
         var replyRecord: ReplyRecord?
     }
 
+    nonisolated let supportsPostLookup: Bool
     private let threads: any ThreadReaderRepository
     private let subposts: any SubpostsRepository
     private let scheduler: ContentLoadScheduler
@@ -47,6 +48,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
          clock: any AppClock = SystemAppClock(), scheduler: ContentLoadScheduler = ContentLoadScheduler(),
          policy: ContentCachePolicy = .init(),
          context: @escaping @MainActor @Sendable () -> ContentCacheContext = { .anonymous }) {
+        supportsPostLookup = threads.supportsPostLookup
         self.scheduler = scheduler
         self.threads = threads
         self.subposts = subposts
@@ -66,11 +68,23 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
     }
 
     func restoreThread(_ threadID: Int64) async -> CachedReading<ThreadReaderSnapshot>? {
-        let identity = ReadingCacheIdentity(threadID: threadID)
+        await restoreThread(threadID, query: .init())
+    }
+
+    func restoreThread(_ threadID: Int64, query: ThreadReadingQuery) async -> CachedReading<ThreadReaderSnapshot>? {
+        let identity = query.identity(threadID: threadID)
         guard var reading: CachedReading<ThreadReaderSnapshot> = await restore(identity),
               let key = key(identity, ticket: reading.ticket) else { return nil }
         reading.replyPosts = await replyPosts((await manifest(key)).replyRecord)
         return await isValid(reading.ticket) ? reading : nil
+    }
+
+    func readingPosition(_ identity: ReadingCacheIdentity) async -> ReadingPosition? {
+        let ticket = await ticket()
+        guard await isValid(ticket), let key = key(identity, ticket: ticket) else { return nil }
+        await writes[key]?.value
+        let position = await manifest(key).position
+        return await isValid(ticket) ? position : nil
     }
 
     func restoreSubposts(_ route: SubpostsRoute) async -> CachedReading<SubpostsPage>? {
@@ -87,7 +101,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
 
     func refreshThread(_ request: ThreadReaderPageRequest) async throws -> ThreadReaderSnapshot {
         let ticket = await ticket()
-        if let key = key(.init(threadID: request.threadID), ticket: ticket) { revocations[key, default: 0] &+= 1 }
+        if let key = key(request.query.identity(threadID: request.threadID), ticket: ticket) { revocations[key, default: 0] &+= 1 }
         return try await threadPage(request, useCache: false)
     }
 
@@ -135,11 +149,13 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
 
     private func threadPage(_ request: ThreadReaderPageRequest, useCache: Bool,
                             priority: ContentLoadScheduler.Priority = .foreground) async throws -> ThreadReaderSnapshot {
-        let identity = ReadingCacheIdentity(threadID: request.threadID)
+        let identity = request.query.identity(threadID: request.threadID)
         let locator = ReadingPageLocator(page: request.pageNumber, postID: request.postID)
         return try await fetch(identity, locator: locator, useCache: useCache, priority: priority) { [threads] in
             let page = try await threads.loadPage(request)
-            guard page.threadID == request.threadID, page.currentPage == locator.responsePage else {
+            guard page.threadID == request.threadID,
+                  request.isPostLookup ? page.posts.contains(where: { $0.id.postID == request.postID })
+                    : page.currentPage == locator.responsePage else {
                 throw EndpointExecutionError.mapping
             }
             guard !page.hasRevokedFirstPost else { throw ReadingContentRevoked() }
@@ -194,6 +210,10 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
             let page = try await load()
             try Task.checkCancellation()
             guard await isValid(ticket), revocations[key, default: 0] == revision else { throw CancellationError() }
+            let locator = (page as? ThreadReaderSnapshot).flatMap { snapshot in
+                locator.page == 0 && locator.postID > 0
+                    ? ReadingPageLocator(page: snapshot.currentPage, postID: locator.postID) : nil
+            } ?? locator
             if priority == .speculative {
                 let existing = await manifest(key)
                 // A speculative refresh cannot invalidate the locator/chain used by a saved reading session.

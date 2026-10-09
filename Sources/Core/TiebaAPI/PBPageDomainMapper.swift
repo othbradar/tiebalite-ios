@@ -16,15 +16,15 @@ enum PBPageDomainMapper {
     ) throws -> ThreadReaderSnapshot {
         let data = try validatedData(response, request: request)
         let posts = try mappedPosts(data, request: request)
-        let currentPage = Int(data.page.currentPage)
         let totalPage = firstPositive(
             data.page.newTotalPage,
             data.page.totalPage
         )
+        let currentPage = Int(data.page.currentPage)
         let hasMore = data.page.hasMore_p != 0
         let nextPostID = hasMore
             ? nextPagePostID(
-                from: data.thread.pids,
+                from: data.thread.pids, query: request.query,
                 excluding: request.loadedPostIDs.union(
                     posts.map(\.id.postID)
                 )
@@ -67,7 +67,8 @@ enum PBPageDomainMapper {
             throw PBPageProtocolError.missingPage
         }
         let expectedPage = request.pageNumber == 0 ? 1 : request.pageNumber
-        guard Int(data.page.currentPage) == expectedPage else {
+        let actualPage = Int(data.page.currentPage)
+        guard request.isPostLookup ? actualPage > 0 : actualPage == expectedPage else {
             throw PBPageProtocolError.pageIdentityMismatch(
                 requested: expectedPage,
                 received: Int(data.page.currentPage)
@@ -92,7 +93,7 @@ enum PBPageDomainMapper {
     ) throws -> [ThreadReaderPost] {
         var seenPostIDs: Set<Int64> = []
         var posts: [ThreadReaderPost] = []
-        if request.pageNumber == 0 {
+        if request.pageNumber == 0 && !request.isPostLookup {
             let firstPost = data.postList.first { $0.floor == 1 }
                 ?? (data.hasFirstFloorPost ? data.firstFloorPost : nil)
             guard let firstPost,
@@ -268,13 +269,15 @@ enum PBPageDomainMapper {
     }
 
     private static func nextPagePostID(
-        from rawPIDs: String,
+        from rawPIDs: String, query: ThreadReadingQuery,
         excluding postIDs: Set<Int64>
     ) -> Int64? {
-        return rawPIDs
+        let ids = rawPIDs
             .split(separator: ",")
             .compactMap { Int64(String($0).trimmingCharacters(in: .whitespaces)) }
-            .last(where: { $0 > 0 && !postIDs.contains($0) })
+            .filter { $0 > 0 }
+        if query.order == .descending { return ids.first }
+        return ids.last(where: { !postIDs.contains($0) })
     }
 
     private static func timestampMetadata(

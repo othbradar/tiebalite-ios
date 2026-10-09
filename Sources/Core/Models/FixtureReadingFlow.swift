@@ -238,18 +238,23 @@ struct ThreadReaderPageRequest: Equatable, Sendable {
     let pageNumber: Int
     let postID: Int64
     let loadedPostIDs: Set<Int64>
+    let query: ThreadReadingQuery
 
     init(
         threadID: Int64,
         pageNumber: Int,
         postID: Int64,
-        loadedPostIDs: Set<Int64> = []
+        loadedPostIDs: Set<Int64> = [],
+        query: ThreadReadingQuery = .init()
     ) {
         self.threadID = threadID
         self.pageNumber = pageNumber
         self.postID = postID
         self.loadedPostIDs = loadedPostIDs
+        self.query = query
     }
+
+    var isPostLookup: Bool { pageNumber == 0 && postID > 0 }
 
     static func initial(threadID: Int64) -> ThreadReaderPageRequest {
         ThreadReaderPageRequest(
@@ -266,6 +271,7 @@ enum ThreadReaderRepositoryError: Error, Equatable, Sendable {
 }
 
 protocol ThreadReaderRepository: Sendable {
+    var supportsPostLookup: Bool { get }
     func loadPage(
         _ request: ThreadReaderPageRequest
     ) async throws -> ThreadReaderSnapshot
@@ -273,6 +279,8 @@ protocol ThreadReaderRepository: Sendable {
 }
 
 extension ThreadReaderRepository {
+    var supportsPostLookup: Bool { false }
+
     func loadThread(threadID: Int64) async throws -> ThreadReaderSnapshot {
         try await loadPage(.initial(threadID: threadID))
     }

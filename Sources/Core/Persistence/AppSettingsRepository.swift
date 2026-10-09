@@ -18,6 +18,7 @@ actor InMemoryAppSettingsRepository: AppSettingsRepository {
 
 actor UserDefaultsAppSettingsRepository: AppSettingsRepository {
     private enum Key {
+        static let resumeThreadReading = "dev.tiebalite.settings.resume-thread-reading.v1"
         static let contentPrefetch = "dev.tiebalite.settings.content-prefetch.v1"
         static let forumSort = "dev.tiebalite.settings.forum-sort.v1"
         static let appearance = "dev.tiebalite.settings.appearance"
@@ -44,12 +45,14 @@ actor UserDefaultsAppSettingsRepository: AppSettingsRepository {
         }
         settings.contentPrefetch = defaults.string(forKey: Key.contentPrefetch)
             .flatMap(ContentPrefetchMode.init(rawValue:)) ?? .unmetered
+        settings.resumeThreadReading = defaults.object(forKey: Key.resumeThreadReading) as? Bool
         return settings
     }
 
     func save(_ settings: AppSettingsSnapshot) throws {
         let forumSort = try JSONEncoder().encode(settings.forumSort)
         let defaults = resolvedDefaults
+        defaults.set(settings.resumeThreadReading, forKey: Key.resumeThreadReading)
         defaults.set(settings.contentPrefetch.rawValue, forKey: Key.contentPrefetch)
         defaults.set(forumSort, forKey: Key.forumSort)
         defaults.set(settings.appearance.rawValue, forKey: Key.appearance)

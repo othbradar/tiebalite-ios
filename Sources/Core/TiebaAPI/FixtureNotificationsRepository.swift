@@ -29,7 +29,9 @@ struct FixtureNotificationsRepository: NotificationsRepository {
 }
 enum FixtureNotificationThreadPages {
     static func load(_ request: ThreadReaderPageRequest) throws -> ThreadReaderSnapshot {
-        let page = request.pageNumber == 0 ? 1 : request.pageNumber
+        let floor = request.postID >= 18001 ? request.postID - 18000 : request.postID - 9000 + 6
+        let targetPage = floor <= 15 ? 1 : floor <= 28 ? 2 : 3
+        let page = request.isPostLookup ? targetPage : max(1, request.pageNumber)
         guard (1...3).contains(page) else { throw FixtureReadingRepositoryError.unavailable }
         let floors = page == 1 ? 1...15 : page == 2 ? 16...28 : 29...35
         let author = TiebaUserVisuals(rawUserID: 101, displayName: "示例消息作者")

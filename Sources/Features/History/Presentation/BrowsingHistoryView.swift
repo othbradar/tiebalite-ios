@@ -46,6 +46,7 @@ struct BrowsingHistoryView: View {
         }
         .task {
             await store.loadIfNeeded()
+            await store.refreshReadingFloors()
         }
     }
 
@@ -83,6 +84,11 @@ struct BrowsingHistoryView: View {
                                 Text(entry.title)
                                     .font(Typography.font(.headline))
                                     .foregroundStyle(SemanticColor.primaryText)
+                                if case let .thread(id) = entry.identity, let floor = store.readingFloors[id] {
+                                    Text("上次看到 \(floor) 楼")
+                                        .font(Typography.font(.caption))
+                                        .foregroundStyle(SemanticColor.secondaryText)
+                                }
                                 if let subtitle = entry.subtitle {
                                     Text(subtitle)
                                         .font(Typography.font(.caption))

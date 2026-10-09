@@ -24,6 +24,10 @@ struct SettingsOptionsView: View {
             }
 
             settingsGroup(title: "阅读") {
+                Toggle("继续上次阅读", isOn: Binding(
+                    get: { store.resumesThreadReading }, set: { store.setResumesThreadReading($0) }
+                ))
+                .accessibilityIdentifier("settings.resume-thread-reading")
                 Picker("正文文字大小", selection: readingSizeBinding) {
                     ForEach(ReadingTextSizePreference.allCases, id: \.self) {
                         Text($0.title).tag($0)

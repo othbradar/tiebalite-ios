@@ -28,35 +28,41 @@ enum ThreadReaderState: Equatable, Sendable {
 @Observable
 final class ThreadReaderStore {
     let threadID: Int64
-    private(set) var state: ThreadReaderState = .initialLoading
-    private(set) var listPresentation: ThreadReaderListPresentation? {
+    var query = ThreadReadingQuery()
+    var readingSession: UInt64 = 0
+    var navigationMessage: String?
+    var isNavigating = false
+    @ObservationIgnored var navigationTask: Task<Void, Never>?
+    @ObservationIgnored private let readingPreferences: (any ThreadReadingPreferences)?
+    var state: ThreadReaderState = .initialLoading
+    var listPresentation: ThreadReaderListPresentation? {
         didSet { listRevision &+= 1 }
     }
     private(set) var listRevision: UInt64 = 0
-    private(set) var readAnchor: ThreadReaderRowID?
+    var readAnchor: ThreadReaderRowID?
     @ObservationIgnored private(set) var prefetchPreparationCount = 0
-    @ObservationIgnored private var loadedPostIDs: Set<Int64> = []
+    @ObservationIgnored var loadedPostIDs: Set<Int64> = []
     @ObservationIgnored var configuredRowsCache: ThreadReaderConfiguredRows?
-    @ObservationIgnored private(set) var configuredRowsBuildCount = 0
+    @ObservationIgnored var configuredRowsBuildCount = 0
 
-    private(set) var refreshFailed = false
-    private(set) var isShowingCachedContent = false
-    @ObservationIgnored private var cacheTicket: ReadingCacheTicket?
+    var refreshFailed = false
+    var isShowingCachedContent = false
+    @ObservationIgnored var cacheTicket: ReadingCacheTicket?
     @ObservationIgnored private var checkpointTask: Task<Void, Never>?
-    @ObservationIgnored private var loadedPages: [(ReadingPageLocator, ThreadReaderSnapshot)] = []
-    @ObservationIgnored private var contentContext: ContentCacheContext
+    @ObservationIgnored var loadedPages: [(ReadingPageLocator, ThreadReaderSnapshot)] = []
+    @ObservationIgnored var contentContext: ContentCacheContext
     @ObservationIgnored private var refreshing = false
     @ObservationIgnored private var restoring = false
     private let prefetch: ContentPrefetchSession?
-    private let repository: any ThreadReaderRepository
+    let repository: any ThreadReaderRepository
     private let replyFollowup: (any ReplyFollowupLoading)?
     @ObservationIgnored private var replyTask: Task<ReplyReadUpdate?, any Error>?
-    @ObservationIgnored private var replyPosts: ReplyPostUpdate?
+    @ObservationIgnored var replyPosts: ReplyPostUpdate?
     @ObservationIgnored private var followedReceipt: TextWriteReceipt?
-    @ObservationIgnored private var hasCompletedInitialLoad = false
+    @ObservationIgnored var hasCompletedInitialLoad = false
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var activeGeneration: UInt64?
-    @ObservationIgnored private var nextGeneration: UInt64 = 0
+    @ObservationIgnored var nextGeneration: UInt64 = 0
     @ObservationIgnored private var hasClaimedDisplayedThread = false
 
     init(
@@ -64,9 +70,11 @@ final class ThreadReaderStore {
         repository: any ThreadReaderRepository,
         initialSnapshot: ThreadReaderSnapshot? = nil,
         prefetch: ContentPrefetchSession? = nil,
-        replyFollowup: (any ReplyFollowupLoading)? = nil
+        replyFollowup: (any ReplyFollowupLoading)? = nil,
+        readingPreferences: (any ThreadReadingPreferences)? = nil
     ) {
         self.prefetch = prefetch
+        self.readingPreferences = readingPreferences
         self.threadID = threadID
         self.repository = repository
         self.replyFollowup = replyFollowup
@@ -79,6 +87,9 @@ final class ThreadReaderStore {
         }
     }
 
+}
+
+extension ThreadReaderStore {
     func loadIfNeeded() async {
         if contentContext != cacheContext {
             cancel()
@@ -101,7 +112,8 @@ final class ThreadReaderStore {
         if let cache = repository as? any ReadingContentCacheAccess {
             restoring = true
             let generation = nextGeneration
-            let reading = await cache.restoreThread(threadID)
+            let reading = readingPreferences?.resumesThreadReading == false
+                ? nil : await cache.restoreThread(threadID, query: query)
             guard generation == nextGeneration, contentContext == cacheContext else { restoring = false; return }
             cacheTicket = await cache.ticket()
             guard generation == nextGeneration, contentContext == cacheContext,
@@ -135,12 +147,12 @@ final class ThreadReaderStore {
         refreshing = true
         refreshFailed = false
         let locator = currentLocator ?? .init(page: 0, postID: 0)
-        await startLoad(request: .init(threadID: threadID, pageNumber: locator.page, postID: locator.postID),
+        await startLoad(request: .init(threadID: threadID, pageNumber: locator.page, postID: locator.postID, query: query),
                         retained: retained, loadingState: .loaded(retained))
     }
 
     func loadNextPage() async {
-        guard activeGeneration == nil, replyTask == nil,
+        guard !isNavigating, activeGeneration == nil, replyTask == nil,
               let retained = state.snapshot,
               retained.hasMore else {
             return
@@ -156,7 +168,7 @@ final class ThreadReaderStore {
             threadID: threadID,
             pageNumber: retained.currentPage + 1,
             postID: nextPostID,
-            loadedPostIDs: loadedPostIDs
+            loadedPostIDs: loadedPostIDs, query: query
         )
         listPresentation?.setPagination(.loading(
             nextPage: request.pageNumber
@@ -169,6 +181,9 @@ final class ThreadReaderStore {
     }
 
     func cancel() {
+        navigationTask?.cancel()
+        navigationTask = nil
+        isNavigating = false
         replyTask?.cancel()
         replyTask = nil
         prefetch?.cancel()
@@ -197,7 +212,7 @@ final class ThreadReaderStore {
         refreshing = false
         listPresentation = nil
         await startLoad(
-            request: .initial(threadID: threadID),
+            request: .init(threadID: threadID, pageNumber: 0, postID: 0, query: query),
             retained: nil,
             loadingState: .initialLoading
         )
@@ -411,7 +426,7 @@ extension ThreadReaderStore {
         return true
     }
 
-    func replySucceeded(_ receipt: TextWriteReceipt, entry: ThreadReadingEntry) async {
+    func replySucceededInDefaultMode(_ receipt: TextWriteReceipt, entry: ThreadReadingEntry) async {
         guard receipt.threadID == threadID, let retained = state.snapshot else { return }
         guard let replyFollowup else { await reload(); return }
         guard followedReceipt != receipt else { return }
@@ -477,7 +492,7 @@ extension ThreadReaderStore {
         listPresentation = .init(snapshot: snapshot, pagination: paginationState(for: snapshot))
     }
 
-    private func paginationState(
+    func paginationState(
         for snapshot: ThreadReaderSnapshot
     ) -> ThreadReaderPaginationRowState {
         if isShowingCachedContent {
@@ -532,12 +547,13 @@ extension ThreadReaderStore {
         await checkpointTask?.value
     }
 
-    private func checkpointReading() {
-        guard let cache = repository as? any ReadingContentCacheAccess, let ticket = cacheTicket,
+    func checkpointReading() {
+        guard !isNavigating, let cache = repository as? any ReadingContentCacheAccess, let ticket = cacheTicket,
               let locator = currentLocator,
               let post = listPresentation?.rows.first(where: { $0.id == readAnchor })?.post
                 ?? listPresentation?.rows.first?.post else { return }
-        let position = ReadingPosition(identity: .init(threadID: threadID), postID: post.source.postID, locator: locator)
+        let position = ReadingPosition(identity: query.identity(threadID: threadID), postID: post.source.postID,
+                                       locator: locator, floorNumber: post.floorNumber > 0 ? post.floorNumber : nil)
         let previous = checkpointTask
         checkpointTask = Task {
             await previous?.value
@@ -545,7 +561,7 @@ extension ThreadReaderStore {
         }
     }
 
-    private func assembledPages(metadata: ThreadReaderSnapshot) -> ThreadReaderSnapshot {
+    func assembledPages(metadata: ThreadReaderSnapshot) -> ThreadReaderSnapshot {
         let sorted = loadedPages.sorted { $0.0.responsePage < $1.0.responsePage }
         var last = sorted.first?.1 ?? metadata
         for page in sorted.dropFirst() where page.0.responsePage == last.currentPage + 1 { last = page.1 }
@@ -567,34 +583,13 @@ extension ThreadReaderStore {
     }
 
     func prefetchNextPage() {
-        guard activeGeneration == nil, replyTask == nil, contentContext == cacheContext,
+        guard !isNavigating, activeGeneration == nil, replyTask == nil, contentContext == cacheContext,
               let snapshot = state.snapshot, snapshot.hasMore, let postID = snapshot.nextPostID else { return }
         prefetch?.followingThreadPage(.init(threadID: threadID, page: snapshot.currentPage + 1, postID: postID,
                                             context: contentContext, generation: nextGeneration)) {
             prefetchPreparationCount += 1
             return .init(threadID: threadID, pageNumber: snapshot.currentPage + 1, postID: postID,
-                         loadedPostIDs: loadedPostIDs)
+                         loadedPostIDs: loadedPostIDs, query: query)
         }
     }
-}
-
-extension ThreadReaderStore {
-    func configuredRows(textSize: ReadingTextSizePreference) -> [ThreadReaderConfiguredRow] {
-        if let cached = configuredRowsCache, cached.revision == listRevision, cached.textSize == textSize { return cached.rows }
-        let rows = (listPresentation?.rows ?? []).map { ThreadReaderConfiguredRow(row: $0, readingTextSize: textSize) }
-        configuredRowsCache = .init(revision: listRevision, textSize: textSize, rows: rows)
-        configuredRowsBuildCount += 1
-        return rows
-    }
-
-    func setReadAnchor(_ rowID: ThreadReaderRowID?) {
-        guard let rowID, rowID.isPost, listPresentation?.rows.contains(where: { $0.id == rowID }) == true else { return }
-        let stablePostID = rowID
-        guard readAnchor != stablePostID else {
-            return
-        }
-        readAnchor = stablePostID
-        checkpointReading()
-    }
-
 }

@@ -1,4 +1,5 @@
 struct LiveThreadReaderRepository: ThreadReaderRepository {
+    let supportsPostLookup = true
     private let client: any HTTPClient
     private let host: String
 
@@ -16,7 +17,7 @@ struct LiveThreadReaderRepository: ThreadReaderRepository {
         let input = try PBPageRequestInput(
             threadID: request.threadID,
             pageNumber: request.pageNumber,
-            postID: request.postID
+            postID: request.postID, query: request.query
         )
         let endpoint = try PBPageProtocol.makeDescriptor(host: host)
         let executor = EndpointExecutor(
