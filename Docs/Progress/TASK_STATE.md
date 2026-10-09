@@ -1,5 +1,11 @@
 # TASK_STATE
 
+## 2026-10-09 v0.2.0beta4 — RELEASE_PREPARED
+
+- 用户验收39份文件已精确提交1b696746c1280b45149cd67b7957059b6228fe06并推送main，720份生产输入仍与Build16相同。本次发布准备仅版本Build17及README/发布说明/构建记录，不追加功能。
+- make generate/lint/secret-scan/diff check通过，设备Release archive及隔离通过。IPA为0.2.0(17)、iPhoneOS/arm64/iOS18+/iPhone+iPad未签名包，140个文件与归档逐字节一致、ZIP/执行权限校验通过；7,163,003 bytes，SHA256=4aa54e2f18265d6c76dc62f159556a004fba4dce366fd7ab91cf865911d38ad9。沿用原签名配置与用户数据，未重装Simulator。
+- GitHub CLI未登录，使用用户指定Chrome已有会话；不提取浏览器凭据。发布说明列出beta3以来新增功能、Bug修复和实际未对齐范围，远端标签/Release附件待下步发布并核对。构建详情见Docs/Audits/RELEASE_0_2_0_BETA_4.md。
+
 ## 2026-10-09 v0.2.0beta4 — USER_ACCEPTED / 发布授权
 
 - 用户已实际测试确认评论回显正常，明确批准提交、推送并构建发布新版IPA，版本号已确认为v0.2.0beta4。Build16的720份生产输入与验收候选全部相同，沿用Build14–16已记录的定向结果，不重复全套测试。

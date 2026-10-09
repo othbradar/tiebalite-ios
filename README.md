@@ -1,6 +1,6 @@
 # TiebaLite iOS
 
-TiebaLite iOS 是一个非官方的 iOS/iPadOS 贴吧客户端，提供阅读、消息与发帖/回复编辑功能。v0.2.0beta3 新增最近逛吧长按删除，修复进吧底部短暂遮挡、刷新提示栏和 iPad 旋转后的阅读位置，并优化滚动时刷新、缓存命中和长列表重复计算。更新与安装方式见 [版本说明](Docs/Releases/v0.2.0beta3.md)。排序记忆、阅读缓存、图片保存分享等见 [Beta 2 版本说明](Docs/Releases/v0.2.0beta2.md)，当前定向验证与已知限制见 [任务记录](Docs/Progress/TASK_STATE.md)。
+TiebaLite iOS 是一个非官方的 iOS/iPadOS 贴吧客户端，提供阅读、消息与发帖/回复编辑功能。v0.2.0beta4 新增持久草稿，更新 iOS 发帖/回复与图片上传链路；发送成功后自动显示新回复并保持阅读位置，统一帖子分享、回复和点赞样式。更新与安装方式见 [版本说明](Docs/Releases/v0.2.0beta4.md)。此前首页与性能改进见 [Beta 3 版本说明](Docs/Releases/v0.2.0beta3.md)，当前验证与已知限制见 [任务记录](Docs/Progress/TASK_STATE.md)。
 
 ## 已实现
 
