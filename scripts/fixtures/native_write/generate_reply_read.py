@@ -81,8 +81,16 @@ for name, business in [
     ('thread', {'kz': '101', 'last_pid': '430001', 'mark_type': '2',
                 'request_times': '11', 'session_request_times': '3', 'offset': '2', 'fr': 'frs'}),
     ('wide-id', {'kz': '9007199254740993', 'last_pid': '9007199254740995', 'mark_type': '2'}),
+    ('thread-page-no-ad', {'kz': '101', 'last_pid': '430001', 'mark_type': '2',
+                          'request_times': '2', 'session_request_times': '0', 'offset': '2', 'fr': 'search_page',
+                          'ad_param': {'load_count': '1', 'refresh_count': '0', 'is_req_ad': 0}}),
 ]:
-    requests.append(dict(name=name, business=business, common=common,
+    # Request fixtures expose nested business input as JSON text, matching the
+    # app's typed boundary, while descriptor serialization receives the dict.
+    app_business = dict(business)
+    if 'ad_param' in app_business:
+        app_business['ad_param'] = json.dumps(app_business['ad_param'], sort_keys=True, separators=(',', ':'))
+    requests.append(dict(name=name, business=app_business, common=common,
                          wireBase64=wire('PbListReqIdl', {'data': dict(business, common=common)})))
 
 author = dict(id='42', name='FixtureName', name_show='Fixture Display', level_id=7)

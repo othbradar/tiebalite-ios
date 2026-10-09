@@ -17,7 +17,7 @@ final class NativeReplyReadClient {
     }
 
     func load(business: [String: String], common: [String: String],
-              httpContext: NativeWriteHTTPContext, boundary: String) async throws -> ThreadReaderSnapshot {
+              httpContext: NativeWriteHTTPContext, boundary: String) async throws -> ReplyReadUpdate {
         guard !loading else { throw NativeReplyReadError.alreadyLoading }
         try Task.checkCancellation()
         let authorization = try auth.authorization(for: context)

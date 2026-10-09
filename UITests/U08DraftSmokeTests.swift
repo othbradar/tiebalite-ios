@@ -30,6 +30,19 @@ final class U08DraftSmokeTests: XCTestCase {
         XCTAssertEqual(published.value as? String, "U08 mock published reply")
         XCTAssertTrue(published.isHittable)
         XCTAssertEqual(first.frame.minY, originalY, accuracy: 12)
+        let reply = app.buttons["thread-reader.reply.p900002"]
+        let avatar = app.descendants(matching: .any)["thread-reader.avatar.p900002"].firstMatch
+        XCTAssertTrue(avatar.exists)
+        XCTAssertEqual(reply.frame.minX, avatar.frame.maxX + 8, accuracy: 1)
+        XCTAssertEqual(published.frame.minX, reply.frame.minX, accuracy: 1)
+        XCTAssertTrue(app.descendants(matching: .any)["thread-reader.agree.p900002"].firstMatch.exists)
+        let replyX = reply.frame.minX
+        app.buttons["thread-reader.compose.more"].tap()
+        app.buttons["thread-reader.compose.more.reload"].tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "第 2 楼"))
+            .firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(reply.frame.minX, replyX, accuracy: 1)
+        XCTAssertEqual(published.frame.minX, replyX, accuracy: 1)
         app.buttons["thread-reader.compose"].tap()
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
         XCTAssertEqual(editor.value as? String, "")

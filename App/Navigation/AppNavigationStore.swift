@@ -117,10 +117,12 @@ final class AppNavigationStore {
             return false
         }
         guard apply(command) else { return false }
-        if url.scheme?.lowercased() == "https",
-           case let .replaceRootDetail(root, route) = command,
+        if case let .replaceRootDetail(root, route) = command,
            case .thread = route {
-            recordReadingEntry(.universalLink, route: route, scope: .root(root))
+            // The supported com.baidu.tieba/unidispatch builder keeps native
+            // default 0. It is distinct from the iOStbclient (31) entry point.
+            let entry: ThreadReadingEntry = url.scheme?.lowercased() == "https" ? .universalLink : .unspecified
+            recordReadingEntry(entry, route: route, scope: .root(root))
         }
         return true
     }

@@ -95,6 +95,7 @@ actor DebugNativeWriteDiagnostics {
         case .imageUpload: operation = "image-upload"
         case .reply: operation = "reply"
         case .thread: operation = "thread"
+        case .replyRead: operation = "reply-read"
         }
         events.append(.init(sequence: sequence, time: Date(), operation: operation, response: response, failure: failure))
         events = Array(events.suffix(8))

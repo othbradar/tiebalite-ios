@@ -139,7 +139,7 @@ struct AppShellContent {
                     open(route, in: root, regular: regular, readingEntry: .recommendations)
                 }
             )
-            .environment(\.openURL, ContentLinkHandler.action { open($0, in: root, regular: regular) })
+            .environment(\.openURL, ContentLinkHandler.action { open($0, in: root, regular: regular, readingEntry: .contentLink) })
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("搜索", systemImage: "magnifyingglass") {

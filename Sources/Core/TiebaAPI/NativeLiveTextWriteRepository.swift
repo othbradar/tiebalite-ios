@@ -8,7 +8,7 @@ protocol TextWriteRequestValidating {
 /// User-authorized native trial. SDK/Passport integration remains separate;
 /// text and image failures never fall back to the Android write path.
 @MainActor
-final class NativeLiveTextWriteRepository: TextWriteRepository, TextWriteRequestValidating, ComposerImageUploading {
+final class NativeLiveTextWriteRepository: TextWriteRepository, TextWriteRequestValidating, ComposerImageUploading, ReplyFollowupLoading {
     private let auth: any AuthContextProviding
     private let loader: any HTTPDataLoading
     private let runtime: any NativeWriteRuntimeProviding
@@ -22,12 +22,20 @@ final class NativeLiveTextWriteRepository: TextWriteRepository, TextWriteRequest
     private var session: NativeWriteSession?
     private var client: NativeTextWriteClient?
     private var sending = false
+    private struct PendingReply {
+        let receipt: TextWriteReceipt
+        let target: TextComposeTarget
+        let context: AuthContext
+    }
+    private var replyRead: PendingReply?
+    private var replyReadCount: Int64 = 0
+    private let replyReadSwitch: () -> Int?
     private(set) var responseStatePersistenceFailed = false
 
     init(auth: any AuthContextProviding, loader: any HTTPDataLoading, runtime: any NativeWriteRuntimeProviding,
          firstLogin: @escaping () -> Bool, didPrepareAccount: @escaping () -> Void,
          accountVault: NativeWriteAccountVault? = nil, accountNamespace: @escaping () -> String? = { nil },
-         currentProfile: @escaping () -> UserProfile? = { nil }) {
+         currentProfile: @escaping () -> UserProfile? = { nil }, replyReadSwitch: @escaping () -> Int? = { nil }) {
         self.auth = auth
         self.loader = loader
         self.runtime = runtime
@@ -36,6 +44,7 @@ final class NativeLiveTextWriteRepository: TextWriteRepository, TextWriteRequest
         self.accountVault = accountVault
         self.accountNamespace = accountNamespace
         self.currentProfile = currentProfile
+        self.replyReadSwitch = replyReadSwitch
     }
 
     func validateForSending(_ request: TextWriteRequest) throws {
@@ -76,7 +85,9 @@ final class NativeLiveTextWriteRepository: TextWriteRepository, TextWriteRequest
                 pageEntryType: target.readingEntry.rawValue, floorNumber: "0", replyCount: target.replyCount.map(String.init)))
             let result = try await client.send(request, content: content, origin: origin)
             await persistReceivedState(client.receivedResponseState, context: context)
-            return try Self.receipt(result, target: target)
+            let receipt = try Self.receipt(result, target: target)
+            replyRead = target.kind == .thread ? nil : .init(receipt: receipt, target: target, context: context)
+            return receipt
         } catch is CancellationError {
             throw CancellationError()
         } catch let failure as TextWriteFailure {
@@ -94,6 +105,22 @@ final class NativeLiveTextWriteRepository: TextWriteRepository, TextWriteRequest
             }
             throw TextWriteFailure.requestPreparation
         }
+    }
+
+    func loadReply(_ request: ReplyFollowupRequest) async throws -> ReplyReadUpdate? {
+        guard let pending = replyRead, pending.receipt == request.receipt else { return nil }
+        // Consume before suspension: one accepted receipt can cause at most one read.
+        replyRead = nil
+        _ = try auth.authorization(for: pending.context)
+        guard NativeReplyPageParameters.enabled(override: replyReadSwitch()) else { return nil }
+        guard lease == pending.context, let client else { throw NativeReplyReadError.invalidContext }
+        let frozen = ReplyFollowupRequest(receipt: request.receipt, entry: pending.target.readingEntry, page: request.page)
+        let fields = try NativeReplyPageParameters.fields(frozen, target: pending.target, requestCount: replyReadCount)
+        if let count = fields["request_times"].flatMap(Int64.init) { replyReadCount = count }
+        let page = try await client.readReply(business: fields)
+        try Task.checkCancellation()
+        _ = try auth.authorization(for: pending.context)
+        return page
     }
 
     func upload(_ photo: ComposerPhoto, forumName: String, context: AuthContext,

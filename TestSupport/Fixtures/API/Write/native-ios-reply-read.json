@@ -50,6 +50,26 @@
         "_timestamp": "9007199254740993"
       },
       "wireBase64": "CjkKIwgBEgcyMi4xMS4xQIGAgICAgIAQugEMZml4dHVyZS1zaWduEIGAgICAgIAQIIOAgICAgIAQQAI="
+    },
+    {
+      "name": "thread-page-no-ad",
+      "business": {
+        "kz": "101",
+        "last_pid": "430001",
+        "mark_type": "2",
+        "request_times": "2",
+        "session_request_times": "0",
+        "offset": "2",
+        "fr": "search_page",
+        "ad_param": "{\"is_req_ad\":0,\"load_count\":\"1\",\"refresh_count\":\"0\"}"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "fixture-sign",
+        "_timestamp": "9007199254740993"
+      },
+      "wireBase64": "CkoKIwgBEgcyMi4xMS4xQIGAgICAgIAQugEMZml4dHVyZS1zaWduEGUgsZ8aQAKSAQYIARAAIACgAgKyAgtzZWFyY2hfcGFnZbgCAA=="
     }
   ],
   "responses": [

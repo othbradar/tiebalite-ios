@@ -15,6 +15,7 @@ struct U08NativeLiveWriteTests {
     @Test func pageOriginReachesNativeReplyWithoutChangingTargetOrRequestCount() async throws {
         let origins: [(ThreadReadingEntry, String)] = [
             (.recommendations, "2"), (.forum, "3"), (.history, "11"), (.universalLink, "5"),
+            (.search, "8"), (.contentLink, "7"), (.unspecified, "0"),
             (.notification(.replies, opensQuotedThread: false), "12"),
             (.notification(.replies, opensQuotedThread: true), "4"),
             (.notification(.mentions, opensQuotedThread: false), "13"),
@@ -243,13 +244,77 @@ struct U08NativeLiveWriteTests {
         }
     }
 
+    @Test func acceptedReplyReadsOnceWithNativeParametersAndDoesNotPrepareOrWriteAgain() async throws {
+        let setup = try makeSetup()
+        let store = composer(setup, entry: .search)
+        let send = Task { await store.send() }
+        try await setup.http.succeed(try await next(setup.http).id, with: accountResponse)
+        try await setup.http.succeed(try await next(setup.http).id, with: .init(statusCode: 200, body: NativeClientFixture.response()))
+        await send.value
+        let receipt = try #require(store.receipt)
+        let request = ReplyFollowupRequest(receipt: receipt, entry: .search, page: 2)
+        let read = Task { try await setup.repository.loadReply(request) }
+        let call = try await next(setup.http)
+        #expect(call.request.url.path == "/c/f/pb/getmypost" && call.request.url.query == "cmd=309751&format=protobuf")
+        let body = try #require(call.request.body)
+        let start = try #require(body.range(of: Data("\r\n\r\n".utf8))).upperBound
+        let end = try #require(body.range(of: Data("\r\n--Boundary+0123456789ABCDEF--\r\n".utf8))).lowerBound
+        let fields = try TiebaNativeWrite_ReplyReadRequest(serializedBytes: body[start..<end]).data
+        #expect(fields.kz == 101 && fields.lastPid == 401 && fields.markType == 2 && !fields.hasPn)
+        #expect(fields.fr == "search_page" && fields.common.clientType == 1 && !fields.common.sign.isEmpty)
+        #expect(fields.requestTimes == 2 && fields.sessionRequestTimes == 0)
+        #expect(fields.adParam.loadCount == 1 && fields.adParam.refreshCount == 0 && fields.adParam.isReqAd == 0)
+        #expect(try await setup.repository.loadReply(request) == nil)
+        var response = try TiebaNativeWrite_ReplyReadResponse(serializedBytes: U08ReplyReadFixture.bytes())
+        var post = try Tieba_Post(serializedBytes: try #require(response.data.postList.first))
+        post.id = UInt64(receipt.postID)
+        response.data.postList = [try post.serializedData()]
+        try await setup.http.succeed(call.id, with: .init(statusCode: 200, body: try response.serializedData()))
+        #expect(try await read.value?.posts.map(\.id.postID) == [401])
+        #expect(store.receipt == receipt && store.failure == nil)
+        #expect(await setup.http.events().count == 6) // account + write + one read, each start/finish
+    }
+
+    @Test func disabledReplySwitchDoesNotDispatchAReadOrChangeSuccessfulReceipt() async throws {
+        let setup = try makeSetup(replyReadSwitch: { 0 })
+        let store = composer(setup, entry: .search)
+        let send = Task { await store.send() }
+        try await setup.http.succeed(try await next(setup.http).id, with: accountResponse)
+        try await setup.http.succeed(try await next(setup.http).id, with: .init(statusCode: 200, body: NativeClientFixture.response()))
+        await send.value
+        let receipt = try #require(store.receipt)
+        #expect(try await setup.repository.loadReply(.init(receipt: receipt, entry: .forum, page: 1)) == nil)
+        #expect(await setup.http.events().count == 4)
+        #expect(store.receipt == receipt && store.failure == nil)
+    }
+
+    @Test func nativeFollowupRejectsAccountChangedWhileReadIsInFlight() async throws {
+        let setup = try makeSetup()
+        let store = composer(setup)
+        let send = Task { await store.send() }
+        try await setup.http.succeed(try await next(setup.http).id, with: accountResponse)
+        try await setup.http.succeed(try await next(setup.http).id, with: .init(statusCode: 200, body: NativeClientFixture.response()))
+        await send.value
+        let receipt = try #require(store.receipt)
+        let request = ReplyFollowupRequest(receipt: receipt, entry: .forum, page: 1)
+        let read = Task { try await setup.repository.loadReply(request) }
+        let call = try await next(setup.http)
+        setup.auth.install(try #require(SessionCredential(bduss: "other", stoken: "other")))
+        try await setup.http.succeed(call.id, with: .init(statusCode: 200, body: U08ReplyReadFixture.bytes()))
+        await #expect(throws: RequestAuthorizationError.contextMismatch) { try await read.value }
+        #expect(store.receipt == receipt)
+        #expect(await setup.http.events().count == 6)
+        #expect(try await setup.repository.loadReply(request) == nil)
+    }
+
     private struct Setup {
         let auth: SessionAuthContextProvider
         let http: HarnessMockHTTPClient
         let repository: NativeLiveTextWriteRepository
     }
 
-    private func makeSetup(runtime: (any NativeWriteRuntimeProviding)? = nil) throws -> Setup {
+    private func makeSetup(runtime: (any NativeWriteRuntimeProviding)? = nil,
+                           replyReadSwitch: @escaping () -> Int? = { nil }) throws -> Setup {
         let fixture = try NativeClientFixture.load()
         let sample = try #require(fixture.cases.first { $0.kind == "threadReply" })
         let auth = SessionAuthContextProvider()
@@ -258,12 +323,14 @@ struct U08NativeLiveWriteTests {
         return Setup(auth: auth, http: http, repository: NativeLiveTextWriteRepository(
             auth: auth, loader: NativeClientHarnessBridge(client: http),
             runtime: runtime ?? NativeClientFixtureRuntime(fixture: fixture, sample: sample),
-            firstLogin: { true }, didPrepareAccount: {}))
+            firstLogin: { true }, didPrepareAccount: {}, replyReadSwitch: replyReadSwitch))
     }
 
-    private func composer(_ setup: Setup) -> TextComposerStore {
-        let store = TextComposerStore(target: .init(kind: .threadReply, forumID: 9, forumName: "FixtureForum", threadID: 101),
-                                      repository: setup.repository, context: setup.auth.context(), currentContext: { setup.auth.context() })
+    private func composer(_ setup: Setup, entry: ThreadReadingEntry = .unspecified) -> TextComposerStore {
+        let target = TextComposeTarget(kind: .threadReply, forumID: 9, forumName: "FixtureForum",
+                                       threadID: 101, readingEntry: entry)
+        let store = TextComposerStore(target: target, repository: setup.repository, context: setup.auth.context(),
+                                      currentContext: { setup.auth.context() })
         store.draft.content = "Native reply"
         return store
     }

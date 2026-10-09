@@ -323,7 +323,7 @@ message ThreadData {
 }
 
 // CMD309751 PbList request/response boundary from the same native executable.
-// Complex ad/push providers remain unsupported at the caller boundary.
+// Ordinary page counters use the native AdParam descriptor; push and commercial providers remain separate.
 message ReplyReadRequest { optional ReplyReadData data = 1; }
 message ReplyReadData {
   optional Common common = 1;
@@ -343,6 +343,7 @@ message ReplyReadData {
   optional string yuelaou_locate = 15;
   optional string query_word = 16;
   optional string da_idfa = 17;
+  optional ReplyReadAdParam ad_param = 18;
   optional string ad_context_list = 19;
   optional string ad_ext_params = 20;
   optional string ad_bear_pb_banner = 22;
@@ -367,6 +368,12 @@ message ReplyReadData {
   optional uint32 floor_num = 42;
   optional int64 aladdin_src_id = 43;
   optional string app_launch_from = 44;
+}
+message ReplyReadAdParam {
+  optional int32 load_count = 1;
+  optional int32 refresh_count = 2;
+  optional string yoga_lib_version = 3;
+  optional int32 is_req_ad = 4;
 }
 message ReplyReadResponse {
   optional ResponseError error = 1;

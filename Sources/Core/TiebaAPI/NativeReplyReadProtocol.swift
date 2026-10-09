@@ -14,13 +14,18 @@ enum NativeReplyReadError: Error, Equatable, Sendable {
 /// iOS CMD309751 uses PbList, not the unrelated GetMyPost descriptor. The
 /// prepared page provider remains explicit; this boundary never guesses one.
 enum NativeReplyReadProtocol {
+    static func errorCode(_ bytes: Data) throws -> Int32 {
+        guard !bytes.isEmpty else { throw HTTPClientError.malformedResponse }
+        return try TiebaNativeWrite_ReplyReadResponse(serializedBytes: bytes).error.errorno
+    }
     static func encode(business: [String: String], common: [String: String]) throws -> Data {
-        guard ["ad_param", "push_info", "app_transmit_data"].allSatisfy({ business[$0] == nil }) else {
+        guard ["push_info", "app_transmit_data"].allSatisfy({ business[$0] == nil }) else {
             throw NativeReplyReadError.unsupportedPageContext
         }
         var common = common
         for key in ["personalized_rec_switch", "net_type"] where common[key]?.isEmpty == true { common[key] = "0" }
         var fields: [String: Any] = business
+        if let ad = business["ad_param"] { fields["ad_param"] = try NativeReplyPageParameters.adParameters(ad) }
         fields["common"] = common
         let json = try JSONSerialization.data(withJSONObject: ["data": fields], options: [.sortedKeys])
         var options = JSONDecodingOptions()
@@ -38,7 +43,7 @@ enum NativeReplyReadProtocol {
             context: context, boundary: boundary, responseBodyLimit: 4 * 1_024 * 1_024)
     }
 
-    static func decode(_ bytes: Data, threadID: Int64, targetPostID: Int64) throws -> ThreadReaderSnapshot {
+    static func decode(_ bytes: Data, threadID: Int64, targetPostID: Int64) throws -> ReplyReadUpdate {
         guard !bytes.isEmpty, threadID > 0, targetPostID > 0 else { throw NativeReplyReadError.invalidContext }
         let envelope = try TiebaNativeWrite_ReplyReadResponse(serializedBytes: bytes)
         guard envelope.error.errorno <= 0 else { throw NativeReplyReadError.server(envelope.error.errorno) }
@@ -53,11 +58,16 @@ enum NativeReplyReadProtocol {
               thread.threadID == 0 || thread.threadID == threadID,
               thread.id > 0 || thread.threadID > 0 else { throw NativeReplyReadError.invalidContext }
         projected.data.page = try Tieba_Page(serializedBytes: data.page)
-        guard projected.data.page.currentPage > 0 else { throw HTTPClientError.malformedResponse }
+        guard projected.data.page.currentPage >= 0 else { throw HTTPClientError.malformedResponse }
         if data.hasForum { projected.data.forum = try Tieba_SimpleForum(serializedBytes: data.forum) }
         projected.data.userList = try data.userList.map { try Tieba_User(serializedBytes: $0) }
         projected.data.postList = try data.postList.map(decodePost)
         if data.hasFirstFloor { projected.data.firstFloorPost = try decodePost(data.firstFloor) }
+        if projected.data.page.currentPage == 0 {
+            let posts = try PBPageDomainMapper.replyPosts(projected.data, threadID: threadID)
+            guard posts.contains(where: { $0.id.postID == targetPostID }) else { throw NativeReplyReadError.missingTarget }
+            return .posts(.init(threadID: threadID, replyCount: thread.replyNum, posts: posts))
+        }
         let page = Int(projected.data.page.currentPage)
         let hasFirst = projected.data.hasFirstFloorPost || projected.data.postList.contains { $0.floor == 1 }
         let result = try PBPageDomainMapper.map(projected, request: .init(
@@ -65,7 +75,7 @@ enum NativeReplyReadProtocol {
         guard result.posts.contains(where: { $0.id.postID == targetPostID }) else {
             throw NativeReplyReadError.missingTarget
         }
-        return result
+        return .page(result)
     }
 
     private static func decodePost(_ bytes: Data) throws -> Tieba_Post {

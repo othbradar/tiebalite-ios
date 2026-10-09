@@ -6,6 +6,8 @@ enum ThreadReadingEntry: Int, Codable, Sendable {
     case recommendations = 3
     case forum = 5
     case history = 30
+    case search = 34
+    case contentLink = 14
     case universalLink = 32
     case replyNotificationQuote = 29
     case replyNotification = 37

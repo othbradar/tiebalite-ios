@@ -15,8 +15,13 @@ import GeneratedProtobuf
 import SwiftProtobuf
 
 /// A local server model: only a successful mock write makes the next read include the new reply.
-actor FixtureReplyRefreshRepository: TextWriteRepository, ThreadReaderRepository {
+actor FixtureReplyRefreshRepository: TextWriteRepository, ThreadReaderRepository, ReplyFollowupLoading {
     private var published = false
+    func loadReply(_ request: ReplyFollowupRequest) async throws -> ReplyReadUpdate? {
+        let snapshot = try await page(.initial(threadID: request.receipt.threadID), replyFloor: 0)
+        return .posts(.init(threadID: snapshot.threadID, replyCount: snapshot.replyCount,
+                            posts: snapshot.posts.filter { $0.id.postID == request.receipt.postID }))
+    }
     func send(_ request: TextWriteRequest, context: AuthContext) async throws -> TextWriteReceipt {
         try Task.checkCancellation()
         published = true
@@ -36,13 +41,17 @@ actor FixtureReplyRefreshRepository: TextWriteRepository, ThreadReaderRepository
     }
 
     func loadPage(_ request: ThreadReaderPageRequest) async throws -> ThreadReaderSnapshot {
+        try await page(request, replyFloor: 2)
+    }
+
+    private func page(_ request: ThreadReaderPageRequest, replyFloor: Int) async throws -> ThreadReaderSnapshot {
         let base = try await FixtureThreadReaderRepository().loadPage(request)
         var posts = Array(base.posts.prefix(1))
         if published {
             let source = ThreadContentSource(threadID: base.threadID, postID: 900_002, scope: .post)
             let node = ThreadContentNode(id: .init(source: source, ordinal: 0), rawType: 0,
                                          payload: .text(.init(value: "U08 mock published reply")))
-            posts.append(.init(floorNumber: 2, author: base.author, metadata: "Fixture",
+            posts.append(.init(floorNumber: replyFloor, author: base.author, metadata: "Fixture",
                                document: .init(source: source, availability: .available, nodes: [node], poll: nil)))
         }
         return .init(threadID: base.threadID, title: base.title, forumName: base.forumName, forumID: base.forumID,

@@ -96,16 +96,53 @@ struct U08NativeReplyReadTests {
         }
     }
 
+    @Test func successfulReplyWithoutPageNumberIsAnUpdateNotARefreshFailure() throws {
+        let sample = try #require(fixtures().responses.first { $0.name == "success" })
+        var response = try TiebaNativeWrite_ReplyReadResponse(serializedBytes: #require(Data(base64Encoded: sample.wireBase64)))
+        // The real read returned success, a matching thread and one target post,
+        // with page.current_page=0. No user bytes or identifiers are retained.
+        for total in [0, 1, 3] {
+            var page = Tieba_Page()
+            page.totalPage = Int32(total)
+            response.data.page = try page.serializedData()
+            let bytes = try response.serializedData()
+            #expect(throws: Never.self) {
+                let update = try NativeReplyReadProtocol.decode(bytes, threadID: 101, targetPostID: 430001)
+                #expect(update.posts.map(\.id.postID) == [430001])
+                #expect(update.page == nil)
+            }
+            #expect(throws: NativeReplyReadError.missingTarget) {
+                try NativeReplyReadProtocol.decode(bytes, threadID: 101, targetPostID: 999)
+            }
+        }
+    }
+
+    @Test(arguments: [0, 2, 13])
+    func replyFloorMetadataDoesNotChangeReplyIdentity(floor: UInt32) throws {
+        var response = try TiebaNativeWrite_ReplyReadResponse(serializedBytes: U08ReplyReadFixture.bytes())
+        response.data.page = Data()
+        var post = try Tieba_Post(serializedBytes: #require(response.data.postList.first))
+        post.floor = floor
+        response.data.postList = [try post.serializedData()]
+        let update = try NativeReplyReadProtocol.decode(response.serializedData(), threadID: 101, targetPostID: 430001)
+        let reply = try #require(update.posts.first)
+        #expect(reply.floorNumber == Int(floor))
+        #expect(reply.document.source.scope == .post)
+        let row = ThreadReaderPostRowModel(reply, title: "Fixture title", replyCount: 9)
+        #expect(row.title == nil && row.replyCount == nil)
+        #expect(row.source.scope == .post)
+    }
+
     @Test func responseRequiresMatchingThreadAndActualReturnedTarget() throws {
         let samples = try fixtures().responses
         let success = try #require(samples.first { $0.name == "success" })
         let result = try NativeReplyReadProtocol.decode(
             try #require(Data(base64Encoded: success.wireBase64)), threadID: 101, targetPostID: 430001)
-        #expect(result.threadID == 101 && result.currentPage == 3)
+        #expect(result.threadID == 101 && result.page?.currentPage == 3)
         #expect(result.posts.map(\.id.postID) == [430001])
         #expect(result.posts.first?.floorNumber == 61)
         #expect(result.posts.first?.agreeCount == 3)
-        #expect(result.replyCount == 61 && result.hasMore == false)
+        #expect(result.page?.replyCount == 61 && result.page?.hasMore == false)
         let first = try #require(samples.first { $0.name == "success-first-floor" })
         let firstPage = try NativeReplyReadProtocol.decode(
             try #require(Data(base64Encoded: first.wireBase64)), threadID: 101, targetPostID: 301)

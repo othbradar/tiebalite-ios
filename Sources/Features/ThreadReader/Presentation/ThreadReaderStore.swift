@@ -49,6 +49,10 @@ final class ThreadReaderStore {
     @ObservationIgnored private var restoring = false
     private let prefetch: ContentPrefetchSession?
     private let repository: any ThreadReaderRepository
+    private let replyFollowup: (any ReplyFollowupLoading)?
+    @ObservationIgnored private var replyTask: Task<ReplyReadUpdate?, any Error>?
+    @ObservationIgnored private var replyPosts: ReplyPostUpdate?
+    @ObservationIgnored private var followedReceipt: TextWriteReceipt?
     @ObservationIgnored private var hasCompletedInitialLoad = false
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var activeGeneration: UInt64?
@@ -59,11 +63,13 @@ final class ThreadReaderStore {
         threadID: Int64,
         repository: any ThreadReaderRepository,
         initialSnapshot: ThreadReaderSnapshot? = nil,
-        prefetch: ContentPrefetchSession? = nil
+        prefetch: ContentPrefetchSession? = nil,
+        replyFollowup: (any ReplyFollowupLoading)? = nil
     ) {
         self.prefetch = prefetch
         self.threadID = threadID
         self.repository = repository
+        self.replyFollowup = replyFollowup
         contentContext = (repository as? any ReadingContentCacheAccess)?.cacheContext ?? .anonymous
         if let snapshot = initialSnapshot, snapshot.threadID == threadID {
             state = .loaded(snapshot)
@@ -83,6 +89,8 @@ final class ThreadReaderStore {
             loadedPages = []
             loadedPostIDs = []
             cacheTicket = nil
+            followedReceipt = nil
+            replyPosts = nil
             hasCompletedInitialLoad = false
             hasClaimedDisplayedThread = false
         }
@@ -101,6 +109,7 @@ final class ThreadReaderStore {
             restoring = false
             if let reading, let last = reading.pages.last {
                 loadedPages = reading.pages.map { ($0.locator, $0.value) }
+                replyPosts = reading.replyPosts
                 let snapshot = assembledPages(metadata: last.value)
                 loadedPostIDs = Set(snapshot.posts.map(\.id.postID))
                 state = .loaded(snapshot)
@@ -118,6 +127,8 @@ final class ThreadReaderStore {
     }
 
     func reload() async {
+        replyTask?.cancel()
+        replyTask = nil
         prefetch?.cancel()
         guard let retained = state.snapshot else { await replaceInitialLoad(); return }
         loadTask?.cancel()
@@ -129,7 +140,7 @@ final class ThreadReaderStore {
     }
 
     func loadNextPage() async {
-        guard activeGeneration == nil,
+        guard activeGeneration == nil, replyTask == nil,
               let retained = state.snapshot,
               retained.hasMore else {
             return
@@ -157,17 +168,9 @@ final class ThreadReaderStore {
         )
     }
 
-    func claimDisplayedThread(_ displayedThreadID: Int64) -> Bool {
-        guard displayedThreadID == threadID,
-              !hasClaimedDisplayedThread else {
-            return false
-        }
-        hasClaimedDisplayedThread = true
-        checkpointReading()
-        return true
-    }
-
     func cancel() {
+        replyTask?.cancel()
+        replyTask = nil
         prefetch?.cancel()
         checkpointReading()
         restoring = false
@@ -274,6 +277,8 @@ final class ThreadReaderStore {
         }
 
         let locator = ReadingPageLocator(page: request.pageNumber, postID: request.postID)
+        let replacedReply = replyPosts?.posts.contains { post in page.posts.contains { $0.id == post.id } } == true
+        replyPosts = replyPosts?.removing(Set(page.posts.map(\.id.postID)))
         isShowingCachedContent = false
         if refreshing, let retained {
             guard page.currentPage == locator.responsePage else {
@@ -283,7 +288,7 @@ final class ThreadReaderStore {
             if loadedPages.isEmpty {
                 // Notification/initialSnapshot injection can contain multiple pages without provenance.
                 // Retain those rows; the next ordinary cache-backed entry supplies exact page records.
-                let updated = Self.replacingPosts(in: retained, with: page)
+                let updated = ReplyPageMerge.replacingPosts(in: retained, with: page)
                 state = .loaded(updated)
             } else {
                 loadedPages.removeAll { $0.0.responsePage == page.currentPage }
@@ -303,14 +308,16 @@ final class ThreadReaderStore {
                 finishFailure(generation: generation, retained: retained)
                 return
             }
-            let merged = merge(retained: retained, page: page)
-            if page.hasMore, merged.uniquePosts.isEmpty {
+            let merged = merge(retained: retained, page: page, replacingReply: replacedReply || replyPosts != nil)
+            if page.hasMore, merged.uniquePosts.isEmpty, !replacedReply,
+               !loadedPages.contains(where: { $0.0.responsePage == page.currentPage }) {
                 finishFailure(generation: generation, retained: retained)
                 return
             }
             state = .loaded(merged.snapshot)
             loadedPostIDs.formUnion(merged.uniquePosts.map(\.id.postID))
-            if var presentation = listPresentation {
+            if var presentation = listPresentation, !replacedReply, replyPosts == nil,
+               !loadedPages.contains(where: { $0.0.responsePage > retained.currentPage }) {
                 presentation.append(
                     snapshot: merged.snapshot,
                     newPosts: merged.uniquePosts,
@@ -385,6 +392,9 @@ final class ThreadReaderStore {
         clearLoad(generation: generation)
     }
 
+}
+
+extension ThreadReaderStore {
     private func clearLoad(generation: UInt64) {
         guard activeGeneration == generation else {
             return
@@ -394,9 +404,79 @@ final class ThreadReaderStore {
         refreshing = false
     }
 
-}
+    func claimDisplayedThread(_ displayedThreadID: Int64) -> Bool {
+        guard displayedThreadID == threadID, !hasClaimedDisplayedThread else { return false }
+        hasClaimedDisplayedThread = true
+        checkpointReading()
+        return true
+    }
 
-extension ThreadReaderStore {
+    func replySucceeded(_ receipt: TextWriteReceipt, entry: ThreadReadingEntry) async {
+        guard receipt.threadID == threadID, let retained = state.snapshot else { return }
+        guard let replyFollowup else { await reload(); return }
+        guard followedReceipt != receipt else { return }
+        followedReceipt = receipt
+        cancel()
+        let generation = nextGeneration
+        let cache = repository as? any ReadingContentCacheAccess
+        let ticket = await cache?.ticket()
+        guard generation == nextGeneration, contentContext == cacheContext else { return }
+        let request = ReplyFollowupRequest(receipt: receipt, entry: entry, page: retained.currentPage)
+        let task = Task { try await replyFollowup.loadReply(request) }
+        replyTask = task
+        defer { if generation == nextGeneration { replyTask = nil } }
+        do {
+            let update = try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
+            guard let update, update.threadID == threadID,
+                  await canMergeReply(generation: generation, ticket: ticket) else { return }
+            if case let .posts(delta) = update {
+                await applyReplyPosts(delta, ticket: ticket, generation: generation, retained: retained)
+                return
+            }
+            guard let page = update.page else { return }
+            var locator = loadedPages.first { $0.0.responsePage == page.currentPage }?.0
+                ?? .init(page: page.currentPage, postID: receipt.postID)
+            if let ticket, let saved = await cache?.mergeReplyPage(page, ticket: ticket) { locator = saved }
+            guard await canMergeReply(generation: generation, ticket: ticket) else { return }
+            let old = loadedPages.first { $0.0.responsePage == page.currentPage }?.1
+            let mergedPage = old.map { ReplyPageMerge.merge($0, page: page, pagination: page) } ?? page
+            loadedPages.removeAll { $0.0.responsePage == page.currentPage }
+            loadedPages.append((locator, mergedPage))
+            let current = state.snapshot ?? retained
+            let snapshot = ReplyPageMerge.mergeReadPage(current, page: page)
+            replyPosts = replyPosts?.removing(Set(page.posts.map(\.id.postID)))
+            presentReplyUpdate(ReplyPageMerge.applying(replyPosts, to: snapshot))
+        } catch {
+            guard !Task.isCancelled, !(error is CancellationError), generation == nextGeneration,
+                  contentContext == cacheContext else { return }
+            refreshFailed = true
+            listPresentation?.setPagination(.refreshFailure)
+        }
+    }
+
+    private func canMergeReply(generation: UInt64, ticket: ReadingCacheTicket?) async -> Bool {
+        let cache = repository as? any ReadingContentCacheAccess
+        if let ticket, await cache?.isValid(ticket) != true { return false }
+        return !Task.isCancelled && generation == nextGeneration && contentContext == cacheContext
+    }
+
+    private func applyReplyPosts(_ delta: ReplyPostUpdate, ticket: ReadingCacheTicket?, generation: UInt64,
+                                 retained: ThreadReaderSnapshot) async {
+        let cache = repository as? any ReadingContentCacheAccess
+        if let ticket { await cache?.mergeReplyPosts(delta, ticket: ticket) }
+        guard await canMergeReply(generation: generation, ticket: ticket) else { return }
+        replyPosts = replyPosts?.merging(delta) ?? delta
+        presentReplyUpdate(ReplyPageMerge.applying(replyPosts, to: state.snapshot ?? retained))
+    }
+
+    private func presentReplyUpdate(_ snapshot: ThreadReaderSnapshot) {
+        state = .loaded(snapshot)
+        loadedPostIDs = Set(snapshot.posts.map(\.id.postID))
+        isShowingCachedContent = false
+        refreshFailed = false
+        listPresentation = .init(snapshot: snapshot, pagination: paginationState(for: snapshot))
+    }
+
     private func paginationState(
         for snapshot: ThreadReaderSnapshot
     ) -> ThreadReaderPaginationRowState {
@@ -407,7 +487,7 @@ extension ThreadReaderStore {
     }
     private func merge(
         retained: ThreadReaderSnapshot,
-        page: ThreadReaderSnapshot
+        page: ThreadReaderSnapshot, replacingReply: Bool = false
     ) -> (snapshot: ThreadReaderSnapshot, uniquePosts: [ThreadReaderPost]) {
         var seen = loadedPostIDs
         let uniquePosts = page.posts.filter {
@@ -427,7 +507,9 @@ extension ThreadReaderStore {
             hasMore: page.hasMore,
             nextPostID: page.nextPostID
         )
-        return (snapshot, uniquePosts)
+        let merged = replacingReply || loadedPages.contains { $0.0.responsePage > retained.currentPage }
+            ? ReplyPageMerge.merge(retained, page: page, pagination: page) : snapshot
+        return (merged, uniquePosts)
     }
 
     // A notification resolves an anchor before the reader is mounted; this is not a read event.
@@ -465,28 +547,13 @@ extension ThreadReaderStore {
 
     private func assembledPages(metadata: ThreadReaderSnapshot) -> ThreadReaderSnapshot {
         let sorted = loadedPages.sorted { $0.0.responsePage < $1.0.responsePage }
-        let last = sorted.last?.1 ?? metadata
+        var last = sorted.first?.1 ?? metadata
+        for page in sorted.dropFirst() where page.0.responsePage == last.currentPage + 1 { last = page.1 }
         var seen = Set<Int64>()
         let posts = sorted.flatMap { $0.1.posts }.filter { seen.insert($0.id.postID).inserted }
-        return Self.snapshot(metadata: metadata, pagination: last, posts: posts)
+        return ReplyPageMerge.applying(replyPosts, to: ReplyPageMerge.snapshot(metadata: metadata, pagination: last, posts: posts))
     }
 
-    private static func replacingPosts(in retained: ThreadReaderSnapshot, with page: ThreadReaderSnapshot) -> ThreadReaderSnapshot {
-        var byID: [Int64: ThreadReaderPost] = [:]
-        for post in page.posts { byID[post.id.postID] = post }
-        var seen = Set<Int64>()
-        let posts = (retained.posts.map { byID[$0.id.postID] ?? $0 } + page.posts).filter { seen.insert($0.id.postID).inserted }
-        return snapshot(metadata: page, pagination: retained, posts: posts)
-    }
-
-    private static func snapshot(metadata: ThreadReaderSnapshot, pagination: ThreadReaderSnapshot,
-                                 posts: [ThreadReaderPost]) -> ThreadReaderSnapshot {
-        .init(threadID: metadata.threadID, title: metadata.title, forumName: metadata.forumName,
-              forumID: metadata.forumID, forumAvatarResource: metadata.forumAvatarResource,
-              author: metadata.author, replyCount: metadata.replyCount, posts: posts,
-              currentPage: pagination.currentPage, totalPage: pagination.totalPage,
-              hasMore: pagination.hasMore, nextPostID: pagination.nextPostID)
-    }
 }
 
 // Prefetch only supplies repository data; it cannot mutate the current reader snapshot or anchor.
@@ -500,7 +567,7 @@ extension ThreadReaderStore {
     }
 
     func prefetchNextPage() {
-        guard activeGeneration == nil, contentContext == cacheContext,
+        guard activeGeneration == nil, replyTask == nil, contentContext == cacheContext,
               let snapshot = state.snapshot, snapshot.hasMore, let postID = snapshot.nextPostID else { return }
         prefetch?.followingThreadPage(.init(threadID: threadID, page: snapshot.currentPage + 1, postID: postID,
                                             context: contentContext, generation: nextGeneration)) {

@@ -215,7 +215,8 @@ final class AppCompositionRoot {
     func makeThreadReaderStore(threadID: Int64) -> ThreadReaderStore {
         ThreadReaderStore(
             threadID: threadID,
-            repository: threadReaderRepository, prefetch: makeContentPrefetchSession()
+            repository: threadReaderRepository, prefetch: makeContentPrefetchSession(),
+            replyFollowup: textComposer.repository as? any ReplyFollowupLoading
         )
     }
 

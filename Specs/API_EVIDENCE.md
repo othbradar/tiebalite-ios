@@ -1,5 +1,23 @@
 # API / Protobuf 证据
 
+## 2026-10-09 Build15 成功读取的空分页响应
+
+USER_REPORTED：Build14发送成功后仍显示刷新失败，手动下拉后才能看到回复。既有脱敏诊断为写入HTTP200/error0，后续getmypost HTTP200/15661 bytes。使用App内已有账号缓存、相同已发表目标的只读复查稳定返回error0、匹配ThreadInfo、1条Post及显式存在但长度0的Page；page.current_page/total_page/new_total_page/has_more均为0。没有保存响应正文、ID、Cookie或凭据，也没有再次发送评论。元数据保存在ignored build15目录。此证据只说明该成功响应的分页为空，不能把has_more=0当作完整列表已到末页。
+
+根因是NativeReplyReadProtocol要求currentPage>0，将有效回复增量提前拒绝为malformedResponse。现按已有iOS描述符解析同一消息：有有效页码返回完整页；显式空Page返回ReplyPostUpdate，仍要求帖子一致且目标postID实际存在。增量只替换/插入稳定ID内容，不更新分页游标、页数或阅读锚点。沿用现有ContentPageCache容量/TTL和账号epoch，增量独立保存，由轻量manifest引用；普通页面以后返回同ID时以正常页取代该增量。不推断页码，不追加读取/重试，不修改已验收写请求。
+
+## 2026-10-09 发送后读取与入口来源续接
+
+同SHA iOS22.11.1。新增CODE_EVIDENCE：TBCSyncSwitchManager.registerAllSwitchDatas在0x1001a3c24注册pb_reply_switch，defaultValue=1；TBCBaseSyncSwitchData.initWithSwitchData:defaultValue:target:selector:(0x101cc6438)同时设置currentValue/defaultValue。此前findType缺对象返回0不代表注册后的默认值。普通回复成功0x102d7675c读取该开关，非零才用返回pid触发getmypost；楼层回复使用原父楼ID。远程覆盖值未观察，生产仅可明确使用已证实的注册默认，不能声称获取了官方账号的实验值。
+
+PB字段提供者0x102ca65b4的本App普通页面子集：kz、fr、ad_param(load_count/refresh_count/is_req_ad)、request_times/session_request_times；getmypost转换移除r/back/lz/pn，并再递增全局请求计数、offset=2。本App没有广告/推送/商业页面提供者，不伪造对应身份或参数。原生pbListReq.proto的AdParam tag18，内部load_count=1/refresh_count=2/is_req_ad=4，均int32；普通字段仍使用已核验的Common/签名和CMD309751。读取失败不能改成功回执或触发重新发送。当前任务仅授权后续读取及其合并，不改写请求次数、上传或账号准备。
+
+参数边界补充：TBCPBViewModel.pbReplayGetLastPage:(0x102cc2248)先置pbRequestStyle为4（普通页）/5（另一展示模式）；provider对非0 style增加load_count。TBCVitalityPBConfigTools.refreshCount:isPullDown:(0x102c54e80)在无该帖广告daily cache时明确返回0。本App不维护该广告缓存，故使用此分支的load_count=1/refresh_count=0/is_req_ad=0，不把当前显示页码或普通缓存请求数伪装成广告统计。provider和专用threadLoad各增加一次本App原生PB请求计数；楼层分支只用kz/last_pid/mark_type。原生签名前的ad_param是NSDictionary（appendFormat %@），按Foundation字典description交给现有签名，IDL仍编码为AdParam消息，不把JSON文本直接上网。本轮descriptor fixture新增thread-page-no-ad，前三个请求与8个响应保持逐字节一致。
+
+Live闭环：已成功且匹配目标的TextWriteReceipt冻结目标/账号/来源，关闭编辑器后的原回调消费一次；不重新准备账号、上传或发送。主题回复读取回执pid，楼层回复读取原父楼pid；开关关闭不调getmypost。当前列表按稳定postID更新/去重，保留实际readAnchor；返回更远页面时不把缺失中间页伪装成已读分页。缓存合并使用同一ContentPageCache、原ticket/epoch和同页旧locator，不改原position或其余页。取消、换账号、清缓存、后续主动刷新拒绝旧结果；读取失败只走既有刷新失败状态，不把发送成功改成未知/失败。完整楼中楼页继续使用既有refresh回调（独立于普通PB成功回调），没有用三条预览冒充其全量回复。
+
+入口：frStringFromRequestParams:(0x102ca79ac)明确将enterType=34关联search_page；既有transPBReplyEnterTypeToStringParam将34映射post_from=8。内部普通帖子链接经jumpToPB(0x1021b43d8/0x1021c5dec)赋14，映射7。现有严格接受的com.baidu.tieba://unidispatch/pb?tid=…走matrix PB；无额外来源参数时buildWith…isFromOutside:fromType:(0x10249d1bc)不设置pbEnterType（零初始化），保持0，不能用iOStbclient的31或外部HTTPS的32覆盖。此范围不扩大为所有原版Scheme扩展参数/任意Web搜索URL均已支持。
+
 ## 2026-10-09 GIF 编码数据保留
 
 CODE_EVIDENCE：同 SHA iOS22.11.1，TBCReplyComposeImageUploadCoordinator.imageUpload:shouldGifAtIndex:(0x102396458)检查runningMeta.imageType == 2；gifDataAtIndex:(0x1023964a8)返回imageGifData。TBCImageUpload.uploadGifImage…(0x10214c5e0)对编码数据调用filterImageMetaWithData:originalMetaData:，用imageWithData仅取得尺寸，再对同一份编码数据计算MD5并送入分块，不经过静态JPEG压缩。0x10214c874比较长度0xa00000，只有小于10 MiB才继续；主题新Uploader同样在0x102152f10比较该值。合成原指令回放的类型与严格大小边界见native-ios-gif-policy.json及generate_gif_policy.py，未运行真实上传。

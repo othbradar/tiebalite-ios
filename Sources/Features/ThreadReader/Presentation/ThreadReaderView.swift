@@ -56,7 +56,7 @@ struct ThreadReaderView: View {
                 })
             }
         }
-        .textComposer(target: $composeTarget) { _ in await store.reload() }
+        .textComposer(target: $composeTarget) { await store.replySucceeded($0, entry: readingEntry) }
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(

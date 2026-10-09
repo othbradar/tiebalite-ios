@@ -19,9 +19,14 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
         let useCache: Bool
         let priority: ContentLoadScheduler.Priority
     }
+    private struct ReplyRecord: Codable, Sendable {
+        let key: String
+        let fetchedAt: Date
+    }
     private struct Manifest: Codable, Sendable {
         var records: [Record] = []
         var position: ReadingPosition?
+        var replyRecord: ReplyRecord?
     }
 
     private let threads: any ThreadReaderRepository
@@ -61,7 +66,11 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
     }
 
     func restoreThread(_ threadID: Int64) async -> CachedReading<ThreadReaderSnapshot>? {
-        await restore(.init(threadID: threadID))
+        let identity = ReadingCacheIdentity(threadID: threadID)
+        guard var reading: CachedReading<ThreadReaderSnapshot> = await restore(identity),
+              let key = key(identity, ticket: reading.ticket) else { return nil }
+        reading.replyPosts = await replyPosts((await manifest(key)).replyRecord)
+        return await isValid(reading.ticket) ? reading : nil
     }
 
     func restoreSubposts(_ route: SubpostsRoute) async -> CachedReading<SubpostsPage>? {
@@ -92,6 +101,36 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
 
     func checkpoint(_ position: ReadingPosition, ticket: ReadingCacheTicket) async {
         await enqueue(position.identity, ticket: ticket, position: position)
+    }
+
+    func mergeReplyPosts(_ update: ReplyPostUpdate, ticket: ReadingCacheTicket) async {
+        let identity = ReadingCacheIdentity(threadID: update.threadID)
+        guard !update.posts.isEmpty, await isValid(ticket), let key = key(identity, ticket: ticket) else { return }
+        revocations[key, default: 0] &+= 1
+        await enqueue(identity, ticket: ticket, replies: update)
+    }
+
+    func mergeReplyPage(_ page: ThreadReaderSnapshot, ticket: ReadingCacheTicket) async -> ReadingPageLocator? {
+        let identity = ReadingCacheIdentity(threadID: page.threadID)
+        guard page.currentPage > 0, !page.posts.isEmpty, !page.hasRevokedFirstPost,
+              await isValid(ticket), let key = key(identity, ticket: ticket) else { return nil }
+        // A pre-send page fetch must not subsequently overwrite the accepted reply.
+        revocations[key, default: 0] &+= 1
+        await writes[key]?.value
+        let existing = await manifest(key)
+        let record = existing.records.first { $0.locator.responsePage == page.currentPage }
+        let locator = record?.locator ?? .init(page: page.currentPage, postID: page.posts.last?.id.postID ?? 0)
+        var merged = page
+        if let record, let bytes = await cache.read(key: record.key),
+           let old = try? JSONDecoder().decode(CachedReadingPage<ThreadReaderSnapshot>.self, from: bytes) {
+            merged = ReplyPageMerge.merge(old.value, page: page, pagination: page)
+        }
+        guard !Task.isCancelled, await isValid(ticket) else { return nil }
+        let now = await clock.now
+        let value = CachedReadingPage(locator: locator, fetchedAt: now, value: merged)
+        guard let data = try? JSONEncoder().encode(value) else { return nil }
+        await enqueue(identity, ticket: ticket, page: .init(locator: locator, fetchedAt: now, data: data))
+        return await isValid(ticket) ? locator : nil
     }
 
     private func threadPage(_ request: ThreadReaderPageRequest, useCache: Bool,
@@ -234,7 +273,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
     /// Successful pages are encoded once; scrolling only encodes the manifest's references/position.
     private func enqueue(_ identity: ReadingCacheIdentity, ticket: ReadingCacheTicket,
                          page: PendingPage? = nil,
-                         position: ReadingPosition? = nil, invalidate: Bool = false) async {
+                         position: ReadingPosition? = nil, invalidate: Bool = false, replies: ReplyPostUpdate? = nil) async {
         guard let key = key(identity, ticket: ticket) else { return }
         let previous = writes[key]
         nextWriteID &+= 1
@@ -242,7 +281,7 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
         writeIDs[key] = writeID
         let operation = Task {
             await previous?.value
-            await self.commit(key: key, ticket: ticket, page: page, position: position, invalidate: invalidate)
+            await self.commit(key: key, ticket: ticket, page: page, position: position, mutation: (invalidate, replies))
         }
         writes[key] = operation
         await operation.value
@@ -250,12 +289,14 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
     }
 
     private func commit(key: String, ticket: ReadingCacheTicket, page: PendingPage?,
-                        position: ReadingPosition?, invalidate: Bool) async {
+                        position: ReadingPosition?, mutation: (invalidate: Bool, replies: ReplyPostUpdate?)) async {
+        let (invalidate, replies) = mutation
         guard await isValid(ticket) else { return }
         var manifest = await manifest(key)
         guard await isValid(ticket) else { return }
         if invalidate {
             for record in manifest.records { await cache.remove(key: record.key) }
+            if let record = manifest.replyRecord { await cache.remove(key: record.key) }
             await cache.remove(key: key)
             return
         }
@@ -271,10 +312,42 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
             // References are bounded even when the disk LRU has already evicted their page data.
             manifest.records = Array(manifest.records.sorted { $0.fetchedAt > $1.fetchedAt }.prefix(512))
         }
+        manifest.replyRecord = await commitReplies(replies, page: page, existing: manifest.replyRecord, key: key, ticket: ticket)
         if let position, manifest.records.contains(where: { $0.locator == position.locator }) {
             manifest.position = position
         }
         guard await isValid(ticket), let data = try? JSONEncoder().encode(manifest) else { return }
         await cache.write(data, key: key, epoch: ticket.epoch)
+    }
+}
+
+private extension CachedReadingRepository {
+    private func replyPosts(_ record: ReplyRecord?) async -> ReplyPostUpdate? {
+        guard let record, await clock.now.timeIntervalSince(record.fetchedAt) <= policy.maximumAge,
+              let data = await cache.read(key: record.key) else { return nil }
+        return try? JSONDecoder().decode(ReplyPostUpdate.self, from: data)
+    }
+
+    private func commitReplies(_ incoming: ReplyPostUpdate?, page: PendingPage?, existing: ReplyRecord?,
+                               key: String, ticket: ReadingCacheTicket) async -> ReplyRecord? {
+        guard incoming != nil || page != nil else { return existing }
+        guard incoming != nil || existing != nil else { return nil }
+        var update = await replyPosts(existing)
+        if let incoming { update = update?.merging(incoming) ?? incoming }
+        // An authoritative normal page supersedes matching delta rows. A delta
+        // itself is never assigned a page number or used as a pagination cursor.
+        if let page, let value = try? JSONDecoder().decode(CachedReadingPage<ThreadReaderSnapshot>.self, from: page.data) {
+            update = update?.removing(Set(value.value.posts.map(\.id.postID)))
+        }
+        guard let update else {
+            if let existing { await cache.remove(key: existing.key) }
+            return nil
+        }
+        guard await isValid(ticket), let data = try? JSONEncoder().encode(update) else { return existing }
+        let replyKey = "\(key)|reply-delta|\(ContentPageCache.digest(data))"
+        guard await cache.write(data, key: replyKey, epoch: ticket.epoch), await isValid(ticket) else { return existing }
+        if let existing, existing.key != replyKey { await cache.remove(key: existing.key) }
+        let now = await clock.now
+        return .init(key: replyKey, fetchedAt: incoming != nil ? now : (existing?.fetchedAt ?? now))
     }
 }

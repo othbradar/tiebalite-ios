@@ -61,13 +61,13 @@ private struct ThreadReaderPostView: View {
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     var onReply: (ThreadReaderPostRowModel) -> Void = { _ in }
 
-    private var contentInset: CGFloat { post.floorNumber > 1 ? TiebaParityTokens.userAvatarSize + 8 : 0 }
+    private var contentInset: CGFloat { post.source.scope == .post ? TiebaParityTokens.userAvatarSize + 8 : 0 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 authorHeader
-                if post.floorNumber > 1 {
+                if post.source.scope == .post {
                     HStack(spacing: 4) {
                         TiebaLikeIcon()
                         Text("\(post.agreeCount ?? 0)").font(.caption)

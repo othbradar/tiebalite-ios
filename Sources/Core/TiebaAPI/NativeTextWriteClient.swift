@@ -6,6 +6,7 @@ enum NativeWriteAPI: String, Sendable {
     case imageUpload = "/c/s/uploadPicture"
     case reply = "/c/c/post/add"
     case thread = "/c/c/thread/add"
+    case replyRead = "/c/f/pb/getmypost"
 }
 
 /// Values obtained at the native request boundary. The runtime owner acquires
@@ -152,6 +153,39 @@ final class NativeTextWriteClient {
             return try NativeImageUploadProtocol.request(fields: fields, bytes: bytes, runtime: values)
         })
         return try await uploader.upload(photo, progress: progress)
+    }
+
+    func readReply(business: [String: String]) async throws -> ReplyReadUpdate {
+        guard !isSending else { throw NativeTextWriteClientError.alreadySending }
+        try Task.checkCancellation()
+        let authorization = try session.authorization(for: context)
+        guard let account = try session.cachedAccount() else { throw NativeReplyReadError.invalidContext }
+        let values = try runtimeValues(for: .replyRead, authorization: authorization, account: account)
+        var metrics = runtime.requestMetrics
+        let fields = common.prepare(values.common, business: try NativeReplyPageParameters.signingFields(business), metrics: &metrics)
+        runtime.requestMetrics = metrics
+        // This is a read. It neither prepares the account again nor consumes a send slot.
+        let request = try NativeReplyReadProtocol.request(
+            business: business, common: fields, context: values.http, boundary: values.multipartBoundary)
+        let result = try await transport.execute(request) { [self] metrics in
+            try Task.checkCancellation()
+            _ = try session.authorization(for: context)
+            runtime.requestMetrics = metrics
+        }
+        try Task.checkCancellation()
+        _ = try session.authorization(for: context)
+        let response = result.response
+        guard (200..<300).contains(response.statusCode) else { throw HTTPClientError.server(statusCode: response.statusCode) }
+        if let measurement = result.measurement {
+            let errorCode = try? NativeReplyReadProtocol.errorCode(response.body)
+            runtime.requestMetrics = errorCode.map {
+                measurement.parsedMetrics(api: NativeWriteAPI.replyRead.rawValue, errorCode: $0, statusCode: response.statusCode)
+            } ?? measurement.parseFailureMetrics(api: NativeWriteAPI.replyRead.rawValue)
+        }
+        guard let threadID = business["kz"].flatMap(Int64.init), let postID = business["last_pid"].flatMap(Int64.init) else {
+            throw NativeReplyReadError.invalidContext
+        }
+        return try NativeReplyReadProtocol.decode(response.body, threadID: threadID, targetPostID: postID)
     }
 
     private func preparedAccount() async throws -> TextWriteAccount {

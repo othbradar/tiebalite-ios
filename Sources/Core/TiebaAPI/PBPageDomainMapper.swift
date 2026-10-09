@@ -46,6 +46,12 @@ enum PBPageDomainMapper {
         )
     }
 
+    /// A receipt-directed native delta has content identity but no pagination identity.
+    static func replyPosts(_ data: Tieba_PbPage_PbPageResponseData, threadID: Int64) throws -> [ThreadReaderPost] {
+        let hasFirst = data.hasFirstFloorPost || data.postList.contains { $0.floor == 1 }
+        return try mappedPosts(data, request: .init(threadID: threadID, pageNumber: hasFirst ? 0 : 1, postID: 0))
+    }
+
     private static func validatedData(
         _ response: Tieba_PbPage_PbPageResponse,
         request: ThreadReaderPageRequest

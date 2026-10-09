@@ -37,6 +37,7 @@ struct CachedReading<Page: Codable & Sendable>: Sendable {
     let position: ReadingPosition?
     let ticket: ReadingCacheTicket
     let isFresh: Bool
+    var replyPosts: ReplyPostUpdate?
 }
 
 protocol ReadingContentCacheAccess: ThreadReaderRepository, SubpostsRepository {
@@ -48,6 +49,13 @@ protocol ReadingContentCacheAccess: ThreadReaderRepository, SubpostsRepository {
     func refreshThread(_ request: ThreadReaderPageRequest) async throws -> ThreadReaderSnapshot
     func refreshSubposts(_ route: SubpostsRoute, page: Int) async throws -> SubpostsPage
     func checkpoint(_ position: ReadingPosition, ticket: ReadingCacheTicket) async
+    func mergeReplyPosts(_ update: ReplyPostUpdate, ticket: ReadingCacheTicket) async
+    func mergeReplyPage(_ page: ThreadReaderSnapshot, ticket: ReadingCacheTicket) async -> ReadingPageLocator?
+}
+
+extension ReadingContentCacheAccess {
+    func mergeReplyPosts(_ update: ReplyPostUpdate, ticket: ReadingCacheTicket) async {}
+    func mergeReplyPage(_ page: ThreadReaderSnapshot, ticket: ReadingCacheTicket) async -> ReadingPageLocator? { nil }
 }
 
 extension EndpointExecutionError {

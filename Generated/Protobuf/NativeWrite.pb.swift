@@ -2812,7 +2812,7 @@ public nonisolated struct TiebaNativeWrite_ThreadData: @unchecked Sendable {
 }
 
 /// CMD309751 PbList request/response boundary from the same native executable.
-/// Complex ad/push providers remain unsupported at the caller boundary.
+/// Ordinary page counters use the native AdParam descriptor; push and commercial providers remain separate.
 public nonisolated struct TiebaNativeWrite_ReplyReadRequest: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -2991,6 +2991,15 @@ public nonisolated struct TiebaNativeWrite_ReplyReadData: @unchecked Sendable {
   public var hasDaIdfa: Bool {_storage._daIdfa != nil}
   /// Clears the value of `daIdfa`. Subsequent reads from it will return its default value.
   public mutating func clearDaIdfa() {_uniqueStorage()._daIdfa = nil}
+
+  public var adParam: TiebaNativeWrite_ReplyReadAdParam {
+    get {_storage._adParam ?? TiebaNativeWrite_ReplyReadAdParam()}
+    set {_uniqueStorage()._adParam = newValue}
+  }
+  /// Returns true if `adParam` has been explicitly set.
+  public var hasAdParam: Bool {_storage._adParam != nil}
+  /// Clears the value of `adParam`. Subsequent reads from it will return its default value.
+  public mutating func clearAdParam() {_uniqueStorage()._adParam = nil}
 
   public var adContextList: String {
     get {_storage._adContextList ?? String()}
@@ -3213,6 +3222,57 @@ public nonisolated struct TiebaNativeWrite_ReplyReadData: @unchecked Sendable {
   public init() {}
 
   fileprivate var _storage = _StorageClass.defaultInstance
+}
+
+public nonisolated struct TiebaNativeWrite_ReplyReadAdParam: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  public var loadCount: Int32 {
+    get {_loadCount ?? 0}
+    set {_loadCount = newValue}
+  }
+  /// Returns true if `loadCount` has been explicitly set.
+  public var hasLoadCount: Bool {self._loadCount != nil}
+  /// Clears the value of `loadCount`. Subsequent reads from it will return its default value.
+  public mutating func clearLoadCount() {self._loadCount = nil}
+
+  public var refreshCount: Int32 {
+    get {_refreshCount ?? 0}
+    set {_refreshCount = newValue}
+  }
+  /// Returns true if `refreshCount` has been explicitly set.
+  public var hasRefreshCount: Bool {self._refreshCount != nil}
+  /// Clears the value of `refreshCount`. Subsequent reads from it will return its default value.
+  public mutating func clearRefreshCount() {self._refreshCount = nil}
+
+  public var yogaLibVersion: String {
+    get {_yogaLibVersion ?? String()}
+    set {_yogaLibVersion = newValue}
+  }
+  /// Returns true if `yogaLibVersion` has been explicitly set.
+  public var hasYogaLibVersion: Bool {self._yogaLibVersion != nil}
+  /// Clears the value of `yogaLibVersion`. Subsequent reads from it will return its default value.
+  public mutating func clearYogaLibVersion() {self._yogaLibVersion = nil}
+
+  public var isReqAd: Int32 {
+    get {_isReqAd ?? 0}
+    set {_isReqAd = newValue}
+  }
+  /// Returns true if `isReqAd` has been explicitly set.
+  public var hasIsReqAd: Bool {self._isReqAd != nil}
+  /// Clears the value of `isReqAd`. Subsequent reads from it will return its default value.
+  public mutating func clearIsReqAd() {self._isReqAd = nil}
+
+  public var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  public init() {}
+
+  fileprivate var _loadCount: Int32? = nil
+  fileprivate var _refreshCount: Int32? = nil
+  fileprivate var _yogaLibVersion: String? = nil
+  fileprivate var _isReqAd: Int32? = nil
 }
 
 public nonisolated struct TiebaNativeWrite_ReplyReadResponse: Sendable {
@@ -5790,7 +5850,7 @@ nonisolated extension TiebaNativeWrite_ReplyReadRequest: SwiftProtobuf.Message, 
 
 nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".ReplyReadData"
-  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}common\0\u{1}kz\0\u{1}pn\0\u{3}last_pid\0\u{1}r\0\u{1}back\0\u{1}lz\0\u{3}mark_type\0\u{3}tab_type\0\u{3}tab_id\0\u{3}top_pid\0\u{3}st_type\0\u{3}up_schema\0\u{3}log_params\0\u{3}yuelaou_locate\0\u{3}query_word\0\u{3}da_idfa\0\u{4}\u{2}ad_context_list\0\u{3}ad_ext_params\0\u{4}\u{2}ad_bear_pb_banner\0\u{3}ad_bear_pb_comment\0\u{3}ad_external_banner_info\0\u{3}ad_external_info\0\u{3}game_id\0\u{1}cid\0\u{1}position\0\u{3}game_fid\0\u{3}game_fname\0\u{3}search_query\0\u{4}\u{2}topic_id\0\u{3}topic_fid\0\u{3}mount_bot_uk\0\u{3}request_times\0\u{3}broadcast_id\0\u{1}fr\0\u{3}session_request_times\0\u{3}shoubai_cuid\0\u{3}from_forum_id\0\u{3}floor_num\0\u{3}aladdin_src_id\0\u{3}app_launch_from\0")
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}common\0\u{1}kz\0\u{1}pn\0\u{3}last_pid\0\u{1}r\0\u{1}back\0\u{1}lz\0\u{3}mark_type\0\u{3}tab_type\0\u{3}tab_id\0\u{3}top_pid\0\u{3}st_type\0\u{3}up_schema\0\u{3}log_params\0\u{3}yuelaou_locate\0\u{3}query_word\0\u{3}da_idfa\0\u{3}ad_param\0\u{3}ad_context_list\0\u{3}ad_ext_params\0\u{4}\u{2}ad_bear_pb_banner\0\u{3}ad_bear_pb_comment\0\u{3}ad_external_banner_info\0\u{3}ad_external_info\0\u{3}game_id\0\u{1}cid\0\u{1}position\0\u{3}game_fid\0\u{3}game_fname\0\u{3}search_query\0\u{4}\u{2}topic_id\0\u{3}topic_fid\0\u{3}mount_bot_uk\0\u{3}request_times\0\u{3}broadcast_id\0\u{1}fr\0\u{3}session_request_times\0\u{3}shoubai_cuid\0\u{3}from_forum_id\0\u{3}floor_num\0\u{3}aladdin_src_id\0\u{3}app_launch_from\0")
 
   fileprivate class _StorageClass {
     var _common: TiebaNativeWrite_Common? = nil
@@ -5810,6 +5870,7 @@ nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, Swi
     var _yuelaouLocate: String? = nil
     var _queryWord: String? = nil
     var _daIdfa: String? = nil
+    var _adParam: TiebaNativeWrite_ReplyReadAdParam? = nil
     var _adContextList: String? = nil
     var _adExtParams: String? = nil
     var _adBearPbBanner: String? = nil
@@ -5861,6 +5922,7 @@ nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, Swi
       _yuelaouLocate = source._yuelaouLocate
       _queryWord = source._queryWord
       _daIdfa = source._daIdfa
+      _adParam = source._adParam
       _adContextList = source._adContextList
       _adExtParams = source._adExtParams
       _adBearPbBanner = source._adBearPbBanner
@@ -5920,6 +5982,7 @@ nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, Swi
         case 15: try { try decoder.decodeSingularStringField(value: &_storage._yuelaouLocate) }()
         case 16: try { try decoder.decodeSingularStringField(value: &_storage._queryWord) }()
         case 17: try { try decoder.decodeSingularStringField(value: &_storage._daIdfa) }()
+        case 18: try { try decoder.decodeSingularMessageField(value: &_storage._adParam) }()
         case 19: try { try decoder.decodeSingularStringField(value: &_storage._adContextList) }()
         case 20: try { try decoder.decodeSingularStringField(value: &_storage._adExtParams) }()
         case 22: try { try decoder.decodeSingularStringField(value: &_storage._adBearPbBanner) }()
@@ -6006,6 +6069,9 @@ nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, Swi
       } }()
       try { if let v = _storage._daIdfa {
         try visitor.visitSingularStringField(value: v, fieldNumber: 17)
+      } }()
+      try { if let v = _storage._adParam {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 18)
       } }()
       try { if let v = _storage._adContextList {
         try visitor.visitSingularStringField(value: v, fieldNumber: 19)
@@ -6105,6 +6171,7 @@ nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, Swi
         if _storage._yuelaouLocate != rhs_storage._yuelaouLocate {return false}
         if _storage._queryWord != rhs_storage._queryWord {return false}
         if _storage._daIdfa != rhs_storage._daIdfa {return false}
+        if _storage._adParam != rhs_storage._adParam {return false}
         if _storage._adContextList != rhs_storage._adContextList {return false}
         if _storage._adExtParams != rhs_storage._adExtParams {return false}
         if _storage._adBearPbBanner != rhs_storage._adBearPbBanner {return false}
@@ -6133,6 +6200,55 @@ nonisolated extension TiebaNativeWrite_ReplyReadData: SwiftProtobuf.Message, Swi
       }
       if !storagesAreEqual {return false}
     }
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+nonisolated extension TiebaNativeWrite_ReplyReadAdParam: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  public static let protoMessageName: String = _protobuf_package + ".ReplyReadAdParam"
+  public static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}load_count\0\u{3}refresh_count\0\u{3}yoga_lib_version\0\u{3}is_req_ad\0")
+
+  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularInt32Field(value: &self._loadCount) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self._refreshCount) }()
+      case 3: try { try decoder.decodeSingularStringField(value: &self._yogaLibVersion) }()
+      case 4: try { try decoder.decodeSingularInt32Field(value: &self._isReqAd) }()
+      default: break
+      }
+    }
+  }
+
+  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._loadCount {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 1)
+    } }()
+    try { if let v = self._refreshCount {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 2)
+    } }()
+    try { if let v = self._yogaLibVersion {
+      try visitor.visitSingularStringField(value: v, fieldNumber: 3)
+    } }()
+    try { if let v = self._isReqAd {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 4)
+    } }()
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  public static func ==(lhs: TiebaNativeWrite_ReplyReadAdParam, rhs: TiebaNativeWrite_ReplyReadAdParam) -> Bool {
+    if lhs._loadCount != rhs._loadCount {return false}
+    if lhs._refreshCount != rhs._refreshCount {return false}
+    if lhs._yogaLibVersion != rhs._yogaLibVersion {return false}
+    if lhs._isReqAd != rhs._isReqAd {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

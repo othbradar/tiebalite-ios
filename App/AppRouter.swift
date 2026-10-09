@@ -107,6 +107,7 @@ enum AppRouter {
                 searchDestination(
                     scope: scope,
                     openRoute: openRoute,
+                    openReadingRoute: openReading,
                     dependencies: dependencies
                 )
             case let .thread(threadID):
@@ -162,12 +163,13 @@ enum AppRouter {
                 }
             }
         }
-        .environment(\.openURL, ContentLinkHandler.action(openRoute: openRoute))
+        .environment(\.openURL, ContentLinkHandler.action { openReading($0, .contentLink) })
     }
 
     private static func searchDestination(
         scope: AppFeatureScope,
         openRoute: @escaping (RouteIdentity) -> Void,
+        openReadingRoute: @escaping (RouteIdentity, ThreadReadingEntry) -> Void,
         dependencies: AppRouteDependencies
     ) -> some View {
         SearchView(
@@ -187,7 +189,7 @@ enum AppRouter {
                     for: scope,
                     threadID: threadID
                 )
-                openRoute(route)
+                openReadingRoute(route, .search)
             }
         )
     }
