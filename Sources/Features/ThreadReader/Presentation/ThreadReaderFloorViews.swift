@@ -10,6 +10,10 @@ struct ThreadReaderRowView: View {
     let onOpenSubposts: (ThreadContentSource) -> Void
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     var onReply: (ThreadReaderPostRowModel) -> Void = { _ in }
+    var favoriteStore: FavoriteStore?
+    var bookmarkStore: BookmarkStore?
+    var bookmarkTitle: String?
+    var bookmarkForum: String?
     let requestNextPage: () -> Void
 
     @ViewBuilder
@@ -19,7 +23,8 @@ struct ThreadReaderRowView: View {
             ThreadReaderPostView(
                 post: post, imageLoader: imageLoader, readingTextSize: readingTextSize,
                 onOpenMedia: onOpenMedia, onOpenUser: onOpenUser,
-                onOpenSubposts: onOpenSubposts, onOpenExternalLink: onOpenExternalLink, onReply: onReply
+                onOpenSubposts: onOpenSubposts, onOpenExternalLink: onOpenExternalLink, onReply: onReply,
+                favoriteStore: favoriteStore, bookmarkStore: bookmarkStore, bookmarkTitle: bookmarkTitle, bookmarkForum: bookmarkForum
             )
         case let .pagination(pagination):
             ThreadReaderPaginationView(pagination: pagination, requestNextPage: requestNextPage)
@@ -60,6 +65,10 @@ private struct ThreadReaderPostView: View {
     let onOpenSubposts: (ThreadContentSource) -> Void
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     var onReply: (ThreadReaderPostRowModel) -> Void = { _ in }
+    var favoriteStore: FavoriteStore?
+    var bookmarkStore: BookmarkStore?
+    var bookmarkTitle: String?
+    var bookmarkForum: String?
 
     private var contentInset: CGFloat { post.source.scope == .post ? TiebaParityTokens.userAvatarSize + 8 : 0 }
 
@@ -93,6 +102,17 @@ private struct ThreadReaderPostView: View {
                     .font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
                     .frame(minHeight: 44, alignment: .leading)
                     .accessibilityIdentifier("thread-reader.reply.p\(post.source.postID)")
+                    .contextMenu {
+                        if let bookmarkTitle, let bookmarkForum {
+                            FavoriteAction(entry: .init(target: .init(threadID: post.source.threadID, postID: post.source.postID),
+                                                        title: bookmarkTitle, forumName: bookmarkForum, status: 1, isDeleted: false),
+                                           store: favoriteStore, isFloor: true)
+                            BookmarkAction(entry: .init(target: .init(threadID: post.source.threadID, postID: post.source.postID),
+                                                        title: bookmarkTitle, forumName: bookmarkForum,
+                                                        floor: post.floorNumber > 0 ? post.floorNumber : nil),
+                                           store: bookmarkStore, isFloor: true)
+                        }
+                    }
             }
             .padding(.leading, contentInset)
             TiebaFlatDivider(inset: 0)

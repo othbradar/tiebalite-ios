@@ -1,0 +1,12 @@
+{
+  "error_code": 0,
+  "store_thread": [
+    {
+      "thread_id": "100001", "mark_pid": "130001", "mark_status": "1",
+      "title": "收藏帖子示例", "forum_name": "示例吧", "reply_num": "42",
+      "author": {"lz_uid": "23", "name": "fixture-author", "name_show": "示例作者", "user_portrait": "fixture-portrait"},
+      "media": [{"type": "3", "small_pic": "https://example.com/favorite.jpg"}]
+    },
+    {"thread_id": "100002", "title": "缺少展示字段", "forum_name": "示例吧"}
+  ]
+}

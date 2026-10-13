@@ -21,6 +21,8 @@ struct AppPersonalRootView: View {
                         .frame(minHeight: 44).accessibilityIdentifier("personal.account.retry")
                 }
                 entry("浏览记录", symbol: "clock", identifier: "settings.open-history") { openRoute(.history) }
+                entry("收藏", symbol: "star", identifier: "personal.favorites") { openRoute(.favorites) }
+                entry("本机书签", symbol: "bookmark", identifier: "personal.bookmarks") { openRoute(.bookmarks) }
                 themeSelection
                 TiebaFlatDivider().padding(.vertical, 8)
                 entry("设置", symbol: "gearshape", identifier: AppAccessibilityID.personalSettings) { openRoute(.preferences) }

@@ -26,6 +26,15 @@ struct ThreadReadingMenu: View {
                 .accessibilityIdentifier("thread-reader.jump-page")
             Button("回到首楼") { Task { await store.returnToFirstPost() } }
                 .accessibilityIdentifier("thread-reader.first-post")
+            if let snapshot = store.state.snapshot {
+                FavoriteAction(entry: .init(
+                    target: .init(threadID: snapshot.threadID,
+                                  postID: store.listPresentation?.rows.first { $0.id == store.readAnchor }?.post?.source.postID
+                                      ?? snapshot.posts.first?.id.postID),
+                    title: snapshot.title, forumName: snapshot.forumName, status: 1, isDeleted: false))
+                BookmarkAction(entry: .init(target: .init(threadID: snapshot.threadID, postID: nil),
+                                            title: snapshot.title, forumName: snapshot.forumName, floor: nil))
+            }
             Divider()
             LinkActionsContent(url: url, identifier: "thread-reader.compose.more", reload: reload)
         } label: {

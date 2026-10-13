@@ -4,6 +4,17 @@ final class R05ForumSmokeTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
     @MainActor
+    func testForumFeedKeepsAuthorImagesAndActions() {
+        let app = openForum()
+        requireLoaded("forum-home.author.t140003", app: app)
+        requireLoaded("tieba.media-grid.forum.t140003.media.1", app: app)
+        XCTAssertTrue(app.buttons["forum-home.share.t140003"].exists)
+        XCTAssertTrue(app.buttons["forum-home.reply.t140003"].exists)
+        XCTAssertTrue(app.buttons["forum-home.row.t140003"].isHittable)
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "U10 unchanged forum feed")
+    }
+
+    @MainActor
     func testForumTabsSortMediaPagingAndReturnPosition() {
         executionTimeAllowance = 150
         let app = openForum()

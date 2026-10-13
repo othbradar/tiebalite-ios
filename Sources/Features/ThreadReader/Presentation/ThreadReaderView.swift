@@ -13,6 +13,8 @@ struct ThreadReaderView: View {
     let onDisplayed: (ThreadReaderSnapshot) async -> Void
     let onOpenSubposts: (ThreadContentSource) -> Void
 
+    @Environment(\.bookmarks) private var bookmarks
+    @Environment(\.favorites) private var favorites
     @Environment(\.scenePhase) private var scenePhase
     @State private var retryGeneration: UInt64 = 0
     @Environment(\.openURL) private var openURL
@@ -48,6 +50,7 @@ struct ThreadReaderView: View {
         .background(SemanticColor.background)
         .navigationTitle("")
         .toolbar { forumToolbar }
+        .task { await bookmarks?.load() }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if store.state.snapshot != nil {
                 ThreadReaderReplyBar(imageLoader: imageLoader, accountAvatar: accountAvatar,
@@ -164,6 +167,8 @@ struct ThreadReaderView: View {
                             if let url = URL(string: intent.destination.absoluteString) { openURL(url) }
                         },
                         onReply: { post in composeTarget = .reply(snapshot: snapshot, post: post, readingEntry: readingEntry) },
+                        favoriteStore: favorites, bookmarkStore: bookmarks,
+                        bookmarkTitle: snapshot.title, bookmarkForum: snapshot.forumName,
                         requestNextPage: requestNextPage
                     )
                 }

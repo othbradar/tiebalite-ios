@@ -135,6 +135,20 @@ struct SettingsRouteDestinationView: View {
                 store: featureStores.browsingHistoryStore,
                 openRoute: { navigation.pushSettingsContent($0, readingEntry: .history) }
             )
+        case .favorites:
+            if let store = featureStores.favoriteStore {
+                FavoriteListView(store: store, open: { navigation.pushSettingsRoute(.bookmark($0)) }, rowContent: { entry, open in
+                    ForumThreadFeedRow(row: .init(thread: entry.feedSummary, forumID: nil), imageLoader: imageLoader,
+                                       accessibilityPrefix: "favorites", rowAccessibilityID: "favorites.row.\(entry.id)",
+                                       openThread: open)
+                })
+            }
+        case .bookmarks:
+            if let store = featureStores.bookmarkStore {
+                BookmarkListView(store: store, open: { navigation.pushSettingsRoute(.bookmark($0)) })
+            }
+        case let .bookmark(target):
+            BookmarkDestination(target: target, dependencies: routeDependencies, openRoute: navigation.pushSettingsContent)
         case .licenses:
             OpenSourceLicensesView()
         case let .content(contentRoute):

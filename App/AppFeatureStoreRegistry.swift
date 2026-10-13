@@ -1,5 +1,9 @@
 @MainActor
 final class AppFeatureStoreRegistry {
+    var bookmarkStore: BookmarkStore?
+    var favoriteStore: FavoriteStore?
+
+    func makeBookmarkedReader(threadID: Int64) -> ThreadReaderStore { makeThreadReaderStore(threadID) }
     let notificationsStore: NotificationsStore
     let currentAccountStore: CurrentAccountStore
     private let makeNotificationDestination: (@MainActor (NotificationTarget) -> NotificationDestinationStore)?
@@ -64,6 +68,8 @@ final class AppFeatureStoreRegistry {
             notificationsStore: compositionRoot.notificationsStore,
             makeNotificationDestination: compositionRoot.makeNotificationDestination
         )
+        bookmarkStore = compositionRoot.bookmarkStore
+        favoriteStore = compositionRoot.favoriteStore
     }
 
     func forumHomeStore(

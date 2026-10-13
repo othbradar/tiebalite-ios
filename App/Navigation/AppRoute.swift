@@ -116,6 +116,9 @@ enum SettingsRoute: Codable, Hashable, Sendable {
 #endif
     case content(RouteIdentity)
     case history
+    case bookmarks
+    case favorites
+    case bookmark(ThreadBookmarkTarget)
     case licenses
 #if DEBUG
     case interactionLab
@@ -406,6 +409,16 @@ enum SettingsRouteGrammar {
             return false
         case .history:
             return isValidHistoryPath(routes)
+        case .bookmarks, .favorites:
+            guard routes.count > 1 else { return true }
+            guard case let .bookmark(target) = routes[1], let id = ThreadID(target.threadID),
+                  target.postID.map({ $0 > 0 }) ?? true else { return false }
+            let tail = routes.dropFirst(2).compactMap { route -> RouteIdentity? in
+                if case let .content(content) = route { return content }; return nil
+            }
+            return tail.count == routes.count - 2 && isValidHistoryContentChain([.thread(id)] + tail)
+        case .bookmark:
+            return false
         case .about:
             return isValidAboutPath(routes)
         case .accountProfile, .licenses:

@@ -55,6 +55,14 @@ struct AppSceneRoot: View {
             }
         }
         .environment(\.textComposer, compositionRoot.textComposer)
+        .environment(\.bookmarks, compositionRoot.bookmarkStore)
+        .environment(\.favorites, compositionRoot.favoriteStore)
+        .modifier(FavoriteFeedbackHost(store: compositionRoot.favoriteStore))
+        .modifier(BookmarkFeedbackHost(store: compositionRoot.bookmarkStore))
+        .onChange(of: compositionRoot.authContextProvider.contentCacheContext) { _, _ in
+            compositionRoot.bookmarkStore.sessionChanged()
+            compositionRoot.favoriteStore.sessionChanged()
+        }
         .modifier(TextComposerHost(service: compositionRoot.textComposer))
         .fullScreenCover(item: $mediaPresentation) { presentation in
             MediaViewer(

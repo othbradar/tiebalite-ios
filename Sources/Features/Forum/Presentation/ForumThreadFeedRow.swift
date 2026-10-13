@@ -3,6 +3,8 @@ import SwiftUI
 struct ForumThreadFeedRow: View {
     let row: ForumThreadRowModel
     let imageLoader: any ImageLoading
+    var accessibilityPrefix = "forum-home"
+    var rowAccessibilityID: String?
     let openThread: () -> Void
     @ScaledMetric(relativeTo: .body) private var textSize: CGFloat = 15
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -45,10 +47,10 @@ struct ForumThreadFeedRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("打开帖子")
-            .accessibilityIdentifier(ForumHomeAccessibilityID.row(row.threadID))
+            .accessibilityIdentifier(rowAccessibilityID ?? ForumHomeAccessibilityID.row(row.threadID))
             .contextMenu {
                 if let url = PublicContentURL.thread(thread.threadID) {
-                    LinkActionsContent(url: url, identifier: "forum-home.more.t\(thread.threadID)", open: openThread)
+                    LinkActionsContent(url: url, identifier: "\(accessibilityPrefix).more.t\(thread.threadID)", open: openThread)
                 }
             }
             HStack(spacing: 0) {
@@ -59,13 +61,13 @@ struct ForumThreadFeedRow: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("分享帖子")
-                    .accessibilityIdentifier("forum-home.share.t\(thread.threadID)")
+                    .accessibilityIdentifier("\(accessibilityPrefix).share.t\(thread.threadID)")
                 }
                 Button(action: openThread) {
                     action(TiebaReplyIcon(), count: Int64(row.replyCount), fallback: "回复")
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier("forum-home.reply.t\(row.threadID)")
+                .accessibilityIdentifier("\(accessibilityPrefix).reply.t\(row.threadID)")
                 action(TiebaLikeIcon(), count: thread.metadata.agreeCount, fallback: "0")
             }
             .foregroundStyle(SemanticColor.secondaryText)
@@ -78,7 +80,7 @@ struct ForumThreadFeedRow: View {
     private var header: some View {
         HStack(spacing: 8) {
             TiebaAvatarView(resource: thread.author?.avatarResource, imageLoader: imageLoader)
-                .accessibilityIdentifier("forum-home.author.t\(row.threadID)")
+                .accessibilityIdentifier("\(accessibilityPrefix).author.t\(row.threadID)")
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 4) {
                     Text(row.authorName).font(.subheadline.bold()).lineLimit(1)

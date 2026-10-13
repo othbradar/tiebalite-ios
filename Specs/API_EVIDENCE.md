@@ -1349,3 +1349,24 @@ RUNTIME_EVIDENCE（用户手动，2026-09-27）：用户确认“这回发成功
 `MixedTiebaApiImpl.kt::pbPageFlow` 1316–1379 明确 lz=seeLz?1:0、r=sortType、pn=page、pid=postId；`ThreadViewModel.kt::ThreadSortType` 1280 为ASC0/DESC1，`getNextPagePostId` 56–70 为倒序取pids首个、正序排除已载后取末个。`ThreadPage.kt` 825跳页使用pn=N/pid默认0；1489倒序下一页为totalPage-currentPageMax，正序currentPageMax+1。该调用端公式不足以证明响应current_page使用正序物理页号。2026-10-09实际两条长帖的倒序首屏均为pn=0/r=1/current_page=1/total_page=2/new_total_page=2/has_more=1，回复楼层已倒序；此前total-current+1换算推断已被实测否定并移除。当前直接保留服务端current_page及行顺序，仍严格核对请求页码和帖子身份；总页数缺失不影响已知当前页校验，不本地反转/过滤。
 
 全部查询身份为all/author × ascending/descending，默认键仍all-ascending以兼容U03。首屏/分页/跳页/刷新/预载使用同一查询；pn0首屏，非相邻页只请求目标pn一次。历史/阅读位置只来自有效视口，不由预载更新。合成Proto覆盖四种请求和倒序页/游标；Live倒序首屏元数据已核对，用户已确认只看楼主正常、修复后倒序正常；Fixture与用户验收分别记录，不扩大为所有组合通过。
+
+## U10 — 收藏与楼层书签边界（2026-10-12，CODE_EVIDENCE / UNKNOWN）
+
+锁定参考的 `MixedTiebaApiImpl.kt::threadStoreFlow` 493–497 使用 rn/pageSize 与 offset=pageSize*page；`OfficialTiebaApi.kt::threadStoreFlow/addStoreFlow/removeStoreFlow` 为 /c/f/post/threadstore、/c/c/post/addstore、/c/c/post/rmstore。`NewCollectDataBean` 明确 tid/pid/status=1；`ThreadViewModel.kt` 368–405 仅 errorCode=0 确认收藏/取消成功。不能把 HTTP200 当业务成功。旧 addStore 的位置参数与 CollectDataBean(pid,tid,status,type) 顺序存在冲突，不复制未验证链路。
+
+`ThreadStoreBean.markPid` 是保存位置，`ThreadStorePage.kt` 194–201 点击传 markPid；`maxPid/postNo` 是最新回复提示，在 ThreadPage 的“更新收藏进度”分支使用。不得以 maxPid 替代用户保存的 postID。本机书签使用用户明确操作的稳定业务 postID，不写入浏览历史来冒充收藏。
+
+UNKNOWN：当前没有可靠 iOS 收藏写入/同步运行证据；Android 的公共参数、版本和身份接线不能作为完整 iOS 证据。本轮依 U10 授权只交付明确标注的本机书签，不接云端收藏、不发送上述三类请求，不宣称云端同步。登录账号分区复用已验证的只读 CurrentAccountRepository，账号资料请求不触发发送账号准备。详见 ADR-0034。
+
+## U10 iOS 22.11.1 收藏（2026-10-12 CODE_EVIDENCE / OFFLINE_NATIVE_REPLAY）
+
+2026-10-12 用户要求收藏复用已验收吧首页帖子样式：同SHA原生 `TBCMarkAuthorItem.init` 0x101b8ac20 确认 author.lz_uid/name/name_show/user_portrait；`TBCMarkCell.bindData:` 0x10301c3f0 使用显示名、头像与 pMedia.small_pic/vpic；`TBCFrsMediaItem.init` 0x101b54824 确认媒体字段。映射为现有 ForumThreadSummary，经 App 组合根注入原 ForumThreadFeedRow，不复制字号/图标/布局，也不新增逐帖网络请求。`native-ios-feed.json` 只含合成公开字段，覆盖作者、头像、媒体、reply_num与缺字段；收藏目标仍只取mark_pid。已核对的收藏结构未提供完整正文摘要、时间、等级、赞/分享数，不拿markCount/count冒充这些值。仅显示已提供的数据，不为补字段额外抓取全部帖子。
+
+本节补充并替代 U10 Android-only UNKNOWN，不改变任何发帖/回复/上传基线。参考 TBClient SHA256 `4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb`。
+
+- `TBCFavoriateModel.addFavoriateThemeID:postID:status:` 0x101be9490 校验非空 tid/pid/status 字符串并组成单元素数组；`addFavoriate:` 0x101be93a8 JSONRepresentation 放入 data，address=/c/c/post/addstore，loadInner 一次。
+- `deleteFavoriate:forumID:` 0x101be95dc 防并发、/c/c/post/rmstore，tid/fid字符串；无有效 forumID时fid="0"。`scanFavoriteOffset:` 0x101be9740，/c/f/post/threadstore，rn="20"、offset十进制、user_id=iUserID；`scanFavoriteNextPage` 0x101be9a38使用现有数组数量。没有 post_no/max_pid 写入。
+- `TBCMarkListItem.init` 0x101b8ba2c: threads←store_thread；`TBCMarkItem.init` 0x101b8adf0: threadID←thread_id、iPostID←mark_pid、iPbStatus←mark_status、forumName←forum_name、title、isDeleted←is_deleted、postNo←post_no。post_no不是已收藏楼层。转换 status 0x101b8b508: 普通mode0→1、mode1→4、mode2→8，onlyOwner附加bit2；本App收藏目标用U09普通定位/status1，保留远端status元数据，不谎称支持原版全部阅读模式。
+- `TBCVitalityPBMoreController.addPBFavoriateWithPostID:` 0x102f234a0调用上述model；取消0x102f2374c同样走model。`addFavoriateReturn:` 0x102f2469c检验errorNum，不以通知或HTTP状态单独判成功；`handleUnParsedData:` 0x101be9c3c读取error/errno与error/errmsg。通用JSON层也处理error_code。本实现拒绝缺失/非数字/冲突非0回执，不把字符串任意intValue宽转0当成功。
+- TBCBaseModel.loadInner 0x1001aa4a8设普通消息类型1，loadInnerWithShotConnection→serverApi accessAPI。三个收藏路径没有设置Proto command。独立脚本 `scripts/fixtures/native_favorites/generate.py` 用原生指令重放三条普通form Common→URL额外签名/重命名判定→签名返回，synthetic输入与预期在 `TestSupport/Fixtures/API/Favorites/native-ios-forms.json`。依赖已固定SHA的native_write Foundation/Unicorn工具，未发网络请求；不是Live抓包或SDK初始化验证。
+- HTTP复用该普通form分支的content-type、原生Cookie开关、UA、语言、client_logid、net_type超时和表单编码。独立Runtime避免修改发帖指标或回执。不会追加Android客户端参数，不伪造缺失的SDK/Passport身份。真实写验证留给用户。

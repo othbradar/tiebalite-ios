@@ -232,3 +232,9 @@ ContentLinkHandler 将已支持的站内 HTTP(S) 内容地址交给发起页面�
 以及相同 thread 的 subposts 边，动态根允许已识别用户；Settings 历史内容链复用相同规则。
 现有唯一 route 去重、最多5层业务路径（历史最多4个内容页）、compact/regular 投影和 Store 所有权不变。
 外部安全网页交系统浏览器；未知网页查询/短链不猜参数。复制/分享使用公开URL。
+
+## U10 本机书签
+
+我的 → SettingsRoute.bookmarks → SettingsRoute.bookmark(threadID, postID?)。列表保留于返回栈中；楼层目标复用 U09 locatePost，线程级书签回首楼，均优先于默认历史恢复。目标不存在/读取失败显示失效或重试提示，不把其他楼层当作成功。书签线程内已有用户资料/楼中楼/内容链接仍走既有 content route，未知发送来源保留 unspecified，不新增或猜测写请求入口枚举。
+
+U10 云端收藏：我的→SettingsRoute.favorites→bookmark(ThreadBookmarkTarget)→既有U09 pid定位。云端mark_pid优先于历史，不使用max_pid/post_no。已删除项原生提示，其余失效位置复用可重试目标页；本机书签入口仍独立。

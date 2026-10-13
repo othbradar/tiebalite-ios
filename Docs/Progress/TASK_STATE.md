@@ -1,4 +1,55 @@
+## 2026-10-13 U10 — USER_ACCEPTED / 提交授权
+
+- 用户明确“好的现在提交U10”。提交当前已检查的云端收藏与同步、本机帖子/楼层书签、收藏页复用吧首页样式及iPad方向声明修复；本轮不追加实现。沿用上文同一候选的定向Unit/UI、lint/build结果，不重复整套测试。
+- 本次精确纳入40份U10实现、接线、直接测试、合成fixture与证据/ADR文件。用户原有Prompts、技能配置、Python临时缓存保留；Artifacts、凭证、IDE文件和Android submodule不纳入。提交题目：feat: add thread favorites and floor bookmarks；完整SHA记录在Git及本轮提交回执。
+- 提交前复核make secret-scan及git diff --check通过；另外对22份新增文件逐份执行空白检查通过。生产文件没有晚于最终构建日志的改动；本轮只补验收记录，沿用既有候选验证。
+- 用户批准提交不改变验证结论：iPad正常Live三次横竖屏往返通过仅限模拟器；重复旋转UI自动化仍因动画等待超时失败，保留用例与证据，不标为通过。既有旋转进入分栏回首楼、私有SDK/Passport及未覆盖的原版收藏阅读模式继续保留边界，不宣称已修复或全部对齐。
+- 仅执行本阶段提交，不推送、不发布、不进入U11；真实收藏/取消及其他写入仍由用户操作。
+
+## 2026-10-12 U10 — iPad 自动旋转黑边修复 / Live 候选，UI 自动化未全绿
+
+- 用户报告横屏仍显示竖屏窗口与大块黑边。本轮只修 iPad 方向声明，保留全部未提交 U10 收藏实现及用户文件；未暂存、提交、推送或进入 U11。
+- 同一正常 Live iPad（iPad Pro 13-inch M5 / iPadOS 26.5）反复复现，旧候选结束进程重开仍有黑边，系统桌面可正常横屏。LLDB 只读几何：设备 orientation=3，scene 为 portrait、1032×1376，isInterfaceOrientationLocked=NO；App 与根控制器 supported mask=30、shouldAutorotate=true、presented controller=nil。安装包没有 UISupportedInterfaceOrientations~ipad，UIKit 输出 Support for all orientations will soon be required。补齐声明后同一设备正常横屏为1376×1032/landscapeLeft，黑边消失，证据支持安装包缺少显式 iPad 全方向声明导致此兼容显示问题。
+- 最小修改：project.yml 添加 iPad 四方向数组，由 make generate 生成 Config/TiebaLite-Info.plist。不加强制全屏，不改 iPhone 方向默认值、AppShell/导航结构/字体间距/图标、发送、恢复或缓存。新增 AppOrientationTests 验证实际宿主包声明与非强制全屏；IPadOrientationSmokeTests 使用无布局测试壳的原生产 scene 验证三次首页横竖屏几何，保留未通过用例。无新增产品动画、手势、overlay、依赖。
+- Unit：unit-red 在缺失方向键处按预期失败；unit-final 仅运行 AppOrientationTests，1项 PASS（TEST EXECUTE SUCCEEDED）。make build PASS；make lint 最终547文件0违规、WRITE_BASELINE23项PASS；make secret-scan、git diff --check PASS。未跑全部Unit/quality-fast/quality。
+- UI 如实记录：修改前 IPadAppShellSmokeTests/testRegularSplitRouteSurvivesOrientationAndRootSwitch 31.486s PASS，说明旧 XCTest 强制方向用例未覆盖正常 Live 兼容显示。修改后 green、ui-final 两次在旋转后 Wait for app to idle / App animations complete notification not received 反复等待，主动中止，不能记为通过；首次期间 CUA 操作 Simulator，第二次无操作仍重现等待。新 ui-home 首轮横竖屏尺寸和控件断言通过，第二轮等待动画，最终超过原120s上限失败，未延长超时、删断言或关闭动画。R05后续三轮用例因前序阻塞未执行到。自动化等待原因仍UNKNOWN，不称全套旋转回归通过；中止后的Xcode内部清理诊断保留于日志。
+- 正常 Debug Live App 已保留原容器覆盖安装到常用 iPad，主程序/debug dylib/Info.plist 与当前候选逐字节匹配，记录 installed-proof.json。没有卸载、erase、清缓存、Keychain或真实写操作。CUA 在正常 Live 首页完成三次横竖屏往返，竖屏全宽、横屏原有分栏；随后打开真实吧首页再转横屏，内容可操作且无黑边。当前留在横屏高通吧首页供用户检查。仅模拟器验证，未称真机通过；既有 iPad 旋转进入分栏回首楼问题不在本轮修复。
+- 证据均在 ignored Artifacts/VisualReview/U10/rotation：unit-red/unit-final、ui-before/green/ui-final/ui-home 的 xcresult/log，geometry-before-final/geometry-landscape-after.log，Live前后截图、installed-proof.json及检查日志。参考系统契约：https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedinterfaceorientations 。下一步等待用户检查；自动化旋转等待仍未解决，不扩大修改。
+
+## 2026-10-12 U10 — 收藏页视觉修正 / 待用户检查
+
+- 用户指出空页星形图标过大、收藏帖子与吧首页样式不一致。本轮仅修改收藏展示与必要字段映射，保留既有U10云端协议、Store、同步/取消和所有未提交工作；不暂存/提交/推送，不进入U11。
+- 空页改为简洁的次级字号“暂无收藏”，移除大图标、分隔框及系统行的叠加留白。App组合根把原ForumThreadFeedRow注入收藏List，头像、文本、图片网格、吧标签、分享/回复/点赞行直接复用；原Forum组件只增加可选AX标识参数，未改任何图标、字体、间距、正常吧首页行为。未新增动画、手势、overlay或依赖，未动发送、虚拟列表、恢复、图片系统或导航结构。
+- 根据同SHA原版iOS TBCMarkAuthorItem/TBCFrsMediaItem/TBCMarkCell，把收藏响应已有的作者、头像、reply_num和small_pic/vpic映射到现有feed模型。无逐帖补抓请求，不拿count/markCount冒充赞数；未提供的正文摘要、时间、等级和计数保持缺失，由原组件使用既有降级。新增合成fixture与字段回归，无真实内容或凭证入Git。
+- 验证：U10云端Unit9方法（含取消/账号×读写4参数）PASS；iPhone收藏→保存楼层→返回→取消→简洁空页PASS；iPad对应PASS；原吧首页头像/图片/操作栏短UI PASS。旧收藏页先在缺少分享入口的断言失败（ui-red）；第一次接线后所有操作通过，但空提示高度80pt超过紧凑断言，定位为List默认行inset叠加，移除后通过，未放宽断言。lint首次3项格式问题已修；最终make lint545文件0违规/WRITE_BASELINE23PASS、make build、secret-scan、diff check通过。未跑全套Unit/quality-fast/quality。
+- 完整正常Live App已覆盖iPhone/iPad，安装主程序/debug dylib/Info.plist均与当前候选逐字节一致（ignored Artifacts/VisualReview/U10/appearance/installed-proof.json）。保留登录及原容器、历史、缓存、草稿；没有卸载、erase、清Keychain或真实收藏增删请求。iPhone真实收藏已显示作者头像、图片、回复数与原操作栏，打开目标帖并返回成功；保留用户手动收藏的数据，iPad同一云端收藏也已显示头像、图片与相同操作栏，底栏位置正常，保留原吧首页iPad单图宽度策略；两台最终留在收藏列表供验收。
+
+## 2026-10-12 U10 — iOS 云端收藏与同步 / READY_FOR_USER_VISUAL_REVIEW
+
+- 用户追加明确要求“参照原版贴吧iOS把云端收藏和同步一起实现”。基线 HEAD 41b098013cda72d0c43484436ebffcbb80aa532f；保留本轮既有本机书签与用户全部未跟踪文件。未暂存/提交/推送，不进入 U11。
+- 从用户提供的iOS22.11.1同SHA TBClient，静态追踪 TBCFavoriateModel 添加/取消/20条分页、TBCMarkItem.mark_pid/status、UI成功回调及普通form传输。新离线脚本运行原生Common/签名指令及URL筛选，3条请求结果和Swift表单逐字段相等。不是Android实现，也不是完整SDK或服务端写入验证。
+- 新增独立Favorite领域/Repository/Store与App注入，当前会话授权及稳定账号ID、串行去重、取消/代次隔离，确认业务码0后才更新状态；不自动重试不明写入。云端列表重开/下拉/前台同步20条第一页，再按offset分页，刷新失败保留现有内容；添加/删除后失效旧offset，避免跳项。云端为持久真相，本机书签不自动上传，清临时缓存不删除服务器收藏。
+- 我的“收藏”、帖子更多“收藏/取消收藏”、既有回复按钮长按“收藏到此楼”；楼层定位复用U09稳定pid并优先于历史。没有新常驻说明、视觉重设计、动画/手势/overlay/依赖；发帖/回复/上传、VirtualizedList、Pager、MediaViewer、缓存/预载和恢复实现未改。收藏目标使用普通阅读定位/status1，原版其他阅读模式status只保留元数据，不称全部模式等同。
+- 相关基线本机Unit5PASS；cloud unit-third为11个方法PASS（云端6+本机5）；iPhone短UI3PASS（云端往返取消、本机往返、空页底栏），iPad云端往返取消短UI1PASS。unit-final云端8个方法PASS（取消/账号×读/写4组参数），补齐写后offset失效、失败保留、超时只提交一次；最终合计云端8+本机5个方法。make lint 545文件0违规/WRITE_BASELINE23PASS、make build、secret-scan与diff check通过。未跑全部Unit/quality-fast/quality/长矩阵，真实收藏/取消/帖子发送0次。
+- 如实保留中间失败：首轮组件编译账号变量遮蔽，第二轮测试辅助类型名称错误；均修复后通过。UI首次配置误拼UISmoke导致无test bundles，改现有“UI Smoke”后通过。新增代码lint复杂度/格式告警已通过拆分fetch及格式修正消除，未降规则/删断言。旧Proto未用import/AppIntents警告保留。
+- 完整正常Debug Live已覆盖常用iPhone（0.2.0/build17），保留原容器/登录，未卸载/erase/清缓存/Keychain；724份生产输入及安装主程序/debug dylib/Info.plist一致性已记录到ignored Artifacts/VisualReview/U10/cloud/candidate-proof.json。首次检查因Mac锁定受阻；用户明确解锁后继续，724份生产输入不变，沿用定向验证结果，不重复构建/测试。iPad也覆盖同一正常候选，两台主程序/debug dylib/Info.plist相等证据在live-final-install-verification.json；均仍已登录，数据未清理。
+
+- 解锁后的Live检查：iPhone打开“我的→收藏”并返回重进，两次均正常进入“暂无收藏”；iPad同页正常加载，底栏仍在屏幕底部。该页面仅在真实云端请求被严格解析成功后显示空状态，因此本次确认读取/空结果路径正常；当前账号无返回条目，不能声称真实收藏楼层跳转、添加/取消或两个客户端的数据变更同步已验收。真实写请求继续0次，相关成功流程由先前隔离Mock Unit/UI覆盖，待用户手动点击。
+- 留在iPhone前台“收藏”页，iPad也留收藏页，按原capture脚本保存20261012-125336-live-phone-cloud-favorites.png与20261012-125337-live-ipad-cloud-favorites.png，均在ignored U10/cloud。只更新本轮任务记录，未改产品代码/视觉/发送行为，未暂存/提交/推送，未进入U11。READY_FOR_USER_VISUAL_REVIEW。
+
 # TASK_STATE
+
+## 2026-10-12 U10 — READY_FOR_USER_VISUAL_REVIEW / 云端收藏未完成
+
+- 本机HEAD为已提交U09的41b098013cda72d0c43484436ebffcbb80aa532f，当前只执行COMMON/U10。用户原有Prompt/skill/临时Python缓存保留，不暂存/提交/推送或进入U11。
+- 核对Android收藏列表、增删、markPid/maxPid及错误分支：markPid是用户保存位置，maxPid/postNo是最新回复位置。旧收藏adapter的位置参数顺序存在冲突，新版依赖Android账号/公共参数；缺少可靠iOS收藏写入证据。本轮按U10明确允许的降级交付“本机书签”，不发送收藏端点请求，不宣称云端收藏或同步完成。
+- 新增ThreadBookmark、独立Application Support原子JSON Repository、场景共享BookmarkStore，按认证公开资料稳定用户ID分区；登录代次变化立即取消任务和清空内存，迟到结果不能发布。保存/移除串行且磁盘成功后才更新UI，失败保留旧条目。列表每批40条元数据，清图片/内容缓存不删除书签。账号资料不可用时明确失败，不猜账号、不伪造保存成功。
+- 复用帖子更多菜单与楼层“回复”按钮长按菜单，新增“我的→本机书签”；UI始终明确本机范围。楼层使用U09单次pid定位，优先于历史，目标失败显示重试；Settings路由保留返回栈。未修改发送/上传/签名、VirtualizedList、阅读恢复、Pager/MediaViewer、iPad导航结构或原图标字号。只新增系统contextMenu/alert，未新增自定义手势/动画/overlay或依赖。
+- 基线U09 Unit8PASS。U10直接Unit5个方法PASS（最终账号变化/取消为2参数）：添加/重复更新/移除/分页、重建磁盘/清临时缓存/账号隔离、写失败保留重试、取消旧读取、目标优先/失效。iPhone书签到第3楼→我的列表→返回该楼→移除及既有主导航返回2条UI PASS；iPad对应书签流程1条PASS。
+- Live人工检查另外发现空书签页的底部栏上移，iPhone/iPad截图均可见，隔离iPad空列表用例empty-red复现失败。根因是EmptyStateView仅有固有内容高度，书签页缺少占满可用空间的外层约束；只给BookmarkListView增加maxWidth/maxHeight填充，不改共享状态组件、底部栏或导航。修复后iPhone/iPad各2条PASS（ui-phone-layout-final/ui-ipad-layout-final），包含空列表底栏位置与原位置一致及原书签保存、返回目标楼层和移除流程。
+- 中间问题：新Feature路径未加入project.yml导致首轮make build缺类型，已补单一路径；首轮lint的else格式与Store复杂度3项已通过提取辅助方法修正，无规则变动。最终make lint537文件0违规、make build、secret-scan、diff check通过，原写入基线23项通过。测试及日志在ignored Artifacts/VisualReview/U10；未跑全量Unit、quality-fast或完整quality。
+- 最终正常Live 0.2.0(17)已按原脚本构建并覆盖iPhone/iPad，两台主程序/debug dylib/Info.plist与候选逐字节匹配，728份生产输入摘要不变。签名、Bundle ID、Keychain设置不变，未卸载/erase/清理数据。CUA确认两台仍已登录，打开“我的→本机书签”并留在该页，最终截图已保存；没有真实收藏写请求或发送。真实用户保存/重开待用户验收，不能把Fixture楼层定位通过扩大为云端同步完成。
+- 保留既有iPad旋转分栏回首楼问题、SDK/Passport缺口；云端收藏仍OPEN。不会自动实发/上传或改用户登录、历史、排序、草稿/缓存。
 
 ## 2026-10-09 U09 — USER_ACCEPTED / 提交授权
 

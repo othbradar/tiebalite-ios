@@ -63,6 +63,11 @@ targets:
       properties:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         NSPhotoLibraryAddUsageDescription: "将您选择的图片保存到相册，仅添加照片，不读取您的相册。"
         NSAppTransportSecurity:
           NSExceptionDomains:
@@ -90,6 +95,7 @@ targets:
       - path: Sources/Features/Forum
       - path: Sources/Features/Search
       - path: Sources/Features/History
+      - path: Sources/Features/Bookmarks
       - path: Sources/Features/Settings
       - path: Sources/Features/UserProfile
       - path: Sources/InteractionKit
