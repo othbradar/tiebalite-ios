@@ -1,5 +1,11 @@
 # Protobuf 映射与生成图
 
+## U11 关注/热榜读取闭包（2026-10-14）
+
+新增独立 `Config/Protobuf/NativeExplore.proto`，从iOS22.11.1原生descriptor转录关注/热榜最小请求与响应。字段名、编号、类型和基数由 `scripts/fixtures/native_explore/verify.py` 离线核对。Common复用未改NativeWrite schema；ThreadInfo与LayoutFactory保留原始嵌套bytes，前者经原生显示字段审计后映射，后者仅检测未支持布局，不能把未解析内容标成空页。
+
+Android锁定234文件闭包不变，加NativeWrite与NativeExplore共236输出。每份原生schema有独立SHA锁；之前U11临时添加的Android三个schema已经撤回。固定合成iOS请求/响应位于 `TestSupport/Fixtures/API/Explore/native-ios.json`；它们验证wire事实，不代表原版SDK/完整页面调用已经复现。
+
 ## U08 原生写入请求的独立 schema（迁移中）
 
 在既有Android234文件闭包之外新增 `Config/Protobuf/NativeWrite.proto`，仅转录用户指定22.11.1程序descriptor中Common、AddPost DataReq、AddThread DataReq与各自请求外壳的字段事实；本轮补充两类原生响应共有的error/data、回执与验证字段子集，未导入Android响应类型。来源、编号及验证边界见API_EVIDENCE顶部。使用独立输入SHA锁及同一固定protoc/SwiftProtobuf工具链，生成 `NativeWrite.pb.swift`；总输出235文件，原Android生成Swift内容未变。生成metadata保留Android input_count=234并独立记录native_write_input_count=1与参考程序SHA。

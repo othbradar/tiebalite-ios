@@ -6,6 +6,33 @@ import UIKit
 @MainActor
 struct PagerControllerLifecycleEvidenceTests {
     @Test
+    func optedInTabsKeepCreatedHostsUntilRemovedOrDismantled() throws {
+        let selection = PagerTestBox<String?>("p0")
+        let binding = makeBinding(selection: selection)
+        let pages = ["p0", "p1", "p2"]
+        let pager = PagerContainer(pageIDs: pages, selection: binding, backgroundColor: .black,
+                                   reduceMotion: true, retainedPageIDs: Set(pages), content: { Text($0) })
+        let coordinator = pager.makeCoordinator()
+        let controller = makeController()
+        coordinator.install(on: controller)
+        coordinator.synchronize(controller)
+        let original = try #require(coordinator.cachedController(for: "p0"))
+        selection.value = "p2"
+        coordinator.synchronize(controller)
+        #expect(coordinator.cachedController(for: "p0") === original)
+        #expect(coordinator.cachedController(for: "p1") == nil)
+        selection.value = "p0"
+        coordinator.synchronize(controller)
+        #expect(controller.viewControllers?.first === original)
+        coordinator.parent = PagerContainer(pageIDs: ["p2"], selection: binding, backgroundColor: .black,
+                                            reduceMotion: true, retainedPageIDs: Set(pages), content: { Text($0) })
+        coordinator.synchronize(controller)
+        #expect(coordinator.cachedController(for: "p0") == nil)
+        coordinator.dismantle(controller)
+        #expect(coordinator.cachedControllerCount == 0)
+    }
+
+    @Test
     func sameGenerationDoesNotRebuildExpensiveCachedContent() throws {
         let selection = PagerTestBox<String?>("p2")
         var generation: UInt64 = 1

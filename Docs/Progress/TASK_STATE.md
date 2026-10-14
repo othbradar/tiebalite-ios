@@ -1,3 +1,14 @@
+## 2026-10-14 U11 — USER_ACCEPTED / 提交授权
+
+- 用户已确认“关注没有是因为我这个号没有关注的人，我关注了一个后现在正常了”，随后明确“我测试了可以没啥问题，你现在可以提交U11了”。提交本轮已安装验收的动态关注/推荐/热榜，不追加代码、不推送或进入U12。基线e3e53b4dda2ae9d48ec35082720041eb5e7e9640；提交题目feat: add following and hot feeds，完整SHA以Git及提交回执为准。
+- 复用原卡片、图标、字号、唯一Pager与VirtualizedList；关注/热榜独立Store、任务、游标、锚点及账号缓存，首次选择加载、切回保留页面，不重复请求。缓存复用ContentPageCache/Scheduler和U04两槽预载。Pager只加默认空的retainedPageIDs，由动态固定三页选择保留已创建Host，不创建未访问页；其他使用方和手势不改。原推荐请求、发送/上传/账号准备、U02/U03及图片系统未改。无新增动画、手势、overlay或依赖。
+- 用户追加iOS参考要求后，两个新增读取改用22.11.1原生Common/签名/IDL/HTTP，独立Runtime不影响写链路；NativeExplore最小schema与原包descriptor核对12个message/113字段，3个合成请求逐字节匹配，现有显示DTO另核对70个message/698字段。原Android读取试验及三个新增生成依赖已撤回，最终原234闭包不变、加两个独立native schema共236输出。未取得完整原版页面参数/SDK运行对照，当前查询组合和多类型动态/话题榜未覆盖范围在ADR-0036/API_EVIDENCE如实注明，不宣称全部原版行为一致。
+- Unit结果：既有推荐展示基线5项PASS；最终未再修改的Store/缓存/Pager共15个方法PASS（unit-final共17，其中旧协议2项被本轮原生测试替换）；最终U11ExploreProtocolTests四个方法PASS，含取消/账号变化双参数、匿名关注零请求、热榜单请求、响应空/错误/未支持布局区分。iPhone/iPad U11短UI各1条PASS（39.297s/40.823s），覆盖三个标签、滚动后切回、帖子往返，使用隔离Fixture设备。未跑全量Unit、quality-fast、quality或长交互矩阵。
+- 保留失败证据：初期生成字段命名/async/整数类型编译错误与lint格式问题已修；缓存往返曾丢totalMediaCount，回归补齐后通过。早期非相邻切回第8条移出视口（Y933、列表底865），最小Host保留后通过；一次UI断言引用错误线程ID已纠正。Android封装两轮Live返回unsupported MIME，已撤回。原生fixture生成先遇完整client.proto JSON别名冲突及字段别名差异，缩减到精确原生字段后通过；旧生成路径/未先regenerate导致verify失败，实际重新生成后通过。所有原始log/xcresult保留在ignored Artifacts/VisualReview/U11。
+- 最终make generate、make lint（561文件0违规，WRITE_BASELINE23项PASS）、make build、secret-scan及diff check通过。验收后只补文档并复核diff/secret/staged清单，沿用同候选结果。完整正常Live App覆盖iPhone17Pro与iPadPro13M5，主程序/debug dylib/Info.plist均与候选逐字节一致，747份生产输入摘要在installed-proof-final.json；未卸载、erase、清Keychain/历史/缓存/草稿，版本仍0.2.0(17)，无真实发送或代理关注操作。
+- Live：最终iPhone进程关注1次请求返回rows0/threadRows0/layoutRows0，热榜1次请求返回40条；切换及帖子往返没有额外Explore请求。用户自行关注后，iPad真实关注1次请求返回31类条目，其中28条帖子、无现代layout条目，more=true；用户已确认正常。iPad正常页面及图文布局已看到，短UI结果不冒充真机验证。首次iPhone混合滚动/切换/打开步骤有一次约145pt位置差异，未单独隔离根因；随后稳定图片往返和两次独立标签检查的列表区域像素一致，仍保留首次截图、不称该观察已修复。当前候选用户综合验收通过；已有iPad分栏回首楼/旋转自动化等待边界未处理。
+- 精确提交仅本轮App接线、领域/Repository/Store/View、可选Pager保留、native生成/合成Fixture/直接测试和规格记录。用户Prompts/技能配置/Python临时缓存、Artifacts、凭证、IDE文件及Android submodule排除。下一步等待用户明确后续阶段授权。
+
 ## 2026-10-13 U10 — USER_ACCEPTED / 提交授权
 
 - 用户明确“好的现在提交U10”。提交当前已检查的云端收藏与同步、本机帖子/楼层书签、收藏页复用吧首页样式及iPad方向声明修复；本轮不追加实现。沿用上文同一候选的定向Unit/UI、lint/build结果，不重复整套测试。

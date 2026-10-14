@@ -1,0 +1,42 @@
+// U11 read-only projection of TBClient iOS 22.11.1 descriptors.
+// Executable SHA256: 4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb
+// Common is the independently audited native schema; bytes retain exact nested
+// ThreadInfo payloads for the audited existing display mapper. No Android request.
+syntax = "proto2";
+package TiebaNativeExplore;
+import "NativeWrite.proto";
+message FollowingRequest { optional FollowingRequestData data = 1; }
+message FollowingRequestData {
+  optional TiebaNativeWrite.Common common = 1;
+  optional string page_tag = 2;
+  optional uint64 last_req_unix = 3;
+  optional int32 follow_type = 4;
+  optional int32 load_type = 5;
+}
+message FollowingResponse {
+  optional TiebaNativeWrite.ResponseError error = 1;
+  optional FollowingData data = 2;
+}
+message FollowingData {
+  repeated ConcernData thread_info = 1;
+  optional string page_tag = 2;
+  optional int32 has_more = 4;
+  optional uint64 req_unix = 10;
+  optional FollowingPageData page_data = 19;
+}
+message FollowingPageData { repeated bytes feed_list = 1; }
+message ConcernData {
+  optional bytes thread_list = 1;
+  optional int32 recom_type = 3;
+}
+message HotRequest { optional HotRequestData data = 1; }
+message HotRequestData {
+  optional TiebaNativeWrite.Common common = 1;
+  optional string tab_id = 2;
+  optional string tab_code = 3;
+}
+message HotResponse {
+  optional TiebaNativeWrite.ResponseError error = 1;
+  optional HotData data = 2;
+}
+message HotData { repeated bytes thread_info = 2; }

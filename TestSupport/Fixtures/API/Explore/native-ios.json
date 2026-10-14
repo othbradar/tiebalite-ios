@@ -1,0 +1,69 @@
+{
+  "referenceSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "requests": [
+    {
+      "feed": "following",
+      "business": {
+        "page_tag": "",
+        "last_req_unix": "0",
+        "follow_type": "1",
+        "load_type": "1"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "FIXTURE",
+        "_timestamp": "1700000000000"
+      },
+      "wireBase64": "CiYKHAgBEgcyMi4xMS4xQIDQlf+8MboBB0ZJWFRVUkUSABgAIAEoAQ=="
+    },
+    {
+      "feed": "following",
+      "business": {
+        "page_tag": "page-two",
+        "last_req_unix": "1234",
+        "follow_type": "1",
+        "load_type": "2"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "FIXTURE",
+        "_timestamp": "1700000000000"
+      },
+      "wireBase64": "Ci8KHAgBEgcyMi4xMS4xQIDQlf+8MboBB0ZJWFRVUkUSCHBhZ2UtdHdvGNIJIAEoAg=="
+    },
+    {
+      "feed": "hot",
+      "business": {
+        "tab_id": "1",
+        "tab_code": "all"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "FIXTURE",
+        "_timestamp": "1700000000000"
+      },
+      "wireBase64": "CiYKHAgBEgcyMi4xMS4xQIDQlf+8MboBB0ZJWFRVUkUSATEaA2FsbA=="
+    }
+  ],
+  "responses": [
+    {
+      "feed": "following",
+      "wireBase64": "CgIIABKpAQpJCkUIbhBuGhNTeW50aGV0aWMgZm9sbG93aW5nIAWSARUQKhoGQXV0aG9yIgZBdXRob3K4AQfYAQniAQxGaXh0dXJlRm9ydW0YAQpJCkUIbhBuGhNTeW50aGV0aWMgZm9sbG93aW5nIAWSARUQKhoGQXV0aG9yIgZBdXRob3K4AQfYAQniAQxGaXh0dXJlRm9ydW0YAQoCGAMSCHBhZ2UtdHdvIAFQ0gk="
+    },
+    {
+      "feed": "hot",
+      "wireBase64": "CgIIABKDARJBCNIBENIBGg1TeW50aGV0aWMgaG90IAWSARUQKhoGQXV0aG9yIgZBdXRob3K4AQfYAQniAQxGaXh0dXJlRm9ydW0SPgjTARDTARoKU2Vjb25kIGhvdCAFkgEVECoaBkF1dGhvciIGQXV0aG9yuAEH2AEJ4gEMRml4dHVyZUZvcnVt"
+    },
+    {
+      "feed": "following",
+      "wireBase64": "CgIIABIA"
+    },
+    {
+      "feed": "hot",
+      "wireBase64": "CgIIBA=="
+    }
+  ]
+}

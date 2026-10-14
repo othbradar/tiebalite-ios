@@ -124,19 +124,20 @@ struct AppShellContent {
                                        readingEntry: .notification(kind, opensQuotedThread: true))
                               })
         case .recommendations:
-            RecommendationsAppRootView(
-                store: featureStores.recommendationsStore,
+            ExploreAppRootView(
+                explore: featureStores.exploreStore,
+                recommendations: featureStores.recommendationsStore,
                 sessionStore: sessionStore,
-                authContextProvider: authContextProvider,
-                accessPolicy: environment.recommendationsAccessPolicy,
+                auth: authContextProvider,
+                policy: environment.recommendationsAccessPolicy,
                 imageLoader: environment.imageLoader,
                 openLogin: onOpenLogin,
-                onOpenUser: { open(.userProfile($0), in: root, regular: regular) },
-                onOpenThread: { recommendation in
+                openUser: { open(.userProfile($0), in: root, regular: regular) },
+                openThread: { recommendation, tab in
                     guard let route = AppRouter.threadRoute(for: recommendation),
                           case let .thread(threadID) = route else { return }
                     _ = featureStores.threadReaderStore(for: root, threadID: threadID)
-                    open(route, in: root, regular: regular, readingEntry: .recommendations)
+                    open(route, in: root, regular: regular, readingEntry: tab == .recommendations ? .recommendations : .unspecified)
                 }
             )
             .environment(\.openURL, ContentLinkHandler.action { open($0, in: root, regular: regular, readingEntry: .contentLink) })

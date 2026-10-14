@@ -2,6 +2,7 @@
 final class AppFeatureStoreRegistry {
     var bookmarkStore: BookmarkStore?
     var favoriteStore: FavoriteStore?
+    var exploreStore = ExploreStore(repository: UnavailableExploreRepository())
 
     func makeBookmarkedReader(threadID: Int64) -> ThreadReaderStore { makeThreadReaderStore(threadID) }
     let notificationsStore: NotificationsStore
@@ -70,6 +71,7 @@ final class AppFeatureStoreRegistry {
         )
         bookmarkStore = compositionRoot.bookmarkStore
         favoriteStore = compositionRoot.favoriteStore
+        exploreStore = compositionRoot.makeExploreStore()
     }
 
     func forumHomeStore(

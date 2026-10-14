@@ -243,9 +243,21 @@ protoc \
   --swift_opt=Visibility=Public,FileNaming=FullPath,UseAccessLevelOnImports=false \
   NativeWrite.proto
 
+# U11 native read-only projection has its own lock, separate from frozen writes.
+explore_schema="Config/Protobuf/NativeExplore.proto"
+explore_schema_hash="$(awk -F '\t' '!/^#/ && NF { print $1 }' "$repo/Config/Protobuf/NativeExplore.inputs.tsv")"
+[[ "$(shasum -a 256 "$repo/$explore_schema" | awk '{ print $1 }')" == "$explore_schema_hash" ]] || {
+  printf 'ERROR: native explore schema does not match its evidence lock.\n' >&2
+  exit 1
+}
+protoc --proto_path="$repo/Config/Protobuf" \
+  --plugin="protoc-gen-swift=$(command -v protoc-gen-swift)" \
+  --swift_out="$generated" \
+  --swift_opt=Visibility=Public,FileNaming=FullPath,UseAccessLevelOnImports=false NativeExplore.proto
+
 generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-[[ "$generated_count" -eq 235 ]] || {
-  printf 'ERROR: expected 235 generated Swift files; found %s.\n' \
+[[ "$generated_count" -eq 236 ]] || {
+  printf 'ERROR: expected 236 generated Swift files; found %s.\n' \
     "$generated_count" >&2
   exit 1
 }
@@ -268,6 +280,9 @@ native_write_schema=$native_schema
 native_write_schema_sha256=$native_schema_hash
 native_write_reference_sha256=4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb
 native_write_input_count=1
+native_explore_schema=$explore_schema
+native_explore_schema_sha256=$explore_schema_hash
+native_explore_input_count=1
 protoc=$expected_protoc
 protoc_gen_swift=$expected_generator
 swiftprotobuf_runtime=$expected_generator

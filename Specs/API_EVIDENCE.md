@@ -1370,3 +1370,17 @@ UNKNOWN：当前没有可靠 iOS 收藏写入/同步运行证据；Android 的�
 - `TBCVitalityPBMoreController.addPBFavoriateWithPostID:` 0x102f234a0调用上述model；取消0x102f2374c同样走model。`addFavoriateReturn:` 0x102f2469c检验errorNum，不以通知或HTTP状态单独判成功；`handleUnParsedData:` 0x101be9c3c读取error/errno与error/errmsg。通用JSON层也处理error_code。本实现拒绝缺失/非数字/冲突非0回执，不把字符串任意intValue宽转0当成功。
 - TBCBaseModel.loadInner 0x1001aa4a8设普通消息类型1，loadInnerWithShotConnection→serverApi accessAPI。三个收藏路径没有设置Proto command。独立脚本 `scripts/fixtures/native_favorites/generate.py` 用原生指令重放三条普通form Common→URL额外签名/重命名判定→签名返回，synthetic输入与预期在 `TestSupport/Fixtures/API/Favorites/native-ios-forms.json`。依赖已固定SHA的native_write Foundation/Unicorn工具，未发网络请求；不是Live抓包或SDK初始化验证。
 - HTTP复用该普通form分支的content-type、原生Cookie开关、UA、语言、client_logid、net_type超时和表单编码。独立Runtime避免修改发帖指标或回执。不会追加Android客户端参数，不伪造缺失的SDK/Passport身份。真实写验证留给用户。
+
+
+## U11 — 动态关注 / 热榜（2026-10-14 NATIVE_IOS_CODE_EVIDENCE）
+
+用户明确指定原版iOS，并确认沿用当前动态三个标签；推荐已有请求保持。初版按阶段提示使用Android读取封装，两次Live返回unsupported MIME，已撤回该实现和U11新增Android生成闭包；仅保留已有UI、状态与缓存实现及失败证据。以下取代该临时传输方案。
+
+- 参考用户提供iOS22.11.1 TBClient，SHA256 `4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb`。原生descriptor字节范围：client.proto 0xa6ef2fc/151219；userlikeReq 0xa74a90b/321、userlikeRes 0xa74aae1/1616；hotThreadListReq 0xa7324fb/232、hotThreadListRes 0xa73268c/481。
+- `TBCIDLTransformFactory.createIDLTransFormWith:` 0x1024df4f0 离线执行原指令分支：309474→TBCUserConcernListItem，IDL构造0x100048100/0x1000483d0；309661→TBCHotTopicTrendItem，构造0x1000375d4/0x10003778c。`TBCHotTopicTrendItem.init` 0x101b866f4确认topic_list/thread_info/hot_thread_tab_info/inner_tabs四类独立数据。没有将话题或推荐流冒充热榜帖子。
+- 原生关注DataReq：Common#1、page_tag#2、last_req_unix#3 uint64、follow_type#4、load_type#5；响应ConcernData.thread_list#1/recom_type#3，page_tag#2/has_more#4/req_unix#10。page_data#19/feed_list#1是另一套服务端布局；仅该布局存在且无已支持帖子时拒绝误报空页。
+- 原生热榜DataReq：Common#1、tab_id#2、tab_code#3；响应thread_info#2，未提供本页后续游标。分页仅使用关注真实游标并按稳定threadID去重，非帖子类型不伪造为帖子，热榜不造名次/热度数。
+- App独立ExploreNativeClient调用已审计且未修改的iOS静态/动态Common与签名器、NativeWriteHTTPRequest protobuf分支；path为/c/f/concern/userlike或/c/f/forum/hotThreadList，cmd和format=protobuf置于查询，data文件part使用原生filename及MIME，没有Android外层字段/UA/client_type header。仅本地准备运行环境，无额外TBS、账号资料或写请求；不伪造缺失SDK/Passport身份。
+- 关注要求有效账号，匿名不发请求；热榜允许匿名，签名前移除BDUSS/stoken。发出前后均检查账号代次和取消，旧响应不能覆盖当前页或缓存。独立Runtime不修改发帖链路的请求顺序、指标或回执。
+- `NativeExplore.proto`与原包descriptor离线比较12个message/113字段；ThreadInfo显示DTO另经既有工具核对原生70个message/698字段（保留已有PbContent uint32/int32例外）。3个合成请求逐字节相等，4个合成响应验证类型/游标/空/错误；未使用真实内容或凭证制作fixture。
+- 边界：原生完整页面调用者及业务值组合未取得运行对照。follow_type=1、load_type=1/2与tab_id=1/tab_code=all是当前查询选择，类型及编号有原生证据，不能称完整原版页面/SDK行为完全对齐。没有扩大至关注回复/直播或热榜话题/子分类。Live少量读取结果和待验收项见TASK_STATE。

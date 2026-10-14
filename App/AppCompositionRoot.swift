@@ -194,6 +194,21 @@ final class AppCompositionRoot {
         RecommendationsStore(repository: recommendationRepository, prefetch: makeContentPrefetchSession())
     }
 
+    func makeExploreStore() -> ExploreStore {
+#if DEBUG
+        if case .fixture = environment.readingDataSourceMode { return ExploreStore(repository: FixtureExploreRepository()) }
+#endif
+        let auth = authContextProvider
+        let client = ExploreNativeClient(auth: auth)
+        let repository = CachedExploreFeedRepository(
+            source: LiveExploreFeedSource(client: environment.httpClient, auth: auth, prepare: { feed, cursor, context in
+                try await client.request(feed, cursor: cursor, context: context)
+            }),
+            cache: contentCache, scheduler: contentScheduler, clock: environment.clock,
+            context: { auth.contentCacheContext })
+        return ExploreStore(repository: repository, makePrefetch: makeContentPrefetchSession)
+    }
+
     func makeFollowedForumsStore() -> FollowedForumsStore {
         let sessionStore = sessionStore
         return FollowedForumsStore(

@@ -132,7 +132,8 @@ extension PagerContainer.Coordinator {
     }
 
     func trimControllerCache() {
-        let liveIDs = admittedControllerIDs()
+        let liveIDs = admittedControllerIDs().union(
+            parent.retainedPageIDs.intersection(state.displayedOrder))
 #if DEBUG
         let previousCount = controllers.count
 #endif

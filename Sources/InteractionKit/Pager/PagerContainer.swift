@@ -32,6 +32,7 @@ where PageID: Hashable & Sendable {
 struct PagerContainer<PageID, PageContent>: UIViewControllerRepresentable
 where PageID: Hashable & Sendable, PageContent: View {
     let pageIDs: [PageID]
+    let retainedPageIDs: Set<PageID>
     @Binding var selection: PageID?
     let backgroundColor: UIColor
     let reduceMotion: Bool
@@ -61,6 +62,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         firstPageNavigationBackEnabled: Bool = false,
         mediaGestureOwnership: MediaGestureOwnershipController<PageID>? = nil,
         externalSelectionGeneration: Binding<UInt64> = .constant(0),
+        retainedPageIDs: Set<PageID> = [],
         contentGeneration: ((PageID) -> UInt64)? = nil,
         inputDiagnosticsEnabled: Bool = false,
         onEvent: @escaping (PagerContainerEvent<PageID>) -> Void = { _ in },
@@ -76,6 +78,7 @@ where PageID: Hashable & Sendable, PageContent: View {
         @ViewBuilder content: @escaping (PageID) -> PageContent
     ) {
         self.pageIDs = pageIDs
+        self.retainedPageIDs = retainedPageIDs
         _selection = selection
         self.backgroundColor = backgroundColor
         self.reduceMotion = reduceMotion
@@ -101,11 +104,13 @@ where PageID: Hashable & Sendable, PageContent: View {
         firstPageNavigationBackEnabled: Bool = false,
         mediaGestureOwnership: MediaGestureOwnershipController<PageID>? = nil,
         externalSelectionGeneration: Binding<UInt64> = .constant(0),
+        retainedPageIDs: Set<PageID> = [],
         contentGeneration: ((PageID) -> UInt64)? = nil,
         onEvent: @escaping (PagerContainerEvent<PageID>) -> Void = { _ in },
         @ViewBuilder content: @escaping (PageID) -> PageContent
     ) {
         self.pageIDs = pageIDs
+        self.retainedPageIDs = retainedPageIDs
         _selection = selection
         self.backgroundColor = backgroundColor
         self.reduceMotion = reduceMotion

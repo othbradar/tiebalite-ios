@@ -18,6 +18,10 @@ preferences 设置页面；preferences 可前缀既有合法设置链，禁止�
 现有两业务 root、deep link、Store key、重选 no-op、唯一媒体 cover 均不变。
 消息计数为组合根注入，Production=0；本阶段无通知 API、无已读动作。
 
+## U11 动态标签（2026-10-14）
+
+recommendations 根 identity/path 不变；内部 ExploreTab 为 following/recommendations/hot，默认推荐。三页复用原线程、用户、吧与分享 intent；进入帖子仍用本根 thread route，返回保留选中标签和各表 offset。关注/热榜读取证据不用于猜测 iOS 写入来源，新增入口 readingEntry 为 unspecified，原推荐仍为 recommendations。
+
 ## Canonical 模型
 
 每个 scene 只有：

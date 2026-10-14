@@ -25,6 +25,8 @@
 
 ## Pager
 
+- U11 动态的三个固定标签显式使用 retainedPageIDs；只保留已经创建且仍在 pageIDs 中的控制器，不为未访问页请求数据。默认空集合，其他 Pager 仍按当前/相邻页淘汰。移除 ID 或 dismantle 释放；三页各自仍为虚拟列表，不全量创建 Cell。
+
 - 仅 `InteractionKit/PagerContainer` 可处理横向页面滑动。
 - 容器、当前页、相邻页背景均不透明且使用语义背景色。
 - 交互转场未完成前不得移除参与转场的页面。
