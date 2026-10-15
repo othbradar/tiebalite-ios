@@ -12,15 +12,20 @@ actor ProductionImageLoader: ImageLoading {
         let image: UIImage
         let mediaType: String
         let pixelSize: ImageTargetPixelSize
+        let animation: AnimatedImageResource?
+        let animationUnavailable: Bool
 
         init(
             image: UIImage,
             mediaType: String,
-            pixelSize: ImageTargetPixelSize
+            pixelSize: ImageTargetPixelSize,
+            animation: AnimatedImageResource?, animationUnavailable: Bool
         ) {
             self.image = image
             self.mediaType = mediaType
             self.pixelSize = pixelSize
+            self.animation = animation
+            self.animationUnavailable = animationUnavailable
         }
     }
 
@@ -93,7 +98,7 @@ actor ProductionImageLoader: ImageLoading {
             return ImagePayload(
                 decodedImage: cached.image,
                 mediaType: cached.mediaType,
-                pixelSize: cached.pixelSize
+                pixelSize: cached.pixelSize, animation: cached.animation, animationUnavailable: cached.animationUnavailable
             )
         }
 
@@ -114,12 +119,12 @@ actor ProductionImageLoader: ImageLoading {
                 try Task.checkCancellation()
                 guard await (loader as? ImageResourceStore)?.epoch ?? 0 == resourceEpoch else { throw CancellationError() }
                 if permitsDecodedCache {
-                    cache.setObject(decoded, forKey: key, cost: Self.memoryCost(of: decoded.image))
+                    cache.setObject(decoded, forKey: key, cost: Self.memoryCost(of: decoded.image) + (decoded.animation?.data.count ?? 0))
                 }
                 return ImagePayload(
                     decodedImage: decoded.image,
                     mediaType: decoded.mediaType,
-                    pixelSize: decoded.pixelSize
+                    pixelSize: decoded.pixelSize, animation: decoded.animation, animationUnavailable: decoded.animationUnavailable
                 )
             } catch is CancellationError {
                 throw CancellationError()
@@ -262,10 +267,12 @@ extension ProductionImageLoader {
             ?? CGImageSourceGetType(source)
                 .flatMap { UTType($0 as String)?.preferredMIMEType }
             ?? "image/unknown"
+        let animation = AnimatedImageResource.inspect(data: data)
+        let hasAnimation = CGImageSourceGetCount(source) > 1
         return CachedImage(
             image: UIImage(cgImage: decoded, scale: 1, orientation: .up),
             mediaType: mediaType,
-            pixelSize: pixelSize
+            pixelSize: pixelSize, animation: animation, animationUnavailable: hasAnimation && animation == nil
         )
     }
 
@@ -409,7 +416,7 @@ extension ProductionImageLoader {
                 try Self.decode(data: data, responseMIME: "image/jpeg", request: request, sourcePixelLimit: limit)
             }
             try Task.checkCancellation()
-            cache.setObject(decoded, forKey: key, cost: Self.memoryCost(of: decoded.image))
+            cache.setObject(decoded, forKey: key, cost: Self.memoryCost(of: decoded.image) + (decoded.animation?.data.count ?? 0))
         }
         return ImagePayload(decodedImage: decoded.image, mediaType: decoded.mediaType, pixelSize: decoded.pixelSize)
     }

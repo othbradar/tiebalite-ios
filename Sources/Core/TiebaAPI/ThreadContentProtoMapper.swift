@@ -144,7 +144,8 @@ enum ThreadContentProtoMapper {
                 resourceID: "\(id.stableKey).video-thumbnail",
                 candidates: thumbnailCandidates
             )
-        let videoTarget = validateHTTPSDestination(wire.link)
+        let videoTarget = MediaPlaybackSource.video(wire.link)
+            .flatMap { validateHTTPSDestination($0.url.absoluteString) }
         let externalIntent: ExternalLinkIntent?
         switch validateWebDestination(wire.text) {
         case let .success(destination):

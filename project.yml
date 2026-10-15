@@ -105,6 +105,9 @@ targets:
         group: TestSupport
       - path: Resources/Assets.xcassets
         buildPhase: resources
+      - path: Resources/DebugU13Media
+        type: folder
+        buildPhase: resources
       - path: Resources/TiebaEmoticons
         type: folder
         buildPhase: resources
@@ -125,7 +128,7 @@ targets:
         Debug:
           EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Harness*.swift LaunchScenario*.swift R04FeedFixture.swift R05ForumFixture.swift"
         Release:
-          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) Debug*.swift InteractionLab*.swift Harness*.swift LaunchScenario*.swift R04FeedFixture.swift R05ForumFixture.swift FixturePlaceholderViews.swift FixtureFollowedForumsRepository.swift FixtureForumHomeRepository.swift FixtureReadingImageLoader.swift FixtureReadingRepositories.swift FixtureSearchRepository.swift FixtureThreadReaderPages.swift FixtureComposerImageUploader.swift FixtureNotificationsRepository.swift FixtureSubpostsRepository.swift FixtureTextWriteRepository.swift"
+          EXCLUDED_SOURCE_FILE_NAMES: "$(inherited) DebugU13Media Debug*.swift InteractionLab*.swift Harness*.swift LaunchScenario*.swift R04FeedFixture.swift R05ForumFixture.swift FixturePlaceholderViews.swift FixtureFollowedForumsRepository.swift FixtureForumHomeRepository.swift FixtureReadingImageLoader.swift FixtureReadingRepositories.swift FixtureSearchRepository.swift FixtureThreadReaderPages.swift FixtureComposerImageUploader.swift FixtureNotificationsRepository.swift FixtureSubpostsRepository.swift FixtureTextWriteRepository.swift"
         UITesting:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG UITESTING"
 

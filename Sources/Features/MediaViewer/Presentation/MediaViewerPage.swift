@@ -82,9 +82,11 @@ struct MediaViewerPage: View {
             )
         case .rendered:
             if let image {
+                AnimatedMediaImage(image: image, resource: imageState.animation, unavailable: imageState.animationUnavailable,
+                                   isCurrent: isCurrent, reduceMotionOverride: reduceMotion) { frame in
                 MediaZoomImageView(
                     mediaID: item.id,
-                    image: image,
+                    image: frame,
                     preservesViewportOnImageChange: true,
                     resetGeneration: resetGeneration,
                     reduceMotion: reduceMotion,
@@ -111,6 +113,7 @@ struct MediaViewerPage: View {
 #endif
                     }
                 )
+                }
                 .accessibilityAction(named: Text("图片操作")) {
                     if zoomScale <= 1.01 { onLongPress() }
                 }

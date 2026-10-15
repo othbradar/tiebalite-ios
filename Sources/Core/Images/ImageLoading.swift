@@ -176,23 +176,31 @@ struct ImagePayload: Sendable {
     let mediaType: String
     let decodedImage: UIImage?
     let pixelSize: ImageTargetPixelSize?
+    let animation: AnimatedImageResource?
+    let animationUnavailable: Bool
 
     init(data: Data, mediaType: String) {
         self.data = data
         self.mediaType = mediaType
         decodedImage = nil
         pixelSize = nil
+        animation = nil
+        animationUnavailable = false
     }
 
     init(
         decodedImage: UIImage,
         mediaType: String,
-        pixelSize: ImageTargetPixelSize
+        pixelSize: ImageTargetPixelSize,
+        animation: AnimatedImageResource? = nil,
+        animationUnavailable: Bool = false
     ) {
         data = Data()
         self.mediaType = mediaType
         self.decodedImage = decodedImage
         self.pixelSize = pixelSize
+        self.animation = animation
+        self.animationUnavailable = animationUnavailable
     }
 
     @MainActor

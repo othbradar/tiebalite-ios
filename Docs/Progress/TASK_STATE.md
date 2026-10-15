@@ -1,3 +1,49 @@
+## 2026-10-15 U13 — USER_ACCEPTED / 本地提交授权
+
+- 用户明确“现在提交U13”。本次仅提交已验收的帖内视频播放、点击/自动播放设置、语音播放、有界GIF/WebP与相关回归和规格；无新增产品修改。基线de3b96992013dcdac910d423016dca9dfc3d43ab，提交题目feat: support video voice and animated media；完整SHA见Git和本轮提交回执。
+- 核对inline-installed-proof.json：507项生产输入与已安装验收版本逐项SHA256一致，4种合成媒体的Debug/Fixture副本一致。沿用既有定向Unit、iPhone/iPad UI、lint/build及发送冻结检查结果；另外iPad滑动排查3项UI通过，用户已确认重开模拟器后恢复正常，未因此修改生产手势。
+- 提交检查：make secret-scan、git diff --check通过；精确清单包含U13源码/接线、合成媒体、Tests/UITests、project.yml及规格/ADR/任务记录。用户Prompts、技能配置、Python临时缓存保持未提交，不纳入Artifacts、真实截图/响应/账号资料或Android submodule。
+- 关键行为沿用已验收版本：原海报区域内嵌播放器，默认点击播放，可显式改自动；视频/语音单owner，离页/滚出/后台停止。GIF/WebP有界解码，既有缩放与返回保留。无新第三方依赖、自定义手势或导航动画；播放器控件及动图状态仅位于媒体区域，不改发送/上传链路。
+- 保留UNKNOWN：真实贴吧语音仍缺样本，本地AAC已验证；未验证真机/Release、所有媒体编码与超长压力。iPad跨单栏/分栏旋转不保证播放时间连续，现有边界已记录。此次授权不包含推送、发布或进入U14，提交后停止。
+
+## 2026-10-15 U13 — iPad 滑动失效排查 / USER_CONFIRMED_RECOVERED
+
+- 范围：用户反馈 iPad 上下滑动、右滑返回均失效；本轮仅诊断，未改任何生产源码、测试、视觉或发送链路。原 U13 未提交差异全部保留，HEAD 仍为 de3b969；无提交/推送/IPA/下一阶段。
+- 正常设备观察：CUA 的鼠标 drag/scroll 在普通无视频帖子、首页以及 SpringBoard 桌面均无位移，AX 按钮与 Scroll Down 操作有效。重开 Simulator 后相同。历史 R08 记录也有 CUA 滚动不生效，不能据此把用户问题定性为模拟器故障，也不能宣称 App 手势已修复。
+- 设置核对：I/O 的 Send Pointer to Device 会启用 Capture Pointer/Keyboard；试切后已恢复两项为0，未把它当作已证实根因。临时 Show single touches 已恢复0。退出 Simulator 会按其原有设置关闭设备，随后重新启动原 iPad EE89FBE1、iPhone 70D93841 并启动现有 App；无卸载、erase、清缓存、清 Keychain。正常 iPad 留在高通吧首页等待用户手动滑动反馈。
+- 定向验证：在隔离 iPad A3E19C5C 执行 xcodebuild test，UI Smoke 仅选择 ForumContentBackGestureTests/testOtherTabsStillPageAndCancelledBackPreservesScroll、R12BackButtonSmokeTests、U13MediaUITests/testVideoStartsInsideThePostInsteadOfASheet；3/3 PASS，0失败，93.57秒，xcodebuild exit0。覆盖吧内纵向滚动/切页/取消返回、帖子连续三次内容右滑返回、原位播放/暂停/继续/滚出停止；不能覆盖用户正常设备当时的具体状态。
+- 证据：ignored Artifacts/VisualReview/U13/ipad-gesture-diagnosis.log 与 .xcresult。未重跑全量门禁，因为无代码修订。诊断工具的 Alt/Option 单键别名不支持，读取两个错误路径的 rg exit2，以及测试后 shutdown 已关闭的隔离设备 exit149 均为工具/路径错误，不属于产品测试失败；未通过替代手势工具绕过 CUA。
+- 用户回验：用户明确回答“现在恢复正常”。本次滑动故障在重开模拟器、未改 App 代码的情况下恢复；未证实具体底层原因，不能把它称为播放器/导航代码修复。该问题已按用户实际反馈收尾，U13 其余验收范围与原有 UNKNOWN 保持不变；未经新指令不提交或进入下一阶段。无新增动画、手势、overlay 或依赖。
+- 回验记录更新：仅修改本 TASK_STATE，git diff --check 通过；沿用上述3项定向回归结果，未重复构建/测试。
+
+## 2026-10-15 U13 — 帖内原位播放修订 / READY_FOR_USER_VISUAL_REVIEW
+
+- 目标与范围：用户明确拒绝视频 sheet/小窗，要求原海报位置播放，并可设置自动/点击播放。本修订覆盖 U13 原提示词“仅点击”限制；保留已验收布局、字号、操作图标、虚拟列表、发送/回复/上传/账号链路。HEAD 仍为 de3b969；未暂存/提交/推送，不生成 IPA、不进入 U14。
+- 修改文件：本轮补 VideoAutoplayState、AppSettings/AppSettingsRepository、SettingsStore/SettingsOptionsView；改 MediaPlaybackController、ThreadPlayableMedia、SystemMediaPlayer、MediaVisibilityObserver；更新 U13 Unit/UI、ADR-0038、STATE_MACHINES、CONTENT_NODE_MATRIX、API_EVIDENCE。原 U13 动图/语音实现与全部用户未提交文件保留。
+- 状态与设置：删除 MediaVideoPresentation/sheet，直接内嵌原海报区域；设置→阅读→视频播放为“点击播放/自动播放”，默认点击，复用现有串行设置持久化。自动模式只选主要可见且当前无播放 owner 的视频，暂停/结束/失败不会被自动恢复或重复请求；手动语音可接管。滚出/离页停止，后台停止并暂停当时可见候选资格；回前台不会自行恢复声音。系统原生控件的暂停、继续和重播同步到共享状态。
+- 真正列表容器回归：正常 Live 首次内嵌显示系统禁止符号。日志明确为 UIViewControllerRepresentable 不受 UIHostingConfiguration 支持；320/600/1024 三宽度失败测试同样复现（inline-cell-red）。只把 SystemMediaPlayer 改为 UIViewRepresentable 桥接，在实际父控制器下成对 addChild/didMove/removeFromParent，未更换虚拟列表。inline-cell-green 的 U13 12 方法通过（该回归含3宽度，GIF/WebP含2格式），包含移出后解除父子关系；Live 最终同类 Invalid Configuration 日志未再出现。
+- 验证：前序 inline-unit 的 U13+Stage16BSettings 共16方法通过，覆盖偏好重建/未知值默认/保留其他设置、自动所有权/后台阻止、主要可见范围。最终桥接后 inline-cell-phone-ui 四方法全部通过：原位播放/暂停/继续/滚出停止、自动设置/暂停保持/后台、语音单 owner、失败重试/Reduce Motion；inline-cell-ipad-ui 原位与自动两方法通过。桥接前 inline-ipad-ui 四方法亦通过，未把先前单独 ScrollView 夹具通过冒充生产容器通过。
+- 中间失败完整保留：inline-red 对旧 sheet 的两条断言失败符合预期；inline-ui 控件默认隐藏、inline-controls-ui 点击中央误触播放/暂停导致双切换。CUA 确认后改为控件空白区域展开；新增英文 label 即时断言在 iPhone 系统动画期间为空（inline-controls-final/inline-manual-final），不再以此系统瞬态标签判断业务状态，保留并通过实际 playing→paused→playing 全部断言（inline-manual-verified 与最终两设备）。本轮没有删除产品行为断言、关闭动画或增加延迟。inline-cell-red 三宽度失败已修；lint 的 else 格式及新增 import 排序问题已修，最终588文件0违规，WRITE_BASELINE23PASS。
+- Live 与安装：完整正常 Debug 0.2.0(17) 经原 visual_review_build_install.sh 覆盖 iPhone17Pro 70D93841，随后同包覆盖 iPadPro EE89FBE1；未卸载/erase/清容器/Keychain。两台仍显示原登录头像，在用户帖11090254635正文视频原位置显示实际画面，没有独立窗口。证据为 ignored U13/20261015-115856-live-phone-inline.png、20261015-120148-live-ipad-inline.png；inline-installed-proof.json 记录507份生产输入以及两设备主程序/debug dylib/Info.plist逐字节相等。正常设置仍为默认点击播放。
+- 动画/手势/overlay/依赖：播放器系统控件仅在原视频矩形内；删除 sheet，不新增自定义动画/手势/第三方依赖。沿用 AVKit 原生可选全屏，关闭 PiP 和开始播放自动全屏；不改变帖子/吧首页其他视觉。
+- 最终命令：make lint、make build、make secret-scan、git diff --check 均通过。make build 在 Live 检查后重新执行通用模拟器构建，生产源码不再变更；安装一致性证据对应此前相同源码的正常 Debug 设备构建，不把两种架构产物混称相同文件。未执行全量 quality/test-unit。收尾尝试将 iPhone 窗口置前时 Mac 自动锁定；两台安装与真实播放检查已经完成，均保留视频帖，无需再改变数据或重新安装。
+- 未解决/UNKNOWN：真实语音仍缺样本，本地AAC已验证；不称全格式/真机/Release包通过。既有 iPad 单栏/分栏旋转会销毁播放节点，手动模式需重新点播放，未扩大修改导航。测试临时 UIWindow 快速销毁有 UIKit appearance 诊断，实际正常 App 本次检查无同类日志。下一步仅等待用户视觉验收。
+
+## 2026-10-15 U13 — READY_FOR_USER_VISUAL_REVIEW / 真实语音待样本
+
+- 目标与范围：用户授权进入 U13，并提供真实视频帖 11090254635；按 COMMON 轻量验证补正文视频、语音与 GIF/WebP 播放。基线 de3b96992013dcdac910d423016dca9dfc3d43ab，Android 参考保持 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2。未暂存/提交/推送、未生成发布 IPA、不进入 U14；原有 Prompts、技能配置与临时文件保留。
+- 修改文件：Core/Models/MediaPlaybackState、Core/Images 的 MediaPlaybackController/AnimatedImageResource/ImageLoading/ProductionImageLoader；ThreadContentProtoMapper、ThreadContentRenderer/ThreadPlayableMedia/ThreadContentImageRenderState；MediaViewer 的 ImageLoad/ImageState/Page/AnimatedMediaImage；InteractionKit 的 SystemMediaPlayer/MediaVisibilityObserver 与 MediaZoomScrollView 同尺寸换帧分支。App 新增 DebugU13MediaView 与原 Renderer Lab 入口接线，project.yml、合成 Debug 资源/Fixtures、U13 Unit/UI，以及 API_EVIDENCE、CONTENT_NODE_MATRIX、STATE_MACHINES、ADR-0038 和本记录。
+- 关键状态：视频仅海报点击后创建共享 AVPlayer，系统播放器可关闭/失败重试；语音播放/暂停、实际进度与时长，同一时刻一个 owner，过期回调不能复活旧声音。后台/媒体服务重置停止，音频中断/拔耳机暂停，关闭页面或语音滚出裁剪范围停止。没有麦克风权限、后台播放或隐式自动播放。可见观察器只控制资源生命周期，不接管滚动/返回/Pager。
+- 动图：ImageIO GIF/WebP 按帧解码，编码不超过 8MiB、源帧 4MP、500 帧、解码最长边 1024，复用已有两个解码 worker；仅保留当前及正在解码帧，编码字节计入缓存 cost。不可见/非 Viewer 当前页/后台取消；Reduce Motion 默认静止，在 Viewer 提供明确播放按钮。超限或不支持显示静态降级，图片保存仍走 U05 原始文件流程。修复同尺寸换帧不应重算 zoom geometry 的直接回归，不改 Pager ownership、普通图片布局或缩放手势。
+- 协议证据：只读原 PBPage 响应确认 videoInfo 存在、正文 type5 的 link 为 HTTP，host=tb-video.bdstatic.com；原地址仅改 scheme 的 Range 读取返回 HTTP206/video/mp4/4096bytes。严格限此 host、无自定义端口，路径与查询保持原样，其他 HTTP 不放行；没有 ATS/TLS 放宽。语音路径来自 iOS22.11.1 包内 %@/c/p/voice?voice_md5=%@，不携带 Android play_from；不猜 CDN、签名或额外账号参数。临时 Live 字段探针已移除，未把真实响应、内容、凭证加入源码/fixture。
+- 动画/手势/overlay/依赖：新增媒体帧播放、系统视频 sheet、海报播放图标和 Reduce Motion 播放按钮；overlay 仅媒体局部区域，按钮具有 AX 标签和至少44pt点击区。无新第三方依赖/自定义手势/导航动画。已稳定的字号、工具栏图标、回复/发帖/上传/账号准备链路不变，冻结23项校验通过。
+- 定向验证：baseline-corrected 的 ThreadContentProtoMapperTests 16通过；unit-final 的 U13/mapper/image-render 三组共36通过；最终 unit-lifecycle-final 的 U13 8方法通过（GIF/WebP双参数），含单owner/迟到回调、URL严格升级、声音URL编码、非有限进度、有界真实帧解码、裁剪/脱离/重挂载、同尺寸换帧保留缩放与offset。iPhone ui1 的 U06 pinch、U13播放所有权通过；ui2 的失败重试/Reduce Motion通过；补充 iphone-background 的所有权/前后台/滚出停止通过。iPad ipad-ui 三项全部通过：U06 pinch、U13失败重试/Reduce Motion、播放所有权/前后台/滚出停止。
+- 失败命令如实记录：初次 baseline 错误 selector 选中0项，不计验证；red 缺新类型编译失败符合先定义行为。unit1/2 的 request 参数缺失/顺序、unit3 测试 Bundle marker 重名已修。ui1 的动图按钮被 fixture 父级 AX 标识覆盖，补 children contain 后 ui2 通过，未改生产视觉或放宽断言。geometry-red 复现换帧重排；随后 green/final 中测试未安装真实 zoom coordinator、offset超出合法范围导致额外失败，修正夹具后 geometry-verified 及最后 U13 整组通过。中间 lint 格式告警已修。证据均保留 ignored Artifacts/VisualReview/U13 的 log/xcresult，未删除断言或跳过产品错误。
+- 门禁：make lint 最终587文件0违规/WRITE_BASELINE23PASS；make build、scripts/visual_review_build_install.sh U13、make secret-scan、git diff --check通过。未执行全量 test-unit/quality-fast/quality，未称真机/Release包已验证。Debug合成媒体配置从Release排除，但本轮未构建Release包。
+- Live与安装：完整正常 Debug 0.2.0(17)覆盖常用 iPhone17Pro 70D93841 和 iPadPro13M5 EE89FBE1，保留原容器/登录/草稿/缓存，未 uninstall/erase/清Keychain。installed-proof.json 核对两台已安装主程序/debug dylib/Info.plist与最终构建相同。两端经真实 ThreadReader 打开用户视频，看到实际变化的视频帧与系统播放控件；关闭返回原帖，未产生发帖/回复/关注等远端写操作。iPad横屏重新打开亦可播放，截图 live-video-playing/live-ipad-video-landscape 保存在 ignored Artifacts。iPhone最终留在该真实帖子播放入口。
+- 未解决风险/UNKNOWN：真实贴吧语音尚无样本，只确认本地AAC/M4A及源地址契约，不声称AMR/所有语音编码已支持；GIF/WebP仅预算内的ImageIO可解码样本已验证，未做精确FPS或超长压力认证。iPad原有横竖屏单栏/分栏切换会关闭视频sheet，需重新点播放，未改导航根容器。无后台声音、不支持PiP为本轮明确范围。
+- 下一阶段前置条件：用户检查当前正常Live视频、语音/动图表现；如需闭环真实语音再提供已有帖子样本。未经新的明确指令不提交、不进入U14。
+
 ## 2026-10-15 U12 — USER_ACCEPTED / 提交授权
 
 - 用户明确“现在提交U12”。提交已验收的用户主题、自己的回复、关注吧、关注关系与本机屏蔽，以及关注吧字段映射和不可查看提示修复；不追加产品实现。基线8731b3e3fce63517a0d0c8699feb5f58e4aed330，提交题目feat: extend profiles and user relationships；完整SHA见Git和本轮提交回执。

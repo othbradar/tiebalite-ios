@@ -154,6 +154,11 @@ final class MediaZoomScrollView: UIScrollView {
     }
 
     func replaceImagePreservingViewport(_ image: UIImage) {
+        if let current = mediaImageView.image, current.size == image.size,
+           current.scale == image.scale, current.imageOrientation == image.imageOrientation {
+            mediaImageView.image = image
+            return
+        }
         // Capture from the old geometry before changing the image's intrinsic dimensions.
         retainedFocalPoint = normalizedVisibleCenter(viewportSize: bounds.size)
         mediaImageView.image = image

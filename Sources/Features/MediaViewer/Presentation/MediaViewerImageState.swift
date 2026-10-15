@@ -4,6 +4,8 @@ import UIKit
 struct MediaViewerImageState {
     private(set) var phase = MediaViewerImagePhase.idle
     private(set) var image: UIImage?
+    private(set) var animation: AnimatedImageResource?
+    private(set) var animationUnavailable = false
     private(set) var upgradeFailed = false
 
     mutating func begin() {
@@ -14,6 +16,8 @@ struct MediaViewerImageState {
     mutating func apply(_ outcome: MediaViewerImageLoadOutcome) {
         if let replacement = outcome.image {
             image = replacement
+            animation = outcome.animation
+            animationUnavailable = outcome.animationUnavailable
             phase = .rendered
         } else if image == nil {
             phase = outcome.phase

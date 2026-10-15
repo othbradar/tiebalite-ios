@@ -13,6 +13,8 @@ enum MediaViewerImagePhase: Equatable, Sendable {
 struct MediaViewerImageLoadOutcome {
     let phase: MediaViewerImagePhase
     let image: UIImage?
+    var animation: AnimatedImageResource?
+    var animationUnavailable = false
 }
 
 @MainActor
@@ -32,7 +34,7 @@ enum MediaViewerImageLoad {
             }
             return MediaViewerImageLoadOutcome(
                 phase: .rendered,
-                image: image
+                image: image, animation: payload.animation, animationUnavailable: payload.animationUnavailable
             )
         } catch is CancellationError {
             throw CancellationError()

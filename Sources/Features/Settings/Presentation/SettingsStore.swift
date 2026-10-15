@@ -49,6 +49,14 @@ final class SettingsStore: ForumSortPreferenceProviding {
             persistenceFailed = true
         }
         isLoaded = true
+        MediaPlaybackController.shared.setVideoPlaybackMode(settings.videoPlaybackMode)
+    }
+
+    func setVideoPlaybackMode(_ mode: VideoPlaybackMode) {
+        guard settings.videoPlaybackMode != mode else { return }
+        settings.videoPlayback = mode
+        MediaPlaybackController.shared.setVideoPlaybackMode(mode)
+        persistCurrentSettings()
     }
 
     func setAppearance(_ value: AppAppearancePreference) {

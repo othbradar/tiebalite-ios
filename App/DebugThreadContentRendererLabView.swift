@@ -13,6 +13,7 @@ struct DebugThreadContentRendererLabView: View {
 
     let imageLoader: any ImageLoading
     let onOpenMedia: (ThreadMediaIntent) -> Void
+    var onOpenURL: (URL) -> Void = { _ in }
 
     @State private var mediaIntentLabel = "Media intent: none"
     @State private var externalIntentLabel = "External intent: none"
@@ -31,6 +32,8 @@ struct DebugThreadContentRendererLabView: View {
                     Text("官方表情对照").frame(minHeight: 44)
                 }
                 .accessibilityIdentifier("r07.emoticons.open")
+                NavigationLink("U13 媒体播放") { DebugU13MediaView(onOpenURL: onOpenURL) }
+                    .accessibilityIdentifier("u13.open")
                 environmentSummary
                 intentSummary
                 mediaViewerControls

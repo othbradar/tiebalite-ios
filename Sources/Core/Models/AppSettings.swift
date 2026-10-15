@@ -16,8 +16,10 @@ struct AppSettingsSnapshot: Codable, Equatable, Sendable {
     var contentPrefetch: ContentPrefetchMode = .unmetered
     var forumSort = ForumSortPreferences()
     var resumeThreadReading: Bool?
+    var videoPlayback: VideoPlaybackMode?
 
     var resumesThreadReading: Bool { resumeThreadReading ?? true }
+    var videoPlaybackMode: VideoPlaybackMode { videoPlayback ?? .manual }
 
     static let defaults = AppSettingsSnapshot(
         appearance: .system,

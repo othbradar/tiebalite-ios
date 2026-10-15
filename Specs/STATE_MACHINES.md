@@ -1,3 +1,11 @@
+## U13 媒体播放（2026-10-15）
+
+- `idle → loading(owner,generation) → playing ⇄ paused → ended / failed`；用户重试重新建 item，替换 owner 先释放旧 player/time observer/KVO。迟到事件按 generation 丢弃。
+- 用户修订：视频内嵌原海报区域，无独立 sheet。设置 manual（默认）/automatic 持久保存。automatic 中按主要可见区域登记候选，仅无 owner 才选一个；paused/ended/failed 保持占用，不自动重播/重试或夺取手动语音。系统播放器自身的暂停和重播同步共享 state。
+- 离开播放节点的实际裁剪可见区域、页面离开、进入后台/系统媒体重置 → idle；音频中断开始和耳机断开 → paused。后台同时暂停可见候选资格，回前台不自行恢复，离开重进或用户点击后才重新取得资格。任何自动选取必须应用处于 active。
+- 动图静态首帧 → 可见且当前且前台且允许动效 → 有界按帧解码。不可见/翻页/后台取消 task，丢弃迟到结果；Reduce Motion 通过明确播放按钮取得该 View 生命周期内许可。静态/超限资源不启动帧循环。
+- UIKit 媒体可见性 probe 没有命中区域或手势，单一弱引用 display-link hub 只在挂载媒体存在时工作。等尺寸帧替换不重建 zoom geometry，现有 Pager/zoom ownership 原样保留。
+
 # P0 状态机
 
 状态：`IMPLEMENTED_PHASE_16B_HISTORY_SETTINGS_PROFILE_WITH_RUNTIME_UNKNOWNS`

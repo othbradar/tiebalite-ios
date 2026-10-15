@@ -1,3 +1,12 @@
+## U13（2026-10-15）只读媒体播放
+
+- 基线 `de3b969`；锁定 Android reference `5545326b` 未改。`PbContentRender.kt::VideoContentRender` / `Extensions.kt::renders`：`PbContent.type=5`，播放 `link#3`、海报 `src#4`、网页 `text#2`、尺寸 `bsize#5`。使用响应现有值，不推算 CDN 路径。
+- 用户提供真实视频帖的脱敏结构：`videoInfo=true`，首楼节点 `[0,5]`，`link` 和 `videoInfo.videoUrl` 均为 HTTP，海报 HTTPS。同路径/查询在 `tb-video.bdstatic.com` 的 HTTPS Range GET 得到 `206 / video/mp4 / 4096 bytes`。仅此已验证主机的无自定义端口 HTTP 视频地址升级 HTTPS；其他 HTTP 地址仍拒绝。没有 ATS/TLS 放宽、没有改请求参数、没有凭证注入。
+- 语音：`PbContent.type=10`，`voiceMD5#12` 是不透明资源 ID。Android `VoicePlayerView.duration` 把 `duringTime#13` 按毫秒显示；现有 Codable 名称 `durationSeconds` 未迁移，播放 UI 使用 AVPlayer 的实际时长，不使用这个历史名称误报秒数。
+- iOS 22.11.1 TBClient（原记录 SHA `4f0cb74c…02d9eb`）实际包含 `%@/c/p/voice?voice_md5=%@`。只读 host 采用现有 `tiebac.baidu.com`，QueryItem 编码 resource；不附 Android 的 `play_from=pb_voice_play`，不混入任何写请求/SDK/Passport 字段。
+- iOS 播放器：按用户追加要求在帖子视频位置内嵌播放，设置提供点击/自动；默认点击才建 item，显式启用自动后由前台主要可见候选触发单一 owner。不将播放 URL 当网页 URL，不新增接口。原始网页意图只在缺少可播放源时沿原 external-link intent 使用。未知/格式失败保留当前楼层和原位重试。原版所有控件的逐像素一致性未验证。
+- 本地 H.264/AAC MP4、AAC M4A、四帧 GIF、四帧 lossless WebP 是合成 fixtures；不能代替贴吧语音实测。用户未提供真实语音样本，实际语音编码覆盖保留 UNKNOWN。
+
 # API / Protobuf 证据
 
 ## 2026-10-09 Build15 成功读取的空分页响应

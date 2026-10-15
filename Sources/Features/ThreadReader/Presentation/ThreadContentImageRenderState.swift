@@ -44,7 +44,7 @@ enum ThreadContentImageRenderState {
     case failedToFetch(ThreadImageRequestDescriptor)
     case idle
     case loading(ThreadImageRequestDescriptor)
-    case rendered(ThreadImageRequestDescriptor, UIImage)
+    case rendered(ThreadImageRequestDescriptor, UIImage, AnimatedImageResource? = nil, Bool = false)
 
     var phase: ThreadContentImagePhase {
         switch self {
@@ -70,7 +70,7 @@ enum ThreadContentImageRenderState {
         guard let image = payload.displayImage() else {
             return .failedToDecode(request)
         }
-        return .rendered(request, image)
+        return .rendered(request, image, payload.animation, payload.animationUnavailable)
     }
 
     func projected(
@@ -83,7 +83,7 @@ enum ThreadContentImageRenderState {
              let .failedToDecode(request),
              let .failedToFetch(request),
              let .loading(request),
-             let .rendered(request, _):
+             let .rendered(request, _, _, _):
             request == currentRequest ? self : .idle
         }
     }
@@ -91,7 +91,7 @@ enum ThreadContentImageRenderState {
     func mediaIntent(
         from candidate: ThreadMediaIntent?
     ) -> ThreadMediaIntent? {
-        guard case let .rendered(request, _) = self,
+        guard case let .rendered(request, _, _, _) = self,
               let candidate,
               let selectedItem = candidate.items.first(where: {
                   $0.mediaID == candidate.initialMediaID

@@ -139,12 +139,12 @@ private struct ThreadContentNodeView: View {
                     onOpenMedia: onOpenMedia
                 )
             case let .video(content):
-                ThreadVideoPlaceholderView(
-                    content: content,
+                ThreadVideoPlayerView(
+                    owner: node.id.stableKey, content: content, imageLoader: imageLoader,
                     onOpenExternalLink: onOpenExternalLink
                 )
             case let .voice(content):
-                ThreadVoicePlaceholderView(content: content)
+                ThreadVoicePlayerView(owner: node.id.stableKey, source: .voice(resourceID: content.resourceID))
             case let .unsupported(content):
                 ThreadUnsupportedContentView(
                     content: content,
@@ -300,8 +300,10 @@ private struct ThreadContentImageView: View {
     @ViewBuilder
     private var phaseContent: some View {
         switch currentRenderState {
-        case let .rendered(_, image):
-            Image(uiImage: image).resizable().scaledToFit()
+        case let .rendered(_, image, animation, unavailable):
+            AnimatedMediaImage(image: image, resource: animation, unavailable: unavailable, allowsPlaybackControl: false) { frame in
+                Image(uiImage: frame).resizable().scaledToFit()
+            }
         case .failedToFetch, .failedToDecode:
             Rectangle().fill(SemanticColor.secondaryText.opacity(0.35)).frame(width: 8, height: 1)
         case .idle, .loading, .cancelled:
@@ -309,60 +311,6 @@ private struct ThreadContentImageView: View {
         }
     }
 
-}
-
-@MainActor
-private struct ThreadVideoPlaceholderView: View {
-    let content: ThreadVideoContent
-    let onOpenExternalLink: (ExternalLinkIntent) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.small) {
-            Label("视频内容", systemImage: "play.rectangle")
-                .font(Typography.font(.headline))
-            Text(content.hasThumbnail ? "已保留安全缩略图描述" : "没有可用缩略图")
-                .font(Typography.font(.caption))
-                .foregroundStyle(SemanticColor.secondaryText)
-            if let intent = content.externalIntent {
-                Button {
-                    onOpenExternalLink(intent)
-                } label: {
-                    Text("生成视频外链意图")
-                        .frame(
-                            minHeight: ThreadContentLayout
-                                .minimumInteractiveDimension
-                        )
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.bordered)
-                .tint(SemanticColor.accent)
-            }
-        }
-        .padding(Spacing.medium)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
-        .accessibilityElement(children: .contain)
-    }
-}
-
-@MainActor
-private struct ThreadVoicePlaceholderView: View {
-    let content: ThreadVoiceContent
-
-    var body: some View {
-        Label(
-            content.durationSeconds == 0
-                ? "语音内容，时长未知"
-                : "语音内容，\(content.durationSeconds) 秒",
-            systemImage: "waveform"
-        )
-        .padding(Spacing.medium)
-        .background(SemanticColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.medium))
-        .accessibilityValue(
-            content.resourceID == nil ? "资源不可用" : "只读占位"
-        )
-    }
 }
 
 @MainActor

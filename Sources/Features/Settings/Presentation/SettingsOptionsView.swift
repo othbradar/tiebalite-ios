@@ -24,6 +24,17 @@ struct SettingsOptionsView: View {
             }
 
             settingsGroup(title: "阅读") {
+                LabeledContent("视频播放") {
+                    Picker("视频播放", selection: Binding(
+                        get: { store.settings.videoPlaybackMode }, set: { store.setVideoPlaybackMode($0) }
+                    )) {
+                        Text("点击播放").tag(VideoPlaybackMode.manual)
+                        Text("自动播放").tag(VideoPlaybackMode.automatic)
+                    }
+                    .labelsHidden()
+                    .accessibilityIdentifier("settings.video-playback")
+                }
+                .frame(minHeight: 44)
                 Toggle("继续上次阅读", isOn: Binding(
                     get: { store.resumesThreadReading }, set: { store.setResumesThreadReading($0) }
                 ))

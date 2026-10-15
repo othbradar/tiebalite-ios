@@ -169,7 +169,8 @@ struct SettingsRouteDestinationView: View {
         case .threadContentRendererLab:
             DebugThreadContentRendererLabView(
                 imageLoader: imageLoader,
-                onOpenMedia: onOpenMedia
+                onOpenMedia: onOpenMedia,
+                onOpenURL: { _ = navigation.handleExternalURL($0) }
             )
 #endif
         }
