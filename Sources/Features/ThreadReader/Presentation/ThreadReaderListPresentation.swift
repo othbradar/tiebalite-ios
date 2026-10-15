@@ -41,7 +41,7 @@ struct ThreadReaderPostRowModel: Equatable, Sendable {
     let authorName: String
     let metadata: String
     let document: ThreadContentDocument
-    let inlineSubposts: [ThreadReaderSubpostRowModel]
+    var inlineSubposts: [ThreadReaderSubpostRowModel]
     let remainingSubpostCount: Int
     let totalSubpostCount: Int
     let author: ThreadReaderAuthor

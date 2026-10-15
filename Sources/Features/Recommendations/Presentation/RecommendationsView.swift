@@ -42,12 +42,12 @@ struct RecommendationsView: View {
                 Spacer(minLength: 0)
             }
             .accessibilityIdentifier(RecommendationsAccessibilityID.initialLoading)
-        case let .loaded(items),
-             let .loadingNextPage(items),
-             let .nextPageFailure(items),
-             let .refreshing(items),
-             let .refreshFailure(items):
-            recommendationList(items)
+        case .loaded,
+             .loadingNextPage,
+             .nextPageFailure,
+             .refreshing,
+             .refreshFailure:
+            recommendationList(store.visibleItems)
         case .empty:
             EmptyStateView(
                 title: "暂无推荐",
@@ -103,7 +103,10 @@ struct RecommendationsView: View {
             }
             .id(item.threadID)
         case let .pagination(state):
-            PaginationFooter(state: state, retry: requestNextPage)
+            if state == .idle, store.visibleItems.isEmpty, store.nextPage != nil {
+                Button("加载更多", action: requestNextPage).font(.caption).frame(minHeight: 44)
+                    .accessibilityIdentifier("recommendations.blocked.more")
+            } else { PaginationFooter(state: state, retry: requestNextPage) }
         }
     }
 

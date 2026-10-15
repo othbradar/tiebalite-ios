@@ -64,6 +64,9 @@ struct ExploreFeedView: View {
                 Button("刷新失败，点此重试") { Task { await store.refresh() } }
                     .font(.caption).foregroundStyle(SemanticColor.secondaryText).frame(minHeight: 44)
                     .accessibilityIdentifier("explore.\(store.feed.rawValue).refresh-retry")
+            } else if state == .idle, store.presentation?.rows.count == 1 {
+                Button("加载更多") { Task { await store.loadMore() } }
+                    .font(.caption).frame(minHeight: 44).accessibilityIdentifier("explore.\(store.feed.rawValue).more")
             } else {
                 PaginationFooter(state: state, retry: { Task { await store.loadMore() } })
             }

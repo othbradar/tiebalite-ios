@@ -2,8 +2,18 @@ import Foundation
 
 extension ThreadReaderStore {
     func configuredRows(textSize: ReadingTextSizePreference) -> [ThreadReaderConfiguredRow] {
-        if let cached = configuredRowsCache, cached.revision == listRevision, cached.textSize == textSize { return cached.rows }
-        let rows = (listPresentation?.rows ?? []).map { ThreadReaderConfiguredRow(row: $0, readingTextSize: textSize) }
+        let visibility = LocalUserVisibility.shared
+        let changed = visibility.readerChanged(self)
+        if !changed, let cached = configuredRowsCache, cached.revision == listRevision, cached.textSize == textSize { return cached.rows }
+        let rows = (listPresentation?.rows ?? []).compactMap { row -> ThreadReaderConfiguredRow? in
+            var displayed = row
+            if case var .post(post) = row.content {
+                guard !visibility.ids.contains(post.author.rawUserID) else { return nil }
+                post.inlineSubposts.removeAll { visibility.ids.contains($0.author.rawUserID) }
+                displayed = .init(id: row.id, content: .post(post))
+            }
+            return ThreadReaderConfiguredRow(row: displayed, readingTextSize: textSize)
+        }
         configuredRowsCache = .init(revision: listRevision, textSize: textSize, rows: rows)
         configuredRowsBuildCount += 1
         return rows

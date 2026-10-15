@@ -19,8 +19,8 @@ enum AppShellPresentation {
         }
         return !routes.contains { route in
             switch route {
-            case .forum, .thread, .subposts, .notification: true
-            case .search, .userProfile: false
+            case .forum, .thread, .subposts, .notification, .profileReply: true
+            case .search, .userProfile, .profileList: false
             }
         }
     }

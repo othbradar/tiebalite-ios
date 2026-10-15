@@ -1,0 +1,49 @@
+// iOS 22.11.1 userPost descriptors; independent of the frozen write schema.
+syntax = "proto2";
+package TiebaNativeProfiles;
+import "NativeWrite.proto";
+message Request { optional RequestData data = 1; }
+message RequestData {
+  optional int64 uid = 1;
+  optional uint32 rn = 2;
+  optional uint32 is_thread = 4;
+  optional uint32 need_content = 5;
+  optional string portrait = 22;
+  optional uint32 pn = 26;
+  optional TiebaNativeWrite.Common common = 27;
+  optional int32 is_view_card = 33;
+  optional uint32 last_thread_time = 34;
+}
+message Response {
+  optional TiebaNativeWrite.ResponseError error = 1;
+  optional ResponseData data = 2;
+}
+message ResponseData {
+  repeated Post post_list = 1;
+  optional uint32 hide_post = 2;
+}
+message Post {
+  optional uint64 forum_id = 1;
+  optional uint64 thread_id = 2;
+  optional uint64 post_id = 3;
+  optional uint32 is_thread = 4;
+  optional uint32 create_time = 5;
+  optional string forum_name = 6;
+  optional string title = 7;
+  repeated PostContent content = 8;
+  optional string user_name = 10;
+  optional uint32 is_post_deleted = 12;
+  repeated bytes abstract_thread = 15; // native Abstract, independently audited display projection
+  repeated bytes media = 16; // native Media, independently audited display projection
+  optional uint32 reply_num = 17;
+  optional int64 user_id = 18;
+  optional string user_portrait = 19;
+  optional string name_show = 35;
+  optional int32 agree_num = 37;
+  optional int32 view_num = 38;
+  optional int32 share_num = 39;
+}
+message PostContent {
+  repeated bytes post_content = 1; // native Abstract
+  optional uint64 post_id = 4;
+}

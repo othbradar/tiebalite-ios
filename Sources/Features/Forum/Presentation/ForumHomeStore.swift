@@ -6,7 +6,12 @@ final class ForumHomeStore {
     private(set) var route: ForumRoute
     private(set) var state: ForumHomeState = .initialLoading
     private(set) var listPresentation: ForumHomeListPresentation? {
-        didSet { listRevision &+= 1 }
+        didSet { listRevision &+= 1; updateLocalVisibility() }
+    }
+    private(set) var visibleListPresentation: ForumHomeListPresentation?
+    func updateLocalVisibility() {
+        visibleListPresentation = listPresentation?.hidingUsers(LocalUserVisibility.shared.ids)
+        for store in tabStores.values { store.updateLocalVisibility() }
     }
     private(set) var listRevision: UInt64 = 0
     private(set) var scrollAnchor: Int64?
@@ -332,7 +337,7 @@ final class ForumHomeStore {
             self.displaySnapshot(pending.snapshot)
             self.hasCompletedLoad = true
             self.checkpointReading()
-            return self.listPresentation?.rows
+            return self.visibleListPresentation?.rows
         }
     }
 

@@ -799,3 +799,11 @@ idle → loading → loaded（可空）/failed；刷新保留已有记录，首�
 ## U10 云端收藏同步
 
 FavoriteStore每次打开/前台/下拉读取第一页；idle→loading→loaded/failed，已有列表刷新失败保留内容并显示重试。分页20条，同一时刻只允许一个读或用户写；重复调用合并为当前操作，不增加源请求。确认收藏/取消成功后按threadID更新内存，失败保持；写结果未知提示刷新检查，不自动重试。写后offset作废，下次更多先重新同步。会话代次变化立即取消、清空；旧结果不得回填。无自动上传本机书签，无历史/阅读位置写入。
+
+## U12 用户子列表/关系/本机屏蔽
+
+ProfileListStore：idle→loading→loaded/empty/failed/privateContent/contentUnavailable；已有内容刷新/分页分别 refreshing/loadingMore，失败保留旧页为 refreshFailure/nextFailure；明确权限拒绝隐藏旧页。关注吧成功回执同时缺少 forum_list/has_more 时为 contentUnavailable，显示“暂无可查看的关注吧”，无错误图标或重试；不推断一定由隐私设置导致。首次/缓存恢复/刷新/分页均隐藏旧行、去除游标和锚点，并按既有权限拒绝路径失效该账号下目标用户的首屏缓存，不写入空成功缓存、不追加请求。正常空数组仍为 empty，部分字段缺失/畸形/非零回执/网络异常仍走原失败状态。三个子页分别拥有任务、代次、游标、缓存键和锚点；取消临时加载后可以重新激活，账号变化清显示投影并拒绝旧响应。
+
+ProfileDetailsStore：关系未知→读取服务器状态；缺字段不能由统计数字补值。点击关注取已验证 portrait 与 prior state，期间锁按钮，成功失效 scoped following/profile，失败恢复 prior；取消/账号改变使旧 task 不能更新当前 state。Repository 按账号/UID防并行写，未知/失败不自动重试。
+
+LocalBlockingStore：账号命名空间切换先清展示投影，再读取各自的持久化名单；原子保存完成后发布 UID 集合。失败明确展示；列表保留原始服务器页/计数/分页，过滤投影不能变更远端结束判断。筛选及取消筛选不修改恢复事务、offset 或 readAnchor。

@@ -255,9 +255,21 @@ protoc --proto_path="$repo/Config/Protobuf" \
   --swift_out="$generated" \
   --swift_opt=Visibility=Public,FileNaming=FullPath,UseAccessLevelOnImports=false NativeExplore.proto
 
+# U12 userPost native descriptors, separate from frozen write requests.
+profiles_schema="Config/Protobuf/NativeProfiles.proto"
+profiles_schema_hash="$(awk -F '\t' '!/^#/ && NF { print $1 }' "$repo/Config/Protobuf/NativeProfiles.inputs.tsv")"
+[[ "$(shasum -a 256 "$repo/$profiles_schema" | awk '{ print $1 }')" == "$profiles_schema_hash" ]] || {
+  printf 'ERROR: native profiles schema does not match its evidence lock.\n' >&2
+  exit 1
+}
+protoc --proto_path="$repo/Config/Protobuf" \
+  --plugin="protoc-gen-swift=$(command -v protoc-gen-swift)" \
+  --swift_out="$generated" \
+  --swift_opt=Visibility=Public,FileNaming=FullPath,UseAccessLevelOnImports=false NativeProfiles.proto
+
 generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-[[ "$generated_count" -eq 236 ]] || {
-  printf 'ERROR: expected 236 generated Swift files; found %s.\n' \
+[[ "$generated_count" -eq 237 ]] || {
+  printf 'ERROR: expected 237 generated Swift files; found %s.\n' \
     "$generated_count" >&2
   exit 1
 }
@@ -283,6 +295,9 @@ native_write_input_count=1
 native_explore_schema=$explore_schema
 native_explore_schema_sha256=$explore_schema_hash
 native_explore_input_count=1
+native_profiles_schema=$profiles_schema
+native_profiles_schema_sha256=$profiles_schema_hash
+native_profiles_input_count=1
 protoc=$expected_protoc
 protoc_gen_swift=$expected_generator
 swiftprotobuf_runtime=$expected_generator

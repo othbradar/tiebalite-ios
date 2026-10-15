@@ -124,6 +124,7 @@ struct HomeFollowedForumRow: View {
     let forum: FollowedForum
     let avatarResource: ImageResourceDescriptor?
     let imageLoader: any ImageLoading
+    var showsHotCount = true
     @ScaledMetric(relativeTo: .subheadline) private var titleSize: CGFloat = 15
     @ScaledMetric(relativeTo: .caption2) private var metadataSize: CGFloat = 10
 
@@ -135,9 +136,11 @@ struct HomeFollowedForumRow: View {
                     .font(.system(size: titleSize, weight: .bold))
                     .foregroundStyle(SemanticColor.primaryText)
                     .multilineTextAlignment(.leading)
-                Text("热度 \(HomeForumNumber.text(forum.hotCount))")
-                    .font(.system(size: metadataSize))
-                    .foregroundStyle(SemanticColor.secondaryText)
+                if showsHotCount {
+                    Text("热度 \(HomeForumNumber.text(forum.hotCount))")
+                        .font(.system(size: metadataSize))
+                        .foregroundStyle(SemanticColor.secondaryText)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             TiebaForumLevelBadge(level: forum.levelID)

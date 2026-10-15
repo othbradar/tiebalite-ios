@@ -17,6 +17,8 @@ final class ExploreFeedStore {
     private var visited = Set<String>()
     private var requestUnix: UInt64 = 0
     private var pending: PendingRefresh?
+    private var blockedUsers = Set<Int64>()
+    func setBlockedUsers(_ ids: Set<Int64>) { blockedUsers = ids; updatePresentation() }
     private struct PendingRefresh {
         let page: ExplorePage
         let automatic: Bool
@@ -163,7 +165,7 @@ final class ExploreFeedStore {
     private func updatePresentation() {
         guard !items.isEmpty || pending != nil else { presentation = nil; return }
         let footer: PaginationFooterState = state == .loadingMore ? .loading : state == .nextFailure ? .failure : next == nil ? .end : .idle
-        presentation = .init(items: items, pagination: footer)
+        presentation = .init(items: items.filter { !blockedUsers.contains($0.author?.rawUserID ?? 0) }, pagination: footer)
     }
 }
 

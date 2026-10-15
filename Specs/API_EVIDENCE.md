@@ -1384,3 +1384,17 @@ UNKNOWN：当前没有可靠 iOS 收藏写入/同步运行证据；Android 的�
 - 关注要求有效账号，匿名不发请求；热榜允许匿名，签名前移除BDUSS/stoken。发出前后均检查账号代次和取消，旧响应不能覆盖当前页或缓存。独立Runtime不修改发帖链路的请求顺序、指标或回执。
 - `NativeExplore.proto`与原包descriptor离线比较12个message/113字段；ThreadInfo显示DTO另经既有工具核对原生70个message/698字段（保留已有PbContent uint32/int32例外）。3个合成请求逐字节相等，4个合成响应验证类型/游标/空/错误；未使用真实内容或凭证制作fixture。
 - 边界：原生完整页面调用者及业务值组合未取得运行对照。follow_type=1、load_type=1/2与tab_id=1/tab_code=all是当前查询选择，类型及编号有原生证据，不能称完整原版页面/SDK行为完全对齐。没有扩大至关注回复/直播或热榜话题/子分类。Live少量读取结果和待验收项见TASK_STATE。
+
+## U12 — iOS 用户内容与关系（2026-10-14）
+
+CODE_EVIDENCE：参考 TBClient SHA256 `4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb`。忽略目录 U12 保存最小相关反汇编，不重读历史：
+
+- `TBCMyPostAndReplyModel.init` 0x101c1cc4c、getData 0x101c1cff0：/c/u/feed/userpost，CMD303002；pn 当前页，rn20，need_content1，uid/portrait 由入口提供，is_thread 取 type，is_view_card 取 requestType，后页 last_thread_time。Native descriptor：userPostReq offset0xa74a2d2/878，userPostRes offset0xa74a6d5/417；client.proto offset0xa6ef2fc/151219。最小应用 projection 用 verify.py 核对 8 message/125 字段、3 个嵌套 bytes 类型；generate.py 使用原版 descriptor 生成 3 请求/2 响应合成 fixture，编码逐字节匹配。应用选取基本主题 type1/回复 type0、普通卡片 type0；真实当前账号回复已经读到，自己的回复之外不开放入口或请求。
+- handleParsedData 0x101c1d57c：基于原始 post_list 是否非空继续分页。应用保留此规则，不以过滤后空页或少于20条提前结束。PostInfoList/PostInfoContent 身份字段经原 descriptor 核对；同帖回复按 pid 区分，媒体资源 ID 同样含该行身份；现有 Abstract/Media 显示 DTO 有既有独立 iOS 字段审计。
+- `TBCPersonFavBarsModel.loadLikeList:pageNum:` 0x101c0d268：/c/f/forum/like，page_no，page_size50；本账号 uid，他人另外 friend_uid/is_guest1。`TBCLikeBarListDataItem.init` 0x101b8975c：forum_list 或 gconforum/non-gconforum 分组、has_more，三个数组均明确注册 TBCBarDataItem。`TBCBarDataItem.init` 0x101b44d10：barID→id、barName→name、avatar、uLevel→level_id、member_count。2026-10-15 更正此前误用的 TBCLikeForumItem 字段，后者不属于此响应列表。只读目标用户基本关注列表，不扩展共同吧、官方联系人或删关注吧；无已核对字段的热度/主题数/签到状态不从另一响应模型猜取。
+- `TBCPersonalInfoModel.load:portrait:pageNum:` 0x101e19088：普通 form /c/u/user/profile；基本 UID/guest、pn1/need_post_count1/page0/is_from_usercenter0 路径；`TBCUserItem.init` 0x101bc9b88：id、portrait、has_concerned。实际关系按钮仅在身份匹配、portrait 与0/1状态存在时启用。
+- follow:tbs: 0x101e1aa1c / unFollow:tbs: 0x101e1abe8：基础 wrapper 传 concernType/fromType -1、nil related tid；最终 /c/c/user/follow 或 unfollow，portrait/tbs。parseConcernFromType 0x101e1a9ec 的索引0指针为nil（索引1才为字符串0），因此基本路径省略 from_type，不误写0；nil forum_id/related_tid同样省略。普通非直播路径不带 in_live。Common/TBS/签名/form header 使用独立 Runtime；仅用户点击会执行写操作。
+
+RUNTIME_EVIDENCE：iPhone 正常 Live 的当前账号主题首屏 raw0/mapped0；自己的回复首屏 raw18/mapped18，人工点击一页下一页 raw8/mapped8。计数来自 profile-read 日志，不保存正文、资源 URL 或凭证。10-15修正映射后当前账号iPhone/iPad各18条均完整映射；截图对应他人首屏和一页下一页各50条均完整映射。另一个iPad目标error_code0但forum_list/has_more完全缺失，只含ctime/error_code/logid/server_time/time（87字节）。同日用户补充可能为隐藏关注吧，要求不要报加载失败：该成功但无列表的结构单独映射 contentUnavailable，以“暂无可查看的关注吧”展示，不冒充空列表成功，也不称已证明隐私开关；非零错误码和畸形/部分字段继续失败。参考脱敏结构记录 forum-live-ipad-response-shape.txt；最后安装身份结果见TASK_STATE。
+
+UNKNOWN / 限制：原版完整个人中心的动态视频/商业卡片、全部入口 page/source 组合、私有 SDK/Passport、云端用户黑名单不在本批。真实关注/取消关注写入未自动操作，仅 Mock 验证，不将其描述成服务端已验收。

@@ -120,7 +120,8 @@ struct SettingsRouteDestinationView: View {
                                                    portraitResourceID: profile.portraitResourceID) {
                 UserProfileView(imageLoader: imageLoader,
                                 store: featureStores.userProfileStore(for: .settings, route: profileRoute),
-                                onDisplayed: { await featureStores.browsingHistoryStore.recordUser($0) })
+                                onDisplayed: { await featureStores.browsingHistoryStore.recordUser($0) },
+                                openList: { navigation.pushSettingsContent(.profileList($0)) }, blocking: featureStores.localBlockingStore)
             } else {
                 EmptyStateView(title: "暂无账户资料", message: "请返回我的页重新加载。", systemImage: "info.circle")
                     .background(SemanticColor.background)

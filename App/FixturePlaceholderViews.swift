@@ -141,7 +141,7 @@ struct FixtureRouteView: View {
                     EmptyView()
                 case .search:
                     EmptyView()
-                case .userProfile, .notification:
+                case .userProfile, .notification, .profileList, .profileReply:
                     EmptyView()
                 }
             }
@@ -232,6 +232,10 @@ private extension RouteIdentity {
             "楼中楼占位：\(postID.rawValue)"
         case let .userProfile(route):
             "用户占位：\(route.fallbackDisplayName)"
+        case let .profileList(route):
+            route.section.title
+        case .profileReply:
+            "回复位置"
         }
     }
 
@@ -251,7 +255,7 @@ private extension RouteIdentity {
             "doc.text"
         case .subposts:
             "text.bubble"
-        case .userProfile:
+        case .userProfile, .profileList, .profileReply:
             "person.crop.circle"
         }
     }
@@ -268,7 +272,7 @@ private extension RouteIdentity {
             AppAccessibilityID.routeThread
         case .subposts:
             AppAccessibilityID.routeSubposts
-        case .userProfile:
+        case .userProfile, .profileList, .profileReply:
             "route.user-profile"
         }
     }

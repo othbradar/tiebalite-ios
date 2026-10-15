@@ -27,6 +27,7 @@ final class CurrentAccountStore {
     }
 
     func loadIfNeeded() async {
+        if let task { await task.value; return }
         guard !attemptedLoad else { return }
         await refresh()
     }

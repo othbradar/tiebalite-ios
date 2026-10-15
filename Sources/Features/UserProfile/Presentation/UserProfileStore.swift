@@ -3,6 +3,7 @@ import Observation
 @MainActor
 @Observable
 final class UserProfileStore {
+    var details: ProfileDetailsStore?
     private(set) var route: UserProfileRoute
     private(set) var state: UserProfileState
 
@@ -88,6 +89,7 @@ final class UserProfileStore {
     }
 
     func cancel() {
+        details?.cancel()
         loadTask?.cancel()
         generation &+= 1
         loadTask = nil

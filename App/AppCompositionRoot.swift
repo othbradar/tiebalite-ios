@@ -19,6 +19,11 @@ final class AppCompositionRoot {
     private let forumHomeRepository: any ForumHomeRepository
     private let browsingHistoryRepository: any BrowsingHistoryRepository
     private let contentCache: ContentPageCache
+    var contentCacheForProfiles: ContentPageCache { contentCache }
+    lazy var profileContentRepository = makeProfileContentRepository()
+    lazy var localBlockingStore = LocalBlockingStore(
+        repository: LocalBlockingRepository.production(),
+        context: { [authContextProvider] in authContextProvider.contentCacheContext })
     private lazy var sharedSettingsStore = SettingsStore(repository: appSettingsRepository,
                                                          contentScheduler: contentScheduler, contentCache: contentCache,
                                                          imageCache: environment.imageLoader as? ProductionImageLoader)
@@ -253,7 +258,12 @@ final class AppCompositionRoot {
     }
 
     func makeUserProfileStore(route: UserProfileRoute) -> UserProfileStore {
-        UserProfileStore(route: route, repository: userProfileRepository)
+        let store = UserProfileStore(route: route, repository: userProfileRepository)
+        store.details = ProfileDetailsStore(
+            user: route, repository: profileContentRepository,
+            context: { [authContextProvider] in authContextProvider.contentCacheContext },
+            accountID: { [currentAccountStore] in currentAccountStore.profile?.userID.rawValue })
+        return store
     }
 
     static func production() -> AppCompositionRoot {

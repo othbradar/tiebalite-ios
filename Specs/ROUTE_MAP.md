@@ -242,3 +242,7 @@ ContentLinkHandler 将已支持的站内 HTTP(S) 内容地址交给发起页面�
 我的 → SettingsRoute.bookmarks → SettingsRoute.bookmark(threadID, postID?)。列表保留于返回栈中；楼层目标复用 U09 locatePost，线程级书签回首楼，均优先于默认历史恢复。目标不存在/读取失败显示失效或重试提示，不把其他楼层当作成功。书签线程内已有用户资料/楼中楼/内容链接仍走既有 content route，未知发送来源保留 unspecified，不新增或猜测写请求入口枚举。
 
 U10 云端收藏：我的→SettingsRoute.favorites→bookmark(ThreadBookmarkTarget)→既有U09 pid定位。云端mark_pid优先于历史，不使用max_pid/post_no。已删除项原生提示，其余失效位置复用可重试目标页；本机书签入口仍独立。
+
+## U12 用户子页
+
+userProfile(UserProfileRoute) → profileList(ProfileListRoute(user, section))，仅同一稳定 UID；section 是 threads/replies/forums，回复仅对已验证当前账号开放。子页→现有 thread/forum；自己的回复→profileReply(ThreadBookmarkTarget)→已有 BookmarkDestination/ThreadReader/ReadingPosition。我的 accountProfile 允许同样内容子链。原导航容器不变，仅含 profileList 的链增加两个有界层级；其他路径上限不变。

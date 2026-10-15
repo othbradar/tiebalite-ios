@@ -119,7 +119,7 @@ struct ForumThreadPageView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let presentation = store.listPresentation {
+        if let presentation = store.visibleListPresentation {
             VirtualizedList(
                 items: presentation.rows, backgroundColor: .systemBackground,
                 accessibilityIdentifier: ForumHomeAccessibilityID.list,
@@ -137,7 +137,8 @@ struct ForumThreadPageView: View {
                 rowContent: { row in
                 ForumHomeRowView(row: row, imageLoader: imageLoader, onOpenThread: onOpenThread,
                                  requestReload: { Task { await store.reload() } },
-                                 requestNextPage: { Task { await store.loadNextPage() } })
+                                 requestNextPage: { Task { await store.loadNextPage() } },
+                                 allThreadsHidden: presentation.threadRows.isEmpty && store.listPresentation?.threadRows.isEmpty == false)
             })
         } else if case .initialFailure = store.state {
             FullPageErrorView(title: "吧首页加载失败", message: "网络或服务暂时不可用。") {

@@ -41,7 +41,15 @@ enum RecommendationsState: Equatable, Sendable {
 @MainActor
 @Observable
 final class RecommendationsStore {
-    private(set) var state: RecommendationsState = .initialLoading
+    private(set) var state: RecommendationsState = .initialLoading {
+        didSet { projectVisibility() }
+    }
+    private(set) var visibleItems: [RecommendationSummary] = []
+    private var blockedUsers = Set<Int64>()
+    func setBlockedUsers(_ ids: Set<Int64>) { blockedUsers = ids; projectVisibility() }
+    private func projectVisibility() {
+        visibleItems = (state.items ?? []).filter { !blockedUsers.contains($0.author?.rawUserID ?? 0) }
+    }
     private(set) var scrollAnchor: Int64?
     private(set) var currentPage: UInt32?
     private(set) var nextPage: UInt32?

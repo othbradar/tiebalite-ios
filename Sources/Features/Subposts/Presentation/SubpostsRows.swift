@@ -17,13 +17,14 @@ struct SubpostsRow: Identifiable, Equatable, Sendable {
     let id: SubpostsRowID
     let content: Content
 
-    static func make(_ snapshot: SubpostsPage, phase: SubpostsPhase) -> [Self] {
+    @MainActor static func make(_ snapshot: SubpostsPage, phase: SubpostsPhase) -> [Self] {
+        let blocked = LocalUserVisibility.shared.ids
         var result: [Self] = []
-        if let parent = snapshot.parent {
+        if let parent = snapshot.parent, !blocked.contains(parent.author.rawUserID) {
             result.append(.init(id: .parent(parent.id.postID), content: .parent(parent, threadAuthorID: snapshot.threadAuthorID)))
         }
         result.append(.init(id: .count, content: .count(snapshot.totalCount)))
-        result += snapshot.items.map {
+        result += snapshot.items.filter { !blocked.contains($0.author.rawUserID) }.map {
             .init(id: .reply($0.id), content: .reply($0, isThreadAuthor: $0.author.isThreadAuthor(snapshot.threadAuthorID)))
         }
         result.append(.init(id: .footer, content: .footer(phase, hasMore: snapshot.hasMore)))

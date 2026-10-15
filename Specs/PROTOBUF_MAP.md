@@ -438,3 +438,7 @@ Generated inputs/import hashes and outputs are deterministic and checked by make
 ## R09 AddPost
 
 Protocol5545326b (UI c5f1125f has identical AddPost schemas). Added AddPostRequest/Data, AddPostResponse/Data with 14 transitive dependencies; generated closure234. Request target mapping and anti/verification fields are documented in API_EVIDENCE R09. Domain exports only TextWriteReceipt positive real thread/post IDs or typed failure; Vcode tokens and account metadata never enter UI/logs. CommonRequest retains active session values only for request construction. Generated source remains deterministic and original licensed code, no manual .pb.swift changes.
+
+## U12 原生用户帖子 projection
+
+`Config/Protobuf/NativeProfiles.proto` 独立输入锁；iOS 22.11.1 UserPost 原 descriptor 核对 8 message/125 字段。PostInfoList/PostInfoContent 最小字段，Abstract/Media 使用已核对 bytes 显示投影。`scripts/fixtures/native_profiles/generate.py` 从原 descriptor 生成合成请求/响应；verify.py 核对编号/类型/基数和关联 message。原234 Android闭包未改，加NativeWrite/NativeExplore/NativeProfiles共237输出；Common/冻结写 schema 未改。

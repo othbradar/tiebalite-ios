@@ -147,8 +147,15 @@ enum AppRouter {
                     onDisplayed: {
                         await dependencies.featureStores.browsingHistoryStore
                             .recordUser($0)
-                    }
+                    }, openList: { openRoute(.profileList($0)) }, blocking: dependencies.featureStores.localBlockingStore
                 )
+            case let .profileList(list):
+                if let details = dependencies.featureStores.userProfileStore(for: scope, route: list.user).details {
+                    ProfileListView(store: details.list(list.section), imageLoader: dependencies.imageLoader,
+                                    blocking: dependencies.featureStores.localBlockingStore, open: openRoute)
+                }
+            case let .profileReply(target):
+                BookmarkDestination(target: target, dependencies: dependencies, openRoute: openRoute)
             case let .subposts(threadID, postID):
                 if let store = dependencies.featureStores.subpostsStore(
                     for: scope,

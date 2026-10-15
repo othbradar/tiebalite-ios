@@ -92,12 +92,14 @@ struct AppSceneRoot: View {
         .task {
             compositionRoot.contentPrefetchEnvironment.setActive(scenePhase == .active)
             await sessionStore.restoreIfNeeded()
+            await featureStores.localBlockingStore?.activate()
             await updateNotifications()
         }
         .onChange(of: sessionStore.state) { _, _ in
             compositionRoot.contentPrefetchEnvironment.cancelAll()
             compositionRoot.currentAccountStore.updateContext(compositionRoot.authContextProvider.context())
             compositionRoot.notificationsStore.updateContext(compositionRoot.authContextProvider.context())
+            Task { await featureStores.localBlockingStore?.activate() }
             Task { await compositionRoot.notificationsStore.refreshCounts() }
         }
         .onChange(of: scenePhase) { _, phase in

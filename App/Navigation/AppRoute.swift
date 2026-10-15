@@ -105,6 +105,8 @@ enum RouteIdentity: Codable, Hashable, Sendable {
     case subposts(threadID: ThreadID, postID: PostID)
     case thread(ThreadID)
     case userProfile(UserProfileRoute)
+    case profileList(ProfileListRoute)
+    case profileReply(ThreadBookmarkTarget)
 }
 
 enum SettingsRoute: Codable, Hashable, Sendable {
@@ -216,7 +218,8 @@ struct AppNavigationState: Equatable, Sendable {
 
 enum RouteGrammar {
     static func isValid(_ routes: [RouteIdentity], for root: RootID) -> Bool {
-        guard routes.count <= 5, Set(routes).count == routes.count else {
+        let profileSubpage = routes.contains { if case .profileList = $0 { return true }; return false }
+        guard routes.count <= (profileSubpage ? 7 : 5), Set(routes).count == routes.count else {
             return false
         }
 
@@ -239,6 +242,11 @@ enum RouteGrammar {
 
     static func permitsContentAction(from parent: RouteIdentity, to child: RouteIdentity) -> Bool {
         switch (parent, child) {
+        case let (.userProfile(user), .profileList(list)):
+            return user.userID == list.user.userID
+        case (.profileList, .thread), (.profileList, .forum), (.profileList, .profileReply),
+             (.profileReply, .thread), (.profileReply, .forum), (.profileReply, .userProfile), (.profileReply, .subposts):
+            return true
         case (.thread, .thread), (.thread, .forum), (.thread, .userProfile),
              (.subposts, .thread), (.subposts, .forum), (.subposts, .userProfile),
              (.notification, .thread), (.notification, .forum), (.notification, .userProfile),
@@ -350,7 +358,7 @@ enum RouteGrammar {
         switch subpostsRoute {
         case let .subposts(childThreadID, _):
             return threadID == childThreadID
-        case .forum, .search, .thread, .userProfile, .notification:
+        case .forum, .search, .thread, .userProfile, .notification, .profileList, .profileReply:
             return false
         }
     }
@@ -396,7 +404,7 @@ enum SettingsRouteGrammar {
         if routes.first == .preferences {
             return canonicalPreferences(routes)
         }
-        guard routes.count <= 5 else { return [] }
+        guard routes.count <= (containsProfileSubpage(routes) ? 7 : 5) else { return [] }
         guard let first = routes.first else { return routes }
         return isValidRootPath(routes, first: first) ? routes : []
     }
@@ -421,7 +429,9 @@ enum SettingsRouteGrammar {
             return false
         case .about:
             return isValidAboutPath(routes)
-        case .accountProfile, .licenses:
+        case .accountProfile:
+            return isValidProfilePath(routes)
+        case .licenses:
             return routes.count == 1
 #if DEBUG
         case .componentGallery, .interactionLab, .threadContentRendererLab:
@@ -436,6 +446,15 @@ enum SettingsRouteGrammar {
         routes.count == 1 || (routes.count == 2 && routes[1] == .licenses)
     }
 
+    private static func isValidProfilePath(_ routes: [SettingsRoute]) -> Bool {
+        if routes.count == 1 { return true }
+        let tail = routes.dropFirst().compactMap { route -> RouteIdentity? in
+            if case let .content(content) = route { return content }; return nil
+        }
+        guard tail.count == routes.count - 1, case .profileList = tail.first else { return false }
+        return isValidHistoryContentChain(tail)
+    }
+
     private static func isValidHistoryPath(_ routes: [SettingsRoute]) -> Bool {
         let contents = routes.dropFirst().compactMap { route -> RouteIdentity? in
             guard case let .content(content) = route else { return nil }
@@ -446,7 +465,7 @@ enum SettingsRouteGrammar {
 
     private static func canonicalPreferences(_ routes: [SettingsRoute]) -> [SettingsRoute] {
         let children = Array(routes.dropFirst())
-        guard routes.count <= 6, !children.contains(.preferences),
+        guard routes.count <= (containsProfileSubpage(routes) ? 8 : 6), !children.contains(.preferences),
               canonical(children) == children else { return [] }
         return routes
     }
@@ -454,14 +473,15 @@ enum SettingsRouteGrammar {
     private static func isValidHistoryContentChain(
         _ routes: [RouteIdentity]
     ) -> Bool {
-        guard routes.count <= 4 else {
+        let profileSubpage = routes.contains { if case .profileList = $0 { return true }; return false }
+        guard routes.count <= (profileSubpage ? 6 : 4) else {
             return false
         }
         guard let first = routes.first else {
             return true
         }
         switch first {
-        case .forum, .thread, .userProfile:
+        case .forum, .thread, .userProfile, .profileList, .profileReply:
             break
         case .search, .subposts, .notification:
             return false
@@ -470,5 +490,9 @@ enum SettingsRouteGrammar {
             guard RouteGrammar.permitsContentAction(from: parent, to: child) else { return false }
         }
         return true
+    }
+
+    private static func containsProfileSubpage(_ routes: [SettingsRoute]) -> Bool {
+        routes.contains { if case .content(.profileList) = $0 { return true }; return false }
     }
 }

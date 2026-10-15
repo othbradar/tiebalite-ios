@@ -123,6 +123,7 @@ struct ForumHomeRowView: View {
     let onOpenThread: (ForumThreadSummary) -> Void
     let requestReload: () -> Void
     let requestNextPage: () -> Void
+    var allThreadsHidden = false
 
     @ViewBuilder
     var body: some View {
@@ -153,7 +154,10 @@ struct ForumHomeRowView: View {
                 InlineErrorView(message: "重新加载失败，已保留原列表。", retry: requestReload)
             }
         case let .pagination(state):
-            PaginationFooter(state: state.footerState, retry: requestNextPage)
+            if allThreadsHidden, state == .idle {
+                Button("加载更多", action: requestNextPage).font(.caption).frame(minHeight: 44)
+                    .accessibilityIdentifier("forum-home.blocked.more")
+            } else { PaginationFooter(state: state.footerState, retry: requestNextPage) }
         }
     }
 

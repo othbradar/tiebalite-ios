@@ -1,0 +1,64 @@
+{
+  "referenceSHA256": "4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb",
+  "requests": [
+    {
+      "section": "threads",
+      "business": {
+        "uid": "42",
+        "rn": "20",
+        "pn": "1",
+        "need_content": "1",
+        "is_thread": "1",
+        "is_view_card": "0"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "FIXTURE",
+        "_timestamp": "1700000000000"
+      },
+      "wireBase64": "Ci0IKhAUIAEoAdABAdoBHAgBEgcyMi4xMS4xQIDQlf+8MboBB0ZJWFRVUkWIAgA="
+    },
+    {
+      "section": "replies",
+      "business": {
+        "uid": "42",
+        "rn": "20",
+        "pn": "1",
+        "need_content": "1",
+        "is_thread": "0",
+        "is_view_card": "0"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "FIXTURE",
+        "_timestamp": "1700000000000"
+      },
+      "wireBase64": "Ci0IKhAUIAAoAdABAdoBHAgBEgcyMi4xMS4xQIDQlf+8MboBB0ZJWFRVUkWIAgA="
+    },
+    {
+      "section": "threads",
+      "business": {
+        "uid": "42",
+        "rn": "20",
+        "pn": "2",
+        "need_content": "1",
+        "is_thread": "1",
+        "is_view_card": "0",
+        "last_thread_time": "1234"
+      },
+      "common": {
+        "_client_type": "1",
+        "_client_version": "22.11.1",
+        "sign": "FIXTURE",
+        "_timestamp": "1700000000000"
+      },
+      "wireBase64": "CjEIKhAUIAEoAdABAtoBHAgBEgcyMi4xMS4xQIDQlf+8MboBB0ZJWFRVUkWIAgCQAtIJ"
+    }
+  ],
+  "responses": [
+    "CgIIABImCiQQbhhvMgdGaXh0dXJlOglTeW50aGV0aWOQASqaAgZBdXRob3I=",
+    "CgIIABICEAE="
+  ]
+}

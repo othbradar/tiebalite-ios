@@ -1,0 +1,32 @@
+{
+  "own": {
+    "error_code": "0",
+    "has_more": "0",
+    "forum_list": [
+      {"id": "13001", "name": "开源开发", "avatar": "https://fixture.invalid/forum.png", "member_count": "120", "level_id": "7"},
+      {"id": "13002", "name": "示例吧"}
+    ]
+  },
+  "guest": {
+    "error_code": 0,
+    "has_more": 1,
+    "forum_list": [
+      {"id": 13001, "name": "开源开发", "avatar": "https://fixture.invalid/forum.png", "member_count": 120, "level_id": 7},
+      {"id": 13002, "name": "示例吧"}
+    ]
+  },
+  "grouped": {
+    "error_code": "0",
+    "has_more": "1",
+    "forum_list": {
+      "gconforum": [
+        {"id": "13001", "name": "开源开发", "avatar": "https://fixture.invalid/forum.png", "member_count": "120", "level_id": "7"}
+      ],
+      "non-gconforum": [
+        {"id": "13001", "name": "开源开发"},
+        {"id": "13002", "name": "示例吧"},
+        {"id": "0", "name": "无效条目"}
+      ]
+    }
+  }
+}

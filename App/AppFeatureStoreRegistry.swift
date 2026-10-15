@@ -2,6 +2,7 @@
 final class AppFeatureStoreRegistry {
     var bookmarkStore: BookmarkStore?
     var favoriteStore: FavoriteStore?
+    var localBlockingStore: LocalBlockingStore?
     var exploreStore = ExploreStore(repository: UnavailableExploreRepository())
 
     func makeBookmarkedReader(threadID: Int64) -> ThreadReaderStore { makeThreadReaderStore(threadID) }
@@ -72,6 +73,8 @@ final class AppFeatureStoreRegistry {
         bookmarkStore = compositionRoot.bookmarkStore
         favoriteStore = compositionRoot.favoriteStore
         exploreStore = compositionRoot.makeExploreStore()
+        localBlockingStore = compositionRoot.localBlockingStore
+        localBlockingStore?.didChange = { [weak self] ids in self?.applyLocalBlocks(ids) }
     }
 
     func forumHomeStore(
@@ -123,6 +126,17 @@ final class AppFeatureStoreRegistry {
             return existing
         }
         let store = makeUserProfileStore(route)
+        store.details?.onRelationshipChanged = { [weak self, weak store] scope in
+            guard store?.details?.activationScope == scope else { return }
+            if self?.exploreStore.following.scope == scope { await self?.exploreStore.following.invalidate() }
+            guard store?.details?.activationScope == scope else { return }
+            if let self, let store {
+                for other in self.userProfileStores.values where other !== store && other.route.userID == store.route.userID {
+                    other.details?.invalidateRelationship()
+                }
+            }
+            await store?.retry()
+        }
         userProfileStores[key] = store
         return store
     }
@@ -229,6 +243,14 @@ final class AppFeatureStoreRegistry {
 
     func retainThreadStores(in navigationState: AppNavigationState) {
         retainFeatureStores(in: navigationState)
+    }
+
+    private func applyLocalBlocks(_ ids: Set<Int64>) {
+        LocalUserVisibility.shared.update(ids)
+        recommendationsStore.setBlockedUsers(ids)
+        exploreStore.following.setBlockedUsers(ids)
+        exploreStore.hot.setBlockedUsers(ids)
+        for store in forumHomeStores.values { store.updateLocalVisibility() }
     }
 
     private func settingsContentRoutes(

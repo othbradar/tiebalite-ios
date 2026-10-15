@@ -1,3 +1,36 @@
+## 2026-10-15 U12 — USER_ACCEPTED / 提交授权
+
+- 用户明确“现在提交U12”。提交已验收的用户主题、自己的回复、关注吧、关注关系与本机屏蔽，以及关注吧字段映射和不可查看提示修复；不追加产品实现。基线8731b3e3fce63517a0d0c8699feb5f58e4aed330，提交题目feat: extend profiles and user relationships；完整SHA见Git和本轮提交回执。
+- 核对installed-proof-availability.json，761份生产输入与最终正常Live安装候选完全一致，无新生产文件或验收后源码变化。沿用已执行的定向Unit、iPhone/iPad短UI、lint/build及23项发送冻结检查；本次仅补验收记录，执行diff check、secret scan和精确staged清单检查，不重复全量构建/测试。
+- 精确纳入本阶段App接线、领域/Repository/Store/View、原生schema与生成文件、合成fixture/脚本、直接测试和规格/ADR记录。保留用户Prompts、技能配置及Python临时缓存；不纳入Artifacts、真实响应/截图/账号数据、IDE文件或Android submodule变更。
+- 行为与边界沿用上述候选：无新增动画/手势/overlay/依赖；不更改已稳定外观、发送/上传链路。关注吧成功但无列表的原因仍UNKNOWN；本机屏蔽不冒充云端黑名单，私有SDK/Passport、完整官方个人中心卡片未实现，真实关注/取消未由代理执行，真机及已有iPad旋转问题不称已验证或修复。
+- 本条只授权本地提交，不推送、不发布、不进入U13；后续等待用户明确指令。
+
+## 2026-10-15 U12 — 关注吧不可查看提示修复 / READY_FOR_USER_VISUAL_REVIEW
+
+- 目标与范围：用户确认部分关注吧可显示，部分疑似被隐藏，要求不要显示“加载失败”。只修复成功但无列表的展示状态；HEAD仍为8731b3e3fce63517a0d0c8699feb5f58e4aed330，未暂存/提交/推送，不进入U13，保留全部既有U12工作。
+- 修改文件：Core/Models/ProfileContent、Core/TiebaAPI/NativeProfileProtocol与FixtureProfileContentRepository，UserProfile/Presentation/ProfileListStore、ProfileListView；U12FollowedForumsTests、U12ProfileSmokeTests，以及本记录、STATE_MACHINES、API_EVIDENCE、ADR-0037和fixture来源说明。
+- 关键设计/状态转换：已知error_code0且forum_list/has_more同时缺失时映射contentUnavailable，显示小号灰字“暂无可查看的关注吧”，无警告图标/重试按钮。与privateContent及正常empty区分，不断言对方一定设置了隐藏。首屏/缓存恢复/刷新/分页均撤下旧行、游标和锚点，复用已有目标用户作用域缓存失效，不写空成功缓存、不追加请求。畸形/部分字段、非零错误码、网络失败保留原错误和重试行为。
+- 动画/手势/overlay/依赖：均无新增；列表字号/图标/间距、导航、正常分页、发帖/回复/上传链路未改，冻结23项校验通过。
+- 执行命令与结果：定向xcodebuild Unit先红后绿，forum-availability-red的5方法中2方法按预期失败（15条断言，含metadata-only重复3次及刷新/分页/缓存3分支）；forum-availability-green的5方法通过。首次筛选原权限用例未带括号未执行该方法，不计其通过；补跑精确selector permissionDenialHidesPreviouslyLoadedContent()，forum-availability-private为1方法通过。UI首次误用另一fixture的author.1标识，未到目标页失败；改用该fixture真实UID1100001后forum-availability-ui-green单条通过（17.241s），无生产改动或降低断言。make lint最终577文件0违规/WRITE_BASELINE23PASS、make build、正常Debug安装构建、make secret-scan、git diff --check通过；未运行全量质量套件。
+- 回归覆盖：普通/分组/本账号/他人有效行、分页去重、正常空列表、畸形及不完整字段、真实错误保留重试、不可查看后旧缓存不再展示、无自动重读、后续显式刷新可恢复；既有明确权限拒绝隐藏内容仍通过。短UI验证中性文字、无错误/重试/下一页、原生返回。
+- Live与交付：完整正常App 0.2.0(17)覆盖常用iPhone17Pro和iPadPro13M5，未卸载/erase/清登录或草稿。两端主程序/debug dylib/Info与候选一致，761份生产输入摘要见ignored installed-proof-availability.json。iPhone覆盖前当前用户页确为加载失败；覆盖后通过原浏览记录重开同一用户，真实读取显示profile.forums.unavailable，已目视确认无红色报错/按钮；截图20261015-091631-forum-availability-live.png。iPhone留在该页，原登录和浏览记录保留。未进行真实发帖/关注/取消。CUA一次历史控件索引过期，重新观察后成功，不计失败动作已完成。
+- 未解决风险/UNKNOWN：此响应未给出明确隐私开关，隐藏原因仍未知；未做真机或本轮iPad独立UI验证，不扩大为全部隐私响应已覆盖。
+- 下一阶段前置条件：等待用户检查本次正常Live页面；未经新的明确指令不提交或进入U13。
+
+## 2026-10-15 U12 — 用户页与关系 / 关注吧映射回归修复 / READY_FOR_USER_VISUAL_REVIEW
+
+- 用户授权进入 U12；10-14 报告“关注的吧加载失败”，当晚暂停，10-15 明确“继续修复”。当前 HEAD 8731b3e3fce63517a0d0c8699feb5f58e4aed330。工作仍未暂存/提交/推送，不进入 U13；原有 Prompts、技能配置、Python 临时文件及 Android submodule 保留。
+- 本阶段新增用户主题、仅本账号回复、关注吧三个独立列表，复用既有帖子/吧行、VirtualizedList、ThreadReader 与楼层定位；各自稳定业务 ID、游标、账号/查询缓存和返回锚点。独立原生 iOS 22.11.1 读取/关系 Runtime，新增最小 NativeProfiles schema；原234闭包不变，共237生成文件。关系来自匹配身份的服务端字段，用户点击关注/取消时防重、失败回滚、账号变化拒绝迟到结果；同作用域 U11 关注与对应资料定向失效。
+- 本机屏蔽按账号在 Application Support 保存，资料页更多菜单管理/取消；Store/展示映射过滤动态、吧帖子、楼层和楼中楼，原始分页/阅读缓存保留。只为 profileList 路由增加两个有界深度；既有导航容器、Pager、图片、阅读恢复及发送/上传实现不改。新增一个系统管理 sheet 和系统菜单，无自定义手势/动画/依赖。原基本资料及发送账号准备请求未迁移。
+- 关注吧失败根因已实证：10-14 两次 Live 收到 raw1/raw50，却 mapped0。原版 TBCLikeBarListDataItem.init(0x101b8975c) 的三个数组均注册 TBCBarDataItem；后者 init(0x101b44d10) 使用 id/name/member_count，原实现误用了 TBCLikeForumItem 的 forum_id/forum_name/concern_num。修正字段与证据；拒绝错误分组和非空但全部无效的响应，正常空列表与 has_more 保持区分。此响应不含热度，资料子页关闭错误“热度0”占位，首页同组件默认显示不变，不改字号/图标/间距。
+- 先红后绿：forum-red 的 own/guest/grouped 三组合均丢失有效行，错误结构亦被当空成功；forum-green 的 U12FollowedForumsTests、U12ProfileContentTests、U12ProfileCacheTests 共9个方法通过（含3组合字段回归及清缓存/账号双参数）。覆盖真实字段、缺可选项、去重、分页、空/错误区分、同键源请求1次、账号/epoch隔离。旧 U12ProfileStateTests 最终7项通过，含私有权限收紧清展示、独立列表位置、Mock关注回滚/防重、旧账号回执拒绝、本机屏蔽持久化及普通Reader配置过滤；沿用未改动结果，不重复全量。
+- UI：修正后 forum-ui-phone 与 forum-ui-ipad 短流程各1条通过，实际经过论坛JSON映射，覆盖主题/回复/关注吧导航与帖子返回位置。热度占位修正后 forum-ui-final 再跑同条 iPhone 短UI，30.583s PASS；iPad最终正常Live外观已检查。此前失败完整保留：初次UI配置选错、父AX标识覆盖table标识已修；早期编译/测试类型/fixture边界/lint失败已修；private-content零测试选择不计为通过。10-15首次lint两处格式/行长失败已修，未降低断言或规则。
+- 验证证据均在 ignored Artifacts/VisualReview/U12。只跑定向Unit/UI、generate、lint/build、secret-scan、diff check；无全量Unit、quality-fast、quality或长矩阵。最终 make lint 577文件0违规、WRITE_BASELINE23项PASS；make build、正常Debug安装构建、secret-scan、git diff --check 均通过。完整正常Live App 0.2.0(17)已覆盖常用iPhone17Pro和iPadPro13M5，主程序/debug dylib/Info.plist与构建产物逐字节匹配，761份生产输入摘要记录于 installed-proof-final.json；没有卸载、erase、清登录/Keychain/排序/历史/缓存/草稿。代理真实发送/关注/取消均0次。
+- 最终Live：iPhone复查用户截图对应作者，首屏raw50/mapped50/more=true；只手动加载一页下一页raw50/mapped50/more=true（对应两次完成读取），进入其中吧首页成功。当前账号iPhone及iPad均raw18/mapped18/more=false。所有成功计数与无正文截图留在ignored目录；不宣称读取全部分页。CUA在深层吧首页返回的坐标操作两次报windowNotFoundAtPosition，因此该次Live返回不记为通过；返回及位置保持由上述iPhone/iPad短UI覆盖。正常重开导航后重新进入待验收页，最终两台设备都留在“关注的吧”，没有用重启或清数据修复映射。
+- iPad另一个用户的响应边界：首次读取和一次手动重试均失败；只读LLDB确认87bytes、error_code字符串0，只有ctime/error_code/logid/server_time/time，forum_list和has_more均缺失。没有保存响应正文/标识/凭证，也不能据此判断为空还是未公开；保留明确加载失败/重试，不加空成功降级、不追加未知接口。原用户的有数据列表映射错误已修，这种无列表响应仍是UNKNOWN。诊断中一次Swift字符串转义表达式失败已改为仅返回字段名/错误码；调试器已detach，无生产诊断补丁。
+- 边界：只验证 Simulator，不称真机通过；真实关注/取消仍待用户点击。完整官方个人中心多类型卡片/全部来源组合、私有SDK/Passport和云端黑名单未实现。已有iPad旋转分栏回首楼及旋转UI等待问题未处理，不标为通过。
+
 ## 2026-10-14 U11 — USER_ACCEPTED / 提交授权
 
 - 用户已确认“关注没有是因为我这个号没有关注的人，我关注了一个后现在正常了”，随后明确“我测试了可以没啥问题，你现在可以提交U11了”。提交本轮已安装验收的动态关注/推荐/热榜，不追加代码、不推送或进入U12。基线e3e53b4dda2ae9d48ec35082720041eb5e7e9640；提交题目feat: add following and hot feeds，完整SHA以Git及提交回执为准。
