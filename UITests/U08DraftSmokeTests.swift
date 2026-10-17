@@ -35,7 +35,10 @@ final class U08DraftSmokeTests: XCTestCase {
         XCTAssertTrue(avatar.exists)
         XCTAssertEqual(reply.frame.minX, avatar.frame.maxX + 8, accuracy: 1)
         XCTAssertEqual(published.frame.minX, reply.frame.minX, accuracy: 1)
-        XCTAssertTrue(app.descendants(matching: .any)["thread-reader.agree.p900002"].firstMatch.exists)
+        let like = app.buttons["content.like.post:100001:900002"]
+        XCTAssertTrue(like.exists)
+        XCTAssertEqual(like.label, "点赞")
+        XCTAssertEqual(like.value as? String, "0")
         let replyX = reply.frame.minX
         app.buttons["thread-reader.compose.more"].tap()
         app.buttons["thread-reader.compose.more.reload"].tap()

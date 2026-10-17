@@ -1,3 +1,22 @@
+## 2026-10-17 U15 — USER_ACCEPTED / 提交与发布授权
+
+- 用户明确“好的现在提交并推送到github，并编译新的ipa发布到github上”。本轮授权精确提交U15，并将此前U09–U14本地提交快进推送，递增版本后生成设备IPA、推送新标签并发布GitHub预发行版；不进入新功能阶段。
+- 提交前核对U15最终快照1528项文件摘要，无验收后改动；复用161项Unit、iPhone12项（旧定位修复后复验）、iPad4项、lint/build及Live检查结果。仅更新验收状态，不重复全套测试。
+- 本阶段精确纳入README、UNKNOWN_BEHAVIORS、U15验收表、TASK_STATE及一处U08旧UI测试定位；保留用户未跟踪Prompts、技能配置、Python缓存，不纳入运行产物、用户内容或凭证。检查secret-scan、diff与staged清单后提交，完整SHA见Git与后续发布记录。
+- U06正文内容缓存手动清理入口、真实语音和完整真机/删除场景仍未完成；SDK/Passport继续按约定跳过。无生产行为、视觉、动画、手势、overlay或依赖变化。
+
+## 2026-10-17 U15 — READY_FOR_USER_VISUAL_REVIEW / 收口检查，未提交
+
+- 目标与范围：用户明确进入U15。按U15_FINAL_USER_ACCEPTANCE和COMMON，仅复核U01–U14已批准能力，基线main/dc6a4915120efe74c0c90a05dab19d826896465a；不新增产品目标、不改已验收外观或发帖/回复/上传行为。原有Prompts、技能配置、Python缓存保留；无commit/push/tag/Release/IPA导出或下一阶段。
+- 修改文件：README补当前源码能力、历史beta4包区别、缓存/预载/保存/权限；Specs/UNKNOWN_BEHAVIORS保留历史并指向当前分类；新增Docs/Audits/U15_DAILY_USE_ACCEPTANCE及本记录；UITests/U08DraftSmokeTests只修过时点赞控件定位。无生产代码/状态转换变化，无新动画、手势、overlay或依赖。
+- 发现缺口：U06要求内容与图片缓存分别显示占用/手动清理，但实际Settings仅接图片入口；内容底层clear/epoch已有测试不能视作用户入口完成。U15明确不自动补新目标，因此如实列为未完成。私有SDK/Passport按用户约定跳过，真实语音、全部删除实网分支及完整真机矩阵仍未验证；U14偶发点赞错误原因仍UNKNOWN。
+- 定向回归：make lint（602文件0违规、WRITE_BASELINE23PASS）、make build通过；Unit配置隔离Fixture iPhone的161项/29 suites全部PASS，含U01–U14、错账号/错页/串图、滚动恢复和发送去重。iPhone UI首次12项中11项PASS、U08一项exit65：旧thread-reader.agree.p900002在U14已替换，改用content.like.post:100001:900002并断言标签“点赞”及计数0；编辑器关闭/不确认/缩进/位置/草稿清理断言全保留，精确重跑PASS。iPad4项PASS：三次原生返回、旋转保持阅读位置、U08回复成功、原位视频。未重复全量quality/quality-fast或长压力矩阵；原始失败与绿色复验均保留。
+- 归档与快照：ignored Artifacts/VisualReview/U15/clean-snapshot独立detached HEAD、Android引用5545326b锁定，生成工程后设备Release archive成功（arm64/iPhoneOS、0.2.0(17)、最低18.0、未签名）。Release isolation沿用原校验规则，只适配设备归档及Release-iphoneos路径，PASS；仅AppIntents元数据无依赖提示。最终快照同步本轮5个文档/测试差异，manifest记录最终内容；787项生产输入与归档输入和U14全相同，后续测试定位修正已在两设备UI编译验证。没有把旧HEAD构建冒充修改后的产品功能验证。
+- 正常安装：visual_review_build_install.sh U15构建及模拟器签名/entitlement校验通过，同一完整Debug包覆盖原iPhone17Pro和iPadPro13M5；installed-proof核对主程序/debug dylib/Info.plist逐字节一致，容器与草稿/书签摘要未变，登录头像及设置已登录仍在。未卸载、erase、清Keychain、草稿、历史或缓存。
+- Live检查：iPhone切换真实排序，读取第二页30条，进入4图长帖并保存原图（页面确认已保存到相册）；返回重入、终止重启App后恢复同吧列表及已读楼层，图片/内容磁盘命中可见。预载关闭/恢复原“仅非昂贵连接”，吧排序恢复原“最新发布”。iPad真实吧→帖→下滚→返回完成。没有任何代理远端写入。CUA鼠标scroll/drag不推动页面，重开Simulator保留数据，改用系统AX Scroll Down完成检查；工具输入原因未确认，不改产品手势。正常设备未断网/清缓存，隔离测试覆盖相关状态；不声称完成物理iPhone/iPad验收。
+- 资源与证据：正常内容缓存约11.3 MiB/2.9 MiB，低于128 MiB；iPhone图片缓存57.9 MB，预算512 MiB。预载2 active/8 queued、后台/策略取消、迟到响应与清理epoch已由固定测试验证，一次观察不等于长期内存认证。所有日志、xcresult、快照、命令、安装/缓存摘要和Live截图仅在ignored Artifacts/VisualReview/U15，Git无真实用户内容。
+- 最终检查：make lint、make secret-scan、git diff --check均PASS。下一步仅用户检查当前正常安装版，并决定剩余内容缓存入口如何处理；状态READY_FOR_USER_VISUAL_REVIEW不代表全部能力完成。获明确批准后才提交/导出IPA，推送/标签/远端发布另需明确授权。
+
 ## 2026-10-17 U14 — USER_ACCEPTED / 本地提交授权
 
 - 用户明确“好的，现在提交U14”。本次只提交已验收的点赞/取消点赞、本人主题/楼层/子回复确认删除、相关缓存和计数接线及回归；无新增产品修改。基线 main/e10c0ef6cb6b2e973ed6a8aa01b7bb70cee5e7b3，提交标题 feat: add likes and confirmed deletion of own content，完整 SHA 以 Git 及本轮提交回执为准。
