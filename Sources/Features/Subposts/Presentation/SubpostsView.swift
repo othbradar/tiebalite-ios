@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor
 struct SubpostsView: View {
     @Bindable var store: SubpostsStore
+    @Environment(\.contentActions) private var contentActions
     let imageLoader: any ImageLoading
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
@@ -15,9 +16,12 @@ struct SubpostsView: View {
 
     var body: some View {
         Group {
-            if store.snapshot != nil {
+            if ContentRemovalVisibility.shared.contains(thread: store.route.threadID, parent: store.route.postID) {
+                Text("内容已删除").font(.subheadline).foregroundStyle(SemanticColor.secondaryText)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if store.snapshot != nil {
                 VirtualizedList(
-                    items: store.rows, backgroundColor: .systemBackground,
+                    items: store.snapshot.map { SubpostsRow.make($0, phase: store.phase) } ?? [], backgroundColor: .systemBackground,
                     accessibilityIdentifier: "subposts.list", restoredAnchor: store.readAnchor,
                     onPrefetch: { ids in
                         guard actionTask == nil else { return }
@@ -29,7 +33,7 @@ struct SubpostsView: View {
                     onScrollSettled: store.setReadAnchor,
                     onRefresh: { await store.refresh() },
                     rowContent: { row in
-                        rowContent(row)
+                        rowContent(row).environment(\.contentActions, contentActions)
                     })
             } else if store.phase == .initialFailure {
                 FullPageErrorView(title: "回复加载失败", message: "请稍后重试。", retry: refresh)
@@ -92,7 +96,7 @@ struct SubpostsView: View {
                     if let intent = store.replyIntent(for: item) {
                         composeTarget = .reply(intent, document: item.document, readingEntry: readingEntry)
                     }
-                })
+                }, parentPostID: store.route.postID)
         case .footer(let phase, let hasMore):
             footer(phase, hasMore: hasMore)
         }

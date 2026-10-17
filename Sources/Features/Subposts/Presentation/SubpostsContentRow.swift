@@ -12,6 +12,10 @@ struct SubpostsContentRow: View {
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     let identifier: String
     let reply: (() -> Void)?
+    var parentPostID: Int64 = 0
+    private var actionTarget: ContentActionTarget {
+        .init(kind: .subpost, threadID: document.source.threadID, postID: document.source.postID, parentPostID: parentPostID)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -42,6 +46,7 @@ struct SubpostsContentRow: View {
                 if let reply {
                     Button("回复", action: reply).font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
                         .frame(minHeight: 44).accessibilityIdentifier(identifier + ".action")
+                        .contextMenu { ContentDeleteAction(target: actionTarget) }
                 }
             }.padding(.leading, TiebaParityTokens.userAvatarSize + 8)
             TiebaFlatDivider(inset: 0)
@@ -49,5 +54,6 @@ struct SubpostsContentRow: View {
         .padding(.horizontal, 16).padding(.top, 8)
         .foregroundStyle(SemanticColor.primaryText).background(SemanticColor.background)
         .accessibilityElement(children: .contain).accessibilityIdentifier(identifier)
+        .modifier(ContentDeletionPreparation(target: actionTarget, authorID: author.rawUserID))
     }
 }

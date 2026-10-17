@@ -1,0 +1,79 @@
+{
+  "source": "iOS 22.11.1 TBClient native methods; public synthetic IDs only",
+  "cases": [
+    {
+      "kind": "likeThread",
+      "path": "/c/c/agree/opAgree",
+      "fields": {
+        "thread_id": "10",
+        "post_id": "1",
+        "forum_id": "9",
+        "obj_type": "3",
+        "agree_type": "2",
+        "op_type": "0"
+      }
+    },
+    {
+      "kind": "unlikeThread",
+      "path": "/c/c/agree/opAgree",
+      "fields": {
+        "thread_id": "10",
+        "post_id": "1",
+        "forum_id": "9",
+        "obj_type": "3",
+        "agree_type": "2",
+        "op_type": "1"
+      }
+    },
+    {
+      "kind": "likePost",
+      "path": "/c/c/agree/opAgree",
+      "fields": {
+        "thread_id": "10",
+        "post_id": "11",
+        "forum_id": "9",
+        "obj_type": "1",
+        "agree_type": "2",
+        "op_type": "0"
+      }
+    },
+    {
+      "kind": "unlikePost",
+      "path": "/c/c/agree/opAgree",
+      "fields": {
+        "thread_id": "10",
+        "post_id": "11",
+        "forum_id": "9",
+        "obj_type": "1",
+        "agree_type": "2",
+        "op_type": "1"
+      }
+    },
+    {
+      "kind": "deleteThread",
+      "path": "/c/c/bawu/delthread",
+      "fields": {
+        "z": "10",
+        "fid": "9",
+        "word": "Fixture",
+        "tbs": "fixture-tbs"
+      }
+    },
+    {
+      "kind": "deletePost",
+      "path": "/c/c/bawu/delpost",
+      "fields": {
+        "z": "10",
+        "pid": "11"
+      }
+    },
+    {
+      "kind": "deleteSubpost",
+      "path": "/c/c/bawu/delpost",
+      "fields": {
+        "z": "10",
+        "pid": "12"
+      }
+    }
+  ]
+}

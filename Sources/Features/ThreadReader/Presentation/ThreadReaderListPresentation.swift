@@ -1,3 +1,5 @@
+import Foundation
+
 enum ThreadReaderRowID: Hashable, Sendable {
     case end(threadID: Int64)
     case firstPost(threadID: Int64, postID: Int64)
@@ -42,12 +44,12 @@ struct ThreadReaderPostRowModel: Equatable, Sendable {
     let metadata: String
     let document: ThreadContentDocument
     var inlineSubposts: [ThreadReaderSubpostRowModel]
-    let remainingSubpostCount: Int
-    let totalSubpostCount: Int
+    var remainingSubpostCount: Int
+    var totalSubpostCount: Int
     let author: ThreadReaderAuthor
     let isThreadAuthor: Bool
     let title: String?
-    let replyCount: Int32?
+    var replyCount: Int32?
     let agreeCount: Int64?
 
     init(_ post: ThreadReaderPost, threadAuthorID: Int64 = 0, title: String? = nil, replyCount: Int32? = nil) {
@@ -116,12 +118,15 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
     private(set) var rows: [ThreadReaderRowModel]
     private(set) var prefetchRowIDs: Set<ThreadReaderRowID>
     private let threadID: Int64
+    private var postPresentationDates: [Int64: Date]
 
     init(
         snapshot: ThreadReaderSnapshot,
-        pagination: ThreadReaderPaginationRowState
+        pagination: ThreadReaderPaginationRowState,
+        presentedAt: Date = .now
     ) {
         threadID = snapshot.threadID
+        postPresentationDates = Dictionary(snapshot.posts.map { ($0.id.postID, presentedAt) }, uniquingKeysWith: min)
         let postRows = snapshot.posts.map { Self.postRow($0, snapshot: snapshot) }
         rows = postRows
             + [Self.paginationRow(
@@ -136,13 +141,16 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
     var postRowCount: Int {
         rows.lazy.filter { $0.id.isPost }.count
     }
+    func presentedAt(postID: Int64) -> Date { postPresentationDates[postID] ?? .distantPast }
 
     mutating func append(
         snapshot: ThreadReaderSnapshot,
         newPosts: [ThreadReaderPost],
-        pagination: ThreadReaderPaginationRowState
+        pagination: ThreadReaderPaginationRowState,
+        presentedAt: Date = .now
     ) {
         removePaginationRow()
+        for post in newPosts { postPresentationDates[post.id.postID] = presentedAt }
         rows.append(contentsOf: newPosts.map { Self.postRow($0, snapshot: snapshot) })
         rows.append(Self.paginationRow(
             threadID: threadID,

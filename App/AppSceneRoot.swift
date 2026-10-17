@@ -57,11 +57,14 @@ struct AppSceneRoot: View {
         .environment(\.textComposer, compositionRoot.textComposer)
         .environment(\.bookmarks, compositionRoot.bookmarkStore)
         .environment(\.favorites, compositionRoot.favoriteStore)
+        .environment(\.contentActions, compositionRoot.contentActionStore)
+        .modifier(ContentActionFeedbackHost(store: compositionRoot.contentActionStore, openLogin: openLogin))
         .modifier(FavoriteFeedbackHost(store: compositionRoot.favoriteStore))
         .modifier(BookmarkFeedbackHost(store: compositionRoot.bookmarkStore))
         .onChange(of: compositionRoot.authContextProvider.contentCacheContext) { _, _ in
             compositionRoot.bookmarkStore.sessionChanged()
             compositionRoot.favoriteStore.sessionChanged()
+            compositionRoot.contentActionStore.sessionChanged()
         }
         .modifier(TextComposerHost(service: compositionRoot.textComposer))
         .fullScreenCover(item: $mediaPresentation) { presentation in
@@ -93,6 +96,7 @@ struct AppSceneRoot: View {
             compositionRoot.contentPrefetchEnvironment.setActive(scenePhase == .active)
             await sessionStore.restoreIfNeeded()
             await featureStores.localBlockingStore?.activate()
+            await compositionRoot.contentActionStore.activate()
             await updateNotifications()
         }
         .onChange(of: sessionStore.state) { _, _ in

@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor
 struct ForumHomeView: View {
     @Bindable var store: ForumHomeStore
+    @Environment(\.contentActions) private var contentActions
     let route: ForumRoute
     var imageLoader: any ImageLoading = DisabledImageLoader()
     let onOpenThread: (ForumThreadSummary) -> Void
@@ -90,6 +91,7 @@ struct ForumHomeView: View {
             content: { pageID in
             if let page = store.pageStore(for: pageID) {
                 ForumThreadPageView(store: page, pageID: pageID, imageLoader: imageLoader, onOpenThread: onOpenThread)
+                    .environment(\.contentActions, contentActions)
                     // Pager hosts each page separately; extend its reading viewport as well.
                     .ignoresSafeArea(.container, edges: .bottom)
             }
@@ -101,6 +103,7 @@ struct ForumHomeView: View {
 @MainActor
 struct ForumThreadPageView: View {
     @Bindable var store: ForumHomeStore
+    @Environment(\.contentActions) private var contentActions
     let pageID: ForumPageID
     let imageLoader: any ImageLoading
     let onOpenThread: (ForumThreadSummary) -> Void
@@ -139,6 +142,7 @@ struct ForumThreadPageView: View {
                                  requestReload: { Task { await store.reload() } },
                                  requestNextPage: { Task { await store.loadNextPage() } },
                                  allThreadsHidden: presentation.threadRows.isEmpty && store.listPresentation?.threadRows.isEmpty == false)
+                    .environment(\.contentActions, contentActions)
             })
         } else if case .initialFailure = store.state {
             FullPageErrorView(title: "吧首页加载失败", message: "网络或服务暂时不可用。") {

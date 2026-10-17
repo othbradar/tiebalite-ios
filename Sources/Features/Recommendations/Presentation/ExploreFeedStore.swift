@@ -165,7 +165,9 @@ final class ExploreFeedStore {
     private func updatePresentation() {
         guard !items.isEmpty || pending != nil else { presentation = nil; return }
         let footer: PaginationFooterState = state == .loadingMore ? .loading : state == .nextFailure ? .failure : next == nil ? .end : .idle
-        presentation = .init(items: items.filter { !blockedUsers.contains($0.author?.rawUserID ?? 0) }, pagination: footer)
+        presentation = .init(items: items.filter {
+            !blockedUsers.contains($0.author?.rawUserID ?? 0) && !ContentRemovalVisibility.shared.threadIDs.contains($0.threadID)
+        }, pagination: footer)
     }
 }
 

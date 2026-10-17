@@ -21,6 +21,12 @@ actor ContentPageCache {
     private(set) var readRequests = 0
     private let policy: ContentCachePolicy
     private let disk: ContentCacheDisk?
+    private var removals = ContentRemovalCachePolicy()
+    private var removalRevision: UInt64 = 0
+    func excludeConfirmedRemovals(_ targets: Set<ContentActionTarget>, dates: [ContentActionTarget: Date] = [:]) {
+        guard targets != removals.targets || dates != removals.dates else { return }
+        removals.targets = targets; removals.dates = dates; removalRevision &+= 1
+    }
     private var memory: [String: MemoryEntry] = [:]
     private var access: UInt64 = 0
     private var cost = 0
@@ -41,16 +47,18 @@ actor ContentPageCache {
     func read(key: String) async -> Data? {
         readRequests += 1
         let identifier = Self.digest(Data(key.utf8))
-        let ticket = epoch
+        let ticket = epoch, removalTicket = removalRevision
         access &+= 1
         if var entry = memory[identifier] {
+            guard removals.allows(entry.data, key: key) else { await remove(key: key); return nil }
             entry.access = access
             memory[identifier] = entry
             touch(identifier)
             memoryHits += 1
             return entry.data
         }
-        guard let data = await disk?.read(identifier), epoch == ticket else { return nil }
+        guard let data = await disk?.read(identifier), epoch == ticket, removalRevision == removalTicket else { return nil }
+        guard removals.allows(data, key: key) else { await remove(key: key); return nil }
         diskHits += 1
         remember(data, identifier: identifier)
         touch(identifier)
@@ -59,8 +67,9 @@ actor ContentPageCache {
 
     @discardableResult
     func write(_ data: Data, key: String, epoch ticket: UInt64) async -> Bool {
-        guard ticket == epoch, data.count <= policy.maximumEntryBytes else { return false }
+        guard ticket == epoch, data.count <= policy.maximumEntryBytes, removals.allows(data, key: key) else { return false }
         let identifier = Self.digest(Data(key.utf8))
+        let removalTicket = removalRevision
         let evicted: [String]
         if let disk {
             let recent = touches
@@ -68,7 +77,7 @@ actor ContentPageCache {
             guard let removed = await disk.write(data, identifier: identifier, epoch: ticket, touches: recent) else { return false }
             evicted = removed
         } else { evicted = [] }
-        guard ticket == epoch else { return false }
+        guard ticket == epoch, removalTicket == removalRevision else { return false }
         for key in evicted { removeMemory(key) }
         remember(data, identifier: identifier)
         return true

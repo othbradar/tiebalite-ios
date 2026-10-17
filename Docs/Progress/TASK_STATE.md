@@ -1,3 +1,46 @@
+## 2026-10-17 U14 — USER_ACCEPTED / 本地提交授权
+
+- 用户明确“好的，现在提交U14”。本次只提交已验收的点赞/取消点赞、本人主题/楼层/子回复确认删除、相关缓存和计数接线及回归；无新增产品修改。基线 main/e10c0ef6cb6b2e973ed6a8aa01b7bb70cee5e7b3，提交标题 feat: add likes and confirmed deletion of own content，完整 SHA 以 Git 及本轮提交回执为准。
+- 提交前逐项核对 ignored Artifacts/VisualReview/U14/like-failure/installed-proof.json：787 项生产输入 SHA256 全部与验收版本一致。复用该代码树的 make lint（602 文件0违规）、make build、WRITE_BASELINE 23项及 type-green 9项/3 suites、like-state 3项定向测试结果；既有 iPhone/iPad 隔离 UI 回归仍有效。按 APPROVE_CURRENT_PHASE 不重复全套测试。
+- 本轮 make secret-scan、git diff --check 均 exit0；精确暂存 U14 源码/接线、合成 fixture、生成协议、测试、规格/ADR/记录，核对暂存清单。不纳入用户原有 Prompts、技能配置、Python 缓存、Artifacts、真实响应/截图/凭证或 Android submodule。
+- 用户确认真实点赞恢复成功；此前偶发提示未重现，原因仍 UNKNOWN，不断言网络故障。本人删除已有 Mock/权限/缓存和 UI 覆盖，未将其表述为用户已完成所有真实删除场景。真机/Release、完整原版删除入口及私有 SDK/Passport仍未验证；参与投票不在 U14 范围。
+- 保留已验收外观和发帖/回复/上传链路；本次无新增动画、手势、overlay、依赖。仅本地提交，不推送、不发布、不进入 U15；提交后停止。
+
+## 2026-10-17 U14 — 偶发提示回验恢复 / 未改产品代码
+
+- 用户确认报错发生在另一条尚未点赞的内容，后续手动尝试已恢复，提出可能为偶发网络问题。本轮诊断只捕获到恢复后的3次流程：读取均HTTP200/业务错误0，当前账号/主题/目标楼层匹配，点赞字段完整且未选中；随后写回执均HTTP200，未命中错误处理断点。结合用户回验可确认这些尝试成功，不能据此证明先前失败一定由网络引起。
+- 已 detach 原iPad PID59653并退出LLDB session33326；未改参数、重试策略、外观、发帖回复或生产源码，未重新安装、提交、推送或进入下一阶段。只更新本任务记录，git diff --check通过。沿用上一轮定向3项测试PASS；没有新增产品变更，不重复构建/门禁。
+- 状态：原失败未重现，具体原因UNKNOWN；U14继续等待用户验收。若再发生，应采集当次读取/解析错误证据，不放宽检查或自行增加写入重试。
+
+## 2026-10-17 U14 — 点赞成功后出现 unavailable / 等待单次诊断
+
+- 用户确认此前几次点赞成功，随后出现“暂时无法操作此内容，请稍后重试”。本轮只诊断，未改生产实现、请求、界面或安装；原 U14 工作树保留。
+- 代码确认该提示是 ContentActionStore 的通用错误文案，可能来自动作前读取/映射或其他错误，不能凭截图认定服务端限流或再次类型错误。当前协议基线定向 xcodebuild test 3项 PASS（like-state/baseline.log/.xcresult），未跑其余门禁，因为无产品变更。
+- 原 iPad PID59653 已挂 LLDB 只读自动继续断点（session33326）：仅检查 HTTP/错误码、目标/账号匹配布尔值、Agree字段存在与数值及错误类型，不记录凭证、完整响应或用户内容。调试脚本在 ignored Artifacts/VisualReview/U14/like-state/observe.lldb；设备当前继续运行。已问是取消现有赞还是赞新内容，并请求用户对同一报错按钮手动点击一次；截至本记录未收到诊断回调。真实写入只由用户点击，代理不代点、不自动重试。
+- 下一步：收到回调后辨别具体失败分支，先补失败回归再最小修复；未取得证据前不放宽检查、不改参数。结束诊断时必须 detach LLDB。无新增动画、手势、overlay、依赖、提交、推送或下一阶段。
+
+## 2026-10-17 U14 — 点赞目标类型修复 / READY_FOR_USER_VISUAL_REVIEW
+
+- 目标与范围：修复用户手动点赞收到“操作未成功”的问题；沿用 U14 未提交工作树。本轮无 commit/push/IPA/U15，未改发帖、回复、上传、已验收视觉和用户数据。
+- 根因证据：用户两次手动点击，LLDB 只读诊断先取得 HTTP200/error_code3280005，后取得 error_msg“点赞对象类型错误”，未记录凭证/完整响应；调试器已 detach。此前将 Feed 热评分支认作主题、将 PBTopBar 的 FP无楼层特殊分支认作普通楼层。重新核对 iOS22.11.1 Social.processAttitude 普通主题传3（0x101aef7d4/0x101aef7dc），TopBar.zanAction 普通楼层传1（0x102e6e488），2属于 isFromFP && iFloorNum=nil 的另一分支。以下较早 U14 记录中的主题1/楼层2已被本记录纠正。
+- 修改文件：NativeContentActionProtocol 仅将 like 业务 obj_type 改为主题3/楼层1并加来源注释；U14NativeActionTests、ContentActions 的2份合成fixture、native_actions/generate_forms.py、新增原生表单重放；API_EVIDENCE 与 ADR-0039 更正证据。无新增动画、手势、overlay、依赖或其他生产接线变化。
+- 关键行为：目标ID、agree_type、op_type、账号准备、签名、请求次数及错误状态不变。失败继续保留计数，未知结果下一次仅只读检查，禁止自动重发。合成fixture业务键来自原版静态分支，Common/签名来自原包离线指令重放，不冒充真实流量。
+- 测试命令：定向 xcodebuild test（Unit配置、隔离Fixture iPhone），baseline2项通过；type-red 3项中2项失败/7个断言，明确复现错误类型及其签名差异（exit65）；最小生产修正后 type-green 3 suites/9项全部通过（exit0）。覆盖主题/楼层赞与取消、完整原生表单、3280005拒绝、重复点击、未知结果、切号及删除相邻状态。仅格式提取局部变量，不改变已通过断言；未重复全套测试/UI长测。
+- 门禁：make lint 首次1处测试行长失败，拆行后602文件0违规/WRITE_BASELINE23项PASS；make build、make secret-scan、git diff --check PASS。生成原生表单脚本成功，无网络。辅助枚举脚本两次JSON键名错误已按实际classname/get(methods)修正；CUA一次过期AX索引刷新后正常，不计产品失败。
+- 安装与验收入口：visual_review_build_install.sh U14 正常Debug构建/签名校验通过，覆盖原iPhone17Pro和iPadPro13M5，版本0.2.0(17)。未卸载/erase/清凭证、草稿、缓存。两设备主程序/debug dylib/Info.plist与构建产物逐字节一致，787份生产输入摘要见 ignored like-failure/installed-proof.json；iPhone留在吧首页点赞入口，iPad留在用户原测试帖楼层，截图为20261017-142446-like-type-fixed-phone/ipad.png。
+- 未覆盖与下一步：真实点赞/取消仍由用户点击；离线通过和安装不能证明服务端已接受，等待用户回验。未验证真机/Release；保持本阶段，未进入U15。原有用户Prompts/技能配置/临时文件保留。
+
+## 2026-10-17 U14 — READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 范围：用户授权进入 U14，按 COMMON 与既有“原版 iOS”要求实现帖子/楼层点赞、取消点赞及本人主题/楼层/子回复确认删除；不实现参与投票。基线 main/e10c0ef6cb6b2e973ed6a8aa01b7bb70cee5e7b3，开始 tracked clean；原有 Prompts、技能配置与 Python 临时缓存全部保留。本轮无 commit/push/tag/Release/U15。
+- 修改：新增 ContentActions 领域模型、NativeContentActionProtocol、独立 App runtime/账号读模型、ContentActionStore、现有控件接线、ConfirmedContentRemoval 持久化及缓存准入/可见性投影；涉及 Forum/Recommendations/Explore/ThreadReader/Subposts/UserProfile。复用既有空心图标、字号、间距；主题删除在现有底部菜单，楼层/子回复在既有“回复”长按菜单。只有系统确认/结果 alert，无新自定义手势、导航动画、overlay 或第三方依赖。发送/上传服务、冻结 CachedReadingRepository、WRITE_BASELINE.json 未改。
+- iOS 证据：22.11.1 本地参考二进制 SHA 4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb，最小 NativeActions schema 与原包核对 14 messages/51 fields。opAgree 的 selected=true 对应 op_type=0、撤销=1，主题 obj_type=1/楼层=2；删除采用已核对的 TBCDelThreadModel/TBCDelPostModel 分支。未知 SDK/Passport 不伪造；未覆盖全部 ForumManager 删除分支，不能称全部原版写行为对齐。证据/状态机与 ADR-0039 已更新，未把 Android 字段用于补齐新写请求。
+- 状态：每目标防重复；失败保留原计数；不完整回执/超时为 unknown，下一次点赞仅重新读取，不重复写入。删除须正向核对当前 UID/目标/作者及可删除状态，确认后再检查归属，成功回执与本地持久化完成才局部移除。切号取消、迟到响应拒绝。公开已删 ID 记录最多4096项，容量或存储不可用时阻止新删除。旧分页、预载、个人回复页与旧缓存不能复活已确认删除的条目；保留导航/分页/阅读位置。删除前三条预览之外的子回复也扣减旧父楼总数；新读到的服务端总数不重复扣减。
+- 定向验证：基线 R06 展示5项PASS；unit-final 的 U14状态/持久化/原生协议7项PASS；profile-target-final 6项PASS；locate-green 的原生定位/权限6项PASS；最后 count-green 11项/3 suites PASS，含子回复计数、缓存及 R06 展示回归。U03缓存精确 selector 1项PASS。iPhone U14短UI 28.849s、iPad同流程30.102s各1条PASS，覆盖赞/取消、删除确认取消与确认、返回后列表移除。自动化仅隔离Fixture，无Live写入；未跑全量Unit、quality-fast、quality或长压力矩阵。
+- 失败与修正均留在 ignored Artifacts/VisualReview/U14：早期 source group缺失/环境接线编译错误、测试参数顺序错误及lint格式失败已修；UI初次configuration不含测试与Unit selector漏括号造成零测试，不计为通过；UI重复“删除”AX定位失败改为目标稳定ID。权限/计数回归先红后绿，未删产品断言。Live只读检查发现 pid+pn 返回相邻页而不含目标楼，原生 getRequestParamsWithPage 的 storePostID 分支使用 back=0/arround=20 且不传pn；只修独立动作权限读取，locate-red两处失败后locate-green通过。旧 native schema 14/49升级为核对后14/51。计数回归 count-red 先失败，另修测试fixture预览实际2条的错误假设，count-green通过。最后4处lint行长/对齐失败修复后 lint-final-count通过。
+- 最终门禁：make lint 602文件0违规、WRITE_BASELINE23项PASS；make build PASS；正常 Debug install-final-count 构建/签名检查PASS。两台原有 Live 模拟器 iPhone17Pro/iPadPro13M5 已保留容器覆盖安装0.2.0(17)，主程序/debug dylib/Info.plist逐字节匹配；760份生产输入摘要记录于 installed-proof.json。未卸载/erase/清登录、Keychain、草稿、缓存或历史。只读Live已看到本人楼层“删除此楼”菜单，不触发远端写入；实际远端点赞/取消/删除是否成功由用户在自有内容上验证。
+- 保留边界：仅 Simulator，未验证真机/Release、完整原版删除入口/私有SDK。无代理真实发送、点赞、取消或删除。最终 make secret-scan 与 git diff --check 均PASS。正常Live iPhone停在本人楼层菜单（截图可见“删除此楼”），iPad停在吧首页点赞入口，截图留在ignored目录；下一步仅等待用户验收。
+
 ## 2026-10-15 U13 — USER_ACCEPTED / 本地提交授权
 
 - 用户明确“现在提交U13”。本次仅提交已验收的帖内视频播放、点击/自动播放设置、语音播放、有界GIF/WebP与相关回归和规格；无新增产品修改。基线de3b96992013dcdac910d423016dca9dfc3d43ab，提交题目feat: support video voice and animated media；完整SHA见Git和本轮提交回执。

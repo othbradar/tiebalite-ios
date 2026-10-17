@@ -86,6 +86,7 @@ targets:
           - AGENTS.md
       - path: Sources/Features/Notifications
       - path: Sources/Features/Recommendations
+      - path: Sources/Features/ContentActions
       - path: Sources/Features/Composer
       - path: Sources/Features/Subposts
       - path: Sources/Features/ThreadReader

@@ -1407,3 +1407,41 @@ CODE_EVIDENCE：参考 TBClient SHA256 `4f0cb74c738f714258dd14bde5fb7a7859ab7baf
 RUNTIME_EVIDENCE：iPhone 正常 Live 的当前账号主题首屏 raw0/mapped0；自己的回复首屏 raw18/mapped18，人工点击一页下一页 raw8/mapped8。计数来自 profile-read 日志，不保存正文、资源 URL 或凭证。10-15修正映射后当前账号iPhone/iPad各18条均完整映射；截图对应他人首屏和一页下一页各50条均完整映射。另一个iPad目标error_code0但forum_list/has_more完全缺失，只含ctime/error_code/logid/server_time/time（87字节）。同日用户补充可能为隐藏关注吧，要求不要报加载失败：该成功但无列表的结构单独映射 contentUnavailable，以“暂无可查看的关注吧”展示，不冒充空列表成功，也不称已证明隐私开关；非零错误码和畸形/部分字段继续失败。参考脱敏结构记录 forum-live-ipad-response-shape.txt；最后安装身份结果见TASK_STATE。
 
 UNKNOWN / 限制：原版完整个人中心的动态视频/商业卡片、全部入口 page/source 组合、私有 SDK/Passport、云端用户黑名单不在本批。真实关注/取消关注写入未自动操作，仅 Mock 验证，不将其描述成服务端已验收。
+
+## U14 / 2026-10-17 — iOS 22.11.1 点赞与本人删除
+
+来源仅为用户提供的 `百度贴吧_22.11.1_iOS睿睿.ipa` 中 TBClient，SHA256
+`4f0cb74c738f714258dd14bde5fb7a7859ab7baf19183c01e900704ab702d9eb`。
+本项不使用 Android 请求、签名或权限行为补齐未知项。
+
+| 原版符号 / ARM64 地址 | 已确认契约 |
+| --- | --- |
+| TBCCommonZanModel.init 0x10023b62c；opType:agreeType:objType:threadID:postID:forumID: 0x101be4b00 | `/c/c/agree/opAgree` JSON 回执；业务键 thread_id/post_id/forum_id/op_type/obj_type/agree_type |
+| handleOperateType:agreeInfoItem: 0x101be5f54，分支0x101be61dc、0x101be63a8；opType 分支0x101be4cc0 | agree_type=2；目标 selected=true → op_type=0/currentOperate=1/hasAgree=1/count+1；取消 → op_type=1/currentOperate=2/hasAgree=0/count-1 |
+| TBCFeedComponentViewModelSocial.processAttitude 0x101aef5e0（普通主题0x101aef7d4/0x101aef7dc，调用0x101aef89c）；TBCNewPBTopBar.zanAction 0x102e6e060（普通楼层0x102e6e488，调用0x102e6e498） | 普通主题 obj_type=3；普通楼层 obj_type=1。TopBar 的 isFromFP=true 且 iFloorNum=nil 分支才在0x102e6e610传2，不属于普通PB楼层 |
+| TBCCommonZanResponseItem.init 0x101be677c | error_code/error_msg；只以明确数值或十进制串0作成功。未知/空/HTTP失败不成功、不重发 |
+| TBCAgreeInfoItem.getUserCurrentAttitude 0x101b42abc | has_agree=1 且 agree_type=2 为赞，5为踩；有计数的Agree中省略零值has_agree按原版未选中处理，整个Agree缺失/空不允许操作 |
+| TBCDelThreadModel.deleteThreadWithThreadId:fid:fName:isStory: 0x102ffc4f8；isLastDeleteHasSuccessed 0x102ffcbec | `/c/c/bawu/delthread`，普通主题 z/tbs/fid/word；is_story仅Story分支，本实现不加入 |
+| TBCDelPostModel.deletePostWithThreadId:pid: 0x10305e930 | `/c/c/bawu/delpost`，业务 z/pid；本人与具体目标PID分离，主题不误用delpost |
+| TBCPBCellItem.isCurrentUserAuthor 0x101b97f08；currentUsrIsFloorOwner 0x101b97e10；TBCNewPBCell.deletePostWithPostID: 0x102dfaa64 | 作者UID对当前账号UID，不比较显示名；只实现本人分支，不继承吧务权限 |
+| TBCPBPageModel.initWithPbCommentArrangeADManager:pbBannerArrangeADManager:multiDataHandler: 0x102c98584 | `/c/f/pb/page` cmd302001；独立最小元数据读取，不改变既有阅读服务 |
+
+独立 `NativeActions.proto` 的14个消息/51个选中字段通过
+`scripts/fixtures/native_actions/verify.py --reference-binary <本地TBClient>` 与原版 descriptor 比较；未选字段由 protobuf 原生未知字段机制处理。
+主要 page请求 back3/kz4/pid7/pn18/arround22/common25；page响应 error1/data2，data.user1/forum2/post_list6/thread8/user_list13/first_floor_post38；floor请求 kz1/pid2/spid3/pn4/common9；响应data.post3/subpost_list4/thread5/forum6。
+Agree字段 agree_num1/has_agree2/agree_type3/disagree_num4/diff_agree_num5；Thread tiebaplus_cant_delete197/is_deleted181。
+这些是限定的动作前元数据读取，不能声称完整 PBPage 参数、私有 SDK、广告/AB provider 完全复刻。
+
+实现：`NativeContentActionProtocol`、独立 `ContentActionAppRepository`、`ContentActionStore`。
+原版表单通路复用已验 iOS Common / TBS /签名、Cookie和HTTP头纯工具。无新身份伪造，无Android兼容退路。
+样本：`TestSupport/Fixtures/API/ContentActions/native-ios-forms.json` 为人工构造的公开数字ID契约，非账号流量。
+回归：U14NativeActionTests、U14ContentActionTests、U14ContentActionStateTests。
+Live 点赞/取消/删除仅由用户手动验证，代理未发送这些写请求。设备SDK/Passport仍按用户指令跳过。
+
+U14补充：TBCVitalityFloorModelV2.loadFloorDataWithPostID:subPostID: 0x102f46818，在0x102f46be0/0x102f46be4设置CMD0x49bb2=302002。楼中楼目标pid为父楼、spid为子回复ID。VitalityFloorViewControllerV2.deletePost: 0x102f636e4验证当前UID并传具体子回复iPostID；本轮自删采用同包TBCDelPostModel的简单z/pid分支，不加入另一ForumManager吧务/多吧/理由/屏蔽分支参数，也不声称完整复刻所有删除入口。
+
+定位读取修正：正常模拟器三次打开本人楼层，只有pid/pn的检查返回目标之后的8个条目，目标本身不在post_list（LLDB仅记录状态/数量/匹配布尔值，未保存响应或凭证）。原版 TBCVitalityPBModel.getRequestParamsWithPage:sortType: 的 storePostID/myReplyFloor 分支在0x102daecd0–0x102daed78设置back=0、arround=20，不走普通pn分支。本轮动作检查对正PID采用该定位分支；主题首楼仍用pn=1。locate-red明确复现缺少定位键，修正后验证二进制字段实际编码。原发帖、回复与普通分页不变。
+
+U14 点赞失败修正（2026-10-17）：用户手动点击的只读诊断得到 HTTP 200 / error_code=3280005 / error_msg=“点赞对象类型错误”。此前把 Feed 的热门回复点赞误认成主题、把 TopBar 的 FP 特殊分支误认成普通楼层，导致主题1/楼层2映射错误；上表已更正。普通主题 Social 的 obtainETypeComment=false 分支传3；热评与普通PB楼层均传1，CommonZanModel 0x101be4d38–0x101be4d70将枚举分别编码为字符串3/1。未改 op_type、agree_type、目标ID、准备/签名/重试或发帖回复链路。
+
+新增 native-ios-like-common.json 使用公开合成目标及虚构账号/设备字段，通过 scripts/fixtures/native_actions/generate_forms.py 离线执行原包 Common/普通表单签名指令；业务目标来自上述静态调用分支，不能把人工合成参数宣称为真实抓包。测试按独立 kind 选择主题/楼层，比较业务字段与完整签名表单，包含点赞及取消；3280005 响应继续按明确失败处理。

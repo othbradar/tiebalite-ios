@@ -4,6 +4,7 @@ import Foundation
 final class AppCompositionRoot {
     lazy var bookmarkStore = makeBookmarkStore()
     lazy var favoriteStore = makeFavoriteStore()
+    lazy var contentActionStore = makeContentActionStore()
     let contentScheduler = ContentLoadScheduler()
     lazy var contentPrefetchEnvironment = ContentPrefetchEnvironment(settings: sharedSettingsStore)
     let environment: AppEnvironment

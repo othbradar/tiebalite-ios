@@ -267,9 +267,18 @@ protoc --proto_path="$repo/Config/Protobuf" \
   --swift_out="$generated" \
   --swift_opt=Visibility=Public,FileNaming=FullPath,UseAccessLevelOnImports=false NativeProfiles.proto
 
+# U14 independent authenticated inspection schemas; frozen write schema is unchanged.
+actions_schema="Config/Protobuf/NativeActions.proto"
+actions_schema_hash="$(awk -F '\t' '!/^#/ && NF { print $1 }' "$repo/Config/Protobuf/NativeActions.inputs.tsv")"
+[[ "$(shasum -a 256 "$repo/$actions_schema" | awk '{ print $1 }')" == "$actions_schema_hash" ]] || exit 1
+protoc --proto_path="$repo/Config/Protobuf" \
+  --plugin="protoc-gen-swift=$(command -v protoc-gen-swift)" \
+  --swift_out="$generated" \
+  --swift_opt=Visibility=Public,FileNaming=FullPath,UseAccessLevelOnImports=false NativeActions.proto
+
 generated_count="$(find "$generated" -type f -name '*.pb.swift' | wc -l | tr -d ' ')"
-[[ "$generated_count" -eq 237 ]] || {
-  printf 'ERROR: expected 237 generated Swift files; found %s.\n' \
+[[ "$generated_count" -eq 238 ]] || {
+  printf 'ERROR: expected 238 generated Swift files; found %s.\n' \
     "$generated_count" >&2
   exit 1
 }
@@ -298,6 +307,9 @@ native_explore_input_count=1
 native_profiles_schema=$profiles_schema
 native_profiles_schema_sha256=$profiles_schema_hash
 native_profiles_input_count=1
+native_actions_schema=$actions_schema
+native_actions_schema_sha256=$actions_schema_hash
+native_actions_input_count=1
 protoc=$expected_protoc
 protoc_gen_swift=$expected_generator
 swiftprotobuf_runtime=$expected_generator

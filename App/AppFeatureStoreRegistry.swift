@@ -72,6 +72,10 @@ final class AppFeatureStoreRegistry {
         )
         bookmarkStore = compositionRoot.bookmarkStore
         favoriteStore = compositionRoot.favoriteStore
+        compositionRoot.contentActionStore.didRemove = { [weak self, weak compositionRoot] _ in
+            await compositionRoot?.invalidateRemovedContent()
+            self?.applyLocalBlocks(LocalUserVisibility.shared.ids)
+        }
         exploreStore = compositionRoot.makeExploreStore()
         localBlockingStore = compositionRoot.localBlockingStore
         localBlockingStore?.didChange = { [weak self] ids in self?.applyLocalBlocks(ids) }

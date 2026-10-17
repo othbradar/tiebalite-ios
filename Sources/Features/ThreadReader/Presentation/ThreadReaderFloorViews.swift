@@ -70,6 +70,10 @@ private struct ThreadReaderPostView: View {
     var bookmarkTitle: String?
     var bookmarkForum: String?
 
+    private var actionTarget: ContentActionTarget {
+        .init(kind: post.source.scope == .firstPost ? .thread : .post,
+              threadID: post.source.threadID, postID: post.source.scope == .firstPost ? 0 : post.source.postID)
+    }
     private var contentInset: CGFloat { post.source.scope == .post ? TiebaParityTokens.userAvatarSize + 8 : 0 }
 
     var body: some View {
@@ -77,15 +81,13 @@ private struct ThreadReaderPostView: View {
             HStack(alignment: .top, spacing: 8) {
                 authorHeader
                 if post.source.scope == .post {
-                    HStack(spacing: 4) {
-                        TiebaLikeIcon()
-                        Text("\(post.agreeCount ?? 0)").font(.caption)
+                    ContentLikeButton(target: actionTarget, count: post.agreeCount) { count in
+                        HStack(spacing: 4) {
+                            TiebaLikeIcon()
+                            Text("\(count ?? 0)").font(.caption)
+                        }
+                        .frame(minWidth: 44, minHeight: 44)
                     }
-                    .frame(minWidth: 44, minHeight: 44)
-                    .foregroundStyle(SemanticColor.secondaryText)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("点赞数 \(post.agreeCount ?? 0)")
-                    .accessibilityIdentifier("thread-reader.agree.p\(post.source.postID)")
                 }
             }
             VStack(alignment: .leading, spacing: 8) {
@@ -103,6 +105,7 @@ private struct ThreadReaderPostView: View {
                     .frame(minHeight: 44, alignment: .leading)
                     .accessibilityIdentifier("thread-reader.reply.p\(post.source.postID)")
                     .contextMenu {
+                        ContentDeleteAction(target: actionTarget)
                         if let bookmarkTitle, let bookmarkForum {
                             FavoriteAction(entry: .init(target: .init(threadID: post.source.threadID, postID: post.source.postID),
                                                         title: bookmarkTitle, forumName: bookmarkForum, status: 1, isDeleted: false),
@@ -127,6 +130,7 @@ private struct ThreadReaderPostView: View {
         .background(SemanticColor.background)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(ThreadReaderAccessibilityID.post(post.source))
+        .modifier(ContentDeletionPreparation(target: actionTarget, authorID: post.author.rawUserID))
     }
 
     private var authorHeader: some View {

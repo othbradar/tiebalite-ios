@@ -160,12 +160,16 @@ struct ForumHomeRowModel: Identifiable, Equatable, Sendable {
 }
 
 struct ForumHomeListPresentation: Equatable, Sendable {
-    func hidingUsers(_ ids: Set<Int64>) -> Self {
-        guard !ids.isEmpty else { return self }
+    func hidingUsers(_ ids: Set<Int64>, removedThreads: Set<Int64> = []) -> Self {
+        guard !ids.isEmpty || !removedThreads.isEmpty else { return self }
         var copy = self
-        copy.threadRows = threadRows.filter { !ids.contains($0.sourceSummary.author?.rawUserID ?? 0) }
+        copy.threadRows = threadRows.filter {
+            !ids.contains($0.sourceSummary.author?.rawUserID ?? 0) && !removedThreads.contains($0.threadID)
+        }
         copy.rows = rows.filter { row in
-            if case let .thread(thread) = row.content { return !ids.contains(thread.sourceSummary.author?.rawUserID ?? 0) }
+            if case let .thread(thread) = row.content {
+                return !ids.contains(thread.sourceSummary.author?.rawUserID ?? 0) && !removedThreads.contains(thread.threadID)
+            }
             return true
         }
         return copy

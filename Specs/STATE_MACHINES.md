@@ -815,3 +815,12 @@ ProfileListStore：idle→loading→loaded/empty/failed/privateContent/contentUn
 ProfileDetailsStore：关系未知→读取服务器状态；缺字段不能由统计数字补值。点击关注取已验证 portrait 与 prior state，期间锁按钮，成功失效 scoped following/profile，失败恢复 prior；取消/账号改变使旧 task 不能更新当前 state。Repository 按账号/UID防并行写，未知/失败不自动重试。
 
 LocalBlockingStore：账号命名空间切换先清展示投影，再读取各自的持久化名单；原子保存完成后发布 UID 集合。失败明确展示；列表保留原始服务器页/计数/分页，过滤投影不能变更远端结束判断。筛选及取消筛选不修改恢复事务、offset 或 readAnchor。
+
+## U14 ContentActionStore
+
+- scope隔离的 per-target idle → inspecting → submitting → accepted；同目标busy期间不启动第二次检查/写入。
+- definite failure保留已有like投影与原行；unknown标记target，下次点赞仅inspect同步真实状态；不自动重发。
+- 删除候选先currentUID==row.authorUID，再native inspection正向grant；menu → immutable confirmation → fresh ownership inspection → local ledger preflight → single deletion → durable marker →局部不可用/移除。
+- 取消确认不请求；授权变化/目标缺失/账号变化中止；other-author和UNKNOWN无删除入口。
+- session change取消任务并清理like/permission/confirm；已确认删除的公开目标记录保留，缓存body准入与可见性投影排除迟到旧内容，阅读锚点/导航/分页不重置。
+- 子回复删除时间晚于父楼展示时间时，即使不在前三条预览也扣减旧总数；fresh父楼总数以服务端为准，不再次扣减。早于删除的父楼正文缓存拒绝命中/迟到写入。

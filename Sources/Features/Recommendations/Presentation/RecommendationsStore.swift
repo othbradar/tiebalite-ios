@@ -48,7 +48,9 @@ final class RecommendationsStore {
     private var blockedUsers = Set<Int64>()
     func setBlockedUsers(_ ids: Set<Int64>) { blockedUsers = ids; projectVisibility() }
     private func projectVisibility() {
-        visibleItems = (state.items ?? []).filter { !blockedUsers.contains($0.author?.rawUserID ?? 0) }
+        visibleItems = (state.items ?? []).filter {
+            !blockedUsers.contains($0.author?.rawUserID ?? 0) && !ContentRemovalVisibility.shared.threadIDs.contains($0.threadID)
+        }
     }
     private(set) var scrollAnchor: Int64?
     private(set) var currentPage: UInt32?

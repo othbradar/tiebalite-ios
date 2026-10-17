@@ -1,0 +1,69 @@
+// Minimal read projection from iOS 22.11.1 descriptors. See API_EVIDENCE U14.
+syntax = "proto2";
+package TiebaNativeActions;
+import "NativeWrite.proto";
+message PageRequest { optional PageQuery data = 1; }
+message PageQuery {
+  optional int32 back = 3;
+  optional int64 kz = 4;
+  optional int64 pid = 7;
+  optional int32 pn = 18;
+  optional int32 arround = 22;
+  optional TiebaNativeWrite.Common common = 25;
+}
+message PageResponse { optional TiebaNativeWrite.ResponseError error = 1; optional PageData data = 2; }
+message PageData {
+  optional User user = 1;
+  optional Forum forum = 2;
+  repeated Post post_list = 6;
+  optional Thread thread = 8;
+  repeated User user_list = 13;
+  optional Post first_floor_post = 38;
+}
+message FloorRequest { optional FloorQuery data = 1; }
+message FloorQuery {
+  optional int64 kz = 1;
+  optional int64 pid = 2;
+  optional int64 spid = 3;
+  optional int32 pn = 4;
+  optional TiebaNativeWrite.Common common = 9;
+}
+message FloorResponse { optional TiebaNativeWrite.ResponseError error = 1; optional FloorData data = 2; }
+message FloorData {
+  optional Post post = 3;
+  repeated Subpost subpost_list = 4;
+  optional Thread thread = 5;
+  optional Forum forum = 6;
+}
+message User { optional int64 id = 2; }
+message Forum { optional int64 id = 1; optional string name = 2; }
+message Thread {
+  optional int64 id = 1;
+  optional User author = 18;
+  optional int64 tid = 2;
+  optional int64 first_post_id = 40;
+  optional Agree agree = 126;
+  optional int32 is_deleted = 181;
+  optional int32 tiebaplus_cant_delete = 197;
+}
+message Post {
+  optional uint64 id = 1;
+  optional uint32 floor = 3;
+  optional int64 author_id = 19;
+  optional User author = 23;
+  optional Agree agree = 37;
+}
+message Agree {
+  optional int64 agree_num = 1;
+  optional int32 has_agree = 2;
+  optional int32 agree_type = 3;
+  optional int64 disagree_num = 4;
+  optional int64 diff_agree_num = 5;
+}
+
+message Subpost {
+  optional uint64 id = 1;
+  optional int64 author_id = 4;
+  optional User author = 7;
+  optional Agree agree = 9;
+}

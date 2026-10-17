@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExploreFeedView: View {
     @Bindable var store: ExploreFeedStore
+    @Environment(\.contentActions) private var contentActions
     let imageLoader: any ImageLoading
     let openLogin: () -> Void
     let openThread: (RecommendationSummary) -> Void
@@ -59,6 +60,7 @@ struct ExploreFeedView: View {
         case let .thread(item):
             RecommendationFeedRow(item: item, imageLoader: imageLoader, openURL: openURL,
                                   onOpenUser: openUser, openThread: { openThread(item) })
+                .environment(\.contentActions, contentActions)
         case let .pagination(state):
             if store.state == .refreshFailure {
                 Button("刷新失败，点此重试") { Task { await store.refresh() } }

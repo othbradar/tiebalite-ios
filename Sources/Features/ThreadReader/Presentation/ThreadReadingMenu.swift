@@ -27,6 +27,7 @@ struct ThreadReadingMenu: View {
             Button("回到首楼") { Task { await store.returnToFirstPost() } }
                 .accessibilityIdentifier("thread-reader.first-post")
             if let snapshot = store.state.snapshot {
+                ContentDeleteAction(target: .init(kind: .thread, threadID: snapshot.threadID))
                 FavoriteAction(entry: .init(
                     target: .init(threadID: snapshot.threadID,
                                   postID: store.listPresentation?.rows.first { $0.id == store.readAnchor }?.post?.source.postID
@@ -45,6 +46,8 @@ struct ThreadReadingMenu: View {
 #if UITESTING
         .accessibilityValue("\(store.query.cacheKey);page:\(store.state.snapshot?.currentPage ?? 0);anchor:\(anchorPostID)")
 #endif
+        .modifier(ContentDeletionPreparation(target: .init(kind: .thread, threadID: store.threadID),
+                                             authorID: store.state.snapshot?.author.rawUserID ?? 0))
         .disabled(store.isNavigating)
         .accessibilityIdentifier("thread-reader.compose.more")
         .alert("跳页", isPresented: $showsJump) {

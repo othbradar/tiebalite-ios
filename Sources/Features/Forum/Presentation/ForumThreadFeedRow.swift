@@ -5,6 +5,7 @@ struct ForumThreadFeedRow: View {
     let imageLoader: any ImageLoading
     var accessibilityPrefix = "forum-home"
     var rowAccessibilityID: String?
+    var likeTarget: ContentActionTarget?
     let openThread: () -> Void
     @ScaledMetric(relativeTo: .body) private var textSize: CGFloat = 15
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -68,7 +69,10 @@ struct ForumThreadFeedRow: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("\(accessibilityPrefix).reply.t\(row.threadID)")
-                action(TiebaLikeIcon(), count: thread.metadata.agreeCount, fallback: "0")
+                ContentLikeButton(target: likeTarget ?? .init(kind: .thread, threadID: thread.threadID),
+                                  count: thread.metadata.agreeCount) { count in
+                    action(TiebaLikeIcon(), count: count, fallback: "0")
+                }
             }
             .foregroundStyle(SemanticColor.secondaryText)
         }

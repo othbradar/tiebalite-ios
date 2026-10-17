@@ -3,12 +3,24 @@ import Foundation
 extension ThreadReaderStore {
     func configuredRows(textSize: ReadingTextSizePreference) -> [ThreadReaderConfiguredRow] {
         let visibility = LocalUserVisibility.shared
-        let changed = visibility.readerChanged(self)
+        let removals = ContentRemovalVisibility.shared
+        let removalChanged = removals.readerChanged(self)
+        let changed = visibility.readerChanged(self) || removalChanged
+        let removedFloors = (listPresentation?.rows ?? []).filter { $0.post.map { removals.contains($0.source) } == true }.count
         if !changed, let cached = configuredRowsCache, cached.revision == listRevision, cached.textSize == textSize { return cached.rows }
         let rows = (listPresentation?.rows ?? []).compactMap { row -> ThreadReaderConfiguredRow? in
             var displayed = row
             if case var .post(post) = row.content {
-                guard !visibility.ids.contains(post.author.rawUserID) else { return nil }
+                guard !visibility.ids.contains(post.author.rawUserID), !removals.contains(post.source) else { return nil }
+                if let count = post.replyCount { post.replyCount = max(0, count - Int32(removedFloors)) }
+                let visibleRemoved = post.inlineSubposts.filter { removals.contains($0.document.source) }.map { $0.document.source.postID }
+                let presentedAt = listPresentation?.presentedAt(postID: post.source.postID) ?? .distantPast
+                let removedReplies = Set(visibleRemoved).union(removals.removedSubposts(
+                    thread: post.source.threadID, parent: post.source.postID, after: presentedAt
+                ))
+                post.totalSubpostCount = max(0, post.totalSubpostCount - removedReplies.count)
+                post.inlineSubposts.removeAll { removals.contains($0.document.source) }
+                post.remainingSubpostCount = max(0, post.totalSubpostCount - post.inlineSubposts.count)
                 post.inlineSubposts.removeAll { visibility.ids.contains($0.author.rawUserID) }
                 displayed = .init(id: row.id, content: .post(post))
             }

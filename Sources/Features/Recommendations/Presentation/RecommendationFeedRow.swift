@@ -170,8 +170,9 @@ struct RecommendationFeedRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel("\(item.replyCount) 条回复，打开帖子")
             .accessibilityIdentifier("recommendations.reply.t\(item.threadID)")
-            actionLabel(TiebaLikeIcon(), count: item.feed.agreeCount, fallback: "0")
-                .accessibilityLabel("点赞：\(RecommendationFeedText.count(item.feed.agreeCount, fallback: "暂无计数"))")
+            ContentLikeButton(target: .init(kind: .thread, threadID: item.threadID), count: item.feed.agreeCount) { count in
+                actionLabel(TiebaLikeIcon(), count: count, fallback: "0")
+            }
         }
         .foregroundStyle(SemanticColor.secondaryText)
     }

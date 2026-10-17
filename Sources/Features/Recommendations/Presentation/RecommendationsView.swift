@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor
 struct RecommendationsView: View {
     @Bindable var store: RecommendationsStore
+    @Environment(\.contentActions) private var contentActions
     let imageLoader: any ImageLoading
     let onOpenThread: (RecommendationSummary) -> Void
 
@@ -101,6 +102,7 @@ struct RecommendationsView: View {
             RecommendationFeedRow(item: item, imageLoader: imageLoader, openURL: openURL, onOpenUser: onOpenUser) {
                 onOpenThread(item)
             }
+            .environment(\.contentActions, contentActions)
             .id(item.threadID)
         case let .pagination(state):
             if state == .idle, store.visibleItems.isEmpty, store.nextPage != nil {

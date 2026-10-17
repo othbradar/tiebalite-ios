@@ -3,14 +3,15 @@ import SwiftUI
 @MainActor
 struct ProfileListView: View {
     @Bindable var store: ProfileListStore
+    @Environment(\.contentActions) private var contentActions
     let imageLoader: any ImageLoading
     var blocking: LocalBlockingStore?
     let open: (RouteIdentity) -> Void
 
     var body: some View {
         Group {
-            if !store.rows.isEmpty {
-                VirtualizedList(items: store.rows, backgroundColor: .systemBackground,
+            if !visibleRows.isEmpty {
+                VirtualizedList(items: visibleRows, backgroundColor: .systemBackground,
                                 accessibilityIdentifier: "profile.\(store.route.section.rawValue).list",
                                 restoredAnchor: store.anchor, onScrollSettled: store.setAnchor,
                                 onRefresh: { await store.refresh() }, rowContent: row)
@@ -39,15 +40,25 @@ struct ProfileListView: View {
         .onDisappear { store.cancel() }
     }
 
+    private var visibleRows: [ProfileListRow] {
+        store.rows.filter { row in
+            guard case let .post(post) = row.content else { return true }
+            return !ContentRemovalVisibility.shared.contains(.init(
+                threadID: post.summary.threadID, postID: post.postID ?? 0,
+                scope: store.route.section == .replies ? .post : .firstPost))
+        }
+    }
+
     @ViewBuilder private func row(_ value: ProfileListRow) -> some View {
         switch value.content {
         case let .post(post):
             ForumThreadFeedRow(row: .init(thread: post.summary, forumID: nil), imageLoader: imageLoader,
-                               accessibilityPrefix: "profile.\(store.route.section.rawValue)", rowAccessibilityID: "profile.post.\(post.id)") {
+                               accessibilityPrefix: "profile.\(store.route.section.rawValue)", rowAccessibilityID: "profile.post.\(post.id)",
+                               likeTarget: .profile(threadID: post.summary.threadID, postID: post.postID, section: store.route.section)) {
                 if store.route.section == .replies, let pid = post.postID {
                     open(.profileReply(.init(threadID: post.summary.threadID, postID: pid)))
                 } else if let tid = ThreadID(post.summary.threadID) { open(.thread(tid)) }
-            }
+            }.environment(\.contentActions, contentActions)
         case let .forum(forum):
             Button {
                 if let route = ForumRoute(forumID: forum.id, forumName: forum.name) { open(.forum(route)) }

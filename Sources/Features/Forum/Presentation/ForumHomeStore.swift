@@ -10,7 +10,8 @@ final class ForumHomeStore {
     }
     private(set) var visibleListPresentation: ForumHomeListPresentation?
     func updateLocalVisibility() {
-        visibleListPresentation = listPresentation?.hidingUsers(LocalUserVisibility.shared.ids)
+        visibleListPresentation = listPresentation?.hidingUsers(
+            LocalUserVisibility.shared.ids, removedThreads: ContentRemovalVisibility.shared.threadIDs)
         for store in tabStores.values { store.updateLocalVisibility() }
     }
     private(set) var listRevision: UInt64 = 0

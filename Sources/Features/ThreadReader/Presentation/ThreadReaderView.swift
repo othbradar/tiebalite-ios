@@ -4,6 +4,7 @@ import UIKit
 @MainActor
 struct ThreadReaderView: View {
     @Bindable var store: ThreadReaderStore
+    @Environment(\.contentActions) private var contentActions
     let imageLoader: any ImageLoading
     let accountAvatar: ImageResourceDescriptor?
     let readingTextSize: ReadingTextSizePreference
@@ -45,14 +46,17 @@ struct ThreadReaderView: View {
     var body: some View {
         ZStack {
             SemanticColor.background
-            content
+            if ContentRemovalVisibility.shared.contains(thread: store.threadID) {
+                Text("主题已删除").font(.subheadline).foregroundStyle(SemanticColor.secondaryText)
+                    .accessibilityIdentifier("content.deleted.thread")
+            } else { content }
         }
         .background(SemanticColor.background)
         .navigationTitle("")
         .toolbar { forumToolbar }
         .task { await bookmarks?.load() }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if store.state.snapshot != nil {
+            if store.state.snapshot != nil, !ContentRemovalVisibility.shared.contains(thread: store.threadID) {
                 ThreadReaderReplyBar(imageLoader: imageLoader, accountAvatar: accountAvatar,
                                      threadID: store.threadID, readingControls: store,
                                      reload: { Task { await store.reload() } }, onCompose: {
@@ -170,7 +174,7 @@ struct ThreadReaderView: View {
                         favoriteStore: favorites, bookmarkStore: bookmarks,
                         bookmarkTitle: snapshot.title, bookmarkForum: snapshot.forumName,
                         requestNextPage: requestNextPage
-                    )
+                    ).environment(\.contentActions, contentActions)
                 }
             )
             .id(readingSession) // Only an explicit mode/page navigation starts a new list session.
