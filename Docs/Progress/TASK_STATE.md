@@ -1,3 +1,11 @@
+## 2026-10-17 v0.2.0beta5 — RELEASED / U15提交推送完成
+
+- 用户授权提交、推送并发布新版IPA。U15提交 `97741f0fd28d75ea4d50a8d9c06397e25b9ebd97`；发布准备 `58533e8624a01ee982ed6f04accc6ba4abcd4e65`，App0.2.0 Build18。U09–U15与发布准备均已快进推送main，新注释标签v0.2.0beta5原子推送且解引用与构建提交一致。
+- 仅递增Build和更新README/发布说明/构建记录；787项生产输入除project.yml外与U15验收包完全相同。独立detached源码快照、锁定依赖与Android引用构建设备Release成功；make generate/lint/secret-scan、diff、Release isolation、140文件ZIP逐字节/CRC/权限、iPhoneOS arm64/18.0+/iPhone+iPad/原Bundle ID校验PASS。复用U15 Unit161、iPhone12（定位修订后精确复验）、iPad4与正常Live结果，不重复全量门禁。
+- [GitHub预发行版](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta5) 已发布，页面时间17:21，附完整新功能/Bug修复/已知限制；IPA为未签名真机包7,747,492 bytes，SHA256 `8597f4872dc51a197055f2583cf574d16a5847b58d783325fe2781b200c63447`，需自行签名。SHA256SUMS一并发布，两附件GitHub摘要与本地一致，说明只读取回逐字核验通过。
+- 工具失败如实保留：gh未登录exit4、扩展上传缺权限改原生文件选择器、校验脚本初版Bundle ID假定错误后改比对已有基准、公共API限流403改页面证据，最后扩展只读超时改原生AX。没有改Bundle ID/权限/凭证或产品实现来消除工具失败，详见Docs/Audits/RELEASE_0_2_0_BETA_5.md。
+- 发布证据仅在ignored Artifacts/Releases/v0.2.0beta5。用户原有Prompts、技能配置与Python缓存未纳入；无真实贴吧写操作、数据清理、正常模拟器重装、新动画/手势/overlay/依赖或下一阶段。内容缓存清理入口及真机/语音/删除矩阵缺口保持，SDK/Passport继续按约定跳过。
+
 ## 2026-10-17 U15 — USER_ACCEPTED / 提交与发布授权
 
 - 用户明确“好的现在提交并推送到github，并编译新的ipa发布到github上”。本轮授权精确提交U15，并将此前U09–U14本地提交快进推送，递增版本后生成设备IPA、推送新标签并发布GitHub预发行版；不进入新功能阶段。
