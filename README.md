@@ -2,7 +2,7 @@
 
 TiebaLite iOS 是一个非官方的 iOS/iPadOS 贴吧客户端，提供阅读、消息与发帖/回复编辑功能。当前源码还包含云端收藏、本机书签、关注/热榜、用户关系、帖内媒体播放、点赞及本人内容删除。各项的实网与本机验证范围见 [U15 功能验收](Docs/Audits/U15_DAILY_USE_ACCEPTANCE.md)，不能将源码功能表当作全部真机功能已验收。
 
-已发布的 v0.2.0beta4 及安装方式见 [版本说明](Docs/Releases/v0.2.0beta4.md)；该历史安装包不包含此后所有源码更新。当前验证进度见 [任务记录](Docs/Progress/TASK_STATE.md)。
+本轮发布 v0.2.0beta5，更新与安装方式见 [版本说明](Docs/Releases/v0.2.0beta5.md)。此前回复与草稿改进见 [Beta 4 版本说明](Docs/Releases/v0.2.0beta4.md)，当前验证进度见 [任务记录](Docs/Progress/TASK_STATE.md)。
 
 ## 已实现
 
