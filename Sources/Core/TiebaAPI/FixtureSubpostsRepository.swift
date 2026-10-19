@@ -13,6 +13,7 @@
           rawUserID: 91, displayName: "固定楼层作者", portrait: "https://fixture.invalid/avatar/91",
           levelID: 14),
         metadata: "2026年9月24日 8:30",
+        createdAtUnixSeconds: 1_790_209_800,
         document: .init(
           source: source, availability: .available,
           nodes: [

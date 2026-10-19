@@ -15,7 +15,7 @@ struct NotificationDestination: View {
                     store: thread, imageLoader: dependencies.imageLoader,
                     accountAvatar: dependencies.currentAccountAvatar,
                     readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
-                    readingEntry: readingEntry,
+                    readingEntry: readingEntry, followsGlobalReplyPreferences: false,
                     onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) },
                     onDisplayed: { await dependencies.featureStores.browsingHistoryStore.recordThread($0) },
                     onOpenSubposts: { source in

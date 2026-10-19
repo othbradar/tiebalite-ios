@@ -63,7 +63,7 @@ extension ThreadReaderStore {
         await navigate(query: query, page: page == 1 ? 0 : page)
     }
 
-    func returnToFirstPost() async { await navigate(query: .init(), page: 0) }
+    func returnToFirstPost() async { await navigate(query: query, page: 0) }
 
     func locatePost(_ postID: Int64) async {
         guard postID > 0 else { return }

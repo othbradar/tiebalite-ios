@@ -87,16 +87,16 @@ final class R12VisualParitySmokeTests: XCTestCase {
         }
         app = UITestHarness.launch(scenario: .fixtureReadingFlow)
         UITestHarness.tap(.recommendationsFirstRow, in: app)
-        let all = app.buttons["thread-reader.subposts.all.p120001"]
+        let all = app.textViews["thread-reader.subpost.t100001.p120002.ssubPost"]
         let list = app.tables["thread-reader.scroll.t100001"]
         XCTAssertTrue(list.waitForExistence(timeout: 5))
         reveal(all, in: list)
         all.tap()
         XCTAssertTrue(app.tables["subposts.list"].waitForExistence(timeout: 5))
         shot(app, "07-subposts")
-        let reply = app.buttons["subposts.reply.10001.action"]
+        let reply = app.textViews["thread-reader.content.node.t100001.p10001.ssubPost.n0"]
         reveal(reply, in: app.tables["subposts.list"])
-        reply.tap()
+        reply.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.1)).tap()
         XCTAssertTrue(app.textViews["composer.body"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["composer.send"].isEnabled)
         shot(app, "08-composer")

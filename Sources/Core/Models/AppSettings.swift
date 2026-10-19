@@ -17,6 +17,9 @@ struct AppSettingsSnapshot: Codable, Equatable, Sendable {
     var forumSort = ForumSortPreferences()
     var resumeThreadReading: Bool?
     var videoPlayback: VideoPlaybackMode?
+    var threadReplyQuery: ThreadReadingQuery?
+
+    var replyQuery: ThreadReadingQuery { threadReplyQuery ?? .init() }
 
     var resumesThreadReading: Bool { resumeThreadReading ?? true }
     var videoPlaybackMode: VideoPlaybackMode { videoPlayback ?? .manual }

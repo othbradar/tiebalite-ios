@@ -204,3 +204,13 @@ extension SettingsStore: ThreadReadingPreferences {
         persistCurrentSettings()
     }
 }
+
+extension SettingsStore: ThreadReplyPreferences {
+    var replyQuery: ThreadReadingQuery { settings.replyQuery }
+
+    func setReplyQuery(_ query: ThreadReadingQuery) {
+        guard settings.replyQuery != query else { return }
+        settings.threadReplyQuery = query
+        persistCurrentSettings()
+    }
+}

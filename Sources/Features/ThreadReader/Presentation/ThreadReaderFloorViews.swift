@@ -2,6 +2,8 @@ import SwiftUI
 
 @MainActor
 struct ThreadReaderRowView: View {
+    var readingControls: ThreadReaderStore?
+    var replyPreferences: (any ThreadReplyPreferences)?
     let row: ThreadReaderRowModel
     let imageLoader: any ImageLoading
     let readingTextSize: ReadingTextSizePreference
@@ -19,6 +21,11 @@ struct ThreadReaderRowView: View {
     @ViewBuilder
     var body: some View {
         switch row.content {
+        case .replyFilters:
+            if let readingControls {
+                ThreadReplyFilterBar(store: readingControls, preferences: replyPreferences)
+                    .padding(.horizontal, 16)
+            }
         case let .post(post):
             ThreadReaderPostView(
                 post: post, imageLoader: imageLoader, readingTextSize: readingTextSize,
@@ -77,9 +84,9 @@ private struct ThreadReaderPostView: View {
     private var contentInset: CGFloat { post.source.scope == .post ? TiebaParityTokens.userAvatarSize + 8 : 0 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 8) {
-                authorHeader
+                authorHeader.contextMenu { floorActions }
                 if post.source.scope == .post {
                     ContentLikeButton(target: actionTarget, count: post.agreeCount) { count in
                         HStack(spacing: 4) {
@@ -96,33 +103,23 @@ private struct ThreadReaderPostView: View {
                 }
                 ThreadContentRenderer(document: post.document, imageLoader: imageLoader,
                                       readingTextSize: readingTextSize, onOpenMedia: onOpenMedia,
-                                      onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
-                if !post.inlineSubposts.isEmpty || post.remainingSubpostCount > 0 {
+                                      onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser,
+                                      onBodyTap: { onReply(post) })
+                if !post.inlineSubposts.isEmpty {
                     subposts
                 }
-                Button("回复") { onReply(post) }
-                    .font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
-                    .frame(minHeight: 44, alignment: .leading)
-                    .accessibilityIdentifier("thread-reader.reply.p\(post.source.postID)")
-                    .contextMenu {
-                        ContentDeleteAction(target: actionTarget)
-                        if let bookmarkTitle, let bookmarkForum {
-                            FavoriteAction(entry: .init(target: .init(threadID: post.source.threadID, postID: post.source.postID),
-                                                        title: bookmarkTitle, forumName: bookmarkForum, status: 1, isDeleted: false),
-                                           store: favoriteStore, isFloor: true)
-                            BookmarkAction(entry: .init(target: .init(threadID: post.source.threadID, postID: post.source.postID),
-                                                        title: bookmarkTitle, forumName: bookmarkForum,
-                                                        floor: post.floorNumber > 0 ? post.floorNumber : nil),
-                                           store: bookmarkStore, isFloor: true)
-                        }
-                    }
             }
             .padding(.leading, contentInset)
+            TiebaMetadataRow(values: [[
+                post.floorNumber > 1 ? "第\(post.floorNumber)楼" : "",
+                post.metadata,
+                post.author.ipLocation ?? ""
+            ].filter { !$0.isEmpty }.joined(separator: " ")])
+                .accessibilityIdentifier("thread-reader.metadata.p\(post.source.postID)")
+                .padding(.leading, contentInset)
+                .padding(.top, 8).padding(.bottom, 12)
             TiebaFlatDivider(inset: 0)
-            if let count = post.replyCount {
-                Text("回复 \(count)").font(Typography.font(.subheadline)).fontWeight(.semibold)
-                    .padding(.vertical, 8)
-            }
+
         }
         .foregroundStyle(SemanticColor.primaryText)
         .padding(.horizontal, TiebaParityTokens.horizontalInset)
@@ -133,13 +130,27 @@ private struct ThreadReaderPostView: View {
         .modifier(ContentDeletionPreparation(target: actionTarget, authorID: post.author.rawUserID))
     }
 
+    @ViewBuilder
+    private var floorActions: some View {
+        ContentDeleteAction(target: actionTarget)
+        if let bookmarkTitle, let bookmarkForum {
+            FavoriteAction(entry: .init(target: .init(threadID: post.source.threadID, postID: post.source.postID),
+                                        title: bookmarkTitle, forumName: bookmarkForum, status: 1, isDeleted: false),
+                           store: favoriteStore, isFloor: true)
+            BookmarkAction(entry: .init(target: .init(threadID: post.source.threadID, postID: post.source.postID),
+                                        title: bookmarkTitle, forumName: bookmarkForum,
+                                        floor: post.floorNumber > 0 ? post.floorNumber : nil),
+                           store: bookmarkStore, isFloor: true)
+        }
+    }
+
     private var authorHeader: some View {
         Button {
             if let route = UserProfileRoute(userID: post.author.rawUserID, fallbackDisplayName: post.authorName) {
                 onOpenUser(route)
             }
         } label: {
-            HStack(alignment: .top, spacing: 8) {
+            HStack(spacing: 8) {
                 TiebaAvatarView(resource: post.author.avatarResource, imageLoader: imageLoader)
                     .accessibilityIdentifier("thread-reader.avatar.p\(post.source.postID)")
                 VStack(alignment: .leading, spacing: 2) {
@@ -149,15 +160,11 @@ private struct ThreadReaderPostView: View {
                         if post.isThreadAuthor { badge("楼主") }
                         if let role = post.author.moderatorLabel { badge(role) }
                     }
-                    TiebaMetadataRow(values: [
-                        post.metadata,
-                        post.floorNumber > 1 ? "第 \(post.floorNumber) 楼" : "",
-                        post.author.ipLocation.map { "来自\($0)" } ?? ""
-                    ])
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(minHeight: 44, alignment: .top)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("thread-reader.author.\(post.author.rawUserID)")
@@ -173,18 +180,20 @@ private struct ThreadReaderPostView: View {
     private var subposts: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(post.inlineSubposts) { subpost in
-                ThreadReaderSubpostPreview(subpost: subpost, onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
-            }
-            if post.remainingSubpostCount > 0 {
-                Button("查看全部 \(post.totalSubpostCount) 条回复") { onOpenSubposts(post.source) }
-                    .font(Typography.font(.caption)).foregroundStyle(SemanticColor.accent)
-                    .frame(minHeight: 44)
-                    .accessibilityIdentifier("thread-reader.subposts.all.p\(post.source.postID)")
+                ThreadReaderSubpostPreview(subpost: subpost, onOpenExternalLink: onOpenExternalLink,
+                                           onOpenUser: onOpenUser, onOpenSubposts: { onOpenSubposts(post.source) })
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(TiebaParityTokens.neutralFill, in: RoundedRectangle(cornerRadius: 6))
+        .background {
+            RoundedRectangle(cornerRadius: 6).fill(TiebaParityTokens.neutralFill)
+                .contentShape(Rectangle())
+                .onTapGesture { onOpenSubposts(post.source) }
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("thread-reader.subposts.preview.p\(post.source.postID)")
     }
 }
 
@@ -192,10 +201,11 @@ private struct ThreadReaderSubpostPreview: View {
     let subpost: ThreadReaderSubpostRowModel
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    let onOpenSubposts: () -> Void
 
     var body: some View {
         TiebaRichTextView(runs: runs, fontSize: 15, lineLimit: 4,
-                          onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
+                          onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser, onBodyTap: onOpenSubposts)
             .accessibilityIdentifier(ThreadReaderAccessibilityID.subpost(subpost.document.source))
     }
 

@@ -8,24 +8,28 @@ struct TiebaRichTextView: View {
     let interactive: Bool
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    let onBodyTap: (() -> Void)?
     @ScaledMetric(relativeTo: .body) private var pointSize: CGFloat = 17
 
     init(
         runs: [TiebaRichTextRun], fontSize: CGFloat = 17, lineLimit: Int = 0, interactive: Bool = true,
         onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in },
-        onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in }
+        onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in },
+        onBodyTap: (() -> Void)? = nil
     ) {
         self.runs = runs
         self.lineLimit = lineLimit
         self.interactive = interactive
         self.onOpenExternalLink = onOpenExternalLink
         self.onOpenUser = onOpenUser
+        self.onBodyTap = onBodyTap
         _pointSize = ScaledMetric(wrappedValue: fontSize, relativeTo: .body)
     }
 
     var body: some View {
         TiebaRichTextRepresentable(runs: runs, pointSize: pointSize, lineLimit: lineLimit,
-                                   interactive: interactive, onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
+                                   interactive: interactive, onOpenExternalLink: onOpenExternalLink,
+                                   onOpenUser: onOpenUser, onBodyTap: onBodyTap)
             .frame(maxWidth: .infinity, alignment: .leading)
             .allowsHitTesting(interactive)
     }
@@ -38,6 +42,7 @@ private struct TiebaRichTextRepresentable: UIViewRepresentable {
     let interactive: Bool
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    let onBodyTap: (() -> Void)?
 
     func makeUIView(context: Context) -> TiebaSelectableTextView { TiebaSelectableTextView() }
 
@@ -45,12 +50,14 @@ private struct TiebaRichTextRepresentable: UIViewRepresentable {
         uiView.onOpenExternalLink = onOpenExternalLink
         uiView.onOpenUser = onOpenUser
         uiView.apply(runs: runs, pointSize: pointSize, lineLimit: lineLimit, interactive: interactive)
+        uiView.onBodyTap = interactive ? onBodyTap : nil
     }
 
     static func dismantleUIView(_ uiView: TiebaSelectableTextView, coordinator: ()) {
         uiView.delegate = nil
         uiView.onOpenExternalLink = { _ in }
         uiView.onOpenUser = { _ in }
+        uiView.onBodyTap = nil
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: TiebaSelectableTextView, context: Context) -> CGSize? {
@@ -66,6 +73,10 @@ final class TiebaSelectableTextView: UITextView, UITextViewDelegate {
     var onOpenUser: (UserProfileRoute) -> Void = { _ in }
     private var currentRuns: [TiebaRichTextRun] = []
     private var currentSize: CGFloat = 0
+    var onBodyTap: (() -> Void)? {
+        didSet { bodyTap.update(in: self, enabled: onBodyTap != nil) }
+    }
+    private let bodyTap = TiebaTextBodyTap()
 
     init() {
         super.init(frame: .zero, textContainer: nil)
@@ -99,6 +110,12 @@ final class TiebaSelectableTextView: UITextView, UITextViewDelegate {
     override func copy(_ sender: Any?) {
         guard selectedRange.length > 0, NSMaxRange(selectedRange) <= attributedText.length else { return }
         UIPasteboard.general.string = TiebaRichTextBuilder.copyText(attributedText.attributedSubstring(from: selectedRange))
+    }
+
+    override func accessibilityActivate() -> Bool {
+        guard let onBodyTap else { return super.accessibilityActivate() }
+        onBodyTap()
+        return true
     }
 
     func textView(_ textView: UITextView, primaryActionFor textItem: UITextItem, defaultAction: UIAction) -> UIAction? {

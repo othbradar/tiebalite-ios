@@ -1,0 +1,13 @@
+{
+  "scope": "Anonymous read-only PBPage sort metadata; no account, content or device identifiers retained",
+  "date": "2026-10-19",
+  "endpoint": "/c/f/pb/page?cmd=302001&format=protobuf",
+  "httpStatus": 200,
+  "errorCode": 0,
+  "sortType": 0,
+  "sortOptions": [
+    { "value": 2, "label": "热门" },
+    { "value": 0, "label": "正序" },
+    { "value": 1, "label": "倒序" }
+  ]
+}

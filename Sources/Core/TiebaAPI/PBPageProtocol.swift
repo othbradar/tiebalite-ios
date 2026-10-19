@@ -95,7 +95,7 @@ enum PBPageProtocol {
         data.back = 0
         data.kz = input.threadID
         data.lz = input.query.onlyAuthor ? 1 : 0
-        data.r = input.query.order == .descending ? 1 : 0
+        data.r = input.query.order.requestValue
         data.pid = input.postID
         data.withFloor = 1
         data.floorRn = 4
@@ -103,7 +103,8 @@ enum PBPageProtocol {
         data.sModel = 0
         data.rn = 15
         data.qType = 2
-        data.pn = Int32(input.pageNumber)
+        // Native hot sorting starts at pn=1; pn=0 silently returns ascending replies.
+        data.pn = Int32(input.query.order == .hot ? max(1, input.pageNumber) : input.pageNumber)
         data.stType = ""
         data.threadType = 0
         data.banner = 0

@@ -272,6 +272,7 @@ enum PBPageDomainMapper {
         from rawPIDs: String, query: ThreadReadingQuery,
         excluding postIDs: Set<Int64>
     ) -> Int64? {
+        guard query.order != .hot else { return nil }
         let ids = rawPIDs
             .split(separator: ",")
             .compactMap { Int64(String($0).trimmingCharacters(in: .whitespaces)) }

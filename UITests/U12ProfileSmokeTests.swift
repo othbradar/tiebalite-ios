@@ -62,7 +62,7 @@ final class U12ProfileSmokeTests: XCTestCase {
         let reply = app.buttons["profile.post.130001"]
         XCTAssertTrue(reply.waitForExistence(timeout: 5))
         reply.tap()
-        XCTAssertTrue(app.buttons["thread-reader.reply.p130001"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textViews["thread-reader.content.node.t100001.p130001.spost.n0"].waitForExistence(timeout: 5))
         back(app)
         back(app)
         app.buttons["profile.open.forums"].tap()

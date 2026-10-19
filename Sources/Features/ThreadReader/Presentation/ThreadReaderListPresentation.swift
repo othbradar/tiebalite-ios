@@ -61,7 +61,7 @@ struct ThreadReaderPostRowModel: Equatable, Sendable {
         source = post.document.source
         floorNumber = post.floorNumber
         authorName = post.author.displayName
-        metadata = post.metadata
+        metadata = TiebaDateText.monthDay(seconds: post.createdAtUnixSeconds, fallback: post.metadata)
         document = post.document
         inlineSubposts = post.subposts.prefix(3).map(
             ThreadReaderSubpostRowModel.init
@@ -90,6 +90,7 @@ struct ThreadReaderPaginationRowModel: Equatable, Sendable {
 
 struct ThreadReaderRowModel: Identifiable, Equatable, Sendable {
     enum Content: Equatable, Sendable {
+        case replyFilters
         case pagination(ThreadReaderPaginationRowModel)
         case post(ThreadReaderPostRowModel)
     }
@@ -129,7 +130,9 @@ struct ThreadReaderListPresentation: Equatable, Sendable {
         postPresentationDates = Dictionary(snapshot.posts.map { ($0.id.postID, presentedAt) }, uniquingKeysWith: min)
         let postRows = snapshot.posts.map { Self.postRow($0, snapshot: snapshot) }
         rows = postRows
-            + [Self.paginationRow(
+        let headerIndex = rows.firstIndex { $0.post?.floorNumber == 1 }.map { $0 + 1 } ?? 0
+        rows.insert(.init(id: .header(threadID: snapshot.threadID), content: .replyFilters), at: headerIndex)
+        rows += [Self.paginationRow(
                 threadID: snapshot.threadID,
                 state: pagination
             )]

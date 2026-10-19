@@ -28,15 +28,15 @@ final class U10BookmarkSmokeTests: XCTestCase {
         UITestHarness.tap(.recommendationsFirstRow, in: app)
         let table = app.tables["thread-reader.scroll.t100001"]
         XCTAssertTrue(table.waitForExistence(timeout: 5))
-        let reply = app.buttons["thread-reader.reply.p130001"]
+        let author = app.buttons["thread-reader.author.100004"]
         for _ in 0..<8 {
-            if reply.exists && reply.isHittable { break }
+            if author.exists, author.isHittable, table.frame.contains(author.frame) { break }
             table.swipeUp()
         }
-        XCTAssertTrue(reply.isHittable)
-        reply.press(forDuration: 1)
+        XCTAssertTrue(author.isHittable)
+        author.press(forDuration: 1)
         let add = app.buttons["bookmark.floor.130001"].firstMatch
-        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        XCTAssertTrue(add.waitForExistence(timeout: 5), app.debugDescription)
         add.tap()
         XCTAssertTrue(app.alerts["已保存到本机书签"].waitForExistence(timeout: 5))
         app.alerts.buttons["好"].firstMatch.tap()
@@ -73,15 +73,15 @@ final class U10BookmarkSmokeTests: XCTestCase {
         UITestHarness.tap(.recommendationsFirstRow, in: app)
         let table = app.tables["thread-reader.scroll.t100001"]
         XCTAssertTrue(table.waitForExistence(timeout: 5))
-        let reply = app.buttons["thread-reader.reply.p130001"]
+        let author = app.buttons["thread-reader.author.100004"]
         for _ in 0..<8 {
-            if reply.exists && reply.isHittable { break }
+            if author.exists, author.isHittable, table.frame.contains(author.frame) { break }
             table.swipeUp()
         }
-        XCTAssertTrue(reply.isHittable)
-        reply.press(forDuration: 1)
+        XCTAssertTrue(author.isHittable)
+        author.press(forDuration: 1)
         let add = app.buttons["favorite.floor.130001"].firstMatch
-        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        XCTAssertTrue(add.waitForExistence(timeout: 5), app.debugDescription)
         add.tap()
         XCTAssertTrue(app.alerts["已收藏"].waitForExistence(timeout: 5))
         app.alerts.buttons["好"].firstMatch.tap()

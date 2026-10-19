@@ -9,7 +9,7 @@ final class R08SubpostsSmokeTests: XCTestCase {
         UITestHarness.tap(.recommendationsFirstRow, in: app)
         let parentList = app.tables["thread-reader.scroll.t100001"]
         XCTAssertTrue(parentList.waitForExistence(timeout: 5))
-        let all = app.buttons["thread-reader.subposts.all.p120001"]
+        let all = app.textViews["thread-reader.subpost.t100001.p120002.ssubPost"]
         reveal(all, in: parentList)
         let originalY = all.frame.midY
         all.tap()
@@ -35,7 +35,7 @@ final class R08SubpostsSmokeTests: XCTestCase {
         XCTAssertTrue(list.waitForExistence(timeout: 5))
         XCTAssertTrue(middle.isHittable)
         XCTAssertEqual(middle.frame.midY, middleY, accuracy: 12)
-        let reply = app.buttons["subposts.reply.10018.action"]
+        let reply = app.textViews["thread-reader.content.node.t100001.p10018.ssubPost.n0"]
         reveal(reply, in: list)
         reply.tap()
         XCTAssertTrue(app.textViews["composer.body"].waitForExistence(timeout: 5))

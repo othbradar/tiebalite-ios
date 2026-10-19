@@ -27,7 +27,9 @@ enum FixtureThreadReaderPages {
         let thirdPost = fixturePost(
             seed: seed,
             floorNumber: 3,
-            imageResources: [FixtureReadingImageResource.green]
+            imageResources: [FixtureReadingImageResource.green],
+            subposts: fixtureSubposts(seed: seed, floorNumber: 3),
+            subpostTotal: 2
         )
         let laterPosts = (5...17).map { floorNumber in
             fixturePost(seed: seed, floorNumber: floorNumber)
@@ -118,9 +120,10 @@ enum FixtureThreadReaderPages {
             floorNumber: floorNumber,
             author: ThreadReaderAuthor(
                 rawUserID: seed.threadID + Int64(floorNumber),
-                displayName: "Fixture 读者 \(floorNumber - 1)"
+                displayName: "Fixture 读者 \(floorNumber - 1)", ipLocation: "湖南"
             ),
             metadata: "\(floorNumber) 楼 · 只读 Fixture",
+            createdAtUnixSeconds: 1_790_209_800,
             document: document(
                 threadID: seed.threadID,
                 postID: postID,
@@ -130,8 +133,8 @@ enum FixtureThreadReaderPages {
                 ],
                 imageResources: imageResources
             ),
-            subposts: subposts,
-            subpostTotal: subpostTotal
+            subposts: floorNumber == 33 ? fixtureSubposts(seed: seed, floorNumber: floorNumber) : subposts,
+            subpostTotal: floorNumber == 33 ? 2 : subpostTotal
         )
     }
 

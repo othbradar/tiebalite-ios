@@ -82,7 +82,7 @@ struct SubpostsView: View {
                 author: parent.author, metadata: parent.metadata, document: parent.document,
                 isThreadAuthor: parent.author.isThreadAuthor(threadAuthorID), imageLoader: imageLoader,
                 readingTextSize: readingTextSize, onOpenMedia: onOpenMedia, onOpenUser: onOpenUser, onOpenExternalLink: openExternalLink,
-                identifier: "subposts.parent", reply: nil)
+                identifier: "subposts.parent", reply: nil, createdAt: parent.createdAtUnixSeconds, floorNumber: parent.floorNumber)
         case .count(let count):
             Text("\(count) 条回复").font(Typography.font(.subheadline)).fontWeight(.semibold)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.vertical, 8)
@@ -96,7 +96,7 @@ struct SubpostsView: View {
                     if let intent = store.replyIntent(for: item) {
                         composeTarget = .reply(intent, document: item.document, readingEntry: readingEntry)
                     }
-                }, parentPostID: store.route.postID)
+                }, parentPostID: store.route.postID, createdAt: item.createdAt)
         case .footer(let phase, let hasMore):
             footer(phase, hasMore: hasMore)
         }

@@ -45,7 +45,7 @@ final class U07ContentActionsSmokeTests: XCTestCase {
         UITestHarness.requirePresent(.routeForum, in: app)
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(list.waitForExistence(timeout: 5))
-        let allReplies = app.buttons["thread-reader.subposts.all.p120001"]
+        let allReplies = app.textViews["thread-reader.subpost.t100001.p120002.ssubPost"]
         for _ in 0..<8 where !allReplies.isHittable { list.swipeUp() }
         XCTAssertTrue(allReplies.isHittable)
         allReplies.tap()

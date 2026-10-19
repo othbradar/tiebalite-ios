@@ -44,6 +44,7 @@ struct BookmarkDestination: View {
                 ThreadReaderView(store: reader, imageLoader: dependencies.imageLoader,
                                  accountAvatar: dependencies.currentAccountAvatar,
                                  readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
+                                 followsGlobalReplyPreferences: target.postID == nil,
                                  onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) },
                                  onDisplayed: { await dependencies.featureStores.browsingHistoryStore.recordThread($0) },
                                  onOpenSubposts: { source in

@@ -18,6 +18,7 @@ actor InMemoryAppSettingsRepository: AppSettingsRepository {
 
 actor UserDefaultsAppSettingsRepository: AppSettingsRepository {
     private enum Key {
+        static let threadReplyQuery = "dev.tiebalite.settings.thread-reply-query.v1"
         static let videoPlayback = "dev.tiebalite.settings.video-playback.v1"
         static let resumeThreadReading = "dev.tiebalite.settings.resume-thread-reading.v1"
         static let contentPrefetch = "dev.tiebalite.settings.content-prefetch.v1"
@@ -48,12 +49,16 @@ actor UserDefaultsAppSettingsRepository: AppSettingsRepository {
             .flatMap(ContentPrefetchMode.init(rawValue:)) ?? .unmetered
         settings.resumeThreadReading = defaults.object(forKey: Key.resumeThreadReading) as? Bool
         settings.videoPlayback = defaults.string(forKey: Key.videoPlayback).flatMap(VideoPlaybackMode.init(rawValue:))
+        if let data = defaults.data(forKey: Key.threadReplyQuery) {
+            settings.threadReplyQuery = try? JSONDecoder().decode(ThreadReadingQuery.self, from: data)
+        }
         return settings
     }
 
     func save(_ settings: AppSettingsSnapshot) throws {
         let forumSort = try JSONEncoder().encode(settings.forumSort)
         let defaults = resolvedDefaults
+        defaults.set(try settings.threadReplyQuery.map { try JSONEncoder().encode($0) }, forKey: Key.threadReplyQuery)
         defaults.set(settings.videoPlayback?.rawValue, forKey: Key.videoPlayback)
         defaults.set(settings.resumeThreadReading, forKey: Key.resumeThreadReading)
         defaults.set(settings.contentPrefetch.rawValue, forKey: Key.contentPrefetch)

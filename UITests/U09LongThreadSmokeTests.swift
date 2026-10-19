@@ -11,14 +11,14 @@ final class U09LongThreadSmokeTests: XCTestCase {
         let list = app.tables["thread-reader.scroll.t100001"]
         XCTAssertTrue(list.waitForExistence(timeout: 5))
         let menu = app.buttons["thread-reader.compose.more"]
-        choose("thread-reader.only-author", app: app)
+        choose("thread-reader.filter.author", app: app)
         waitMode("author-ascending;page:1", menu: menu)
         XCTAssertTrue(app.textViews["thread-reader.content.node.t100001.p150001.spost.n0"].exists)
-        choose("thread-reader.only-author", app: app)
+        choose("thread-reader.filter.all", app: app)
         waitMode("all-ascending;page:1", menu: menu)
-        choose("thread-reader.reverse", app: app)
+        choose("thread-reader.order.descending", app: app)
         waitMode("all-descending;page:1", menu: menu)
-        choose("thread-reader.reverse", app: app)
+        choose("thread-reader.order.ascending", app: app)
         waitMode("all-ascending;page:1", menu: menu)
         choose("thread-reader.jump-page", app: app)
         let field = app.alerts.textFields.firstMatch
@@ -47,7 +47,13 @@ final class U09LongThreadSmokeTests: XCTestCase {
     @MainActor private func choose(_ identifier: String, app: XCUIApplication) {
         let menu = app.buttons["thread-reader.compose.more"]
         XCTAssertTrue(menu.waitForExistence(timeout: 5))
-        menu.tap()
+        if identifier.contains(".filter.") || identifier.contains(".order.") {
+            let list = app.tables["thread-reader.scroll.t100001"]
+            for _ in 0..<12 {
+                if app.buttons[identifier].exists && app.buttons[identifier].isHittable { break }
+                list.swipeUp()
+            }
+        } else { menu.tap() }
         let action = app.buttons[identifier]
         XCTAssertTrue(action.waitForExistence(timeout: 5))
         action.tap()

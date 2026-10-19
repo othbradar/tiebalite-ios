@@ -54,6 +54,7 @@ struct AppSceneRoot: View {
                     .background(SemanticColor.background)
             }
         }
+        .environment(\.threadReplyPreferences, featureStores.settingsStore)
         .environment(\.textComposer, compositionRoot.textComposer)
         .environment(\.bookmarks, compositionRoot.bookmarkStore)
         .environment(\.favorites, compositionRoot.favoriteStore)

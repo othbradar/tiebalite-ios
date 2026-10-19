@@ -12,7 +12,7 @@ struct U09LongThreadTests {
                 let wire = try Tieba_PbPage_PbPageRequest(serializedBytes: PBPageProtocol.encodeRequest(
                     .init(threadID: 8001, pageNumber: 4, query: query)))
                 #expect(wire.data.lz == (onlyAuthor ? 1 : 0))
-                #expect(wire.data.r == (order == .descending ? 1 : 0))
+                #expect(wire.data.r == order.requestValue)
                 #expect(wire.data.pn == 4 && wire.data.pid == 0)
                 #expect(wire.data.isCommReverse == 0 && wire.data.floorSortType == 1)
             }

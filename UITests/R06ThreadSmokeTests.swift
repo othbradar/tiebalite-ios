@@ -53,10 +53,10 @@ final class R06ThreadSmokeTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["4 / 4"].waitForExistence(timeout: 5))
         UITestHarness.tap(.mediaViewerClose, in: app)
         XCTAssertEqual(images[3].frame.midY, before, accuracy: 12)
-        let all = app.buttons["thread-reader.subposts.all.p60001"]
+        let all = app.textViews["thread-reader.subpost.t100001.p600010.ssubPost"]
         reveal(all, in: list)
         XCTAssertTrue(all.isHittable)
-        XCTAssertEqual(all.label, "查看全部 7 条回复")
+        XCTAssertFalse(app.buttons["thread-reader.subposts.all.p60001"].exists)
         XCTAssertFalse(app.descendants(matching: .any)["thread-reader.subpost.t100001.p600013.ssubPost"].exists)
         let originalY = all.frame.midY
         UITestHarness.attachSafeVisualEvidence(app: app, name: "R06 four images three previews")

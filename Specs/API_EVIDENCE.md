@@ -1445,3 +1445,12 @@ U14补充：TBCVitalityFloorModelV2.loadFloorDataWithPostID:subPostID: 0x102f468
 U14 点赞失败修正（2026-10-17）：用户手动点击的只读诊断得到 HTTP 200 / error_code=3280005 / error_msg=“点赞对象类型错误”。此前把 Feed 的热门回复点赞误认成主题、把 TopBar 的 FP 特殊分支误认成普通楼层，导致主题1/楼层2映射错误；上表已更正。普通主题 Social 的 obtainETypeComment=false 分支传3；热评与普通PB楼层均传1，CommonZanModel 0x101be4d38–0x101be4d70将枚举分别编码为字符串3/1。未改 op_type、agree_type、目标ID、准备/签名/重试或发帖回复链路。
 
 新增 native-ios-like-common.json 使用公开合成目标及虚构账号/设备字段，通过 scripts/fixtures/native_actions/generate_forms.py 离线执行原包 Common/普通表单签名指令；业务目标来自上述静态调用分支，不能把人工合成参数宣称为真实抓包。测试按独立 kind 选择主题/楼层，比较业务字段与完整签名表单，包含点赞及取消；3280005 响应继续按明确失败处理。
+
+### 2026-10-19 P01 用户追加：回复栏热门/正序/倒序与全局记忆
+
+- **CODE_EVIDENCE（iOS 22.11.1，同 P01 已核 SHA）**：`TBCPBPageModel.getRequestParamsWithPage:sortType:` 0x102c99854，x3 sortType 保存在 x24，0x102c99aec–0x102c99b38 将其按整数写入 `r`；0x102c99fb4–0x102c99fc8 的 `floor_sort_type` 仍恒为字符串1，不能用它替代 r。`TBCPBListItem.handleSortInfoList` 0x101ba411c 接受0–2，缺失/非法列表回退正序0/倒序1；`getSortTextBySortType:` 0x101ba3fd0 逐项匹配服务器 sortType 后读取 sortName。UI `TBCPBCommentSortHeaderView.bindSortData:` 0x102ef5e7c 复用该列表。
+- **RUNTIME_EVIDENCE（只读、匿名）**：沿现有 `LiveThreadReaderRepository` 的 tiebac.baidu.com / PBPage 编码获取一份正常响应：HTTP200/error0，pb_sort_info 精确为热门2、正序0、倒序1。仅保留这三项及 sort_type，见 `TestSupport/Fixtures/API/Thread/PBFloor/reply-sort-options.json`；不保留正文、账号或凭证。初期误用网页 host 的无凭证读取未取得该数据（HTTP2超时、普通GET error110001、POST TLS EOF），未更改 TLS 或请求认证，改用已有客户端 adapter 的正确 host 后成功。
+- 实现仅扩展现有只读 `ThreadReadingQuery.order` / r；lz继续独立，默认0/正倒序字段不变。热门保留服务器顺序，不按本地赞数排序；使用 pn 翻页，pid=0，不将按楼层的pids误作热序锚点。六种 query 的页链和阅读位置继续按独立cacheKey隔离。客户端已有匿名读协议保持；此变更不宣称整个读取包等同官方iOS，也不迁移任何已验收的iOS写请求。
+- 全局记忆为用户本轮明确产品要求：仅成功选择后保存 `AppSettingsSnapshot.threadReplyQuery`，旧安装缺字段默认全部/正序。消息/书签明确pid定位优先于记忆模式。
+
+- 热门首屏补充：同一匿名样本 `r=2,pn=0,pid=0` 虽返回error0，但实际sort_type=0；改为 `pn=1` 才返回sort_type=2。原版 `getRequestParamsWithPage:sortType:` 在0x102c9a5fc检查sort=2，0x102c9a638–0x102c9a68c直接写页码到pn。仅热门首屏将内部page0编码为pn1，其余正/倒序请求及内部第一页身份不变。热门下一页继续正整数pn、pid0。长帖额外匿名读取遇TLS EOF，未重试或放宽验证；真实热门跨页尚需实际多页样本，单元覆盖pn2与保留服务器排名。热门响应可省略floor（0），UI不伪造楼层编号。

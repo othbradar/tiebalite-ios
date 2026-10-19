@@ -11,7 +11,8 @@ final class R05ForumSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["forum-home.share.t140003"].exists)
         XCTAssertTrue(app.buttons["forum-home.reply.t140003"].exists)
         XCTAssertTrue(app.buttons["forum-home.row.t140003"].isHittable)
-        UITestHarness.attachSafeVisualEvidence(app: app, name: "U10 unchanged forum feed")
+        XCTAssertFalse(app.staticTexts["forum-home.forum-name.t140003"].exists)
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "P01 forum feed without redundant forum label")
     }
 
     @MainActor

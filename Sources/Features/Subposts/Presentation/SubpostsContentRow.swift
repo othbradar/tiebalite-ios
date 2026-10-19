@@ -13,16 +13,18 @@ struct SubpostsContentRow: View {
     let identifier: String
     let reply: (() -> Void)?
     var parentPostID: Int64 = 0
+    var createdAt: UInt32?
+    var floorNumber: Int?
     private var actionTarget: ContentActionTarget {
         .init(kind: .subpost, threadID: document.source.threadID, postID: document.source.postID, parentPostID: parentPostID)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
             Button {
                 if let route = UserProfileRoute(userID: author.rawUserID, fallbackDisplayName: author.displayName) { onOpenUser(route) }
             } label: {
-                HStack(alignment: .top, spacing: 8) {
+                HStack(spacing: 8) {
                     TiebaAvatarView(resource: author.avatarResource, imageLoader: imageLoader)
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 4) {
@@ -34,25 +36,40 @@ struct SubpostsContentRow: View {
                                     .background(TiebaParityTokens.neutralFill, in: RoundedRectangle(cornerRadius: 3))
                             }
                         }
-                        TiebaMetadataRow(values: [metadata, author.ipLocation.map { "来自\($0)" } ?? ""])
                     }.frame(maxWidth: .infinity, alignment: .leading)
-                }.frame(minHeight: 44, alignment: .top)
+                }.frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain).accessibilityIdentifier(identifier + ".author")
-            VStack(alignment: .leading, spacing: 4) {
-                ThreadContentRenderer(
-                    document: document, imageLoader: imageLoader, readingTextSize: readingTextSize,
-                    onOpenMedia: onOpenMedia, onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser)
-                if let reply {
-                    Button("回复", action: reply).font(Typography.font(.caption)).foregroundStyle(SemanticColor.secondaryText)
-                        .frame(minHeight: 44).accessibilityIdentifier(identifier + ".action")
-                        .contextMenu { ContentDeleteAction(target: actionTarget) }
-                }
-            }.padding(.leading, TiebaParityTokens.userAvatarSize + 8)
+            .contextMenu {
+                if reply != nil { ContentDeleteAction(target: actionTarget) }
+            }
+            ThreadContentRenderer(
+                document: document, imageLoader: imageLoader, readingTextSize: readingTextSize,
+                onOpenMedia: onOpenMedia, onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser,
+                onBodyTap: reply)
+                .padding(.leading, TiebaParityTokens.userAvatarSize + 8)
+            TiebaMetadataRow(values: [[
+                floorNumber.flatMap { $0 > 1 ? "第\($0)楼" : nil } ?? "",
+                TiebaDateText.monthDay(seconds: createdAt, fallback: metadata),
+                author.ipLocation ?? ""
+            ].filter { !$0.isEmpty }.joined(separator: " ")])
+                .accessibilityIdentifier(identifier + ".metadata")
+                .padding(.leading, TiebaParityTokens.userAvatarSize + 8)
+                .padding(.top, 8).padding(.bottom, 12)
             TiebaFlatDivider(inset: 0)
         }
         .padding(.horizontal, 16).padding(.top, 8)
-        .foregroundStyle(SemanticColor.primaryText).background(SemanticColor.background)
+        .foregroundStyle(SemanticColor.primaryText)
+        .background {
+            SemanticColor.background
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard case .available = document.availability else { return }
+                    reply?()
+                }
+                .accessibilityHidden(true)
+        }
         .accessibilityElement(children: .contain).accessibilityIdentifier(identifier)
         .modifier(ContentDeletionPreparation(target: actionTarget, authorID: author.rawUserID))
     }

@@ -1,3 +1,52 @@
+## 2026-10-19 P01 — USER_ACCEPTED / 本地提交授权
+
+- 用户明确“现在提交并进入P02”，当前P01全部增量及紧凑筛选栏作为已验收范围本地提交；不推送、不发布。继续当前main工作树，保留用户未跟踪Prompts、技能配置与Python缓存。
+- 提交范围含预览→三级页→具体子回复编辑器、普通正文回复/删除灰字、底部元信息、吧首页去冗余吧名及全局记忆筛选栏；完整记录见Docs/Audits/P01_SUBPOST_ENTRY_AND_REPLY.md。已验收发送/上传链路和WRITE_BASELINE未改。
+- 复用上一轮定向Unit/UI、make build与原iPhone/iPad正常Live安装证据，源码未发生验收后产品修改。提交前重新lint、secret-scan、diff检查；不重复全量质量矩阵。提交后仅进入用户授权的P02全局搜索类型/样式阶段。
+
+## 2026-10-19 P01视觉修订 — 紧凑回复筛选栏 / READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 按用户最新官方iOS截图缩小两侧文字并压扁排序胶囊；本轮生产仅ThreadReplyFilterBar调整：左footnote、右caption2、默认外胶囊26pt/选中22pt，保持44pt点击区与Dynamic Type。原查询、跨帖记忆、缓存、路由、发送链路未变；无新动画、手势、overlay或依赖，继续现有未提交P01。
+- 定向验证：既有P01ReplyFilterTests在隔离iPhone/iPad各1项通过，覆盖点击与跨帖记忆。make lint 608文件0违规/WRITE_BASELINE23项、make build、make secret-scan、git diff --check通过；未跑全量quality或新增纯尺寸镜像测试。物理设备及大字体完整矩阵未跑。
+- 完整正常Live App已覆盖原iPhone17Pro与iPadPro13M5；三项二进制摘要均与产物匹配，6份原有草稿摘要不变。账号、浏览历史保留，未卸载/erase/清数据。iPhone停在用户同一主题筛选栏及少量子回复预览；iPad横屏真实帖子详情也已显示新版筛选栏，当前在前台供用户检查。部分远端头像显示既有失败占位，不改网络。
+- 证据：ignored Artifacts/VisualReview/P01/compact-filter-*，截图20261019-152906-compact-filter-live-phone.png与20261019-153237-compact-filter-live-ipad.png；详情见Docs/Audits/P01_SUBPOST_ENTRY_AND_REPLY.md。本轮无真实发送/点赞等写操作，不暂存、提交、推送、制作IPA或进入P02；下一步仅用户视觉验收。
+
+## 2026-10-19 P01追加 — 吧名移除与全局回复筛选 / READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 用户追加仅吧首页去掉重复“xx吧”，首楼下“回复N”改左侧全部回复/只看楼主、右侧热门/正序/倒序，两组全局持久化。继续既有P01脏树，保留正文点击/三级页/底部元信息及已验收iOS发送链路；不进入P02。
+- 修改集中在ForumThreadFeedRow显示开关、新ThreadReplyFilterBar、ThreadReadingQuery、SettingsStore/AppSettingsRepository和App环境接线、ThreadReader展示/查询导航。成功才保存设置，失败取消保留旧选择内容；六种query缓存身份分离，返回首楼不重置筛选，消息/书签明确pid优先定位。无新动画、手势、overlay、依赖；冻结ThreadReaderStore、发送/上传/成功回调及WRITE_BASELINE摘要未改。
+- 原版iOS22.11.1定点证据与匿名只读响应确认热门r2/正序r0/倒序r1；热门pn0会退回正序，修为热门首屏pn1，正倒序保持原字段。热门保留服务器排名，以pn翻页且pid0；未返回floor时不造编号。原匿名读取adapter未整体迁移，不声称完整官方请求字节一致。额外长帖读取TLS EOF，热门实网多页尚未完成验证，未重试/放宽TLS。
+- 回归：原U09基线8项通过；最终filter-wire-green 18项/3 suites通过（默认读取合同/热序页码/缓存/记忆/失败取消/U09），iPhone UI 3项、iPad UI 2项及四Tab smoke 1项通过。make lint 608文件0违规且WRITE_BASELINE23项、make build、make secret-scan、diff通过。只跑定向及轻量检查，未跑全量quality。初次编译的协议Sendable/测试漏参、lint语句位置已修；旧UI与热序页码均有失败回归，单方法筛选0测试不计通过，详见本阶段audit。
+- 完整正常Live Debug.app覆盖原iPhone/iPad，二进制三项摘要相同，6份原草稿摘要保持，账号/历史保留。实看吧首页无冗余来源标签、两组栏布局正确；热门真实回复排序改变，重启App并进入另一篇帖子仍选择热门。最后恢复全部/正序，停在真实帖子筛选栏及第2楼一条子回复预览，用户可亲自点预览→三级页→具体正文→编辑器。未代发、点赞或其他远端写入。iPad交互由隔离Fixture确认，正常包已安装。
+- 证据仅ignored Artifacts/VisualReview/P01/filter-*与20261019-145851/150100/150307/最终filter-live-review-ready截图。未暂存、提交、推送、制作IPA或进入P02；下一步等待用户视觉验收，真实发送由用户点击。
+
+## 2026-10-19 P01补充 — 底部元信息与作者间距 / READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 用户要求按官方iOS截图将日期、楼层、属地置于正文/灰框之后，去掉作者下的空行。ThreadReaderFloorViews/SubpostsContentRow保持原字号图标，作者居中，正文紧接作者栏，底部显示“第N楼 MM-dd 属地”；子回复仅显示已有日期/属地，不伪造楼层。无“来自”/点分隔。原灰色回复和蓝色查看全部行仍删除，正文回复/灰框导航保持。
+- ThreadReaderListPresentation仅格式化显示日期；SubpostsView只透传已有时间戳和父楼号。TiebaDateText新增独立紧凑格式，旧date不变，缺时间戳保留旧文字。无网络/发送/刷新/路由/Store/缓存结构变动，无新动画、手势、overlay、依赖。WRITE_BASELINE摘要未改且23项通过。
+- 定向回归：旧布局footer-red缺少底部元信息失败；footer-green布局断言与U08模拟发送回显通过，但默认TextView.tap落在正文顶边/作者栏边界进入作者页；footer-hitpoint测得同一边界坐标，修正测试点至普通正文内部，未改产品手势。footer-body-point iPhone两项与footer-ipad两项全部通过；U08一项、footer-unit P01四项通过，含日期时区/缺失、回复身份/点击、草稿和返回位置。make lint 605文件零违规、make build、make secret-scan、git diff --check通过，未跑全量quality。失败与复验详见Docs/Audits/P01_SUBPOST_ENTRY_AND_REPLY.md。
+- 原iPhone/iPad完整正常Live覆盖安装成功；二进制三项摘要匹配、6份原草稿摘要保持，登录/历史仍在。已目检同一真实帖子及三级页：正文下显示短日期、实际楼层和接口已有属地；未返回属地的三级页不造地点。iPhone停在第6楼的一条可见子回复预览及第7/8楼正文，留给用户亲自两步点击及发送。
+- 证据：ignored Artifacts/VisualReview/P01/footer-*日志/xcresult/安装摘要及footer-live-*截图。未暂存、提交、推送、打标签、制作IPA或进入P02。真实设备及服务端发送结果仍由用户验收。
+
+## 2026-10-19 P01补充 — 灰色回复移除 / READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 用户追加要求：移除普通楼层/三级页灰色“回复”，普通帖子正文同样直接打开回复页。继续本工作树既有P01，不重做阶段、不丢弃任何原改动。ThreadReaderFloorViews给正文接原onReply(post)，SubpostsContentRow删除灰色按钮及行高；主帖灰框仍只进对应父楼三级页，具体子回复正文仍选当前条作者。
+- 原按钮的收藏、书签、权限允许的删除菜单移到作者栏系统长按；作者栏明确label命中范围，单击保留个人主页。正文选字/复制、链接/@、图片、拖动及原缓存/阅读位置保持。原ThreadComposeTarget/Store/Composer/发送/上传/成功回显、WRITE_BASELINE完全未动。无新动画/overlay/依赖，无全局手势改动。
+- 定向回归：新增正文入口红灯后修复；iPhone6项通过（分批），iPad2项通过，P01 Unit3项/1 suite通过。涵盖正文/小预览两步进入、当前作者、无灰字、草稿/取消返回、图片/头像/链接独立动作、拖动复制、作者栏书签往返。make lint 605文件零违规及WRITE_BASELINE23项、make build、make secret-scan、git diff --check通过；未跑全量quality。
+- 失败记录：R09旧按钮改正文后的中心tap未保证落到普通文字，改明确坐标复验通过；U10长按因作者栏空白label命中不足误进主页，补contentShape后通过；长图测试误要求整图装进视口导致两次定位失败，改等待图片可用后点击，保留全部实际行为断言后通过；lint首次3处参数缩进修正后通过。生产只做一次菜单命中修正，没有借测试问题改图片/列表。
+- 正常完整Live覆盖原iPhone和iPad，二进制逐字节匹配，6份原草稿摘要保持，账号/历史仍可用。iPhone已从历史恢复原帖11楼附近，停在12楼少量预览及普通正文区；灰色“回复”和旧蓝色行无残留。用户继续亲自点正文或预览验收，真实发送仍由用户执行。iPad本轮交互由隔离Fixture验证，正常包已覆盖。
+- 原始日志/xcresult/安装与数据摘要/截图只在ignored Artifacts/VisualReview/P01/grey-reply-*及20261019-114631-live-no-grey-reply.png；详细失败与复验见Docs/Audits/P01_SUBPOST_ENTRY_AND_REPLY.md。未暂存、提交、推送、打标签、制作IPA或进入P02。
+
+## 2026-10-19 P01修订版 — READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 按用户修订P01继续main/8a2f28d36c606c7628228b35e76ea95aee8dcbc5，没有旧P01生产改动需回退；所有原未跟踪文件保留。移除主帖“查看全部N条回复”按钮及行高；现有最多三条预览的普通文字/背景直接进入对应父楼SubpostsView，三级页具体正文/非交互背景打开该条作者的原Composer。未知总数仍可进入，无预览不造空盒。
+- 修改范围：ThreadReaderFloorViews、SubpostsContentRow、ThreadContentRenderer和TiebaRichTextView，新增默认关闭的局部TiebaTextBodyTap；仅FixtureThreadReaderPages增加少量/第三页子回复样本，新增P01单元/UI回归并适配原R06/R08/R09/R12/U07旧入口定位。原Router/Store/Composer/缓存/VirtualizedList和发送链路、WRITE_BASELINE均未改。无新动画/overlay/依赖；仅两处启用局部单击，保留原选择/复制/链接/@/图片动作。
+- 参考IPA私人路径可读，22.11.1/22.11.1.0与新版P01 SHA完全匹配；只核对元数据、以用户明确流程为合同，没有重新逆向全包或宣称官方实机全部一致。
+- 回归：旧行为两项确定性UI红灯；修复后iPhone4项、iPad1项通过，覆盖预览文字/背景、第一步不弹编辑器、第二条作者、取消切换/草稿恢复、链接/@、正文拖动/长按复制、第三页返回位置。Unit12项/4 suites通过（含1/2/3/23/未知计数、目标身份、回调更新、分页/取消/失败/锚点、原生选择/表情）。make lint 605文件0违规/WRITE_BASELINE23项、make build、make secret-scan、diff均通过；未跑全量quality。
+- 失败如实保留：首个UI运行测试ID漏scope，终止并改正确定位后才取得产品红灯；新增测试嵌套require宏编译失败、import排序lint失败分别拆分变量/排序后通过。安装后“容器路径相同”审计断言失败：simctl覆盖迁移到新UUID；重新检查二进制及迁移后6份原草稿/书签摘要均匹配，不宣称容器路径不变。原始日志/xcresult/安装摘要均在ignored Artifacts/VisualReview/P01，详见Docs/Audits/P01_SUBPOST_ENTRY_AND_REPLY.md。
+- 正常Live：完整Debug.app覆盖原iPhone17Pro和iPadPro13M5，主程序/debug dylib/Info.plist逐字节匹配，账号及数据保留；未卸载/erase/清Keychain。iPhone已停在真实主帖第6楼、仅一条可见子回复的灰框；只读进入已确认对应三级页（计数2，实际可见1条）后返回。真实用户内容和截图不入Git。iPad交互由隔离Fixture验证，正常包已覆盖。
+- 下一步仅用户在原iPhone点击灰色预览 → 独立三级页 → 具体子回复正文 → 原编辑器，真实发送仍由用户点击。未执行真实发送/上传/点赞/关注/删除；未暂存、提交、推送、打标签、制作IPA或进入P02。
+
 ## 2026-10-17 v0.2.0beta5 — RELEASED / U15提交推送完成
 
 - 用户授权提交、推送并发布新版IPA。U15提交 `97741f0fd28d75ea4d50a8d9c06397e25b9ebd97`；发布准备 `58533e8624a01ee982ed6f04accc6ba4abcd4e65`，App0.2.0 Build18。U09–U15与发布准备均已快进推送main，新注释标签v0.2.0beta5原子推送且解引用与构建提交一致。

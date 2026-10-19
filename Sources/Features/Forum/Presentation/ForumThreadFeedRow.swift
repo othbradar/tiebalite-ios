@@ -5,6 +5,7 @@ struct ForumThreadFeedRow: View {
     let imageLoader: any ImageLoading
     var accessibilityPrefix = "forum-home"
     var rowAccessibilityID: String?
+    var showsForumName = true
     var likeTarget: ContentActionTarget?
     let openThread: () -> Void
     @ScaledMetric(relativeTo: .body) private var textSize: CGFloat = 15
@@ -37,11 +38,14 @@ struct ForumThreadFeedRow: View {
                     } else if thread.hasVideo {
                         Text("视频内容").font(.caption).foregroundStyle(SemanticColor.secondaryText)
                     }
-                    Text(thread.forumName.hasSuffix("吧") ? thread.forumName : thread.forumName + "吧")
+                    if showsForumName {
+                        Text(thread.forumName.hasSuffix("吧") ? thread.forumName : thread.forumName + "吧")
                         .font(.caption)
                         .foregroundStyle(SemanticColor.secondaryText)
                         .padding(4)
                         .background(TiebaParityTokens.neutralFill, in: RoundedRectangle(cornerRadius: 4))
+                        .accessibilityIdentifier("\(accessibilityPrefix).forum-name.t\(row.threadID)")
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -140,7 +144,7 @@ struct ForumHomeRowView: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier(ForumHomeAccessibilityID.row(thread.threadID))
             } else {
-                ForumThreadFeedRow(row: thread, imageLoader: imageLoader) { onOpenThread(thread.sourceSummary) }
+                ForumThreadFeedRow(row: thread, imageLoader: imageLoader, showsForumName: false) { onOpenThread(thread.sourceSummary) }
             }
         case let .rule(title):
             compactTitle("吧规", title: title)

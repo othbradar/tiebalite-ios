@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Uses the existing bottom ellipsis; no additional persistent controls or explanatory labels.
+/// Secondary reading actions stay in the existing bottom ellipsis.
 struct ThreadReadingMenu: View {
     @Bindable var store: ThreadReaderStore
     let url: URL
@@ -10,18 +10,6 @@ struct ThreadReadingMenu: View {
 
     var body: some View {
         Menu {
-            Button(store.query.onlyAuthor ? "查看全部" : "只看楼主") {
-                var query = store.query
-                query.onlyAuthor.toggle()
-                Task { await store.selectQuery(query) }
-            }
-            .accessibilityIdentifier("thread-reader.only-author")
-            Button(store.query.order == .ascending ? "倒序查看" : "正序查看") {
-                var query = store.query
-                query.order = query.order == .ascending ? .descending : .ascending
-                Task { await store.selectQuery(query) }
-            }
-            .accessibilityIdentifier("thread-reader.reverse")
             Button("跳页") { pageText = ""; showsJump = true }
                 .accessibilityIdentifier("thread-reader.jump-page")
             Button("回到首楼") { Task { await store.returnToFirstPost() } }

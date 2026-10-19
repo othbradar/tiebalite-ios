@@ -76,20 +76,20 @@ final class R09ComposerSmokeTests: XCTestCase {
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
         XCTAssertEqual(editor.value as? String, "Retain this draft")
         app.buttons["composer.cancel"].tap()
-        let reply = app.buttons["thread-reader.reply.p110001"]
+        let reply = app.textViews["thread-reader.content.node.t100001.p110001.sfirstPost.n0"]
         reveal(reply, in: list)
         reply.tap()
         XCTAssertTrue(app.staticTexts["composer.recipient"].waitForExistence(timeout: 5))
         XCTAssertEqual(editor.value as? String, "")
         app.buttons["composer.cancel"].tap()
-        let all = app.buttons["thread-reader.subposts.all.p120001"]
+        let all = app.textViews["thread-reader.subpost.t100001.p120002.ssubPost"]
         reveal(all, in: list)
         all.tap()
         let subposts = app.tables["subposts.list"]
         XCTAssertTrue(subposts.waitForExistence(timeout: 5))
-        let subReply = app.buttons["subposts.reply.10001.action"]
+        let subReply = app.textViews["thread-reader.content.node.t100001.p10001.ssubPost.n0"]
         reveal(subReply, in: subposts)
-        subReply.tap()
+        subReply.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.1)).tap()
         XCTAssertTrue(app.staticTexts["composer.recipient"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["回复楼中楼"].exists)
         app.buttons["composer.cancel"].tap()

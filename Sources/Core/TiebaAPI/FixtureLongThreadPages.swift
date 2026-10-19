@@ -13,6 +13,11 @@ enum FixtureLongThreadPages {
             }
         }
         if request.query.order == .descending { replies.reverse() }
+        if request.query.order == .hot {
+            // Fixed synthetic ranking; production retains the server's response order.
+            replies = replies.filter { $0.floorNumber.isMultiple(of: 3) }
+                + replies.filter { !$0.floorNumber.isMultiple(of: 3) }
+        }
         let page = max(1, request.pageNumber)
         let total = max(1, (replies.count + 14) / 15)
         guard page <= total else { throw FixtureReadingRepositoryError.unavailable }

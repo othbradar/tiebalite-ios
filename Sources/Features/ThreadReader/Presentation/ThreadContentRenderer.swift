@@ -13,6 +13,7 @@ struct ThreadContentRenderer: View {
     let onOpenMedia: (ThreadMediaIntent) -> Void
     let onOpenExternalLink: (ExternalLinkIntent) -> Void
     let onOpenUser: (UserProfileRoute) -> Void
+    let onBodyTap: (() -> Void)?
 
     init(
         document: ThreadContentDocument,
@@ -20,7 +21,8 @@ struct ThreadContentRenderer: View {
         readingTextSize: ReadingTextSizePreference = .standard,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void = { _ in },
         onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in },
-        onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in }
+        onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in },
+        onBodyTap: (() -> Void)? = nil
     ) {
         self.document = document
         self.imageLoader = imageLoader
@@ -28,6 +30,7 @@ struct ThreadContentRenderer: View {
         self.onOpenMedia = onOpenMedia
         self.onOpenExternalLink = onOpenExternalLink
         self.onOpenUser = onOpenUser
+        self.onBodyTap = onBodyTap
     }
 
     var body: some View {
@@ -68,7 +71,7 @@ struct ThreadContentRenderer: View {
                 case let .richText(nodes):
                     TiebaRichTextView(
                         runs: TiebaRichText.runs(nodes: nodes), fontSize: readingFontSize,
-                        onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser
+                        onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser, onBodyTap: onBodyTap
                     )
                     .accessibilityIdentifier(nodes.first.map { ThreadContentAccessibilityID.node($0.id) } ?? "thread-content.text")
                 case let .images(nodes):

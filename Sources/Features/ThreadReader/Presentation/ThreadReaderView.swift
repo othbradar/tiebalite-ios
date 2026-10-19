@@ -4,6 +4,8 @@ import UIKit
 @MainActor
 struct ThreadReaderView: View {
     @Bindable var store: ThreadReaderStore
+    @Environment(\.threadReplyPreferences) private var replyPreferences
+    var followsGlobalReplyPreferences = true
     @Environment(\.contentActions) private var contentActions
     let imageLoader: any ImageLoading
     let accountAvatar: ImageResourceDescriptor?
@@ -27,6 +29,7 @@ struct ThreadReaderView: View {
         accountAvatar: ImageResourceDescriptor? = nil,
         readingTextSize: ReadingTextSizePreference = .standard,
         readingEntry: ThreadReadingEntry = .unspecified,
+        followsGlobalReplyPreferences: Bool = true,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void,
         onOpenUser: @escaping (UserProfileRoute) -> Void = { _ in },
         onDisplayed: @escaping (ThreadReaderSnapshot) async -> Void = { _ in },
@@ -37,6 +40,7 @@ struct ThreadReaderView: View {
         self.accountAvatar = accountAvatar
         self.readingTextSize = readingTextSize
         self.readingEntry = readingEntry
+        self.followsGlobalReplyPreferences = followsGlobalReplyPreferences
         self.onOpenMedia = onOpenMedia
         self.onOpenUser = onOpenUser
         self.onDisplayed = onDisplayed
@@ -78,6 +82,7 @@ struct ThreadReaderView: View {
             if phase != .active { Task { await store.saveReadingPosition() } }
         }
         .task(id: store.cacheContext) { await loadStoreAcrossProjection() }
+        .task(id: replyPreferences?.replyQuery) { await loadStoreAcrossProjection() }
         .task(id: loadTaskID) {
             await loadStoreAcrossProjection()
         }
@@ -161,6 +166,7 @@ struct ThreadReaderView: View {
                 onRefresh: { if readingSession == store.readingSession { await store.reload() } },
                 rowContent: { configuredRow in
                     ThreadReaderRowView(
+                        readingControls: store, replyPreferences: replyPreferences,
                         row: configuredRow.row,
                         imageLoader: imageLoader,
                         readingTextSize: configuredRow.readingTextSize,
@@ -209,6 +215,7 @@ struct ThreadReaderView: View {
 
     private func loadStoreAcrossProjection() async {
         let operation = Task { @MainActor in
+            if followsGlobalReplyPreferences { await store.applyReplyPreferences(replyPreferences) }
             await store.loadIfNeeded()
         }
         await operation.value
