@@ -228,7 +228,7 @@ final class AppCompositionRoot {
 
     func makeSearchStore() -> SearchStore {
         SearchStore(repository: searchRepository, historyRepository: LocalSearchHistoryRepository(
-            persists: environment.readingDataSourceMode != .fixture))
+            persists: environment.readingDataSourceMode == .live))
     }
 
     func makeForumHomeStore(route: ForumRoute) -> ForumHomeStore {

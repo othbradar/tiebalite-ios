@@ -18,5 +18,7 @@ GitHub CLI未登录（release list/view均exit4），浏览器扩展首次连接
 
 ## 状态
 
+首次设备Release归档实际失败（exit65）：`AppCompositionRoot.makeSearchStore`引用仅Debug定义的`.fixture`。已将历史持久化判断等价改为`== .live`，Debug中仍为fixture不持久化、Live持久化，Release只依赖生产枚举值。不扩大测试枚举编译范围、不改变搜索业务或发送链路。原失败日志保留为`archive-initial-failed.log`；使用相同归档命令重跑作为直接回归。
+
 归档、附件及发布回执待执行完成后追加；本记录不提前宣称发布成功。
 未新增生产状态、动画、手势、overlay或依赖。继承各阶段已列真机、服务端及SDK边界。
