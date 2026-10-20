@@ -93,6 +93,20 @@ not have uniform file-level provenance headers. Publishing this source
 repository does not resolve that provenance; App Store and commercial binary
 distribution remain uncleared pending an independent rights review.
 
+### P04 Android TiebaLite application icon
+
+At the user's explicit request, the application icon adapts
+`app/src/main/res/drawable/ic_launcher_new_foreground.xml` from the Android
+revision `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2` above. Its four paths are
+unchanged; the palette is light blue and the canvas is an opaque iOS square.
+Copyright/attribution remains with the TiebaLite Android contributors, under
+the reference's GPL-3.0 provenance and existing distribution limitations.
+This is Android TiebaLite artwork, not an icon extracted from the official IPA.
+Source files, hashes, modifications and reproducible rasterization are recorded
+in `Resources/APP_ICON_PROVENANCE.md`; the editable derivative is
+`Resources/AppIconSource.svg`. Earlier phase statements about not importing
+Android icons describe those phases, before this explicit P04 adaptation.
+
 ## protobuf-java fixture tool
 
 - Artifact: `com.google.protobuf:protobuf-java:4.35.1`

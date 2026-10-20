@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Adapted from TiebaLite Android, GPL-3.0.
+  Revision: 5545326b2a8e0d784b2f3dfbcb219c7b121e61c2
+  Source: app/src/main/res/drawable/ic_launcher_new_foreground.xml
+  Changes (2026-10-20): light-blue palette, square iOS canvas.
+  See APP_ICON_PROVENANCE.md for source, rendering and attribution.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="18 18 64 64">
+  <rect x="18" y="18" width="64" height="64" fill="#9BCBF2"/>
+  <path d="m36.39,42.19l27.89,0a4.69,4.69 0 0 1 4.69,4.69l0,31.93a4.69,4.69 0 0 1 -4.69,4.69l-27.89,0a4.69,4.69 0 0 1 -4.69,-4.69l0,-31.93a4.69,4.69 0 0 1 4.69,-4.69z" fill="#CCE5FA"/>
+  <path d="m32.54,48.87l34.92,0c3.06,0 5.53,2.95 5.53,6.59l0,44.55l-45.98,0l0,-44.55c0,-3.64 2.48,-6.59 5.53,-6.59z" fill="#FFFFFF"/>
+  <path d="m35.8,59.86l28.41,0a2.22,2.22 0 0 1 2.22,2.22l0,0a2.22,2.22 0 0 1 -2.22,2.22l-28.41,0a2.22,2.22 0 0 1 -2.22,-2.22l0,0a2.22,2.22 0 0 1 2.22,-2.22z" fill="#87B8E8"/>
+  <path d="m35.8,68.08l17.24,0a2.22,2.22 0 0 1 2.22,2.22l0,0a2.22,2.22 0 0 1 -2.22,2.22l-17.24,0a2.22,2.22 0 0 1 -2.22,-2.22l0,0a2.22,2.22 0 0 1 2.22,-2.22z" fill="#87B8E8"/>
+</svg>
