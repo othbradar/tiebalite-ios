@@ -15,7 +15,7 @@ struct Stage17AdaptiveLayoutTests {
             UserProfileRoute(userID: 17_001, fallbackDisplayName: "作者")
         )
         let routes: [RouteIdentity] = [
-            .search,
+            .search(),
             .forum(forum),
             .thread(threadID),
             .userProfile(profile)

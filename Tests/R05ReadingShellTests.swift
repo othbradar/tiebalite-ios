@@ -36,7 +36,7 @@ struct R05ReadingShellTests {
             selectedTab: .recommendations, routesByRoot: [.recommendations: [.thread(thread)]]
         )
         #expect(!AppShellPresentation.showsPhoneTabSelector(in: directThread))
-        let search = AppNavigationState(selectedTab: .recommendations, routesByRoot: [.recommendations: [.search]])
+        let search = AppNavigationState(selectedTab: .recommendations, routesByRoot: [.recommendations: [.search()]])
         #expect(AppShellPresentation.showsPhoneTabSelector(in: search))
         #expect(AppShellPresentation.showsPhoneTabSelector(in: AppNavigationState()))
     }

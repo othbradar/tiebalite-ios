@@ -10,24 +10,27 @@ struct LiveSearchRepository: SearchRepository {
         self.host = host
     }
 
-    func search(keyword: SearchKeyword) async throws -> SearchSnapshot {
-        guard let request = SearchThreadPageRequest(
-            keyword: keyword,
-            page: 1
-        ) else {
-            throw SearchWebProtocolError.invalidStaticConfiguration
+    func search(_ query: SearchQuery) async throws -> SearchSnapshot {
+        guard query.scope == .global else { throw SearchWebProtocolError.unsupportedScope }
+        switch query.type {
+        case .users:
+            let users = try await executor.execute(
+                endpoint: SearchUserWebProtocol.makeDescriptor(host: host, keyword: query.keyword),
+                authentication: .anonymous, body: .none, pipeline: SearchUserWebProtocol.pipeline()
+            )
+            return SearchSnapshot(query: query, forums: [], threads: [], users: users,
+                                  currentThreadPage: 1, hasMoreThreads: false)
+        case .forums:
+            let forums = try await loadForums(keyword: query.keyword)
+            return SearchSnapshot(query: query, forums: forums, threads: [], currentThreadPage: 1, hasMoreThreads: false)
+        case .threads:
+            guard let request = SearchThreadPageRequest(query: query, page: 1) else {
+                throw SearchWebProtocolError.invalidStaticConfiguration
+            }
+            let page = try await loadThreadPage(request)
+            return SearchSnapshot(query: query, forums: [], threads: page.items,
+                                  currentThreadPage: page.currentPage, hasMoreThreads: page.hasMore)
         }
-        async let forums = loadForums(keyword: keyword)
-        async let threadPage = loadThreadPage(request)
-        let (forumResults, page) = try await (forums, threadPage)
-        try Task.checkCancellation()
-        return SearchSnapshot(
-            keyword: keyword,
-            forums: forumResults,
-            threads: page.items,
-            currentThreadPage: page.currentPage,
-            hasMoreThreads: page.hasMore
-        )
     }
 
     func loadForums(

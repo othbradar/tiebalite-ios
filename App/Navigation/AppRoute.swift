@@ -101,7 +101,8 @@ struct PostID: Codable, Hashable, Sendable {
 enum RouteIdentity: Codable, Hashable, Sendable {
     case notification(NotificationTarget)
     case forum(ForumRoute)
-    case search
+    // Optional for decoding the existing persisted {"search":{}} route as global.
+    case search(scope: SearchScope? = nil)
     case subposts(threadID: ThreadID, postID: PostID)
     case thread(ThreadID)
     case userProfile(UserProfileRoute)
@@ -242,6 +243,8 @@ enum RouteGrammar {
 
     static func permitsContentAction(from parent: RouteIdentity, to child: RouteIdentity) -> Bool {
         switch (parent, child) {
+        case let (.search(scope), .userProfile):
+            return (scope ?? .global) == .global
         case let (.userProfile(user), .profileList(list)):
             return user.userID == list.user.userID
         case (.profileList, .thread), (.profileList, .forum), (.profileList, .profileReply),

@@ -1,10 +1,12 @@
 struct FixtureSearchRepository: SearchRepository {
-    func search(keyword: SearchKeyword) async throws -> SearchSnapshot {
+    func search(_ query: SearchQuery) async throws -> SearchSnapshot {
         try Task.checkCancellation()
+        guard query.scope == .global else { throw SearchWebProtocolError.unsupportedScope }
         return SearchSnapshot(
-            keyword: keyword,
+            query: query,
             forums: Self.forums,
-            threads: Self.threadPages[0],
+            threads: Self.pages(for: query.sort)[0],
+            users: Self.users,
             currentThreadPage: 1,
             hasMoreThreads: Self.threadPages.count > 1
         )
@@ -14,15 +16,24 @@ struct FixtureSearchRepository: SearchRepository {
         _ request: SearchThreadPageRequest
     ) async throws -> ThreadSearchPage {
         try Task.checkCancellation()
+        guard request.query.scope == .global else { throw SearchWebProtocolError.unsupportedScope }
         let index = request.page - 1
         guard Self.threadPages.indices.contains(index) else {
             throw FixtureReadingRepositoryError.unavailable
         }
         return ThreadSearchPage(
-            items: Self.threadPages[index],
+            items: Self.pages(for: request.query.sort)[index],
             currentPage: request.page,
             hasMore: index + 1 < Self.threadPages.count
         )
+    }
+
+    private static let users: [UserSearchResult] = (1...24).compactMap { index in
+        guard let route = UserProfileRoute(userID: Int64(14_000 + index), fallbackDisplayName: "Fixture 用户 \(index)") else {
+            return nil
+        }
+        return UserSearchResult(route: route, introduction: index.isMultiple(of: 2) ? "用于验证搜人及主页返回位置。" : nil,
+                                isExactMatch: index == 1)
     }
 
     private static let forums = [
@@ -32,7 +43,8 @@ struct FixtureSearchRepository: SearchRepository {
             displayName: "Swift 开发吧",
             summary: "学习 Swift 与 Apple 平台开发的 Fixture 吧。",
             memberCountText: "123456",
-            postCountText: "456789"
+            postCountText: "456789",
+            isExactMatch: true
         ),
         ForumSearchResult(
             forumID: 13_002,
@@ -42,18 +54,23 @@ struct FixtureSearchRepository: SearchRepository {
             memberCountText: "1200",
             postCountText: "3400"
         )
-    ]
+    ] + (3...12).map { index in
+        ForumSearchResult(forumID: Int64(13_000 + index), name: "Fixture吧\(index)", displayName: "Fixture 吧 \(index)",
+                          summary: "用于验证搜索类型切换后位置保持。", memberCountText: "1200", postCountText: "3400")
+    }
 
     private static let threadPages = [
-        [
-            makeThread(seed: FixtureReadingCatalog.recommendationSeeds[2]),
-            makeThread(seed: FixtureReadingCatalog.recommendationSeeds[5])
-        ],
-        [
-            makeThread(seed: FixtureReadingCatalog.recommendationSeeds[5]),
-            makeThread(seed: FixtureReadingCatalog.recommendationSeeds[11])
-        ]
+        [2, 5, 0, 1, 3, 4].map { makeThread(seed: FixtureReadingCatalog.recommendationSeeds[$0]) },
+        [5, 11, 6, 7, 8, 9, 10].map { makeThread(seed: FixtureReadingCatalog.recommendationSeeds[$0]) }
     ]
+
+    private static func pages(for sort: SearchSort) -> [[ThreadSearchResult]] {
+        switch sort {
+        case .newest: threadPages
+        case .oldest: threadPages.reversed().map { Array($0.reversed()) }
+        case .relevance: threadPages.map { Array($0.dropFirst()) + $0.prefix(1) }
+        }
+    }
 
     private static func makeThread(
         seed: FixtureThreadSeed
@@ -62,10 +79,11 @@ struct FixtureSearchRepository: SearchRepository {
             threadID: seed.threadID,
             title: seed.title,
             summary: "Fixture 搜索摘要",
-            forumID: nil,
+            forumID: 13_001,
             forumName: seed.forumName,
             authorName: seed.authorName,
-            replyCount: Int(seed.replyCount)
+            replyCount: Int(seed.replyCount),
+            timeUnixSeconds: 1_700_000_000, likeCount: 7, shareCount: 0
         )
     }
 }

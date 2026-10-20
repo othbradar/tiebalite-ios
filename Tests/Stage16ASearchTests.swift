@@ -29,12 +29,17 @@ struct Stage16ASearchProtocolTests {
         )
 
         #expect(forums.map(\.forumID) == [16_001, 16_002])
+        #expect(forums.map(\.isExactMatch) == [true, false])
         #expect(forums.first?.name == "fixture_dev")
         #expect(forums.first?.displayName == "Fixture 开发")
         #expect(forums[1].memberCountText == "12")
         #expect(first.items.map(\.threadID) == [26_001, 26_002])
         #expect(first.items.first?.forumID == 16_001)
         #expect(first.items.first?.replyCount == 18)
+        #expect(first.items.first?.timeUnixSeconds == 1_700_000_000)
+        #expect(first.items.first?.likeCount == 12)
+        #expect(first.items.first?.shareCount == 2)
+        #expect(first.items.last?.likeCount == nil)
         #expect(first.currentPage == 1)
         #expect(first.hasMore)
         #expect(second.items.map(\.threadID) == [26_002, 26_003])
@@ -288,8 +293,8 @@ struct Stage16ASearchStoreTests {
 
         #expect(AppRouter.forumRoute(for: forum) == .forum(forumRoute))
         #expect(AppRouter.threadRoute(for: thread) == .thread(threadID))
-        #expect(RouteGrammar.isValid([.search, .forum(forumRoute)], for: .recommendations))
-        #expect(RouteGrammar.isValid([.search, .thread(threadID)], for: .recommendations))
+        #expect(RouteGrammar.isValid([.search(), .forum(forumRoute)], for: .recommendations))
+        #expect(RouteGrammar.isValid([.search(), .thread(threadID)], for: .recommendations))
     }
 
     @Test
@@ -307,10 +312,23 @@ struct Stage16ASearchStoreTests {
         await store.submit()
 
         let snapshot = try #require(store.state.snapshot)
-        #expect(!snapshot.forums.isEmpty)
+        #expect(snapshot.forums.isEmpty)
         #expect(!snapshot.threads.isEmpty)
+        await store.selectType(.forums)
+        #expect(store.state.snapshot?.forums.isEmpty == false)
+        #expect(store.state.snapshot?.threads.isEmpty == true)
         #expect(await client.events().isEmpty)
         #expect(root.authContextProvider.context() == .anonymous)
+    }
+
+    @Test
+    func defaultSearchLoadsThreadsWithoutForums() async throws {
+        let store = SearchStore(repository: FixtureSearchRepository())
+        store.setDraftKeyword("Swift")
+        await store.submit()
+        let snapshot = try #require(store.state.snapshot)
+        #expect(snapshot.forums.isEmpty)
+        #expect(!snapshot.threads.isEmpty)
     }
 
     private static func snapshot(
@@ -318,11 +336,12 @@ struct Stage16ASearchStoreTests {
         threadIDs: [Int64],
         hasMore: Bool = false
     ) -> SearchSnapshot {
-        guard let normalizedKeyword = SearchKeyword(keyword) else {
+        guard let normalizedKeyword = SearchKeyword(keyword),
+              let query = SearchQuery(keyword: normalizedKeyword) else {
             preconditionFailure("Invalid test search keyword")
         }
         return SearchSnapshot(
-            keyword: normalizedKeyword,
+            query: query,
             forums: [],
             threads: threadIDs.map(thread),
             currentThreadPage: 1,
@@ -347,9 +366,9 @@ private enum ControlledSearchRepositoryError: Error {
     case unknownCall
 }
 
-private actor ControlledSearchRepository: SearchRepository {
+actor ControlledSearchRepository: SearchRepository {
     private struct SearchCall {
-        let keyword: SearchKeyword
+        let query: SearchQuery
         let gate: HarnessContinuationGate<SearchSnapshot>
     }
 
@@ -369,10 +388,10 @@ private actor ControlledSearchRepository: SearchRepository {
     private var pageObservers: [Observer] = []
     private var cancelledSearches: [Int] = []
 
-    func search(keyword: SearchKeyword) async throws -> SearchSnapshot {
+    func search(_ query: SearchQuery) async throws -> SearchSnapshot {
         let call = searches.count + 1
         let gate = HarnessContinuationGate<SearchSnapshot>()
-        searches.append(SearchCall(keyword: keyword, gate: gate))
+        searches.append(SearchCall(query: query, gate: gate))
         resumeSearchObservers()
         do {
             let value = try await gate.wait()
@@ -436,8 +455,15 @@ private actor ControlledSearchRepository: SearchRepository {
         pages[call - 1].gate.fail(error)
     }
 
+    func searchQueries() -> [SearchQuery] { searches.map(\.query) }
+
+    func failSearch(call: Int) throws {
+        guard searches.indices.contains(call - 1) else { throw ControlledSearchRepositoryError.unknownCall }
+        searches[call - 1].gate.fail(FixtureReadingRepositoryError.unavailable)
+    }
+
     func searchKeywords() -> [SearchKeyword] {
-        searches.map(\.keyword)
+        searches.map { $0.query.keyword }
     }
 
     func pageRequests() -> [SearchThreadPageRequest] {

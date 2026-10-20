@@ -388,10 +388,12 @@ extension AppShellSmokeTests {
         let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
         submitFixtureSearch(in: app)
+        app.buttons["search.type.forums"].tap()
+        UITestHarness.requirePresent(.searchForumResult, in: app)
         UITestHarness.tap(.searchForumResult, in: app)
         UITestHarness.requirePresent(.forumHomeHeader, in: app)
         UITestHarness.tapSystemBack(in: app, returningTo: .searchRoot)
-        requireFixtureSearchPreserved(in: app)
+        requireFixtureSearchPreserved(in: app, forums: true)
     }
 
     @MainActor
@@ -399,12 +401,6 @@ extension AppShellSmokeTests {
         let app = UITestHarness.launch(scenario: .fixtureReadingFlow)
 
         submitFixtureSearch(in: app)
-        UITestHarness.scrollToHittable(
-            .searchThreadResult,
-            inside: .searchList,
-            gestureAnchor: .searchForumResult,
-            in: app
-        )
         UITestHarness.tap(.searchThreadResult, in: app)
         UITestHarness.requirePresent(.threadReaderScreen, in: app)
         UITestHarness.tapSystemBack(in: app, returningTo: .searchRoot)
@@ -502,17 +498,18 @@ extension AppShellSmokeTests {
         field.typeText("Swift")
         UITestHarness.tap(.searchSubmit, in: app)
         UITestHarness.requirePresent(.searchList, in: app)
-        UITestHarness.requirePresent(.searchForumResult, in: app)
         UITestHarness.requirePresent(.searchThreadResult, in: app)
+        XCTAssertFalse(app.buttons["search.forum.13001"].exists)
     }
 
     @MainActor
-    private func requireFixtureSearchPreserved(in app: XCUIApplication) {
+    private func requireFixtureSearchPreserved(in app: XCUIApplication, forums: Bool = false) {
         let field = UITestHarness.element(.searchField, in: app)
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         XCTAssertEqual(field.value as? String, "Swift")
-        UITestHarness.requirePresent(.searchForumResult, in: app)
-        UITestHarness.requirePresent(.searchThreadResult, in: app)
+        UITestHarness.requirePresent(forums ? .searchForumResult : .searchThreadResult, in: app)
+        XCTAssertTrue(app.buttons[forums ? "search.type.forums" : "search.type.threads"].isSelected)
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
     }
 
     @MainActor

@@ -10,7 +10,7 @@ struct R08SubpostsNavigationTests {
         let profile = try #require(UserProfileRoute(userID: 91, fallbackDisplayName: "样本"))
         let forum = try #require(ForumRoute(forumID: 90, forumName: "固定样本吧"))
         let routes: [RouteIdentity] = [
-            .search, .forum(forum), .thread(thread),
+            .search(), .forum(forum), .thread(thread),
             .subposts(threadID: thread, postID: post), .userProfile(profile)
         ]
         #expect(RouteGrammar.isValid(routes, for: .followedForums))

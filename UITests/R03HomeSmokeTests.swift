@@ -89,6 +89,10 @@ final class R03HomeSmokeTests: XCTestCase {
         XCTAssertEqual(recentButtons(in: app).count, 3)
         UITestHarness.attachSafeVisualEvidence(app: app, name: "R03 iPad dark landscape")
         device.orientation = .portrait
+        UITestHarness.requirePresent(.layoutCompact, in: app)
+        UITestHarness.requirePresent(.forumHomeHeader, in: app)
+        // Portrait keeps the selected forum full-width; return before using the home search entry.
+        UITestHarness.tapSystemBack(in: app, returningTo: .followedForumsRoot)
         XCTAssertTrue(app.buttons["home.search"].isHittable)
         XCTAssertTrue(app.buttons["followed-forums.row.f13001"].isHittable)
         XCTAssertEqual(recentButtons(in: app).count, 3)

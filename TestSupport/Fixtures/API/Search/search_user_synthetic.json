@@ -1,0 +1,41 @@
+{
+  "no": 0,
+  "error": "",
+  "data": {
+    "pn": 1,
+    "has_more": 1,
+    "exactMatch": {
+      "id": "14001",
+      "name": "fixture_exact",
+      "show_nickname": "Fixture 推荐用户",
+      "intro": "纯合成简介",
+      "portrait": "fixture_portrait"
+    },
+    "fuzzyMatch": [
+      {
+        "id": 14002,
+        "name": "fixture_related",
+        "show_nickname": "Fixture 相关用户",
+        "intro": null
+      },
+      {
+        "id": "14001",
+        "name": "duplicate"
+      },
+      {
+        "id": "-2",
+        "name": "invalid"
+      },
+      null,
+      {
+        "id": "bad",
+        "name": "invalid"
+      },
+      {
+        "id": "14003",
+        "name": "fallback_name",
+        "show_nickname": ""
+      }
+    ]
+  }
+}

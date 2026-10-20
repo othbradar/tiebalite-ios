@@ -1062,6 +1062,9 @@ endpoint 的独立运行证据为准。当前只有下文 FRS 固定公开吧首
 
 ### `search.webResults`
 
+- P02 用户追加排序（2026-10-19，CODE_EVIDENCE）：Android `ui/page/search/SearchPage.kt` 的 `sortTypes` 菜单绑定 `SearchThreadSortType`；`search/thread/SearchThreadViewModel.kt` 常量为新帖5、旧帖0、相关度2，`Refresh`/`LoadMore` 均传当前排序。`api/interfaces/impls/MixedTiebaApiImpl.kt::searchThreadFlow` → `api/retrofit/interfaces/AppHybridTiebaApi.kt::searchThreadFlow` 将其编码到 GET `st`，其余页码/参数沿用。iOS 查询与缓存身份纳入排序，搜吧归一化为无排序默认值；不在客户端重新排序，排序间首屏/页码/失败/位置分开。菜单只复用系统 Menu，不复制 Android 手势；新帖/旧帖/相关度均需定向请求及迟到响应测试，Live 语义以本轮实际检查为准。
+- P02（2026-10-19，CODE_EVIDENCE + Mock）：`SearchQuery` 传递 scope/type/keyword/sort；生产 `LiveSearchRepository.search` 仅调用选择的 forum 或 thread endpoint。现有 wire/匿名认证/页码不变；forum scope 在请求构建前明确 unsupported，P03 未实施。`P02SearchTests` 验证单请求与范围拒绝。新增可选展示字段 time/like_num/share_num 来自 SearchThreadBean；string/integer 窄化及字段缺省由合成 fixture 验证。搜吧 exactMatch 仅按其真实 forumID 标记推荐。用户选择 Android 截图作为 UI 参考；Live 检查及边界见 P02 audit。
+
 - 用户任务：阶段 16A 只接入搜吧和搜主题；用户、吧内帖子和联想延期。
 - HTTP method / URL family：
   - forum：GET `https://tieba.baidu.com/mo/q/search/forum?word=...`；
@@ -1454,3 +1457,12 @@ U14 点赞失败修正（2026-10-17）：用户手动点击的只读诊断得到
 - 全局记忆为用户本轮明确产品要求：仅成功选择后保存 `AppSettingsSnapshot.threadReplyQuery`，旧安装缺字段默认全部/正序。消息/书签明确pid定位优先于记忆模式。
 
 - 热门首屏补充：同一匿名样本 `r=2,pn=0,pid=0` 虽返回error0，但实际sort_type=0；改为 `pn=1` 才返回sort_type=2。原版 `getRequestParamsWithPage:sortType:` 在0x102c9a5fc检查sort=2，0x102c9a638–0x102c9a68c直接写页码到pn。仅热门首屏将内部page0编码为pn1，其余正/倒序请求及内部第一页身份不变。热门下一页继续正整数pn、pid0。长帖额外匿名读取遇TLS EOF，未重试或放宽验证；真实热门跨页尚需实际多页样本，单元覆盖pn2与保留服务器排名。热门响应可省略floor（0），UI不伪造楼层编号。
+
+
+### P02 追加：search.webUsers（2026-10-19，用户明确补搜人）
+
+- Android 协议引用仍为 `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`；`AppHybridTiebaApi.searchUserFlow` → `MixedTiebaApiImpl.searchUserFlow` → `SearchUserViewModel`。GET `/mo/q/search/user`，仅 `word`，NO_ST_PARAMS / 排除 BDUSS、STOKEN；匿名读取沿用现有 Hybrid 固定 headers，未携带账号凭证。Android 另传动态 Referer；正常 Live 已验证省略 Referer 的匿名请求可返回 HTTP200/no0并映射47项；没有模拟动态设备数据。
+- `SearchUserBean`：`no` / `error` / `data.exactMatch` / `data.fuzzyMatch`；`UserExactMatchAdapter` 将数组视为无精确项；`UserFuzzyMatchAdapter` 支持数组或对象，字段 id 可字符串或数字（Gson getAsString），非对象成员跳过。优先 show_nickname、再 name（StringUtil.getUsernameAnnotatedString）；intro / portrait 复用现有用户头像与主页路由。按有效正整数业务 userID 去重，推荐优先。
+- `SearchUserViewModel` 仅 Refresh，无分页意图；不因 DTO 的 pn/has_more 猜测追加请求。搜人独立缓存和 anchor，切换搜帖排序不重请求用户结果；新词取消旧请求并拒绝迟到回包。无法解码/服务端拒绝保持既有 typed failure，不转换为空。
+- UI 参照用户 2026-10-19 Android 搜人截图：搜吧/搜帖/搜人、推荐/相关用户、头像/姓名/一行简介、整行进已有个人主页。新增范围只涉及匿名搜索读取，不修改官方 iOS 发送链路。
+- 测试样本 `search.user.synthetic` 全人工数据；验证请求、对象/数组、ID与昵称、空/失败/取消、类型缓存隔离、回到原位置。11项定向Unit、iPhone两条UI及iPad一条共享UI通过。正常iPad前两次失败未捕获原因，第三次断点确认200/JSON/no0/47项；iPhone首次正常显示并可打开对应主页。该接口临时失败原因仍UNKNOWN，不宣称长期稳定。

@@ -35,7 +35,7 @@ private final class ProfileNativeClient {
         if case .active = context {
             authorization = try auth.authorization(for: context)
             accountStore.updateContext(context)
-            await accountStore.loadIfNeeded()
+            await loadAccount(for: operation)
             try validate(context, scope)
             accountID = accountStore.profile?.userID.rawValue
             guard accountID != nil else { throw ProfileContentFailure.identityUnavailable }
@@ -91,6 +91,14 @@ private final class ProfileNativeClient {
         try validate(context, scope)
         guard (200..<300).contains(response.statusCode) else { throw HTTPClientError.server(statusCode: response.statusCode) }
         return response
+    }
+
+    private func loadAccount(for operation: ProfileContentOperation) async {
+        if case .following = operation {
+            await accountStore.loadIfNeeded()
+        } else {
+            await accountStore.loadIfNeeded(retryInitialFailure: true)
+        }
     }
 
     private func preparedAccount(_ operation: ProfileContentOperation, accountID: Int64?,

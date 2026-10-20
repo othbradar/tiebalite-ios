@@ -51,7 +51,7 @@
       "path": "API/Search/search_thread_page1_synthetic.json",
       "purpose": "Hybrid thread search first-page JSON and pagination contract",
       "sanitized": true,
-      "sha256": "128efea43582be135289f61fcaea6451d93236a49b25781543d4fea832657ed8",
+      "sha256": "020b162c22b2c5f3019c0164e0d022fc630eaea028390725c9951a5792054567",
       "source": "synthetic"
     },
     {
@@ -124,6 +124,15 @@
       "purpose": "hash mismatch failure",
       "sanitized": true,
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source": "synthetic"
+    },
+    {
+      "format": "json",
+      "id": "search.user.synthetic",
+      "path": "API/Search/search_user_synthetic.json",
+      "purpose": "P02 anonymous user search identity, nickname, duplicate and optional fields contract; all synthetic",
+      "sanitized": true,
+      "sha256": "8a41241e96cf4b3bba1b880154cb3aa18b4a844f847600d1ea2a6e646bf227dd",
       "source": "synthetic"
     }
   ],

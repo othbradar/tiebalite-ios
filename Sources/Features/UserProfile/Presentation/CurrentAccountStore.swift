@@ -26,9 +26,11 @@ final class CurrentAccountStore {
         attemptedLoad = false
     }
 
-    func loadIfNeeded() async {
+    func loadIfNeeded(retryInitialFailure: Bool = false) async {
         if let task { await task.value; return }
-        guard !attemptedLoad else { return }
+        // A new profile read may recover missing account metadata. Render-driven
+        // activation keeps its one-attempt policy; concurrent callers share task.
+        guard !attemptedLoad || (retryInitialFailure && failed && profile == nil) else { return }
         await refresh()
     }
 

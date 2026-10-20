@@ -34,6 +34,23 @@ SwiftProtobuf license does not grant rights to any input schema.
 
 ## TiebaLite Android reference
 
+P02 search layout follows the user's Android TiebaLite screenshots and UI revision
+`c5f1125f42498e49db4e4a9cb66313b8c8a285c7`:
+`ui/page/search/SearchPage.kt`, `ui/page/search/forum/SearchForumPage.kt`, and
+`ui/widgets/compose/Search.kt` under the same source prefix below. The Swift UI
+is independently implemented using the existing native list and image loader;
+no Android image, icon, binary, or Compose source is bundled. Existing Hybrid
+DTO evidence for exactMatch/time/like_num/share_num remains at protocol revision
+`5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`.
+
+
+P02 user search additionally references `SearchUserBean.kt`,
+`UserExactMatchAdapter.java`, `UserFuzzyMatchAdapter.java`,
+`AppHybridTiebaApi.searchUserFlow`, `MixedTiebaApiImpl.searchUserFlow`,
+and `SearchUserViewModel.kt` at the same pinned Android protocol revision.
+`SearchUserPage.kt` and the user's Android screenshot supply layout/interaction evidence.
+The Swift adapter is independently implemented; bundled user fixtures are synthetic.
+
 - Repository: <https://github.com/zzc10086/TiebaLite.git>
 - Pinned branch: `4.0-dev`
 - Pinned revision: `5545326b2a8e0d784b2f3dfbcb219c7b121e61c2`

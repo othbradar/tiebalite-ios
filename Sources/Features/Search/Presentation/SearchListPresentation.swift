@@ -1,35 +1,29 @@
 import Foundation
 
 enum SearchResultSection: String, Equatable, Hashable, Sendable {
-    case forums
-    case threads
+    case recommended
+    case related
+    case relatedUsers
 }
 
 enum SearchRowID: Equatable, Hashable, Sendable {
-    case empty(SearchResultSection)
     case forum(Int64)
     case pagination(String)
     case section(SearchResultSection)
     case thread(Int64)
+    case user(Int64)
 }
 
 struct ForumSearchRowModel: Equatable, Sendable {
     let result: ForumSearchResult
     let title: String
     let summary: String?
-    let statistics: String?
 
     init(result: ForumSearchResult) {
         self.result = result
         title = Self.normalized(result.displayName, fallback: result.name)
         summary = result.summary.flatMap(Self.nonempty)
-        let statistics = [
-            result.memberCountText.map { "关注 \($0)" },
-            result.postCountText.map { "帖子 \($0)" }
-        ].compactMap { $0 }
-        self.statistics = statistics.isEmpty
-            ? nil
-            : statistics.joined(separator: " · ")
+
     }
 
     private static func normalized(
@@ -77,11 +71,11 @@ struct ThreadSearchRowModel: Equatable, Sendable {
 }
 
 enum SearchRowContent: Equatable, Sendable {
-    case empty(SearchResultSection)
     case forum(ForumSearchRowModel)
     case pagination(PaginationFooterState)
     case section(SearchResultSection)
     case thread(ThreadSearchRowModel)
+    case user(UserSearchResult)
 }
 
 struct SearchRowModel: Identifiable, Equatable, Sendable {
@@ -90,6 +84,7 @@ struct SearchRowModel: Identifiable, Equatable, Sendable {
 }
 
 struct SearchListPresentation: Equatable, Sendable {
+    let query: SearchQuery
     private(set) var rows: [SearchRowModel]
     private(set) var pagination: PaginationFooterState
     let prefetchRowIDs: Set<SearchRowID>
@@ -98,59 +93,52 @@ struct SearchListPresentation: Equatable, Sendable {
         snapshot: SearchSnapshot,
         pagination: PaginationFooterState
     ) {
+        query = snapshot.query
         self.pagination = pagination
-        rows = []
-        rows.append(
-            SearchRowModel(
-                id: .section(.forums),
-                content: .section(.forums)
-            )
-        )
-        if snapshot.forums.isEmpty {
-            rows.append(
-                SearchRowModel(
-                    id: .empty(.forums),
-                    content: .empty(.forums)
-                )
-            )
-        } else {
-            rows.append(contentsOf: snapshot.forums.map { result in
-                SearchRowModel(
-                    id: .forum(result.forumID),
-                    content: .forum(ForumSearchRowModel(result: result))
-                )
-            })
-        }
-
-        rows.append(
-            SearchRowModel(
-                id: .section(.threads),
-                content: .section(.threads)
-            )
-        )
-        if snapshot.threads.isEmpty {
-            rows.append(
-                SearchRowModel(
-                    id: .empty(.threads),
-                    content: .empty(.threads)
-                )
-            )
-        } else {
-            rows.append(contentsOf: snapshot.threads.map { result in
-                SearchRowModel(
-                    id: .thread(result.threadID),
-                    content: .thread(ThreadSearchRowModel(result: result))
-                )
-            })
-            rows.append(
-                SearchRowModel(
-                    id: .pagination(snapshot.keyword.rawValue),
-                    content: .pagination(pagination)
-                )
-            )
+        switch query.type {
+        case .users:
+            rows = []
+            for (section, results) in [
+                (SearchResultSection.recommended, snapshot.users.filter(\.isExactMatch)),
+                (.relatedUsers, snapshot.users.filter { !$0.isExactMatch })
+            ] where !results.isEmpty {
+                rows.append(SearchRowModel(id: .section(section), content: .section(section)))
+                rows += results.map { SearchRowModel(id: .user($0.id), content: .user($0)) }
+            }
+        case .forums:
+            rows = []
+            for (section, results) in [
+                (SearchResultSection.recommended, snapshot.forums.filter(\.isExactMatch)),
+                (.related, snapshot.forums.filter { !$0.isExactMatch })
+            ] where !results.isEmpty {
+                rows.append(SearchRowModel(id: .section(section), content: .section(section)))
+                rows += results.map { result in
+                    SearchRowModel(id: .forum(result.forumID), content: .forum(ForumSearchRowModel(result: result)))
+                }
+            }
+        case .threads:
+            rows = snapshot.threads.map { result in
+                SearchRowModel(id: .thread(result.threadID), content: .thread(ThreadSearchRowModel(result: result)))
+            }
+            rows.append(SearchRowModel(id: .pagination(snapshot.keyword.rawValue), content: .pagination(pagination)))
         }
         prefetchRowIDs = Set(
             snapshot.threads.suffix(4).map { .thread($0.threadID) }
         )
+    }
+}
+
+private extension ThreadSearchResult {
+    var positiveDate: Date? {
+        guard let timeUnixSeconds, timeUnixSeconds > 0 else { return nil }
+        return Date(timeIntervalSince1970: Double(timeUnixSeconds))
+    }
+}
+
+extension ThreadSearchRowModel {
+    var timeText: String? { result.positiveDate.map { TiebaDateText.date($0, includesTime: true) } }
+    var shareText: String {
+        guard let count = result.shareCount, count > 0 else { return "分享" }
+        return String(count)
     }
 }

@@ -5,17 +5,13 @@ struct HomeSearchBox: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
-                Image(systemName: "magnifyingglass").font(.title3)
-                Text("发现更多").font(.subheadline)
-                Spacer()
+            TiebaSearchBoxSurface {
+                HStack(spacing: 16) {
+                    Image(systemName: "magnifyingglass").font(.title3)
+                    Text("发现更多").font(.subheadline)
+                    Spacer()
+                }
             }
-            .foregroundStyle(SemanticColor.secondaryText)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .frame(minHeight: 48)
-            .background(TiebaParityTokens.neutralFill, in: RoundedRectangle(cornerRadius: 6))
-            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 16)

@@ -1,3 +1,35 @@
+## 2026-10-20 P02 — USER_ACCEPTED / 本地提交授权
+
+- 用户明确“现在提交并进入P03”，本地提交已验收的全局搜吧/搜帖/搜人、三种搜帖排序及个人主页初次身份读取恢复；不推送。保留原有未跟踪Prompts、技能配置及Python缓存，不纳入提交。
+- 复用上轮定向Unit、iPhone/iPad UI、轻量构建和正常Live安装证据，验收后没有产品代码变更。提交前重新执行lint、secret-scan及diff检查。已知个别目标服务端300003及首次账号资料失败原因仍UNKNOWN，不标为已修复。
+- 下一步仅进入P03真实吧内搜索：先核对官方包的范围/协议证据，再补最小读取接线，保持已验收全局搜索及发送链路。
+
+## 2026-10-20 P02个人主页读取回归 — READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 用户报告搜人进入后关系状态、主题、关注吧失败。继续原未提交P02，保护所有既有差异。运行时主题多次重试和关系请求均卡在当前账号身份守卫：failed=true、attemptedLoad=true、profile=nil，未到达目标HTTP。普通loadIfNeeded记住首次失败，导致后续内容操作不能恢复；手动使用既有账号资料重试可成功。最早首次失败原因未捕获，不推断网络原因。
+- 最小修改CurrentAccountStore、ProfileNativeIntegration：只有新的个人主页只读列表/关系请求允许恢复初次资料失败；普通视图不重复读，有资料则复用，同task合并，切换账号拒绝迟到结果。following及发送/上传/WRITE_BASELINE不变。补R12CurrentAccountTests和共享P02UserSearchSmokeTests、状态合同及P02审计；无新动画/手势/overlay/依赖。
+- 执行：基线9项/2 suites通过；首次红灯selector漏括号零项不计，修正后1项/4断言实际失败，修复后19项/4 suites通过。iPhone及iPad各1条搜索→资料→主题/关注吧→返回位置UI通过。首次lint复杂度超限已提取辅助修正，最终616文件0违规、冻结23项通过；make build、secret-scan、diff通过。轻量范围内未运行全量quality，详见Docs/Audits/P02_GLOBAL_SEARCH_TABS_AND_STYLE.md及ignored profile-*。
+- 正常完整Live覆盖原iPhone17Pro/iPadPro13M5；签名/entitlement及三项二进制摘要匹配。iPhone原6份草稿/书签摘要不变，iPad原无对应文件；账号/数据保留。iPhone真实关系完成、主题empty、关注吧列表成功；iPad真实关系完成、主题有帖子、关注吧contentUnavailable正常中性提示，两个子列表均可返回。两台停在用户主页供用户验收，未执行真实写操作。
+- 另一个“苹果”推荐目标基本资料出现独立服务端300003“加载数据失败”（HTTP200/octet-stream、48字节Protobuf），仍失败如实保留；原截图同名目标是否同UID未确认。未更换接口/伪装空成功。最初资料请求失败与该服务端错误是否同因仍UNKNOWN。CUA一级返回坐标报windowNotFound，重开iPhone仅用于定位另一查询，非修复证据；所有LLDB已detach，无诊断源码/原始响应/凭证留存。
+- 未暂存、提交、推送、发布或进入P03；未验证真机/长期网络稳定性。下一步仅人工检查主页主题/关注吧。
+
+## 2026-10-19 P02追加搜人 — READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- 用户补充“还有一个搜人你没做”，覆盖上一轮暂缓搜人的边界；继续原未提交P02。三标签现为搜吧/搜帖/搜人；按用户Android截图增加推荐/相关用户、头像/昵称/可选一行简介，整行走已有个人主页。原共享搜索框和搜帖三排序保留。
+- 新匿名SearchUserWebProtocol取证自Android Hybrid searchUserFlow/DTO/adapters，GET仅word，无pn/st/账号凭证；有效userID去重、推荐优先。users独立缓存/错误/anchor，不猜测分页；旧nil/global搜索路由均准入个人主页。复用VirtualizedList、头像Loader、主页Store，无新动画/手势/overlay/依赖，iOS发送和WRITE_BASELINE不变。
+- 基线6项通过；最终11项Unit/2 suites、iPhone两条UI、iPad共享一条UI通过；make lint616文件0违规/冻结23项、make build、secret-scan、diff通过。首次UI错误入口和首次Unit旧nil scope路由失败均已记录并修正，三处lint格式已修，不跑全量quality。详见P02审计users-*。
+- 完整正常Live覆盖原iPhone/iPad并核对三项二进制摘要；iPhone6份草稿/书签摘要不变，账号/数据保留。iPad前两次读取失败原因未捕获，第三次200/JSON/no0映射47项；iPhone首次搜人成功并打开正确用户主页，主页关系/头像读取有既有失败。临时LLDB已detach，没有诊断源码残留或真实写入。两台停留搜人结果供用户检查。
+- 状态READY_FOR_USER_VISUAL_REVIEW，未暂存/提交/推送，未进入P03。尚未验证真机/大字完整矩阵和Live临时读取失败原因；不宣称全程稳定。UI回位证据来自两端Fixture，CUA真实主页返回操作未生效，正常重启iPhone仅用于重新定位验收入口，不冒充返回验证。
+
+## 2026-10-19 P02 — READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- P01 已按用户授权提交为6460a0df20e9ca86c2075a820932dc939813474b，未推送；P02 继续现有main工作树，用户原未跟踪资料保留。用户将搜索视觉参考明确改为 Android TiebaLite 私人截图，追加首页同款同位置搜索框和搜帖“新帖在前/旧帖在前/相关度”菜单。没有展开搜人或 P03 吧内搜索。
+- SearchQuery/Scope、route/registry、Search Store/Presentation/Live/Fixture 接线：每次只读所选类型，同词搜吧与三种搜帖排序各存结果/页码/错误/anchor，取消和完整query+generation隔离迟到响应。st=5/0/2由Android常量和Hybrid调用链证实，分页透传，不本地重排；forum scope已实际传递但请求明确unsupported，旧路由存档兼容。新词清旧条目，返回和类型/排序切回复用缓存，选择在scene内保持。
+- 新TiebaSearchBoxSurface与HomeSearchBox共用几何；SearchView下划线标签/系统Menu，SearchResultRows平面头像、标题、摘要、吧chip和统计/分享。推荐/相关吧按exactMatch，保留原VirtualizedList/图片Loader/根导航。无新自定义动画、手势、overlay或依赖；未改发送/上传或WRITE_BASELINE，未执行真实发送/点赞/关注等写入。
+- 定向回归：初始9项Unit、类型实现27项/4 suites；最终含排序16项/3 suites通过。iPhone短UI（菜单三选项+首页位置+两类中部+导航/键盘）1项、iPad共享菜单和分类短UI1项通过；此前导航2项与修正旧R03 iPad路径1项通过。make lint613文件0违规且WRITE_BASELINE23项、make build、make secret-scan、git diff --check通过；不跑全量quality。旧混排红灯、首次lint5处、Swift frontend方法引用IRGen崩溃、旧iPad测试期待错误均有原始失败及修复后证据，详见Docs/Audits/P02_GLOBAL_SEARCH_TABS_AND_STYLE.md。
+- 完整正常Live包覆盖原iPhone17Pro与iPadPro13M5；签名/entitlement检查通过，两设备主程序/debug dylib/Info.plist与产物SHA一致，原6份草稿/书签文件摘要未变，账号/历史保留。iPhone真实搜帖三排序和搜吧均成功，iPad横屏分栏搜帖/搜吧正常；两输入框同高同样式。最终两设备停在搜帖/新帖在前供用户切换菜单和搜吧验收。记录/日志/xcresult/私人截图仅ignored Artifacts/VisualReview/P02。
+- 未验证物理设备、大字完整矩阵与长期多页稳定性；服务端排序保持原返回，不承诺严格日期单调。只做读取，不暂存/提交/推送/发布、不进入P03；下一步等待用户视觉验收。完整修改分组、状态、失败命令、边界及截图见P02审计。
+
 ## 2026-10-19 P01 — USER_ACCEPTED / 本地提交授权
 
 - 用户明确“现在提交并进入P02”，当前P01全部增量及紧凑筛选栏作为已验收范围本地提交；不推送、不发布。继续当前main工作树，保留用户未跟踪Prompts、技能配置与Python缓存。

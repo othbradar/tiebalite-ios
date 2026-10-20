@@ -75,3 +75,16 @@ typed outcome；不保留查询词、结果内容、请求/响应原文或凭据
 若 Hybrid endpoint 契约失效，回滚 Production Live Search 选择并保留
 Fixture SearchView/Store 与导航；不放宽 TLS/MIME，不吞解码错误，
 不引入 Cookie，也不重写共享列表、Pager、MediaViewer 或 Renderer。
+
+## P02 增补（2026-10-19，全局类型、排序与 Android 参考样式）
+
+用户要求全局“帖子/吧”独立选择，旧两类并发聚合会使单类失败影响全部结果，因此不再沿用该聚合方式。保留原匿名接口与帖子分页；每次仅所选类型发请求。同关键词的搜吧与三种搜帖排序分别保留结果、页码、错误与锚，完整 query 和 generation 防迟到覆盖。无需替换 HTTP 栈或引入新依赖。
+
+为下一阶段真实吧内范围增加 SearchScope；Route→Registry→Store→Repository 都携带它。route 可选 scope 缺省 global，旧持久化 search={} 仍能解码；query、页码与结果仍在 scene Store。forum 范围当前明确 unsupported，不把 global 结果冒充吧内结果。
+
+用户明确改用 Android TiebaLite 的三张搜索截图作为视觉参考，排除官方搜索广告；只实现本轮搜吧/搜帖，不扩张搜人。搜索框与首页顶部入口共用 TiebaSearchBoxSurface，位置一致；紧凑下划线类型标签、平面结果行和系统排序 Menu。默认新帖 st=5，用户追加旧帖 st=0、相关度 st=2，依据 Android SearchThreadSortType 与 Hybrid 调用链；分页携带当前排序，缓存隔离，搜吧查询不被排序拆分。选择在当前 scene Store 保留，不新增跨重启设置。沿用 VirtualizedList、导航返回与图片设施；不改发送链路。定向测试、失败修正与实际安装状态见 P02 audit；仍需用户视觉验收，不以丢弃用户改动或重建根导航作回滚。
+
+
+### P02 用户追加搜人（2026-10-19）
+
+上述“搜人不扩张”是前一轮边界，已被用户最新“还有一个搜人你没做”替换。第三标签 users 与论坛/帖子各自缓存；复用相同关键词、新词清旧条目、取消与代次隔离及 VirtualizedList，空结果只显示“没有匹配的用户”。选中搜人时读取匿名 GET /mo/q/search/user（word only），不加 pn/st，不用用户登录凭证。新 SearchUserWebProtocol 将推荐与相关用户映射成有效稳定 userID + 已有 UserProfileRoute；点击整行进入已有个人主页，返回恢复列表位置。数组/对象响应差异取自 UserExactMatchAdapter/UserFuzzyMatchAdapter，证据和合成样本见 API_EVIDENCE；头像复用现有 Loader。搜人不含关注按钮，不改变远端数据，无新手势、动画、overlay、依赖或账号/写请求调整。

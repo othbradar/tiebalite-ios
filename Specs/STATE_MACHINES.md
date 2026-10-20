@@ -311,41 +311,37 @@ SubpostsCursor(page, totalPage?)
 - 成功 payload 中任何 session/write metadata 不进入只读 View。
 - 父 Thread 保持原位置。
 
-## 搜索 / 阶段 16A
+## 搜索 / 阶段 16A，P02 类型状态修订
 
-搜索只由用户显式 submit 触发，不对每个输入字符发请求：
+P02 按用户要求拆分查询身份；UI 参考由用户明确切换为 Android TiebaLite 截图。搜吧、搜人和三种搜帖排序分别保存状态，实际页面验收记录见 P02 audit。
 
 ```text
-SearchState =
-  idle
-  | searching(keyword)
-  | loaded(snapshot)
-  | empty(keyword)
-  | failed(keyword,error,retainedSnapshot?)
-  | loadingMore(snapshot)
-
-SearchSnapshot =
-  keyword + forums + threads + currentThreadPage + hasMoreThreads
+SearchQuery = scope(global / forum identity) + type(threads / forums / users) + keyword + verified sort
+SearchThreadPageRequest = query + page
+SearchState = idle | searching(keyword) | loaded(snapshot) | empty(keyword)
+            | failed(keyword,error,retainedSnapshot?) | loadingMore(snapshot)
+SearchSnapshot = query + selected-type results + currentThreadPage + hasMoreThreads
+SearchStore = scope + selectedType + submittedKeyword + entries[type,canonicalSort](state,presentation,anchor)
 ```
 
 | 事件 | 前置 | 事务 | 成功 | 失败/取消 |
 |---|---|---|---|---|
-| `submit` | trim 后关键词非空，且不是同一已完成查询 | 取消旧 Task，generation+1，并发 forum page 1 + thread page 1 | 两类均空→empty；否则 loaded | 首屏→failed(nil)；取消恢复取消前状态 |
-| `submitBlank` | 空白 | 不发 HTTP，取消当前任务 | idle | 不展示错误 |
-| `reachThreadTail` | loaded，`hasMoreThreads=true`，当前无 Task | 请求精确 `currentPage+1` | 按 threadID first-wins 增量追加；空/duplicate-only 以 client no-progress 停止 | retained failed；重试同页；取消恢复 previous |
-| `newKeyword` | 任何在途状态 | 取消旧 Task，新 generation | 只提交新关键词的结果 | 旧响应不改变任何状态 |
-| `deactivate` | Search route 离开 | 取消在途 Task | 保留已完成的 query/result/scroll anchor | 取消不变普通 failure |
+| `submit` | 合法非空关键词；同词当前类型尚未加载 | 新词取消旧 Task 并清两类旧条目；仅请求当前类型 | 当前类型 loaded 或 empty | 仅当前类型 failed；取消恢复该条目此前状态 |
+| `selectType` | global，选择不同类型 | 取消当前任务，恢复目标条目；仅 idle 类型发请求 | 已加载结果/页码/错误/anchor 不重读 | 另一类条目保持 |
+| `selectSort` | threads，选择不同排序 | 取消当前任务，恢复该排序条目；仅 idle 查询首屏 | 已有结果/页码/错误/anchor 直接恢复 | 迟到旧排序响应不合并；搜吧和搜人条目保持 |
+| `submitBlank` | 空白或无效词 | 不发 HTTP，取消任务、清条目 | idle | 不展示错误 |
+| `reachThreadTail` | threads，loaded，hasMore，当前无 Task | 请求精确 currentPage+1 | threadID 去重追加；空/duplicate-only 停止 | 保留结果与 anchor，显式重试同页 |
+| `newKeyword` | 任意状态 | 取消旧任务，新 generation、query | 仅接受新完整 query 的响应 | 旧类型/关键词响应不能覆盖 |
+| `deactivate` | route 离开 | 取消在途 Task | 保留已完成条目 | 取消不变普通 failure |
 
 不变量：
 
-1. 同时只有一个 Search Store Task；分页与新关键词互相隔离。
-2. 响应提交必须同时匹配 generation 和 normalized keyword。
-3. forumID/threadID 为稳定正业务 ID；跨页 first-wins 去重且保持首次顺序。
-4. thread response `current_page` 必须精确匹配请求，只信任
-   `has_more == 1` 作为继续信号。forum 分页未证，只做首屏。
-5. 搜索返回时 scene 级 Store 保留 keyword、snapshot 和 scroll anchor；
-   不因普通 View 更新重发请求。
-6. UI Testing 只使用 Fixture Repository，无 Live 网络/真实 Session。
+1. 每 Store 同时只有一个 Task；提交响应同时核对 generation 与完整 query。
+2. 生产 Repository 每次只请求所选类型；仍用已验证匿名 Hybrid GET，不改变 header、认证或重试。
+3. forumID/threadID/userID 为稳定正业务 ID；跨页 first-wins 去重并保服务器顺序。帖子响应页码必须匹配，只认 has_more==1；搜吧和搜人仍仅首屏。
+4. source query 不匹配的旧列表 anchor/prefetch 回调不能改当前类型；普通返回复用同 scope 的 Store。
+5. route 的 scope 缺省/nil 兼容原 global 持久化，显式 forum scope 已穿过 Store/Repository，但 P03 尚未实现；未知范围抛 unsupportedScope，不能退回 global；forum+forums 组合不可构造。
+6. 当前接口匿名，不新增账号数据；自动化仅 Fixture/Mock。排序值为 newest=5 / oldest=0 / relevance=2，forums/users 查询统一默认 sort，不产生无意义的三份缓存。当前 Store 保留选择，App 重启默认新帖。类型/排序变化只切换查询列表视口，不重建根导航；大字与真机完整矩阵不在本轮轻量验证范围。
 
 ## 浏览历史、设置与用户资料 / 阶段 16B
 
@@ -809,6 +805,12 @@ idle → loading → loaded（可空）/failed；刷新保留已有记录，首�
 FavoriteStore每次打开/前台/下拉读取第一页；idle→loading→loaded/failed，已有列表刷新失败保留内容并显示重试。分页20条，同一时刻只允许一个读或用户写；重复调用合并为当前操作，不增加源请求。确认收藏/取消成功后按threadID更新内存，失败保持；写结果未知提示刷新检查，不自动重试。写后offset作废，下次更多先重新同步。会话代次变化立即取消、清空；旧结果不得回填。无自动上传本机书签，无历史/阅读位置写入。
 
 ## U12 用户子列表/关系/本机屏蔽
+
+2026-10-20 P02 搜人入口回归：个人主页的只读主题/关注吧/关系请求依赖当前账号身份。
+CurrentAccountStore 首次失败后，普通视图 activate 仍只尝试一次；新发起的上述只读操作可显式
+`loadIfNeeded(retryInitialFailure: true)`，仅当 failed 且 profile 缺失时重新读取一次。
+已有资料不重复读，并发等待同一个 task；每次读取失败后结束，不循环重试。账号切换仍取消旧任务、
+清空旧资料并拒绝迟到结果，读取适配器继续校验原 AuthContext/cache scope。关注写操作及发送链路保持原策略。
 
 ProfileListStore：idle→loading→loaded/empty/failed/privateContent/contentUnavailable；已有内容刷新/分页分别 refreshing/loadingMore，失败保留旧页为 refreshFailure/nextFailure；明确权限拒绝隐藏旧页。关注吧成功回执同时缺少 forum_list/has_more 时为 contentUnavailable，显示“暂无可查看的关注吧”，无错误图标或重试；不推断一定由隐私设置导致。首次/缓存恢复/刷新/分页均隐藏旧行、去除游标和锚点，并按既有权限拒绝路径失效该账号下目标用户的首屏缓存，不写入空成功缓存、不追加请求。正常空数组仍为 empty，部分字段缺失/畸形/非零回执/网络异常仍走原失败状态。三个子页分别拥有任务、代次、游标、缓存键和锚点；取消临时加载后可以重新激活，账号变化清显示投影并拒绝旧响应。
 

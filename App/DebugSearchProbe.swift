@@ -138,10 +138,14 @@ struct DebugSearchProbe: Sendable {
         let capturingClient = DebugSearchCapturingHTTPClient(base: client)
         let repository = LiveSearchRepository(client: capturingClient)
         do {
-            let snapshot = try await repository.search(keyword: keyword)
+            guard let query = SearchQuery(keyword: keyword) else {
+                throw SearchWebProtocolError.invalidStaticConfiguration
+            }
+            let forums = try await repository.loadForums(keyword: keyword)
+            let snapshot = try await repository.search(query)
             let forum = await Self.result(
                 captured: capturingClient.response(for: .forum),
-                mappedCount: snapshot.forums.count
+                mappedCount: forums.count
             )
             let thread = await Self.result(
                 captured: capturingClient.response(for: .thread(page: 1)),

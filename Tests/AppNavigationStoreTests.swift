@@ -8,7 +8,7 @@ struct AppNavigationStoreTests {
         let first = RouteIdentity.thread(try #require(ThreadID(101)))
         let second = RouteIdentity.thread(try #require(ThreadID(102)))
         let store = AppNavigationStore()
-        #expect(store.push(.search, in: .recommendations))
+        #expect(store.push(.search(), in: .recommendations))
         #expect(store.push(first, in: .recommendations, readingEntry: .search))
         let url = try #require(URL(string: "https://tieba.baidu.com/p/102"))
         ContentLinkHandler.open(url, openRoute: {
@@ -16,7 +16,7 @@ struct AppNavigationStoreTests {
         }, openWeb: { _ in Issue.record("Known thread must stay in the native reader") })
         #expect(store.readingEntry(for: first, scope: .root(.recommendations)) == .search)
         #expect(store.readingEntry(for: second, scope: .root(.recommendations)) == .contentLink)
-        #expect(store.replacePathFromSystem([.search, first], in: .recommendations))
+        #expect(store.replacePathFromSystem([.search(), first], in: .recommendations))
         #expect(store.readingEntry(for: first, scope: .root(.recommendations)) == .search)
         #expect(store.readingEntry(for: second, scope: .root(.recommendations)) == .unspecified)
         #expect(store.handleExternalURL(try #require(URL(string: "com.baidu.tieba://unidispatch/pb?tid=101"))))

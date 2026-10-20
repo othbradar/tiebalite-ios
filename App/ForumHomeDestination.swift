@@ -25,7 +25,7 @@ struct ForumHomeDestination: View {
         )
         .sheet(isPresented: $searchPresented, onDismiss: { searchPath = []; searchEntries = [:] }, content: {
             NavigationStack(path: $searchPath) {
-                searchDestination(.search)
+                searchDestination(.search())
                     .navigationDestination(for: RouteIdentity.self) { searchDestination($0) }
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {

@@ -16,7 +16,10 @@
           "user_id": 36001,
           "user_name": "fixture_author_1",
           "show_nickname": "Fixture 作者一"
-        }
+        },
+        "time": "1700000000",
+        "like_num": "12",
+        "share_num": "2"
       },
       {
         "tid": "26002",

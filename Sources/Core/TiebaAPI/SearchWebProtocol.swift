@@ -1,6 +1,7 @@
 import Foundation
 
 enum SearchWebProtocolError: Error, Equatable, Sendable {
+    case unsupportedScope
     case emptyBody
     case invalidStaticConfiguration
     case missingData
@@ -18,7 +19,7 @@ enum SearchWebProtocol {
     static let defaultThreadSort = 5
     static let androidClientVersion = "12.35.1.0"
 
-    private static let commonHeaders = [
+    static let commonHeaders = [
         "Accept-Language": "zh-CN,zh;q=0.9",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
@@ -60,6 +61,7 @@ enum SearchWebProtocol {
         host: String,
         request: SearchThreadPageRequest
     ) throws -> EndpointDescriptor {
+        guard request.query.scope == .global else { throw SearchWebProtocolError.unsupportedScope }
         guard let identifier = EndpointID("search.web.thread") else {
             throw SearchWebProtocolError.invalidStaticConfiguration
         }
@@ -73,7 +75,7 @@ enum SearchWebProtocol {
                 EndpointField(name: "pn", value: String(request.page)),
                 EndpointField(
                     name: "st",
-                    value: String(defaultThreadSort)
+                    value: String(request.query.sort.rawValue)
                 ),
                 EndpointField(name: "tt", value: "1"),
                 EndpointField(name: "ct", value: "1"),
@@ -242,7 +244,8 @@ enum SearchWebProtocol {
                     ?? nonempty(candidate.slogan),
                 memberCountText: nonempty(candidate.concernCount),
                 postCountText: nonempty(candidate.postCount),
-                avatarResource: TiebaAvatarResource.forum(forumID: forumID, avatar: candidate.avatar)
+                avatarResource: TiebaAvatarResource.forum(forumID: forumID, avatar: candidate.avatar),
+                isExactMatch: data.exactMatch?.item?.forumID == forumID
             )
         }
     }
@@ -290,7 +293,10 @@ enum SearchWebProtocol {
                 forumAvatarResource: TiebaAvatarResource.forum(
                     forumID: forumID,
                     avatar: item.forumInfo?.avatar
-                )
+                ),
+                timeUnixSeconds: item.timeUnixSeconds,
+                likeCount: item.likeCount,
+                shareCount: item.shareCount
             )
         }
         return ThreadSearchPage(
@@ -460,6 +466,9 @@ struct SearchThreadCandidate: Decodable, Sendable {
     let title: String?
     let content: String?
     let replyCount: Int?
+    let timeUnixSeconds: Int64?
+    let likeCount: Int64?
+    let shareCount: Int64?
     let forumID: Int64?
     let forumName: String?
     let user: SearchThreadUser?
@@ -470,6 +479,9 @@ struct SearchThreadCandidate: Decodable, Sendable {
         case forumID = "forum_id"
         case forumName = "forum_name"
         case replyCount = "post_num"
+        case timeUnixSeconds = "time"
+        case likeCount = "like_num"
+        case shareCount = "share_num"
         case threadID = "tid"
         case title
         case user
@@ -481,6 +493,9 @@ struct SearchThreadCandidate: Decodable, Sendable {
         title = try container.decodeIfPresent(String.self, forKey: .title)
         content = try container.decodeIfPresent(String.self, forKey: .content)
         replyCount = try container.decodeSearchInt(forKey: .replyCount)
+        timeUnixSeconds = try container.decodeSearchInt64(forKey: .timeUnixSeconds)
+        likeCount = try container.decodeSearchInt64(forKey: .likeCount)
+        shareCount = try container.decodeSearchInt64(forKey: .shareCount)
         forumID = try container.decodeSearchInt64(forKey: .forumID)
         forumName = try container.decodeIfPresent(
             String.self,

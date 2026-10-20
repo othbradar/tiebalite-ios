@@ -169,14 +169,14 @@ struct R03HomeTests {
         let forumRoute = try #require(ForumRoute(forumID: 8, forumName: "Forum"))
         let threadID = try #require(ThreadID(18))
         #expect(!store.push(.thread(threadID), in: .followedForums))
-        #expect(store.push(.search, in: .followedForums))
+        #expect(store.push(.search(), in: .followedForums))
         #expect(store.push(.forum(forumRoute), in: .followedForums))
         #expect(store.push(.thread(threadID), in: .followedForums))
         #expect(store.state.routes(for: .recommendations).isEmpty)
-        #expect(store.state.routes(for: .followedForums) == [.search, .forum(forumRoute), .thread(threadID)])
-        #expect(!RouteGrammar.isValid([.search, .search], for: .followedForums))
-        #expect(store.push(.search, in: .followedForums))
-        #expect(store.state.routes(for: .followedForums) == [.search])
+        #expect(store.state.routes(for: .followedForums) == [.search(), .forum(forumRoute), .thread(threadID)])
+        #expect(!RouteGrammar.isValid([.search(), .search()], for: .followedForums))
+        #expect(store.push(.search(), in: .followedForums))
+        #expect(store.state.routes(for: .followedForums) == [.search()])
     }
 
     private func forum(_ id: Int64) -> FollowedForum {

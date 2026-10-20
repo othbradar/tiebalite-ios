@@ -21,7 +21,7 @@ struct FollowedForumsAppRootView: View {
             },
             recentForums: RecentForum.project(historyStore.entries, followedForums: store.state.retainedForums),
             openLogin: openLogin,
-            openSearch: { openRoute(.search) },
+            openSearch: { openRoute(.search()) },
             openForum: { forum in
                 guard let route = AppRouter.forumRoute(for: forum) else {
                     return

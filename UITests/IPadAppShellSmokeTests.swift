@@ -17,8 +17,19 @@ final class IPadAppShellSmokeTests: XCTestCase {
         field.typeText("Swift")
         UITestHarness.tap(.searchSubmit, in: app)
         UITestHarness.requirePresent(.searchList, in: app)
-        UITestHarness.requirePresent(.searchForumResult, in: app)
         UITestHarness.requirePresent(.searchThreadResult, in: app)
+        P02SearchSmokeTests.verifySortMenu(in: app)
+        P02UserSearchSmokeTests.verifyUserSearch(in: app)
+        app.buttons["search.type.threads"].tap()
+        XCTAssertFalse(app.buttons["search.forum.13001"].exists)
+        app.buttons["search.type.forums"].tap()
+        UITestHarness.requirePresent(.searchForumResult, in: app)
+        XCTAssertFalse(app.buttons["search.thread.100003"].exists)
+        app.buttons["search.type.threads"].tap()
+        UITestHarness.requirePresent(.searchThreadResult, in: app)
+        XCTAssertEqual(field.value as? String, "Swift")
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "P02 iPad search types")
     }
 
     @MainActor

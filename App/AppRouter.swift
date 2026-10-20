@@ -103,8 +103,9 @@ enum AppRouter {
                     NotificationDestination(store: store, dependencies: dependencies, openRoute: openRoute,
                                             readingEntry: readingEntry, openReadingRoute: openReading)
                 }
-            case .search:
+            case let .search(searchScope):
                 searchDestination(
+                    searchScope: searchScope ?? .global,
                     scope: scope,
                     openRoute: openRoute,
                     openReadingRoute: openReading,
@@ -174,13 +175,15 @@ enum AppRouter {
     }
 
     private static func searchDestination(
+        searchScope: SearchScope,
         scope: AppFeatureScope,
         openRoute: @escaping (RouteIdentity) -> Void,
         openReadingRoute: @escaping (RouteIdentity, ThreadReadingEntry) -> Void,
         dependencies: AppRouteDependencies
     ) -> some View {
         SearchView(
-            store: dependencies.featureStores.searchStore,
+            store: dependencies.featureStores.searchStore(for: searchScope),
+            imageLoader: dependencies.imageLoader,
             onOpenForum: { result in
                 guard let route = forumRoute(for: result) else {
                     return
@@ -197,7 +200,8 @@ enum AppRouter {
                     threadID: threadID
                 )
                 openReadingRoute(route, .search)
-            }
+            },
+            onOpenUser: { openRoute(.userProfile($0)) }
         )
     }
 }

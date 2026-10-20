@@ -144,7 +144,7 @@ struct AppShellContent {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("搜索", systemImage: "magnifyingglass") {
-                        open(.search, in: root, regular: regular)
+                        open(.search(), in: root, regular: regular)
                     }
                     .accessibilityIdentifier(AppAccessibilityID.openSearch)
                 }

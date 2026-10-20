@@ -24,6 +24,43 @@ struct R12AccountIdentityTests {
 struct R12CurrentAccountTests {
     private let context = AuthContext.active(.init(sessionID: .init(rawValue: 12), generation: 1))
 
+    @Test func profileReadCanRecoverAfterInitialAccountFailureWithoutRetryingOnRender() async throws {
+        let repository = R12RecoveringAccountRepository(profile: try R12AccountFixture.profile())
+        let store = CurrentAccountStore(repository: repository)
+        store.updateContext(context)
+        await store.loadIfNeeded()
+        #expect(store.failed && store.profile == nil)
+        await store.loadIfNeeded()
+        #expect(await repository.calls == 1)
+        await store.loadIfNeeded(retryInitialFailure: true)
+        #expect(store.profile?.userID.rawValue == 12_001)
+        #expect(!store.failed)
+        #expect(await repository.calls == 2)
+        await store.loadIfNeeded(retryInitialFailure: true)
+        #expect(await repository.calls == 2)
+    }
+
+    @Test func concurrentProfileReadsShareRecoveryAndRejectAccountSwitch() async throws {
+        let repository = R12ControlledAccountRepository()
+        let store = CurrentAccountStore(repository: repository)
+        store.updateContext(context)
+        let first = Task { await store.loadIfNeeded() }
+        await repository.waitForRequest()
+        await repository.complete(.failure(UserProfileRepositoryError.empty))
+        await first.value
+        let recovery = Task { await store.loadIfNeeded(retryInitialFailure: true) }
+        await repository.waitForRequest()
+        let concurrent = Task { await store.loadIfNeeded(retryInitialFailure: true) }
+        await Task.yield()
+        #expect(await repository.calls == 2)
+        store.updateContext(.anonymous)
+        await repository.complete(.success(try R12AccountFixture.profile()))
+        await recovery.value
+        await concurrent.value
+        #expect(store.profile == nil)
+        #expect(!store.failed && !store.isLoading)
+    }
+
     @Test func oneLoadServesHomeAndPersonalAndRefreshFailureKeepsProfile() async throws {
         let repository = R12ControlledAccountRepository()
         let store = CurrentAccountStore(repository: repository)
@@ -133,5 +170,16 @@ private actor R12ControlledAccountRepository: CurrentAccountRepository {
 
     func complete(_ result: Result<UserProfile, any Error>) {
         pending?.resume(with: result); pending = nil
+    }
+}
+
+private actor R12RecoveringAccountRepository: CurrentAccountRepository {
+    let profile: UserProfile
+    private(set) var calls = 0
+    init(profile: UserProfile) { self.profile = profile }
+    func loadProfile(context: AuthContext) async throws -> UserProfile {
+        calls += 1
+        if calls == 1 { throw UserProfileRepositoryError.empty }
+        return profile
     }
 }

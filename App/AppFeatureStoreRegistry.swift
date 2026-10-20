@@ -13,6 +13,7 @@ final class AppFeatureStoreRegistry {
     let browsingHistoryStore: BrowsingHistoryStore
     let followedForumsStore: FollowedForumsStore
     let recommendationsStore: RecommendationsStore
+    private var scopedSearchStores: [SearchScope: SearchStore] = [:]
     let searchStore: SearchStore
     let settingsStore: SettingsStore
 
@@ -79,6 +80,14 @@ final class AppFeatureStoreRegistry {
         exploreStore = compositionRoot.makeExploreStore()
         localBlockingStore = compositionRoot.localBlockingStore
         localBlockingStore?.didChange = { [weak self] ids in self?.applyLocalBlocks(ids) }
+    }
+
+    func searchStore(for scope: SearchScope) -> SearchStore {
+        if scope == .global { return searchStore }
+        if let store = scopedSearchStores[scope] { return store }
+        let store = searchStore.makeScopedStore(scope)
+        scopedSearchStores[scope] = store
+        return store
     }
 
     func forumHomeStore(
@@ -237,11 +246,19 @@ final class AppFeatureStoreRegistry {
             return true
         }
 
-        let keepsSearch = RootID.allCases.contains { root in
-            navigationState.routes(for: root).contains(.search)
-        }
-        if !keepsSearch {
-            searchStore.cancel()
+        retainSearchStores(in: navigationState)
+    }
+
+    private func retainSearchStores(in navigationState: AppNavigationState) {
+        let activeSearchScopes = Set(RootID.allCases.flatMap { navigationState.routes(for: $0) }.compactMap { route in
+            if case let .search(scope) = route { return scope ?? SearchScope.global }
+            return nil
+        })
+        if !activeSearchScopes.contains(.global) { searchStore.cancel() }
+        scopedSearchStores = scopedSearchStores.filter { scope, store in
+            if activeSearchScopes.contains(scope) { return true }
+            store.cancel()
+            return false
         }
     }
 
