@@ -1,3 +1,11 @@
+## 2026-10-20 v0.2.0beta6 — 已提交、推送并发布
+
+- 用户验收P04并授权发布，P01–P04已全部推送。P04提交`99a8dfe`，发布准备`b6e9e06`，最终设备归档源码/标签为`54f03d238b62459937671732df68b51e25f2455b`，App0.2.0 / Build19。
+- 首次Release归档暴露搜索历史初始化引用Debug专用`.fixture`的编译错误；改为等价`== .live`后相同归档命令通过，Debug Fixture仍不持久化、Live仍持久化，无发送/导航/视觉改动。失败日志、包校验脚本引号比较修正均记录在`Docs/Audits/RELEASE_0_2_0_BETA_6.md`。
+- `make generate`、lint623文件0违规（冻结23项）、secret-scan、diff检查、设备Release归档与隔离、IPA结构/架构/版本/140文件逐字节/摘要检查全部通过。复用已验收P01–P04回归，未重跑全量quality或物理设备矩阵。799项生产输入与构建提交一致。
+- https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta6 已发布Pre-release；上传未签名iPhoneOS arm64 IPA（4,991,206 bytes）及SHA256SUMS。GitHub显示的两个附件SHA256与本地一致，服务器发布说明逐字核对一致。IPA需自行签名，账号、草稿及用户数据未上传。
+- main与注释标签通过SSH原子推送并核验，本文为发布后记录，不移动标签。保留用户原有未跟踪文件；无新增手势、动画、overlay、依赖。不进入下一阶段。
+
 ## 2026-10-20 P04 — USER_ACCEPTED / 提交与发布授权
 
 - 用户确认淡蓝图标可以，明确授权提交、推送GitHub并发布新版。P04正式资源与上轮安装验收版本一致，复用资源校验、正常Live覆盖安装和两台主屏/首页检查；不重复业务全量回归。
