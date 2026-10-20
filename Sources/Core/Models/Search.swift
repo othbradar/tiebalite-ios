@@ -53,8 +53,21 @@ struct ForumSearchResult: Identifiable, Equatable, Sendable {
     }
 }
 
+struct SearchHitID: Hashable, Sendable {
+    let threadID: Int64
+    let postID: Int64?
+    let subPostID: Int64?
+}
+
+struct SearchQuotedPost: Equatable, Sendable {
+    let authorName: String
+    let text: String
+}
+
 struct ThreadSearchResult: Identifiable, Equatable, Sendable {
     let threadID: Int64
+    let postID: Int64?
+    let subPostID: Int64?
     let title: String
     let summary: String?
     let forumID: Int64?
@@ -66,6 +79,8 @@ struct ThreadSearchResult: Identifiable, Equatable, Sendable {
     let timeUnixSeconds: Int64?
     let likeCount: Int64?
     let shareCount: Int64?
+    let quotedPosts: [SearchQuotedPost]
+    let thumbnailResources: [ImageResourceDescriptor]
 
     init(
         threadID: Int64,
@@ -79,9 +94,17 @@ struct ThreadSearchResult: Identifiable, Equatable, Sendable {
         forumAvatarResource: ImageResourceDescriptor? = nil,
         timeUnixSeconds: Int64? = nil,
         likeCount: Int64? = nil,
-        shareCount: Int64? = nil
+        shareCount: Int64? = nil,
+        postID: Int64? = nil,
+        subPostID: Int64? = nil,
+        quotedPosts: [SearchQuotedPost] = [],
+        thumbnailResources: [ImageResourceDescriptor] = []
     ) {
+        self.quotedPosts = quotedPosts
+        self.thumbnailResources = thumbnailResources
         self.threadID = threadID
+        self.postID = postID.flatMap { $0 > 0 ? $0 : nil }
+        self.subPostID = self.postID == nil ? nil : subPostID.flatMap { $0 > 0 ? $0 : nil }
         self.title = title
         self.summary = summary
         self.forumID = forumID
@@ -95,8 +118,8 @@ struct ThreadSearchResult: Identifiable, Equatable, Sendable {
         self.shareCount = shareCount
     }
 
-    var id: Int64 {
-        threadID
+    var id: SearchHitID {
+        SearchHitID(threadID: threadID, postID: postID, subPostID: subPostID)
     }
 }
 
@@ -127,9 +150,9 @@ struct ThreadSearchPage: Equatable, Sendable {
         currentPage: Int,
         hasMore: Bool
     ) {
-        var seen: Set<Int64> = []
+        var seen: Set<SearchHitID> = []
         self.items = items.filter { item in
-            item.threadID > 0 && seen.insert(item.threadID).inserted
+            item.threadID > 0 && seen.insert(item.id).inserted
         }
         self.currentPage = max(1, currentPage)
         self.hasMore = hasMore
@@ -171,7 +194,7 @@ struct SearchSnapshot: Equatable, Sendable {
         hasMoreThreads: Bool
     ) {
         var seenForumIDs: Set<Int64> = []
-        var seenThreadIDs: Set<Int64> = []
+        var seenThreadIDs: Set<SearchHitID> = []
         var seenUserIDs: Set<Int64> = []
         self.query = query
         self.forums = forums.filter { result in
@@ -180,7 +203,7 @@ struct SearchSnapshot: Equatable, Sendable {
         }
         self.threads = threads.filter { result in
             query.type == .threads && result.threadID > 0
-                && seenThreadIDs.insert(result.threadID).inserted
+                && seenThreadIDs.insert(result.id).inserted
         }
         self.currentThreadPage = max(1, currentThreadPage)
         self.users = users.filter { query.type == .users && seenUserIDs.insert($0.id).inserted }
@@ -188,11 +211,11 @@ struct SearchSnapshot: Equatable, Sendable {
     }
 
     func appending(_ page: ThreadSearchPage) -> SearchSnapshot {
-        var seenThreadIDs = Set(threads.map(\.threadID))
+        var seenThreadIDs = Set(threads.map(\.id))
         var merged = threads
         merged.reserveCapacity(threads.count + page.items.count)
         for thread in page.items
-        where seenThreadIDs.insert(thread.threadID).inserted {
+        where seenThreadIDs.insert(thread.id).inserted {
             merged.append(thread)
         }
         return SearchSnapshot(

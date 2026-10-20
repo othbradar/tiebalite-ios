@@ -246,3 +246,9 @@ U10 云端收藏：我的→SettingsRoute.favorites→bookmark(ThreadBookmarkTar
 ## U12 用户子页
 
 userProfile(UserProfileRoute) → profileList(ProfileListRoute(user, section))，仅同一稳定 UID；section 是 threads/replies/forums，回复仅对已验证当前账号开放。子页→现有 thread/forum；自己的回复→profileReply(ThreadBookmarkTarget)→已有 BookmarkDestination/ThreadReader/ReadingPosition。我的 accountProfile 允许同样内容子链。原导航容器不变，仅含 profileList 的链增加两个有界层级；其他路径上限不变。
+
+### P03 forum search push
+
+ForumHomeDestination resolves the displayed canonical forum and pushes `.search(scope: .forum(resolved))` into the existing navigation stack, as explicitly requested by the user after rejecting the old sheet. The forum→search edge checks known forum IDs (otherwise canonical names); the original forum stays in the path and retains its list/category/order/offset. The existing registry owns the scoped search store while its route remains in any root/settings path and releases it on pop. No local sheet or secondary navigation stack is added.
+
+Search hits reuse `.thread`, `.profileReply(ThreadBookmarkTarget(tid,pid))` and `.subposts(tid,parentPID)`; a pid/cid is never used as tid. All three record `.search` as the reading entry. Result→back restores the same search store/page/anchor; search cancel/system pop returns to the original forum. No sending protocol changes.

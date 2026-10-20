@@ -141,7 +141,7 @@ final class AppNavigationStore {
 
     private func recordReadingEntry(_ entry: ThreadReadingEntry, route: RouteIdentity, scope: AppFeatureScope) {
         switch route {
-        case .thread, .subposts, .notification: readingEntries[scope, default: [:]][route] = entry
+        case .thread, .subposts, .notification, .profileReply: readingEntries[scope, default: [:]][route] = entry
         default: break
         }
     }

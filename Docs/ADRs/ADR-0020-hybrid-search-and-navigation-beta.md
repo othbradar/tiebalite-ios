@@ -88,3 +88,13 @@ Fixture SearchView/Store 与导航；不放宽 TLS/MIME，不吞解码错误，
 ### P02 用户追加搜人（2026-10-19）
 
 上述“搜人不扩张”是前一轮边界，已被用户最新“还有一个搜人你没做”替换。第三标签 users 与论坛/帖子各自缓存；复用相同关键词、新词清旧条目、取消与代次隔离及 VirtualizedList，空结果只显示“没有匹配的用户”。选中搜人时读取匿名 GET /mo/q/search/user（word only），不加 pn/st，不用用户登录凭证。新 SearchUserWebProtocol 将推荐与相关用户映射成有效稳定 userID + 已有 UserProfileRoute；点击整行进入已有个人主页，返回恢复列表位置。数组/对象响应差异取自 UserExactMatchAdapter/UserFuzzyMatchAdapter，证据和合成样本见 API_EVIDENCE；头像复用现有 Loader。搜人不含关注按钮，不改变远端数据，无新手势、动画、overlay、依赖或账号/写请求调整。
+
+## P03 amendment (2026-10-20)
+
+The user's forum-search task authorizes a scoped read adapter. The supplied iOS IPA routes the forum search button to the official Hybrid forum page; its current JS proves GET `/mo/q/search/thread`, `fname`, iOS `ct=1`, and the three scoped modes. Reuse the anonymous HTTP executor and JSON DTO, with an explicit InForumSearchProtocol descriptor and whole-page scope validation. The prior global unsupported-scope guard remains on the global descriptor; LiveSearchRepository dispatches scoped requests separately. No global-result filtering or implicit fallback is permitted.
+
+The user explicitly rejected the old partial sheet. Forum search now pushes `.search(scope: .forum(...))` into the existing system navigation path. The registry retains its scoped store while that route remains in a root/settings path, then cancels/releases it on pop. The preceding forum store stays in that path, preserving its list/order/viewport; result pushes retain the search viewport. Distinct floor/subreply identities use existing reading destinations. Full shared auth migration and write protocols are excluded; rollback is to explicit unsupported scope, never to mislabeled global results.
+
+P03用户截图追加：页面采用独立主题/评论标签和新帖/相关菜单；参数来自官方Hybrid同模块的两组分支，ct1匿名组合实测通过。截图是视觉真相；公开JS分支当前标识HarmonyOS，因此不把该源码分支描述为参考IPA运行时iOS证据。吧内本地关键词历史限20，设备本地UserDefaults独立key；测试用隔离suite/内存，不读取账号。按用户后续要求删除搜索sheet及其私有导航path，复用现有NavigationStack、VirtualizedList和系统Menu；根容器与写链路不变。
+
+P03系统返回补充：隐藏搜索导航栏会使iOS26边缘返回失效，单纯delegate适配没有修复，实验已撤销。最终将共享搜索框/取消动作放在系统toolbar，同一行且无额外标题，保留系统back button/边缘返回；不替换recognizer/delegate，不改Pager。

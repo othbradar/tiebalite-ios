@@ -1,7 +1,10 @@
 struct FixtureSearchRepository: SearchRepository {
     func search(_ query: SearchQuery) async throws -> SearchSnapshot {
         try Task.checkCancellation()
-        guard query.scope == .global else { throw SearchWebProtocolError.unsupportedScope }
+        if case let .forum(forum) = query.scope {
+            return SearchSnapshot(query: query, forums: [], threads: Self.forumPage(forum, page: 1),
+                                  currentThreadPage: 1, hasMoreThreads: true)
+        }
         return SearchSnapshot(
             query: query,
             forums: Self.forums,
@@ -16,7 +19,10 @@ struct FixtureSearchRepository: SearchRepository {
         _ request: SearchThreadPageRequest
     ) async throws -> ThreadSearchPage {
         try Task.checkCancellation()
-        guard request.query.scope == .global else { throw SearchWebProtocolError.unsupportedScope }
+        if case let .forum(forum) = request.query.scope {
+            return ThreadSearchPage(items: Self.forumPage(forum, page: request.page),
+                                    currentPage: request.page, hasMore: request.page < 2)
+        }
         let index = request.page - 1
         guard Self.threadPages.indices.contains(index) else {
             throw FixtureReadingRepositoryError.unavailable
@@ -26,6 +32,17 @@ struct FixtureSearchRepository: SearchRepository {
             currentPage: request.page,
             hasMore: index + 1 < Self.threadPages.count
         )
+    }
+
+    private static func forumPage(_ forum: ForumRoute, page: Int) -> [ThreadSearchResult] {
+        let offset = (page - 1) * 8
+        return (0..<8).map { index in
+            let seed = FixtureReadingCatalog.recommendationSeeds[(offset + index) % 12]
+            return ThreadSearchResult(threadID: seed.threadID, title: "\(forum.forumName.rawValue)：\(seed.title)",
+                                      summary: "Fixture 吧内第\(page)页第\(index + 1)项", forumID: forum.forumID?.rawValue,
+                                      forumName: forum.forumName.rawValue, authorName: seed.authorName,
+                                      replyCount: Int(seed.replyCount), timeUnixSeconds: 1_700_000_000)
+        }
     }
 
     private static let users: [UserSearchResult] = (1...24).compactMap { index in

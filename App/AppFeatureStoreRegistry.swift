@@ -250,7 +250,9 @@ final class AppFeatureStoreRegistry {
     }
 
     private func retainSearchStores(in navigationState: AppNavigationState) {
-        let activeSearchScopes = Set(RootID.allCases.flatMap { navigationState.routes(for: $0) }.compactMap { route in
+        let routes = RootID.allCases.flatMap { navigationState.routes(for: $0) }
+            + settingsContentRoutes(in: navigationState)
+        let activeSearchScopes = Set(routes.compactMap { route in
             if case let .search(scope) = route { return scope ?? SearchScope.global }
             return nil
         })

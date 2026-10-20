@@ -80,7 +80,7 @@ struct P02SearchTests {
     }
 
     @Test
-    func liveRepositoryRequestsOnlySelectedEndpointAndRejectsUnknownForumScope() async throws {
+    func liveRepositoryRequestsOnlySelectedGlobalEndpoint() async throws {
         let client = HarnessMockHTTPClient()
         let store = SearchStore(repository: LiveSearchRepository(client: client, host: "fixture.invalid"))
         store.setDraftKeyword("Fixture")
@@ -105,9 +105,6 @@ struct P02SearchTests {
         let forum = try #require(ForumRoute(forumID: 42, forumName: "Fixture"))
         let keyword = try #require(SearchKeyword("Fixture"))
         #expect(SearchQuery(scope: .forum(forum), type: .forums, keyword: keyword) == nil)
-        let query = try #require(SearchQuery(scope: .forum(forum), keyword: keyword))
-        let repository = LiveSearchRepository(client: client, host: "fixture.invalid")
-        await #expect(throws: SearchWebProtocolError.unsupportedScope) { try await repository.search(query) }
         #expect(await client.pendingCalls().isEmpty)
     }
 

@@ -5,6 +5,7 @@ import Observation
 final class SearchStore {
     let scope: SearchScope
     private(set) var selectedType: SearchResultType = .threads
+    private(set) var selectedForumMode: ForumSearchMode = .topics
     private(set) var selectedSort: SearchSort = .newest
     private(set) var draftKeyword = ""
     private(set) var submittedKeyword: SearchKeyword?
@@ -14,29 +15,64 @@ final class SearchStore {
     var listPresentation: SearchListPresentation? { entry.presentation }
     var scrollAnchor: SearchRowID? { entry.anchor }
     var query: SearchQuery? {
-        submittedKeyword.flatMap { SearchQuery(scope: scope, type: selectedType, keyword: $0, sort: selectedSort) }
+        submittedKeyword.flatMap {
+            SearchQuery(scope: scope, type: selectedType, keyword: $0, sort: selectedSort, forumMode: selectedForumMode)
+        }
     }
 
     private var entryKey: SearchEntryKey {
-        SearchEntryKey(type: selectedType, sort: selectedType == .threads ? selectedSort : .newest)
+        SearchEntryKey(type: selectedType, sort: selectedType == .threads ? selectedSort : .newest, forumMode: selectedForumMode)
     }
     private var entry: SearchEntry { entries[entryKey] ?? SearchEntry() }
     private let repository: any SearchRepository
+    private let historyRepository: any SearchHistoryRepository
+    private(set) var searchHistory: [String] = []
+    private var historyGeneration: UInt64 = 0
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var activeGeneration: UInt64?
     @ObservationIgnored private var nextGeneration: UInt64 = 0
     @ObservationIgnored private var cancellationEntry = SearchEntry()
 
-    init(repository: any SearchRepository, scope: SearchScope = .global) {
+    init(repository: any SearchRepository, scope: SearchScope = .global,
+         historyRepository: any SearchHistoryRepository = LocalSearchHistoryRepository()) {
         self.repository = repository
         self.scope = scope
+        self.historyRepository = historyRepository
     }
 
     func makeScopedStore(_ scope: SearchScope) -> SearchStore {
-        SearchStore(repository: repository, scope: scope)
+        SearchStore(repository: repository, scope: scope, historyRepository: historyRepository)
     }
 
-    func setDraftKeyword(_ value: String) { draftKeyword = value }
+    func setDraftKeyword(_ value: String) {
+        draftKeyword = value
+        if value.isEmpty, scope != .global {
+            cancel()
+            submittedKeyword = nil
+            entries = [:]
+        }
+    }
+
+    func loadHistory() async {
+        let generation = historyGeneration
+        let history = await historyRepository.load()
+        guard generation == historyGeneration else { return }
+        searchHistory = history
+    }
+
+    func clearHistory() async {
+        historyGeneration &+= 1
+        searchHistory = await historyRepository.clear()
+    }
+
+    private func recordHistory(_ keyword: SearchKeyword) async {
+        guard case .forum = scope else { return }
+        historyGeneration &+= 1
+        let generation = historyGeneration
+        let history = await historyRepository.record(keyword)
+        guard generation == historyGeneration else { return }
+        searchHistory = history
+    }
 
     func submit() async {
         guard let keyword = SearchKeyword(draftKeyword) else {
@@ -51,7 +87,8 @@ final class SearchStore {
             submittedKeyword = keyword
             draftKeyword = keyword.rawValue
         }
-        guard state == .idle, activeGeneration == nil, let query else { return }
+        await recordHistory(keyword)
+        guard submittedKeyword == keyword, state == .idle, activeGeneration == nil, let query else { return }
         await replaceSearch(query)
     }
 
@@ -63,8 +100,16 @@ final class SearchStore {
         await replaceSearch(query)
     }
 
+    func selectForumMode(_ mode: ForumSearchMode) async {
+        guard case .forum = scope, mode != selectedForumMode else { return }
+        cancel()
+        selectedForumMode = mode
+        guard state == .idle, let query else { return }
+        await replaceSearch(query)
+    }
+
     func selectSort(_ sort: SearchSort) async {
-        guard selectedType == .threads, sort != selectedSort else { return }
+        guard selectedType == .threads, sort != selectedSort, scope == .global || sort != .oldest else { return }
         cancel()
         selectedSort = sort
         guard state == .idle, let query else { return }
@@ -192,8 +237,8 @@ final class SearchStore {
         guard activeGeneration == generation, query == request.query else { return }
         switch result {
         case let .success(page) where page.currentPage == request.page:
-            let existingIDs = Set(retained.threads.map(\.threadID))
-            let madeProgress = page.items.contains { !existingIDs.contains($0.threadID) }
+            let existingIDs = Set(retained.threads.map(\.id))
+            let madeProgress = page.items.contains { !existingIDs.contains($0.id) }
             let effectivePage = ThreadSearchPage(items: page.items, currentPage: page.currentPage,
                                                  hasMore: page.hasMore && madeProgress)
             let aggregate = retained.appending(effectivePage)
@@ -227,6 +272,7 @@ final class SearchStore {
 private struct SearchEntryKey: Hashable {
     let type: SearchResultType
     let sort: SearchSort
+    let forumMode: ForumSearchMode
 }
 
 private struct SearchEntry {

@@ -243,6 +243,11 @@ enum RouteGrammar {
 
     static func permitsContentAction(from parent: RouteIdentity, to child: RouteIdentity) -> Bool {
         switch (parent, child) {
+        case let (.forum(forum), .search(.forum(searchForum))):
+            if let forumID = forum.forumID, let searchID = searchForum.forumID { return forumID == searchID }
+            return forum.forumName == searchForum.forumName
+        case (.search, .thread), (.search, .forum), (.search, .profileReply), (.search, .subposts):
+            return true
         case let (.search(scope), .userProfile):
             return (scope ?? .global) == .global
         case let (.userProfile(user), .profileList(list)):

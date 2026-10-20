@@ -826,3 +826,16 @@ LocalBlockingStore：账号命名空间切换先清展示投影，再读取各�
 - 取消确认不请求；授权变化/目标缺失/账号变化中止；other-author和UNKNOWN无删除入口。
 - session change取消任务并清理like/permission/confirm；已确认删除的公开目标记录保留，缓存body准入与可见性投影排除迟到旧内容，阅读锚点/导航/分页不重置。
 - 子回复删除时间晚于父楼展示时间时，即使不在前三条预览也扣减旧总数；fresh父楼总数以服务端为准，不再次扣减。早于删除的父楼正文缓存拒绝命中/迟到写入。
+
+## P03 forum search scope
+
+- The existing registry owns one SearchStore per active immutable scope (loaded canonical forum identity). The native forum→search→result path retains both forum and search state. Root/settings route pruning cancels and releases search when it is popped; no sheet/private navigation path or unbounded store collection is added.
+- Query identity = scope (forum ID/name or global) + normalized keyword + type + global sort/forum mode. Anonymous endpoint has no account-dependent state or disk search cache. New word cancels generation and clears the old word's entries. Forum mode changes retain each mode's result/page/anchor independently; global type/sort stays unchanged.
+- First/page/retry all derive from the same query. Server, decode, scope or page mismatch => explicit failure; page failure retains snapshot and retries the same page. No global fallback or filtering global data. Cancel/late response cannot update another query.
+- Search result identity includes tid and optional parent pid/cid. Same-thread distinct matches survive paging; exact duplicates are first-wins. Topic opens thread; floor uses existing pid locator; subreply opens its parent SubpostsView; absent valid locator opens ordinary thread. Anonymous search response is not a write authorization.
+
+P03截图追加覆盖：ForumSearchMode为topics/comments（tt1/3），SearchSort在forum只允许newest/relevance（st5/2），两维正交保存在entry/query键中。更换筛选取消旧请求，已加载组合恢复内容/anchor；清空吧内输入回idle和历史。历史仅本地最多20词、最近优先去重，点击词仍当前scope；clear移除历史不改远端内容。用户追加要求以系统push替代sheet；取消/系统返回沿原导航path回到原吧，结果返回复用原查询与anchor。
+
+P03系统返回合同：吧内搜索框与取消动作置于系统 navigation toolbar，同一行显示，无独立标题空行；保留系统 back button 和边缘返回。禁止隐藏整个导航栏后替换返回手势 delegate。结果和搜索均沿现有 path pop，取消交互保留当前状态。
+
+P03键盘合同：显式提交/选择筛选时结束输入会话，再展示结果；toolbar 的 iPad hosting 通过标准 responder resign action 同步实际键盘与 FocusState，避免进入结果详情后才收起键盘而改变返回 viewport。清空搜索词仍可继续输入。

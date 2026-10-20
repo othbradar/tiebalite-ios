@@ -118,7 +118,7 @@ struct SearchRowView: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("打开帖子")
-            .accessibilityIdentifier(SearchAccessibilityID.thread(row.result.threadID))
+            .accessibilityIdentifier(row.result.searchAccessibilityID)
 
             if let forum = row.forumResult {
                 Button { onOpenForum(forum) } label: {

@@ -1,3 +1,32 @@
+## 2026-10-20 P03 — USER_ACCEPTED / 本地提交授权
+
+- 用户确认“我看了没问题了，提交并进入P04”。本次提交已验收P03全部吧内范围、筛选/历史、原生导航与取消/顶部裁切修复，不推送。其他未跟踪提示词、技能配置和Python缓存保留，不纳入提交。
+- 验收后产品代码未变，复用上轮19项定向Unit、iPhone/iPad UI与搜索边界/返回红绿证据及完整Live安装。提交前make lint、secret-scan和git diff --check再次通过，未重复全量测试。
+- 下一步按P04先制作原创图标候选和大小/背景对比，正式资产待用户选款后再接入。
+
+## 2026-10-20 P03 — 搜索框转场顶部裁切修复，待视觉复核
+
+- 在现有未提交 P03 上继续。根因是共享搜索框最小48pt放入44pt系统导航标题区域，上边超出2pt；静止时可见，导航转场裁切时短暂缺失。新增真实frame边界断言，修改前3次均记录search.box.minY=92.333、navigationBar.minY=94.333而失败。
+- TiebaSearchBoxSurface 增加默认content/可选navigationBar布局，吧内搜索选择44pt最小高度、10pt上下内边距；首页/全局搜索仍用48pt/12pt。保留动态字体和44pt按钮命中范围，无固定高度裁字、遮罩、延迟、自定义动画/手势/依赖；取消保持已认可的纯文字样式，状态/缓存/发送链路未变。
+- make lint（623文件0违规、冻结23项）、build、secret-scan及diff检查通过。P03 iPhone2条、iPad1条UI通过，均检查搜索框位于导航栏上下边界内；系统边缘返回再重复3次通过。修改前红灯与所有退出状态见P03审计。
+- 原iPhone/iPad完整正常Live覆盖安装成功，产物摘要一致、原草稿/书签校验不变。真实页面push/pop录屏取帧显示顶部完整，两台停在高通吧搜索历史页。没有暂存/提交/推送/进入P04；READY_FOR_USER_VISUAL_REVIEW，待用户亲自复查滑动进入/返回。
+
+## 2026-10-20 P03 — 取消按钮胶囊/白块修复，待视觉复核
+
+- 用户报告首次进入吧内搜索时取消文字后短暂白块，并明确要求去掉取消胶囊。在当前 P03 工作树继续，未暂存/提交/推送；仅调整 SearchView 的取消 toolbar item，保留纯文字、至少44pt点击区域和现有 dismiss。iOS26用系统 sharedBackgroundVisibility(.hidden)，旧系统保留普通toolbar item；导航栏、返回手势、搜索状态/协议/缓存和发送链路未改。
+- 原 Live iPhone 连续3次复现，录屏帧显示玻璃底座里文字矩形白底随后消失。LLDB只读导航栏观察到取消文字的 SwiftUI bar-item host 为 opaque=true/background=nil；仅移除font/改tint的实验仍失败，已撤销。最终改为plain按钮并取消共享玻璃背景，录制进入/取消验证不再出现该白块；不是延迟、遮罩或关闭动画。
+- make build、lint（623文件0违规、冻结23项）、secret-scan、diff检查通过；原2条iPhone及1条iPad P03定向UI全部通过。复用既有断言验证键盘收起、搜索筛选/历史、结果和原吧位置、取消及系统边缘返回；业务未改，未重跑Unit或全量quality。详见P03审计和cancel-plain-*日志/xcresult。
+- 完整Live已覆盖安装到原iPhone/iPad，二进制摘要匹配，6份原iPhone草稿/书签摘要不变，iPad原无这些文件；两台保留账号/数据。iPad真实高通吧搜索连续进入/取消3次后停搜索历史页。未验证真机/旧系统；无新增手势、动画、overlay或依赖。READY_FOR_USER_VISUAL_REVIEW。
+
+## 2026-10-20 P03 — READY_FOR_USER_VISUAL_REVIEW / 未提交
+
+- P02 已按授权本地提交 c87b60b，未推送。P03 继续现有工作树；按用户官方 iOS 截图增加真实吧内范围、空输入历史、独立主题/评论及新帖/相关筛选。用户拒绝半页弹层后，删除 ForumHomeDestination 搜索 sheet/私有导航，复用现有系统 path、registry、结果路由。未进入 P04，原未跟踪文件保留。
+- 新 InForumSearchProtocol 使用已证 fname/tt1或3/st5或2，请求和缓存身份包含 forum/关键词/模式/排序/分页；整页验证归属，不以全局结果本地过滤。tid/父pid/cid分离，结果走现有 thread/pid/SubpostsView，来源为 search。保留 VirtualizedList、分页失败内容、取消代次、滚动 anchor；本地历史最多20个去重词。参考证据和当前JS分支边界见 P03 审计及 API_EVIDENCE。
+- 隐藏导航栏造成系统边缘返回失效，delegate 实验无效后已彻底删除；最终搜索框置于系统 toolbar 同一行，保留系统 back。iPad toolbar 提交后键盘未收起导致返回 viewport 变化，新增红灯后用标准 responder action 结束输入；没有放宽 offset 断言或新增手势/动画/overlay/依赖。发送/上传/签名/账号准备及 WRITE_BASELINE 摘要完全未动。
+- 最终定向 Unit19项/4 suites通过，iPhone2条和iPad1条 UI 通过（提交收键盘、无sheet、独立筛选、第二页往返位置、原吧排序/位置、历史、系统边缘返回）；make lint623文件0违规且冻结23项通过，make build、secret-scan、diff通过。所有中间失败、误用selector零项、定位修正及撤销实验见 Docs/Audits/P03_REAL_IN_FORUM_SEARCH.md。不跑全量quality。
+- 完整正常 Live 覆盖原iPhone/iPad，签名/entitlement及三项二进制摘要一致；iPhone6份原草稿/书签摘要不变，iPad原无对应文件，未卸载/erase/注销。两台真实高通吧搜索“手机”均成功；最终iPhone停历史页、iPad停结果页供用户检查。iPad CUA旧窗口坐标失效经重开Simulator恢复，重新导航停点；未将重启当返回验证。iPad首页关注列表独立加载失败未调查，本次从既有逛吧入口进入。
+- 未暂存/提交/推送或执行任何远端写操作。未知：真机、长期服务端稳定性、子回复cid自动定位；当前子回复搜索只定位正确父楼三级页。下一步等待人工视觉验收。
+
 ## 2026-10-20 P02 — USER_ACCEPTED / 本地提交授权
 
 - 用户明确“现在提交并进入P03”，本地提交已验收的全局搜吧/搜帖/搜人、三种搜帖排序及个人主页初次身份读取恢复；不推送。保留原有未跟踪Prompts、技能配置及Python缓存，不纳入提交。

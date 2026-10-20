@@ -1466,3 +1466,14 @@ U14 点赞失败修正（2026-10-17）：用户手动点击的只读诊断得到
 - `SearchUserViewModel` 仅 Refresh，无分页意图；不因 DTO 的 pn/has_more 猜测追加请求。搜人独立缓存和 anchor，切换搜帖排序不重请求用户结果；新词取消旧请求并拒绝迟到回包。无法解码/服务端拒绝保持既有 typed failure，不转换为空。
 - UI 参照用户 2026-10-19 Android 搜人截图：搜吧/搜帖/搜人、推荐/相关用户、头像/姓名/一行简介、整行进已有个人主页。新增范围只涉及匿名搜索读取，不修改官方 iOS 发送链路。
 - 测试样本 `search.user.synthetic` 全人工数据；验证请求、对象/数组、ID与昵称、空/失败/取消、类型缓存隔离、回到原位置。11项定向Unit、iPhone两条UI及iPad一条共享UI通过。正常iPad前两次失败未捕获原因，第三次断点确认200/JSON/no0/47项；iPhone首次正常显示并可打开对应主页。该接口临时失败原因仍UNKNOWN，不宣称长期稳定。
+
+### P03 吧内搜索（2026-10-20）
+
+- CODE_EVIDENCE：用户提供iOS22.11.1 IPA（SHA256 `8b7daae086ef9d3f35cf1ea2004336e09cec83d7ec955d521ebe0d725cba9f15`）定点检查：`TBCForumNavigationComponent.frsFakeNavDidClickedSearchBtn` 0x1026cdec8 从barInfo取barName/barId，0x1026ce474组装`/mo/q/hybrid-usergrow-search/searchGlobal/forum?entryPage=frs&loadingSignal=1&forumName=%@&forumId=%@&customfullscreen=1&nonavigationbar=1`。旧TBCSearchPostModel的`/c/s/searchpost`不能当当前入口证据。
+- 对上述官方页面当前公开JS定点读取（非整包逆向）：`hmu:13.06a03337.js` 的global provider从URL读forumName/forumId；结果组件调用`hmu:6.a`（`search-global.8e016084.js`中GET helper）读取`/mo/q/search/thread`。参数为word、fname=forumName、pn从1、rn20、ct（iOS1）、cv=appVersion。iOS三项为时间倒序(st1/tt2)、相关性(st2/tt2)、只看主题帖(st1/tt1)，不沿用全局新帖st5；不发送is_use_zonghe。不构造SDK身份或复制页面跟踪数据，继续现有匿名JSON读取工具。
+- 字段：post_list中tid与pid/cid分离；type1主题、type2楼层、type3子回复，type3的post_info.pid是父楼。稳定ID必须包含命中楼层/子回复，不能仅按tid合并。缺有效定位ID走普通主题；存在跨吧结果时整页明确失败，不用本地过滤冒充范围成功。全局读取映射/排序语义保持旧合同。
+- RUNTIME_EVIDENCE：经jshook只读官方页面并用credentials=omit最少3次请求：同词在两个吧各首屏、其中一个吧第二页，均HTTP200/no0、20项、pn1/1/2、has_more1，所有结果forum_name均等于请求fname；type1/2/3实际出现，pid可数字或字符串。只输出状态/字段类型/计数/归属布尔值，未保存正文或账号数据。此证据不等于官方设备运行时完整头部/实验行为完全一致。
+- 参考补证：Android `AppHybridTiebaApi.searchThreadFlow` / `MixedTiebaApiImpl.searchPostFlow`与`SearchThreadBean`亦证实fname、rn、tid/pid/cid及main_post/post_info。生产只读扩展受上述iOS证据约束，不修改全局搜索UA/参数或已验收写链路。
+
+- 用户随后提供官方iOS截图并要求两组独立筛选，覆盖上面三项旧页面布局。相同`hmu:13`的两标签分支明确`只看主题 tt=1 / 只看评论 tt=3`；`dropDownCard`明确新贴在前st5 / 相关在前st2，`updateThreadStAndTt`把排序独立传给同一请求。当前公开JS把该两组分支挂在HarmonyOS环境判断，不能据此宣称它已在参考IPA的iOS运行时启用；本轮布局按用户iOS截图，字段来自已证模块。有限匿名验证固定ct1/cv22.11.1，龙芯吧/华为的tt1或3 × st5或2四种组合均HTTP200/no0、结果全属于龙芯：主题type1；评论type2/3。无环境伪造、无认证或安全配置改动。
+- 追加DTO依据同一模块L映射和只读响应字段形状：media pic/small_pic/big_pic/water_pic，main_post为原帖title/content/user，type3的post_info为父回复content/user/pid；评论正文使用当前content，保留父回复与原帖两级引用。图片复用既有ImageResourceDescriptor/Loader。截图要求的本地历史限20个有效去重关键词，跨吧共享历史词但点击后使用当前scope，绝不保存请求凭证/搜索结果或改变查询范围；完整合成fixture补充图片和两层引用。

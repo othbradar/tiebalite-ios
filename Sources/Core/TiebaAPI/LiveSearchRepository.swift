@@ -11,7 +11,6 @@ struct LiveSearchRepository: SearchRepository {
     }
 
     func search(_ query: SearchQuery) async throws -> SearchSnapshot {
-        guard query.scope == .global else { throw SearchWebProtocolError.unsupportedScope }
         switch query.type {
         case .users:
             let users = try await executor.execute(
@@ -51,10 +50,9 @@ struct LiveSearchRepository: SearchRepository {
     func loadThreadPage(
         _ request: SearchThreadPageRequest
     ) async throws -> ThreadSearchPage {
-        let endpoint = try SearchWebProtocol.makeThreadDescriptor(
-            host: host,
-            request: request
-        )
+        let endpoint = try request.query.scope == .global
+            ? SearchWebProtocol.makeThreadDescriptor(host: host, request: request)
+            : InForumSearchProtocol.makeDescriptor(host: host, request: request)
         return try await executor.execute(
             endpoint: endpoint,
             authentication: .anonymous,

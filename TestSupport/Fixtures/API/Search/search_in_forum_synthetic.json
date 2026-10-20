@@ -1,0 +1,89 @@
+{
+  "no": 0,
+  "data": {
+    "has_more": 1,
+    "current_page": 1,
+    "post_list": [
+      {
+        "tid": "26001",
+        "pid": 0,
+        "cid": "0",
+        "type": 1,
+        "title": "合成主题",
+        "content": "共同词的合成命中内容",
+        "forum_id": "16001",
+        "forum_name": "Fixture 开发",
+        "time": "1700000000",
+        "user": {
+          "user_id": "56001",
+          "user_name": "fixture_author"
+        },
+        "media": [
+          {
+            "type": "pic",
+            "big_pic": "https://images.fixture.invalid/topic.jpg"
+          }
+        ]
+      },
+      {
+        "tid": "26001",
+        "pid": "36001",
+        "cid": "0",
+        "type": 2,
+        "title": "合成主题",
+        "content": "共同词的合成命中内容",
+        "forum_id": "16001",
+        "forum_name": "Fixture 开发",
+        "time": "1700000000",
+        "user": {
+          "user_id": "56001",
+          "user_name": "fixture_author"
+        }
+      },
+      {
+        "tid": "26001",
+        "pid": "36002",
+        "cid": "0",
+        "type": 2,
+        "title": "合成主题",
+        "content": "共同词的合成命中内容",
+        "forum_id": "16001",
+        "forum_name": "Fixture 开发",
+        "time": "1700000000",
+        "user": {
+          "user_id": "56001",
+          "user_name": "fixture_author"
+        }
+      },
+      {
+        "tid": "26001",
+        "pid": "36003",
+        "cid": "46001",
+        "type": 3,
+        "title": "合成主题",
+        "content": "共同词的合成命中内容",
+        "forum_id": "16001",
+        "forum_name": "Fixture 开发",
+        "time": "1700000000",
+        "user": {
+          "user_id": "56001",
+          "user_name": "fixture_author"
+        },
+        "post_info": {
+          "pid": "36002",
+          "content": "合成父回复",
+          "user": {
+            "user_name": "fixture_parent"
+          }
+        },
+        "main_post": {
+          "title": "合成原帖",
+          "content": "合成原帖正文",
+          "user": {
+            "user_name": "fixture_topic"
+          }
+        }
+      }
+    ]
+  }
+}

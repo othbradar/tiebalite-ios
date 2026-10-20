@@ -1,6 +1,7 @@
 import Foundation
 
 enum SearchWebProtocolError: Error, Equatable, Sendable {
+    case scopeMismatch
     case unsupportedScope
     case emptyBody
     case invalidStaticConfiguration
@@ -263,12 +264,14 @@ enum SearchWebProtocol {
                 actual: data.currentPage
             )
         }
+        try InForumSearchProtocol.validate(data.postList, scope: request.query.scope)
         let items = data.postList.compactMap { item -> ThreadSearchResult? in
             guard let threadID = Int64(item.threadID), threadID > 0 else {
                 return nil
             }
             let content = nonempty(item.content)
-            let title = nonempty(item.title) ?? content ?? "无标题"
+            let isComment = request.query.scope != .global && item.destinationPostID != nil
+            let title = isComment ? content ?? nonempty(item.title) ?? "无标题" : nonempty(item.title) ?? content ?? "无标题"
             let forumID = item.forumID.flatMap { value in
                 value > 0 ? value : nil
             }
@@ -296,7 +299,11 @@ enum SearchWebProtocol {
                 ),
                 timeUnixSeconds: item.timeUnixSeconds,
                 likeCount: item.likeCount,
-                shareCount: item.shareCount
+                shareCount: item.shareCount,
+                postID: request.query.scope == .global ? nil : item.destinationPostID,
+                subPostID: request.query.scope == .global || item.type != 3 ? nil : item.subPostID,
+                quotedPosts: request.query.scope == .global ? [] : item.quotes,
+                thumbnailResources: request.query.scope == .global ? [] : item.thumbnails
             )
         }
         return ThreadSearchPage(
@@ -463,6 +470,20 @@ struct SearchThreadData: Decodable, Sendable {
 struct SearchThreadCandidate: Decodable, Sendable {
     let forumInfo: SearchThreadForumInfo?
     let threadID: String
+    let postID: Int64?
+    let subPostID: Int64?
+    let type: Int?
+    let postInfo: SearchThreadPostInfo?
+    let mainPost: SearchThreadPostInfo?
+    let media: [SearchThreadMedia]?
+
+    var destinationPostID: Int64? {
+        switch type {
+        case 2: postID
+        case 3: postInfo?.postID ?? postID
+        default: nil
+        }
+    }
     let title: String?
     let content: String?
     let replyCount: Int?
@@ -483,6 +504,12 @@ struct SearchThreadCandidate: Decodable, Sendable {
         case likeCount = "like_num"
         case shareCount = "share_num"
         case threadID = "tid"
+        case postID = "pid"
+        case subPostID = "cid"
+        case type
+        case postInfo = "post_info"
+        case mainPost = "main_post"
+        case media
         case title
         case user
     }
@@ -490,6 +517,12 @@ struct SearchThreadCandidate: Decodable, Sendable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         threadID = try container.decode(String.self, forKey: .threadID)
+        postID = try container.decodeSearchInt64(forKey: .postID)
+        subPostID = try container.decodeSearchInt64(forKey: .subPostID)
+        type = try container.decodeSearchInt(forKey: .type)
+        postInfo = try container.decodeIfPresent(SearchThreadPostInfo.self, forKey: .postInfo)
+        mainPost = try container.decodeIfPresent(SearchThreadPostInfo.self, forKey: .mainPost)
+        media = try container.decodeIfPresent([SearchThreadMedia].self, forKey: .media)
         title = try container.decodeIfPresent(String.self, forKey: .title)
         content = try container.decodeIfPresent(String.self, forKey: .content)
         replyCount = try container.decodeSearchInt(forKey: .replyCount)
@@ -509,7 +542,7 @@ struct SearchThreadCandidate: Decodable, Sendable {
     }
 }
 
-private extension KeyedDecodingContainer {
+extension KeyedDecodingContainer {
     func decodeSearchInt(forKey key: Key) throws -> Int? {
         guard let value = try decodeSearchInt64(forKey: key) else {
             return nil

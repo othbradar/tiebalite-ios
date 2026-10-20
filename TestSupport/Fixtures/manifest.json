@@ -134,6 +134,15 @@
       "sanitized": true,
       "sha256": "8a41241e96cf4b3bba1b880154cb3aa18b4a844f847600d1ea2a6e646bf227dd",
       "source": "synthetic"
+    },
+    {
+      "format": "json",
+      "id": "search.in-forum.synthetic",
+      "path": "API/Search/search_in_forum_synthetic.json",
+      "purpose": "P03 scoped topic, post and subpost identity; all synthetic",
+      "sanitized": true,
+      "sha256": "2603aa38024aa41806935cba2b8d720093aee8e629b7f9d4aeec813d5ed45ab6",
+      "source": "synthetic"
     }
   ],
   "schemaVersion": 1

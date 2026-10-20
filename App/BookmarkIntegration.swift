@@ -26,6 +26,7 @@ extension AppCompositionRoot {
 @MainActor
 struct BookmarkDestination: View {
     let target: ThreadBookmarkTarget
+    let readingEntry: ThreadReadingEntry
     let dependencies: AppRouteDependencies
     let openRoute: (RouteIdentity) -> Void
     @State private var reader: ThreadReaderStore
@@ -33,7 +34,9 @@ struct BookmarkDestination: View {
     @State private var failed = false
     @State private var retry: UInt64 = 0
 
-    init(target: ThreadBookmarkTarget, dependencies: AppRouteDependencies, openRoute: @escaping (RouteIdentity) -> Void) {
+    init(target: ThreadBookmarkTarget, dependencies: AppRouteDependencies, openRoute: @escaping (RouteIdentity) -> Void,
+         readingEntry: ThreadReadingEntry = .unspecified) {
+        self.readingEntry = readingEntry
         self.target = target; self.dependencies = dependencies; self.openRoute = openRoute
         _reader = State(initialValue: dependencies.featureStores.makeBookmarkedReader(threadID: target.threadID))
     }
@@ -44,6 +47,7 @@ struct BookmarkDestination: View {
                 ThreadReaderView(store: reader, imageLoader: dependencies.imageLoader,
                                  accountAvatar: dependencies.currentAccountAvatar,
                                  readingTextSize: dependencies.featureStores.settingsStore.readingTextSize,
+                                 readingEntry: readingEntry,
                                  followsGlobalReplyPreferences: target.postID == nil,
                                  onOpenMedia: dependencies.onOpenMedia, onOpenUser: { openRoute(.userProfile($0)) },
                                  onDisplayed: { await dependencies.featureStores.browsingHistoryStore.recordThread($0) },
@@ -53,10 +57,10 @@ struct BookmarkDestination: View {
                     }
                 })
             } else if failed {
-                FullPageErrorView(title: "书签位置暂不可用", message: "帖子或楼层可能已失效，也可能是网络暂时不可用。",
+                FullPageErrorView(title: readingEntry == .search ? "搜索结果位置暂不可用" : "书签位置暂不可用", message: "帖子或楼层可能已失效，也可能是网络暂时不可用。",
                                   retry: { retry &+= 1 })
                     .accessibilityIdentifier("bookmarks.target-unavailable")
-            } else { InitialLoadingView(title: "正在定位书签") }
+            } else { InitialLoadingView(title: readingEntry == .search ? "正在定位搜索结果" : "正在定位书签") }
         }
         .background(SemanticColor.background)
         .task(id: retry) {

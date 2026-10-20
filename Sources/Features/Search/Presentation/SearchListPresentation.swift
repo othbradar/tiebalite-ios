@@ -11,6 +11,7 @@ enum SearchRowID: Equatable, Hashable, Sendable {
     case pagination(String)
     case section(SearchResultSection)
     case thread(Int64)
+    case hit(SearchHitID)
     case user(Int64)
 }
 
@@ -118,12 +119,12 @@ struct SearchListPresentation: Equatable, Sendable {
             }
         case .threads:
             rows = snapshot.threads.map { result in
-                SearchRowModel(id: .thread(result.threadID), content: .thread(ThreadSearchRowModel(result: result)))
+                SearchRowModel(id: result.rowID, content: .thread(ThreadSearchRowModel(result: result)))
             }
             rows.append(SearchRowModel(id: .pagination(snapshot.keyword.rawValue), content: .pagination(pagination)))
         }
         prefetchRowIDs = Set(
-            snapshot.threads.suffix(4).map { .thread($0.threadID) }
+            snapshot.threads.suffix(4).map(\.rowID)
         )
     }
 }
@@ -140,5 +141,13 @@ extension ThreadSearchRowModel {
     var shareText: String {
         guard let count = result.shareCount, count > 0 else { return "分享" }
         return String(count)
+    }
+}
+
+extension ThreadSearchResult {
+    var rowID: SearchRowID { postID == nil ? .thread(threadID) : .hit(id) }
+    var searchAccessibilityID: String {
+        guard let postID else { return SearchAccessibilityID.thread(threadID) }
+        return "search.hit.\(threadID).\(postID).\(subPostID ?? 0)"
     }
 }

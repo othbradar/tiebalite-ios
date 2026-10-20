@@ -66,6 +66,12 @@ enum AppRouter {
         guard let threadID = ThreadID(result.threadID) else {
             return nil
         }
+        if let postID = result.postID {
+            if result.subPostID != nil, let parentID = PostID(postID) {
+                return .subposts(threadID: threadID, postID: parentID)
+            }
+            return .profileReply(ThreadBookmarkTarget(threadID: threadID.rawValue, postID: postID))
+        }
         return .thread(threadID)
     }
 
@@ -156,7 +162,7 @@ enum AppRouter {
                                     blocking: dependencies.featureStores.localBlockingStore, open: openRoute)
                 }
             case let .profileReply(target):
-                BookmarkDestination(target: target, dependencies: dependencies, openRoute: openRoute)
+                BookmarkDestination(target: target, dependencies: dependencies, openRoute: openRoute, readingEntry: readingEntry)
             case let .subposts(threadID, postID):
                 if let store = dependencies.featureStores.subpostsStore(
                     for: scope,
@@ -191,14 +197,10 @@ enum AppRouter {
                 openRoute(route)
             },
             onOpenThread: { result in
-                guard let route = threadRoute(for: result),
-                      case let .thread(threadID) = route else {
-                    return
+                guard let route = threadRoute(for: result) else { return }
+                if case let .thread(threadID) = route {
+                    _ = dependencies.featureStores.threadReaderStore(for: scope, threadID: threadID)
                 }
-                _ = dependencies.featureStores.threadReaderStore(
-                    for: scope,
-                    threadID: threadID
-                )
                 openReadingRoute(route, .search)
             },
             onOpenUser: { openRoute(.userProfile($0)) }
