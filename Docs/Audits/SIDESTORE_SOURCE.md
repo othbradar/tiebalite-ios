@@ -37,3 +37,9 @@
 ## 发布方式与故障处理
 
 源固定 raw main 地址，无需 GitHub Pages。Actions 发布/编辑Release、手动或每6小时轮询后下载实际附件，验证后原子替换源并提交。权限或分支规则拒绝时保留旧源并报错；不关闭校验来兼容错误版本。重复运行无新提交。版本记录不删除；手工恢复旧JSON可回滚源，但不得悄悄替换已发布IPA。
+
+## 实际发布回执
+
+- main 已发布：`4d249b6549bb6d8da39b84083526f93a3b994095`；增加在线CI验证：`fcf274cea26dfa2eee2937fb1260408f645fce2d`。线上 raw source.json 可读取，核对0.2.0、4991206 bytes及1条版本。
+- [Actions 39539094247](https://github.com/othbradar/tiebalite-ios/actions/runs/39539094247) 的 validate 全部 success，包含7项测试、真实从GitHub API获取Release并下载IPA、重生成源与git diff --exit-code（零差异）。push事件的update提交任务按设计skipped；尚无新Release可验证机器人实际push权限和未来设备更新。
+- 本地直接调用GitHub API的联网命令 `python scripts/update_sidestore_source.py --tag v0.2.0beta6` 返回HTTP403（退出1），但通过连接器获取Release元数据+curl下载的离线输入执行通过，且GitHub Actions带GITHUB_TOKEN的完整联网执行成功。未以本地403判断维护脚本在GitHub上不可用。
