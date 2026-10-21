@@ -15,6 +15,12 @@ extension VirtualizedList.Coordinator {
 
         let (incomingIDs, uniqueItemsByID) = prepareItems(incomingItems)
 
+        rememberVisibleHeights()
+        measuredRowHeights = measuredRowHeights.filter { id, _ in
+            uniqueItemsByID[id] == appliedItemsByID[id] &&
+                incomingVersion?.environment == completedVersion?.environment
+        }
+
         let currentIDs = dataSource.snapshot().itemIdentifiers
         let currentIDSet = Set(currentIDs)
         let changedRetainedIDs = incomingIDs.filter { itemID in

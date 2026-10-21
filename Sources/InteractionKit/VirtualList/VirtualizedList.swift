@@ -96,15 +96,18 @@ final class VirtualListHostingCell: UITableViewCell {
     var isDisplayed = false
     var hasCurrentConfiguration: (() -> Bool)?
     var onPrepareForReuse: (() -> Void)?
+    var hostedContent: AnyObject?
+    var unbindHostedContent: (() -> Void)?
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        isUserInteractionEnabled = false
+        unbindHostedContent?()
         onPrepareForReuse?()
         onPrepareForReuse = nil
         rowID = nil
         isDisplayed = false
         hasCurrentConfiguration = nil
-        contentConfiguration = nil
         accessibilityIdentifier = nil
     }
 }
@@ -190,9 +193,15 @@ where Item: Identifiable & Equatable & Sendable,
         var viewportAnchor: ReadingViewportAnchor<Item.ID>?
         var isAdjustingReadingPosition = false
         var userScrollInProgress = false
+        var measuredRowHeights: [Item.ID: VirtualListMeasuredHeight] = [:]
         private var activeHostedCellIDs: Set<ObjectIdentifier> = []
+        private var displayedCellIDs: Set<ObjectIdentifier> = []
         private let hostedCells = NSHashTable<VirtualListHostingCell>
             .weakObjects()
+
+        #if DEBUG
+        var retainedHostedCellCount: Int { hostedCells.allObjects.count }
+        #endif
 
         init(parent: VirtualizedList) {
             self.parent = parent
@@ -250,12 +259,6 @@ where Item: Identifiable & Equatable & Sendable,
                     self.tableView?.virtualListDiagnostics
                         .createdCellCount += 1
                 }
-                self.tableView?.virtualListDiagnostics
-                    .peakVisibleCellCount = max(
-                        self.tableView?.virtualListDiagnostics
-                            .peakVisibleCellCount ?? 0,
-                        tableView.visibleCells.count + 1
-                    )
                 cell.onPrepareForReuse = { [weak self, weak cell] in
                     guard let cell else {
                         return
@@ -307,6 +310,9 @@ where Item: Identifiable & Equatable & Sendable,
             emitCurrentAnchorIfAvailable()
             stopReadingRestoration(permitsProgress: false)
             for cell in hostedCells.allObjects {
+                cell.unbindHostedContent?()
+                cell.unbindHostedContent = nil
+                cell.hostedContent = nil
                 cell.contentConfiguration = nil
                 cell.onPrepareForReuse = nil
                 cell.hasCurrentConfiguration = nil
@@ -315,6 +321,7 @@ where Item: Identifiable & Equatable & Sendable,
             }
             hostedCells.removeAllObjects()
             activeHostedCellIDs.removeAll(keepingCapacity: false)
+            displayedCellIDs.removeAll(keepingCapacity: false)
             tableView.virtualListDiagnostics.activeHostedCellCount = 0
             tableView.onInitialAnchorLayout = nil
             tableView.onViewportLayout = nil
@@ -326,6 +333,7 @@ where Item: Identifiable & Equatable & Sendable,
             itemsByID.removeAll(keepingCapacity: false)
             appliedItemsByID.removeAll(keepingCapacity: false)
             pendingItems = nil
+            measuredRowHeights.removeAll()
         }
 
         func tableView(
@@ -344,19 +352,22 @@ where Item: Identifiable & Equatable & Sendable,
             parent.onPrefetch(itemIDs)
         }
 
+        func tableView(_ tableView: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
+            estimatedHeight(in: tableView, at: indexPath)
+        }
+
         func tableView(
             _ tableView: UITableView,
             willDisplay cell: UITableViewCell,
             forRowAt indexPath: IndexPath
         ) {
-            guard let tableView = tableView as? VirtualizedTableView else {
-                return
+            displayedCellIDs.insert(ObjectIdentifier(cell))
+            if let table = self.tableView {
+                table.virtualListDiagnostics.peakVisibleCellCount = max(
+                    table.virtualListDiagnostics.peakVisibleCellCount, displayedCellIDs.count)
             }
             (cell as? VirtualListHostingCell)?.isDisplayed = true
-            tableView.virtualListDiagnostics.peakVisibleCellCount = max(
-                tableView.virtualListDiagnostics.peakVisibleCellCount,
-                tableView.visibleCells.count
-            )
+            rememberHeight(of: cell)
         }
 
         func tableView(
@@ -364,6 +375,8 @@ where Item: Identifiable & Equatable & Sendable,
             didEndDisplaying cell: UITableViewCell,
             forRowAt indexPath: IndexPath
         ) {
+            displayedCellIDs.remove(ObjectIdentifier(cell))
+            rememberHeight(of: cell)
             (cell as? VirtualListHostingCell)?.isDisplayed = false
         }
 

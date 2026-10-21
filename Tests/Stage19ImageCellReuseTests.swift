@@ -8,9 +8,11 @@ struct Stage19ImageCellReuseTests {
     @Test
     func lateImageFromAReusedTableCellCannotReplaceTheNewMediaID() async throws {
         let loader = Stage19LateImageLoader()
-        let window = UIWindow(
-            frame: CGRect(x: 0, y: 0, width: 390, height: 60)
-        )
+        let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = scene.coordinateSpace.bounds
+        let controller = UIViewController()
+        window.rootViewController = controller
         let list = VirtualizedList(
             items: (1...40).map(Stage19ImageRowItem.init),
             backgroundColor: .systemBackground,
@@ -20,13 +22,18 @@ struct Stage19ImageCellReuseTests {
             }
         )
         let coordinator = list.makeCoordinator()
-        let table = VirtualizedTableView(frame: window.bounds, style: .plain)
-        window.addSubview(table)
+        let table = VirtualizedTableView(frame: CGRect(x: 0, y: 80, width: 390, height: 180), style: .plain)
+        table.contentInsetAdjustmentBehavior = .never
+        controller.view.addSubview(table)
         window.makeKeyAndVisible()
+        defer { coordinator.dismantle(); window.isHidden = true }
         coordinator.install(on: table)
         coordinator.synchronize()
         window.layoutIfNeeded()
         table.layoutIfNeeded()
+        try #require(await VirtualListNativeCondition.wait {
+            virtualListVisibleLabels(in: table).contains { $0.text == "stage19.media.1-loading" }
+        })
         let initialCells = table.visibleCells
         let originalPairs = initialCells.compactMap { cell in
             table.indexPath(for: cell).map {
@@ -45,10 +52,12 @@ struct Stage19ImageCellReuseTests {
                 animated: false
             )
             table.layoutIfNeeded()
-            await Task.yield()
+            #expect(await VirtualListNativeCondition.wait {
+                virtualListVisibleLabels(in: table).contains { $0.text == "stage19.media.\(targetRow + 1)-loading" }
+            })
         }
         let reusedCell = try #require(initialCells.first { initialCell in
-            table.visibleCells.contains { $0 === initialCell }
+            table.visibleCells.contains { $0 === initialCell } && table.bounds.contains(initialCell.frame)
         })
         let originalID = try #require(
             originalIDs[ObjectIdentifier(reusedCell)]
@@ -59,12 +68,12 @@ struct Stage19ImageCellReuseTests {
 
         #expect(originalID != currentID)
         #expect(table.virtualListDiagnostics.reuseCount > 0)
-        #expect(visibleLabels(in: reusedCell).contains("\(currentID)-loading"))
+        #expect(await VirtualListNativeCondition.wait {
+            visibleLabels(in: reusedCell).contains("\(currentID)-loading")
+        })
 
         await loader.finish(id: originalID)
-        for _ in 0..<20 {
-            await Task.yield()
-        }
+        _ = await VirtualListNativeCondition.wait { true }
         table.layoutIfNeeded()
 
         let labelsAfterLateImage = visibleLabels(in: reusedCell)
@@ -72,12 +81,15 @@ struct Stage19ImageCellReuseTests {
         #expect(!labelsAfterLateImage.contains("\(originalID)-rendered"))
 
         await loader.finish(id: currentID)
+        #expect(await VirtualListNativeCondition.wait {
+            visibleLabels(in: reusedCell).contains("\(currentID)-rendered")
+        })
         coordinator.dismantle()
+        await loader.finishAll()
     }
 
     private func visibleLabels(in view: UIView) -> [String] {
-        let ownText = (view as? UILabel)?.text.map { [$0] } ?? []
-        return ownText + view.subviews.flatMap(visibleLabels)
+        virtualListVisibleLabels(in: view).compactMap(\.text)
     }
 }
 
@@ -159,13 +171,13 @@ private actor Stage19LateImageLoader: ImageLoading {
 
     private var starts: [String: HarnessContinuationGate<Void>] = [:]
     private var continuations: [
-        String: CheckedContinuation<ImagePayload, Never>
+        String: [CheckedContinuation<ImagePayload, Never>]
     ] = [:]
 
     func load(_ request: ImageRequest) async throws -> ImagePayload {
         startGate(for: request.resourceID).succeed(())
         return await withCheckedContinuation { continuation in
-            continuations[request.resourceID] = continuation
+            continuations[request.resourceID, default: []].append(continuation)
         }
     }
 
@@ -174,12 +186,13 @@ private actor Stage19LateImageLoader: ImageLoading {
     }
 
     func finish(id: String) {
-        continuations.removeValue(forKey: id)?.resume(
-            returning: ImagePayload(
-                data: Self.pixelPNG,
-                mediaType: "image/png"
-            )
-        )
+        for continuation in continuations.removeValue(forKey: id) ?? [] {
+            continuation.resume(returning: ImagePayload(data: Self.pixelPNG, mediaType: "image/png"))
+        }
+    }
+
+    func finishAll() {
+        for id in Array(continuations.keys) { finish(id: id) }
     }
 
     private func startGate(for id: String) -> HarnessContinuationGate<Void> {

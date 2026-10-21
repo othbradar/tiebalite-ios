@@ -4,162 +4,112 @@ import Testing
 import UIKit
 
 @MainActor
+@Suite(.serialized)
 struct Stage18VirtualizedCellReuseTests {
     @Test
+    func reusedRowUsesNewHeightOnItsFirstMeasurement() async throws {
+        let fixture = try mountedList()
+        defer { fixture.close() }
+        try #require(await fixture.waitForText("row-1-pending"))
+        let cell = try #require(fixture.table.cellForRow(at: IndexPath(row: 0, section: 0)) as? VirtualListHostingCell)
+        let container = cell.contentView
+        for (index, height) in [480.0, 72.0, 360.0, 64.0].enumerated() {
+            let title = "resized-\(index)"
+            cell.unbindHostedContent?()
+            fixture.coordinator.configure(cell, with: .init(id: index + 2, title: title, height: height))
+            let first = cell.systemLayoutSizeFitting(
+                CGSize(width: 390, height: 0), withHorizontalFittingPriority: .required,
+                verticalFittingPriority: .fittingSizeLevel).height
+            #expect(abs(first - height) < 2, "First sizing must use the new binding, before a display turn")
+            #expect(cell.contentView === container)
+            #expect(await fixture.waitForText("\(title)-pending", in: cell))
+        }
+    }
+
+    @Test
     func lateResultFromAReusedCellCannotReplaceTheNewRow() async throws {
-        let loader = Stage18LateRowLoader()
-        let window = UIWindow(
-            frame: CGRect(x: 0, y: 0, width: 390, height: 60)
-        )
-        let list = makeList(loader: loader)
-        let coordinator = list.makeCoordinator()
-        let table = VirtualizedTableView(
-            frame: window.bounds,
-            style: .plain
-        )
-        window.addSubview(table)
-        window.makeKeyAndVisible()
-        coordinator.install(on: table)
-        coordinator.synchronize()
-        window.layoutIfNeeded()
-        table.layoutIfNeeded()
+        let fixture = try mountedList()
+        defer { fixture.close() }
+        let table = fixture.table
+        try #require(await fixture.waitForText("row-1-pending"))
         let initialCells = table.visibleCells
         let originalIDs = Dictionary(uniqueKeysWithValues: initialCells.compactMap { cell in
-            table.indexPath(for: cell).map {
-                (ObjectIdentifier(cell), $0.row + 1)
-            }
+            table.indexPath(for: cell).map { (ObjectIdentifier(cell), $0.row + 1) }
         })
-        for originalID in originalIDs.values {
-            try await loader.waitUntilStarted(id: originalID)
-        }
-
+        let containers = Dictionary(uniqueKeysWithValues: initialCells.map { (ObjectIdentifier($0), $0.contentView) })
         for targetRow in [20, 30] {
-            table.scrollToRow(
-                at: IndexPath(row: targetRow, section: 0),
-                at: .top,
-                animated: false
-            )
+            table.scrollToRow(at: IndexPath(row: targetRow, section: 0), at: .top, animated: false)
             table.layoutIfNeeded()
-            await Task.yield()
+            try #require(await fixture.waitForText("row-\(targetRow + 1)-pending"))
         }
-        let reusedCell = try #require(initialCells.first { initialCell in
-            table.visibleCells.contains { $0 === initialCell }
+        let cell = try #require(initialCells.first { initial in
+            table.visibleCells.contains { $0 === initial } && table.bounds.contains(initial.frame)
         })
-        let originalID = try #require(
-            originalIDs[ObjectIdentifier(reusedCell)]
-        )
-        let reusedIndex = try #require(table.indexPath(for: reusedCell))
-        let currentID = reusedIndex.row + 1
-        try await loader.waitUntilStarted(id: currentID)
-        #expect(originalID != currentID)
-        #expect(table.virtualListDiagnostics.reuseCount > 0)
-        #expect(
-            visibleLabels(in: reusedCell).contains("row-\(currentID)-pending")
-        )
-
-        await loader.finish(
-            id: originalID,
-            value: "row-\(originalID)-late"
-        )
-        for _ in 0..<20 {
-            await Task.yield()
-        }
-        table.layoutIfNeeded()
-
-        let labelsAfterLateResult = visibleLabels(in: reusedCell)
-        #expect(labelsAfterLateResult.contains("row-\(currentID)-pending"))
-        #expect(!labelsAfterLateResult.contains("row-\(originalID)-late"))
-
-        await loader.finish(id: currentID, value: "row-\(currentID)-ready")
-        coordinator.dismantle()
+        let originalID = try #require(originalIDs[ObjectIdentifier(cell)])
+        let currentID = try #require(table.indexPath(for: cell)).row + 1
+        #expect(originalID != currentID && table.virtualListDiagnostics.reuseCount > 0)
+        #expect(cell.contentView === containers[ObjectIdentifier(cell)])
+        try #require(await fixture.waitForText("row-\(currentID)-pending", in: cell))
+        let completed = fixture.loader.finish(id: originalID, text: "row-\(originalID)-late")
+        #expect(!completed.isEmpty)
+        #expect(await VirtualListNativeCondition.wait { completed.isSubset(of: fixture.loader.applied) })
+        #expect(fixture.texts(in: cell).contains("row-\(currentID)-pending"))
+        #expect(!fixture.texts(in: cell).contains("row-\(originalID)-late"))
+        fixture.loader.finish(id: currentID, text: "row-\(currentID)-ready")
+        #expect(await fixture.waitForText("row-\(currentID)-ready", in: cell))
+        let button = try #require(fixture.button(in: cell))
+        button.sendActions(for: .touchUpInside)
+        #expect(fixture.loader.actions == [currentID])
     }
 
-    private func makeList(
-        loader: Stage18LateRowLoader
-    ) -> VirtualizedList<Stage18LateRowItem, Stage18LateRow> {
-        VirtualizedList(
-            items: (1...40).map {
-                Stage18LateRowItem(id: $0, title: "row-\($0)")
-            },
-            backgroundColor: .systemBackground,
-            accessibilityIdentifier: "stage18.late-row-list",
-            rowContent: { item in
-                Stage18LateRow(item: item, loader: loader)
-            }
-        )
+    @Test
+    func returningToSameIDRejectsItsFirstBindingAndKeepsSameBindingUpdates() async throws {
+        let fixture = try mountedList()
+        defer { fixture.close() }
+        try #require(await fixture.waitForText("row-1-pending"))
+        let cell = try #require(fixture.table.cellForRow(at: IndexPath(row: 0, section: 0)) as? VirtualListHostingCell)
+        let container = cell.contentView
+        let oldLabel = try #require(virtualListVisibleLabels(in: cell).first { $0.text == "row-1-pending" })
+        let oldStarts = Set(fixture.loader.starts[1] ?? [])
+        // Exercise the business unbind here; UIKit's prepareForReuse also marks
+        // a cell hidden until dequeue/display, covered by the real-table test.
+        cell.unbindHostedContent?()
+        fixture.coordinator.configure(cell, with: .init(id: 2, title: "row-2"))
+        try #require(await fixture.waitForText("row-2-pending", in: cell))
+        #expect(oldLabel.window == nil)
+        cell.unbindHostedContent?()
+        fixture.coordinator.configure(cell, with: .init(id: 1, title: "row-1"))
+        try #require(await fixture.waitForText("row-1-pending", in: cell))
+        let newSerial = try #require(fixture.loader.starts[1]?.last)
+        #expect(!oldStarts.contains(newSerial))
+        for serial in oldStarts { fixture.loader.finish(serial: serial, text: "obsolete-A") }
+        #expect(await VirtualListNativeCondition.wait { oldStarts.isSubset(of: fixture.loader.applied) })
+        #expect(fixture.texts(in: cell).contains("row-1-pending"))
+        #expect(!fixture.texts(in: cell).contains("obsolete-A"))
+        fixture.loader.finish(serial: newSerial, text: "current-A-ready")
+        try #require(await fixture.waitForText("current-A-ready", in: cell))
+        let starts = fixture.loader.starts[1]
+        fixture.coordinator.configure(cell, with: .init(id: 1, title: "updated-A", height: 140, fontSize: 26))
+        #expect(await VirtualListNativeCondition.wait {
+            fixture.button(in: cell)?.title(for: .normal) == "updated-A" &&
+                virtualListVisibleLabels(in: cell).contains { $0.text == "current-A-ready" && $0.font.pointSize == 26 }
+        })
+        #expect(fixture.loader.starts[1] == starts)
+        #expect(cell.contentView === container)
+        #expect(await VirtualListNativeCondition.wait {
+            abs(cell.systemLayoutSizeFitting(
+                CGSize(width: 390, height: 0), withHorizontalFittingPriority: .required,
+                verticalFittingPriority: .fittingSizeLevel).height - 140) < 2
+        })
+        fixture.coordinator.tableView(fixture.table, didEndDisplaying: cell, forRowAt: IndexPath(row: 0, section: 0))
+        #expect(fixture.texts(in: cell).contains("current-A-ready"))
+        #expect(cell.contentConfiguration != nil)
+        fixture.button(in: cell)?.sendActions(for: .touchUpInside)
+        #expect(fixture.loader.actions == [1])
     }
 
-    private func visibleLabels(in view: UIView) -> [String] {
-        let ownText = (view as? UILabel)?.text.map { [$0] } ?? []
-        return ownText + view.subviews.flatMap(visibleLabels)
-    }
-}
-
-private struct Stage18LateRowItem: Identifiable, Equatable, Sendable {
-    let id: Int
-    let title: String
-}
-
-private struct Stage18LateRow: View {
-    let item: Stage18LateRowItem
-    let loader: Stage18LateRowLoader
-
-    @State private var text: String
-
-    init(item: Stage18LateRowItem, loader: Stage18LateRowLoader) {
-        self.item = item
-        self.loader = loader
-        _text = State(initialValue: "\(item.title)-pending")
-    }
-
-    var body: some View {
-        Stage18TestLabel(text: text)
-            .frame(maxWidth: .infinity, minHeight: 72)
-            .task(id: item.id) {
-                text = await loader.value(for: item.id)
-            }
-    }
-}
-
-private struct Stage18TestLabel: UIViewRepresentable {
-    let text: String
-
-    func makeUIView(context: Context) -> UILabel {
-        let label = UILabel()
-        label.numberOfLines = 0
-        return label
-    }
-
-    func updateUIView(_ label: UILabel, context: Context) {
-        label.text = text
-    }
-}
-
-private actor Stage18LateRowLoader {
-    private var starts: [Int: HarnessContinuationGate<Void>] = [:]
-    private var continuations: [Int: CheckedContinuation<String, Never>] = [:]
-
-    func value(for id: Int) async -> String {
-        startGate(for: id).succeed(())
-        return await withCheckedContinuation { continuation in
-            continuations[id] = continuation
-        }
-    }
-
-    func waitUntilStarted(id: Int) async throws {
-        try await startGate(for: id).wait()
-    }
-
-    func finish(id: Int, value: String) {
-        continuations.removeValue(forKey: id)?.resume(returning: value)
-    }
-
-    private func startGate(for id: Int) -> HarnessContinuationGate<Void> {
-        if let gate = starts[id] {
-            return gate
-        }
-        let gate = HarnessContinuationGate<Void>()
-        starts[id] = gate
-        return gate
+    private func mountedList() throws -> VirtualListBindingFixture {
+        let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        return VirtualListBindingFixture(scene: scene)
     }
 }

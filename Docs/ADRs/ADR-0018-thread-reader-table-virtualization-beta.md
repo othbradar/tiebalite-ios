@@ -73,3 +73,16 @@ cell，已由失败回归测试锁定并改到 reuse 边界；复验连续滚到
 真机、iOS 18、50 页、长期 Instruments 或极端单楼超长富媒体矩阵。若同一真实
 Row 在 table 路径再次稳定卡死，先保留 snapshot/diagnostics 复现并回滚到本 ADR
 前绿色提交，不复制第二套列表或通过延迟、遮罩、随机 ID 掩盖。
+
+
+## 2026-10-21 P05 续修：稳定宿主与业务绑定
+
+本节按用户续修授权替代决策第 7 条的“prepareForReuse 清空配置”。既有 Live 短采样命中该清空路径单次 471.14ms；配置/富文本/测量单次远小于此。只读 busy 的 A/B 无法消除停顿，未保留该实验。
+
+保留 UITableView、Diffable 与 UIHostingConfiguration。Cell 拥有类型化的当前绑定，每次 bind 返回完整内容、业务 ID 与代次的不可变值，以同类型 UIHostingConfiguration 同步更新兼容宿主；unbind 移除业务绑定而不清空配置。同绑定更新不重置 State，真正重绑递增代次；子树使用该代次身份，所以同 ID 再次出现也隔离第一次的迟到回执。prepareForReuse 同步失效行回调/交互，SwiftUI 按子树生命周期取消工作；对不协作取消的工作由旧 State 与新子树隔离，生产图片 Loader 自己的取消/身份检查原样保留。
+
+仅在列表 dismantle 时最终移除全部配置/holder/回调。现有 weak cell 注册与 UIKit 复用池控制物理容器数量，不按已读楼层永久持有宿主。didEndDisplaying 仍不清正文。可见数统计改用展示回调维护集合，避免原先在 provider/willDisplay 内重入查询 visibleCells 的 UIKit assertion。
+
+旧 UILabel 回归的 UIWindow 未关联 scene；在 sizing graph 已更新而没有有效屏幕提交时，旧原生对象仍可被遍历。续修同时修正真实 scene/原生可见区域/可观察更新等待，并继续要求新 pending 和新 ready 都实际可见。独立 content view、UIHostingController 实验没有留下生产分叉。最初只通过 ObservableObject 通知稳定宿主的候选在用户验收时暴露跳动；追加回归证明72pt短行换成480pt长行的首次测量仍是72pt，后续才矫正。仅重新赋同一个观察根配置无效，最终改为配置直接持有不可变绑定值；首次测量恢复480pt，同一容器及State隔离要求保留。实际失败记录、定向回归、性能及验收边界见 P05 审计，不把测试支架修正说成线上已知串楼故障。
+
+分页快照仍由原Diffable提交；已实际显示的行高按稳定业务ID提供为估算值，不能在分页时把已知尺寸重新全部退回180pt。它不固定实际行高、不建立屏外宿主，内容/版本环境改变及宽度、Dynamic Type、方向不匹配时失效；移除行剔除、拆除释放。自然上滑方向与屏幕几何连续性分开回归，不能只凭contentOffset变化或最终位置不同宣称不跳。

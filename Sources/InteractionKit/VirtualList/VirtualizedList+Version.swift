@@ -53,9 +53,21 @@ extension VirtualizedList.Coordinator {
         let content = parent.rowContent(item)
         cell.rowID = AnyHashable(item.id)
         cell.hasCurrentConfiguration = { [weak self] in self?.itemsByID[item.id] == item }
-        cell.contentConfiguration = UIHostingConfiguration { content }
+        let holder: VirtualListCellContent<RowContent>
+        if let existing = cell.hostedContent as? VirtualListCellContent<RowContent> {
+            holder = existing
+        } else {
+            holder = VirtualListCellContent<RowContent>()
+            cell.hostedContent = holder
+            cell.unbindHostedContent = { [weak holder] in holder?.unbind() }
+        }
+        let binding = holder.bind(rowID: AnyHashable(item.id), content: content)
+        // Publishing through an observed holder defers the new row's geometry.
+        // A compatible value configuration updates the existing host before sizing.
+        cell.contentConfiguration = UIHostingConfiguration { VirtualListCellRoot(binding: binding) }
             .margins(.all, 0)
             .background { Color.clear }
+        cell.isUserInteractionEnabled = true
         cell.backgroundColor = .clear
         cell.contentView.backgroundColor = .clear
         cell.selectionStyle = .none

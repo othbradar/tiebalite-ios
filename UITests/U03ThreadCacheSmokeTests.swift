@@ -71,6 +71,7 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
         XCTAssertTrue(thirdPage.exists && thirdPage.frame.intersects(list.frame))
         if UIDevice.current.userInterfaceIdiom == .phone { positionOriginalTarget(in: app, list: list) }
         let anchor = visibleAnchor(in: app, list: list)
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "P05 exact target before assertion")
         if UIDevice.current.userInterfaceIdiom == .phone {
             XCTAssertEqual(anchor, "thread-reader.post.t140001.p430001.spost")
         }
@@ -88,9 +89,14 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
         XCTAssertTrue(restored.isHittable && restored.frame.intersects(list.frame))
         let before = restored.frame.minY
         list.swipeUp()
-        XCTAssertTrue(!restored.isHittable || restored.frame.minY < before)
+        let movedFrame = restored.frame
+        UITestHarness.attachSafeVisualEvidence(app: app, name: "P05 after forward pan")
+        XCTAssertTrue(movedFrame.isEmpty || !movedFrame.intersects(list.frame) ||
+                      !restored.isHittable || movedFrame.minY < before)
         let newAnchor = visibleAnchor(in: app, list: list)
         XCTAssertNotEqual(newAnchor, anchor)
+        XCTAssertEqual(newAnchor.compare(anchor, options: .numeric), .orderedDescending,
+                       "Ascending fixture must advance after an upward swipe")
         print("U03 saved new target: \(newAnchor)")
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(thread.waitForExistence(timeout: 5))
@@ -116,7 +122,8 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
 
     @MainActor
     private func positionOriginalTarget(in app: XCUIApplication, list: XCUIElement) {
-        let original = app.descendants(matching: .any)["thread-reader.post.t140001.p430001.spost"].firstMatch
+        let targetID = "thread-reader.post.t140001.p430001.spost"
+        let original = list.descendants(matching: .any)[targetID].firstMatch
         // Natural swipe velocity can stop on either side of this exact regression target.
         // Move the real list with bounded gestures, then verify the saved first-visible ID.
         for _ in 0..<4 {
@@ -126,7 +133,8 @@ final class U03ThreadCacheSmokeTests: XCTestCase {
                 continue
             }
             if original.isHittable, rect.minY <= list.frame.minY,
-               rect.maxY > list.frame.minY + rect.height / 2 { return }
+               rect.maxY > list.frame.minY + rect.height / 2,
+               visibleAnchor(in: app, list: list) == targetID { return }
             let distance = rect.minY - list.frame.minY + rect.height / 4
             let bounded = min(list.frame.height * 0.4, max(-list.frame.height * 0.4, distance))
             let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))

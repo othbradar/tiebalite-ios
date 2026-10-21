@@ -48,7 +48,11 @@ struct U06P3ListWorkTests {
         #expect(store.configuredRowsBuildCount == 2)
         await store.loadNextPage()
         #expect(store.state.snapshot?.posts.count == 400)
-        #expect(store.configuredRows(textSize: .large).count == 401)
+        let rows = store.configuredRows(textSize: .large)
+        #expect(rows.filter { $0.row.post != nil }.count == 400)
+        #expect(rows.filter { $0.row.isPagination }.count == 1)
+        #expect(rows.filter { if case .replyFilters = $0.row.content { return true }; return false }.count == 1)
+        #expect(Set(rows.map(\.id)).count == 402)
         #expect(store.listRevision > initialRevision)
         store.cancel()
     }
