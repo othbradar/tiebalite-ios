@@ -1,3 +1,10 @@
+## 2026-10-21 SideStore — 源实现与发布验证
+
+- 当前任务授权实现/发布软件源及回复Issue #1；新增sidestore/source.json、维护说明、Python更新/7项回归和Release/手动/定时Actions。首版保留原beta6 IPA，真实0.2.0/19，不修改既有发布或业务代码。
+- 已核对SideStore develop及latest 0.7.0-alpha更新逻辑：仅增加Build不能可靠触发；维护脚本拒绝同营销版本的新附件，后续IPA必须使用更大的数值营销版本（如0.2.1/20）。源字段不能伪造beta版本。
+- 实际下载beta6并校验大小/SHA256/Info.plist，JSON及7项定向测试通过；quality-fast/quality因现有技能配置缺失在instructions失败。真机签名安装、关联与更新按钮NOT_TESTED，详见Docs/Audits/SIDESTORE_SOURCE.md。无新增动画、手势、overlay或生产依赖。
+
+
 ## 2026-10-20 v0.2.0beta6 — 已提交、推送并发布
 
 - 用户验收P04并授权发布，P01–P04已全部推送。P04提交`99a8dfe`，发布准备`b6e9e06`，最终设备归档源码/标签为`54f03d238b62459937671732df68b51e25f2455b`，App0.2.0 / Build19。

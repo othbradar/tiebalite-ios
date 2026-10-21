@@ -1,0 +1,45 @@
+{
+  "name": "TiebaLite iOS",
+  "identifier": "dev.local.tiebaliteios.source",
+  "sourceURL": "https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json",
+  "website": "https://github.com/othbradar/tiebalite-ios",
+  "apps": [
+    {
+      "name": "TiebaLite iOS",
+      "bundleIdentifier": "dev.local.tiebaliteios",
+      "developerName": "othbradar",
+      "subtitle": "非官方贴吧客户端 · Beta",
+      "localizedDescription": "原生 iOS/iPadOS 贴吧客户端。此源包含 GitHub 公开测试版本。",
+      "iconURL": "https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png",
+      "tintColor": "9BCBF2",
+      "screenshotURLs": [],
+      "versions": [
+        {
+          "version": "0.2.0",
+          "buildVersion": "19",
+          "date": "2026-10-20T09:55:53Z",
+          "minOSVersion": "18.0",
+          "localizedDescription": "v0.2.0beta6\n本版汇总 beta5 之后已验收的 P01–P04，保留现有账号、草稿、缓存与发帖/回复/上传链路。\r\n\r\n## 回复与阅读\r\n\r\n- 点击主帖楼中楼预览的文字或背景，进入对应父楼的独立楼中楼页面；只有1–3条子回复也能进入，主帖最多预览3条。\r\n- 在独立页面点击具体子回复正文即可打开回复编辑器，正确选择该条回复及其作者；保留复制、图片和链接的独立动作。\r\n- 移除蓝色“查看全部N条回复”和灰色“回复”入口；普通楼层正文也支持点击打开回复编辑器。\r\n- 楼层、日期和地区移到正文底部，缩短顶部空白；楼中楼同步调整。\r\n- 帖子回复区改为“全部回复 / 只看楼主”及“热门 / 正序 / 倒序”控件，两组选择全局记忆，使用更小字体和扁胶囊。\r\n- 吧首页帖子移除重复的吧名标签。\r\n\r\n## 搜索\r\n\r\n- 全局搜索按 Android TiebaLite 样式提供搜吧、搜帖和搜人，复用首页搜索框；搜帖可选新帖在前、旧帖在前和相关度。\r\n- 修复从搜人进入个人主页后，首次账号资料读取失败导致关系、主题和关注吧无法恢复的问题。\r\n- 吧内搜索限定当前吧，支持只看主题/只看评论、新帖在前/相关在前；空输入展示可复用的本地搜索历史。\r\n- 吧内搜索使用完整原生导航页面，保留结果分页、返回位置及系统滑动返回；修复取消按钮白块和搜索框顶部在转场时短暂裁切的问题。\r\n\r\n## 图标\r\n\r\n- 按用户选择采用 Android TiebaLite 的帖子卡片造型，改为淡蓝色，并保留可编辑矢量源及来源说明。\r\n- iPhone 与 iPad 模拟器均已覆盖安装，检查真实主屏图标及正常首页。\r\n\r\n## 下载与安装\r\n\r\n- 标签 `v0.2.0beta6`；App版本 `0.2.0`，Build `19`。\r\n- 支持 iOS/iPadOS 18.0及以上，iPhone/iPad，arm64。\r\n- 附件为**真机 Release 未签名 IPA**，安装前需自行签名；不是 Simulator、App Store 或 TestFlight 包。\r\n- 同时提供 `SHA256SUMS`。升级请保留原签名身份及 Bundle ID 覆盖安装，避免卸载造成数据丢失。\r\n\r\n## 验证与已知限制\r\n\r\n- P01–P04 均由用户逐阶段验收；复用对应状态/映射及 iPhone/iPad 定向回归，纯图标阶段检查资源、构建与真实主屏。发布另外校验设备 Release 归档、调试内容隔离、IPA结构及SHA256。\r\n- 未重跑全量业务或物理设备矩阵。真实发送仍由用户执行；本版没有修改已验收的 iOS 写请求、上传、签名或账号准备链路。\r\n- 子回复搜索结果进入正确父楼的楼中楼页面，尚不自动滚动到具体子回复。\r\n- 个别用户资料的服务端拒绝、私有 SDK/Passport、安全验证续发、正文缓存独立清理入口及其他 beta5 已列缺口仍保留。\r\n- 真机、iOS18主屏及系统着色/深色图标模式未完成本轮验证。\r\n\r\n构建记录：[RELEASE_0_2_0_BETA_6.md](https://github.com/othbradar/tiebalite-ios/blob/main/Docs/Audits/RELEASE_0_2_0_BETA_6.md)。\r\n",
+          "downloadURL": "https://github.com/othbradar/tiebalite-ios/releases/download/v0.2.0beta6/TiebaLite-0.2.0beta6-ios18-arm64-unsigned.ipa",
+          "size": 4991206,
+          "sha256": "3c9a4e0fb646fe81f722eebf232662628bf09376230e688c51cfffc5dd54e5e9"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": [
+          {
+            "name": "PhotoLibraryAdd",
+            "usageDescription": "将您选择的图片保存到相册，仅添加照片，不读取您的相册。"
+          }
+        ]
+      },
+      "version": "0.2.0",
+      "versionDate": "2026-10-20T09:55:53Z",
+      "versionDescription": "v0.2.0beta6\n本版汇总 beta5 之后已验收的 P01–P04，保留现有账号、草稿、缓存与发帖/回复/上传链路。\r\n\r\n## 回复与阅读\r\n\r\n- 点击主帖楼中楼预览的文字或背景，进入对应父楼的独立楼中楼页面；只有1–3条子回复也能进入，主帖最多预览3条。\r\n- 在独立页面点击具体子回复正文即可打开回复编辑器，正确选择该条回复及其作者；保留复制、图片和链接的独立动作。\r\n- 移除蓝色“查看全部N条回复”和灰色“回复”入口；普通楼层正文也支持点击打开回复编辑器。\r\n- 楼层、日期和地区移到正文底部，缩短顶部空白；楼中楼同步调整。\r\n- 帖子回复区改为“全部回复 / 只看楼主”及“热门 / 正序 / 倒序”控件，两组选择全局记忆，使用更小字体和扁胶囊。\r\n- 吧首页帖子移除重复的吧名标签。\r\n\r\n## 搜索\r\n\r\n- 全局搜索按 Android TiebaLite 样式提供搜吧、搜帖和搜人，复用首页搜索框；搜帖可选新帖在前、旧帖在前和相关度。\r\n- 修复从搜人进入个人主页后，首次账号资料读取失败导致关系、主题和关注吧无法恢复的问题。\r\n- 吧内搜索限定当前吧，支持只看主题/只看评论、新帖在前/相关在前；空输入展示可复用的本地搜索历史。\r\n- 吧内搜索使用完整原生导航页面，保留结果分页、返回位置及系统滑动返回；修复取消按钮白块和搜索框顶部在转场时短暂裁切的问题。\r\n\r\n## 图标\r\n\r\n- 按用户选择采用 Android TiebaLite 的帖子卡片造型，改为淡蓝色，并保留可编辑矢量源及来源说明。\r\n- iPhone 与 iPad 模拟器均已覆盖安装，检查真实主屏图标及正常首页。\r\n\r\n## 下载与安装\r\n\r\n- 标签 `v0.2.0beta6`；App版本 `0.2.0`，Build `19`。\r\n- 支持 iOS/iPadOS 18.0及以上，iPhone/iPad，arm64。\r\n- 附件为**真机 Release 未签名 IPA**，安装前需自行签名；不是 Simulator、App Store 或 TestFlight 包。\r\n- 同时提供 `SHA256SUMS`。升级请保留原签名身份及 Bundle ID 覆盖安装，避免卸载造成数据丢失。\r\n\r\n## 验证与已知限制\r\n\r\n- P01–P04 均由用户逐阶段验收；复用对应状态/映射及 iPhone/iPad 定向回归，纯图标阶段检查资源、构建与真实主屏。发布另外校验设备 Release 归档、调试内容隔离、IPA结构及SHA256。\r\n- 未重跑全量业务或物理设备矩阵。真实发送仍由用户执行；本版没有修改已验收的 iOS 写请求、上传、签名或账号准备链路。\r\n- 子回复搜索结果进入正确父楼的楼中楼页面，尚不自动滚动到具体子回复。\r\n- 个别用户资料的服务端拒绝、私有 SDK/Passport、安全验证续发、正文缓存独立清理入口及其他 beta5 已列缺口仍保留。\r\n- 真机、iOS18主屏及系统着色/深色图标模式未完成本轮验证。\r\n\r\n构建记录：[RELEASE_0_2_0_BETA_6.md](https://github.com/othbradar/tiebalite-ios/blob/main/Docs/Audits/RELEASE_0_2_0_BETA_6.md)。\r\n",
+      "downloadURL": "https://github.com/othbradar/tiebalite-ios/releases/download/v0.2.0beta6/TiebaLite-0.2.0beta6-ios18-arm64-unsigned.ipa",
+      "size": 4991206
+    }
+  ],
+  "news": []
+}
