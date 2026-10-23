@@ -1,56 +1,65 @@
 # TiebaLite iOS
 
-TiebaLite iOS 是一个非官方的 iOS/iPadOS 贴吧客户端，提供阅读、消息与发帖/回复编辑功能。当前源码还包含云端收藏、本机书签、关注/热榜、用户关系、帖内媒体播放、点赞及本人内容删除。各项的实网与本机验证范围见 [U15 功能验收](Docs/Audits/U15_DAILY_USE_ACCEPTANCE.md)，不能将源码功能表当作全部真机功能已验收。
+一个原生 iOS / iPadOS 非官方贴吧客户端，面向日常看帖、楼中楼讨论、搜索与收藏，延续 TiebaLite 的简洁界面。
 
-本轮发布 v0.2.0beta6，更新与安装方式见 [版本说明](Docs/Releases/v0.2.0beta6.md)。此前收藏、媒体及内容操作更新见 [Beta 5 版本说明](Docs/Releases/v0.2.0beta5.md)，当前验证进度见 [任务记录](Docs/Progress/TASK_STATE.md)。
+**当前版本：[v0.2.0beta7](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta7)** · App **0.2.1 / Build 20** · iOS / iPadOS **18.0+**
 
-## SideStore 安装与更新
+[下载 IPA](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta7) · [SideStore 订阅源](https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json) · [更新说明](Docs/Releases/v0.2.0beta7.md) · [反馈问题](https://github.com/othbradar/tiebalite-ios/issues)
 
-在 SideStore 的 Sources 中添加 [订阅源](https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json)。支持 iOS/iPadOS 18.0+，直接使用 GitHub Release 未签名 IPA。安装、覆盖更新与版本规则见 [使用说明](sidestore/README.md)。真机签名/安装尚未完成本轮验证。
+## 本版更新
 
-## 已实现
+改善帖子楼层的慢速滚动：修复 Cell 复用期间的半秒停顿和带图楼层位置跳动，减少正文、楼中楼及媒体的重复处理。用户已在实机安装候选包，反馈比此前顺滑。本版保留已验收的回复方式、搜索、缓存和图片保存，发送协议未改动。
 
-- 用户可见的 WKWebView 登录、Keychain 会话保存和冷启动恢复；
-- 最近浏览/关注的吧、动态推荐流、吧首页排序/分类及连续分页；
-- 帖子楼层、前三条子回复预览、独立完整楼中楼及分页；
-- 真实用户/吧头像、接口提供的等级、紧凑图片网格和官方表情内联；
-- 排序记忆、吧首页与帖子缓存、阅读位置恢复、最多两个投机内容预载；
-- 图片磁盘缓存与同资源请求共享、唯一 MediaViewer、左右切图、缩放与自由平移、按需加载原图、长按保存原图或分享文件；
-- 回复我的/提到我的、未读计数；引用打开主题，具体回复定位帖子中的一级楼层（楼中楼消息定位父楼）；
-- 新帖、主题回复、楼层回复和楼中楼回复编辑器，按账号和目标隔离的持久草稿、图片选择/上传与表情选择；成功后合并回复并保留阅读位置；
-- 只看楼主、正序/倒序、跳页及继续上次阅读；查询模式各自保存页与位置；
-- 云端收藏及同步、本机帖子/楼层书签；动态关注、推荐与热榜；用户主题/回复/关注吧/关注与粉丝列表及关系操作；
-- 帖内原位视频，设置可选点击播放或自动播放；语音与有界 GIF/WebP 播放，离页、滚出或后台停止；
-- 帖子/楼层点赞与取消；本人主题/楼层/子回复确认删除，成功后更新展示及缓存；
-- 全局搜吧/搜帖/搜人、搜帖排序、本地搜索历史；吧内主题/评论搜索及新帖/相关排序；
-- 账户资料、外观与阅读字号设置；
-- 正文、楼中楼与动态摘要链接；站内帖子/吧链接走原生页面，外部网页走系统浏览器；明确用户 ID 的 @提及进入资料；
-- 帖子顶部吧入口、动态吧标签、帖子/动态系统分享和复制公开链接，更多菜单复用已有重新加载操作；
-- iPhone/iPad 自适应、深色、大字体与 Reduce Motion，Fixture 驱动的离线自动化。
+App 真实版本递增至 **0.2.1**，让 SideStore 可以识别旧版 **0.2.0** 到新版的更新。完整验证范围见 [滚动修复审计](Docs/Audits/THREAD_SCROLL_FLUENCY_FIX_2026_10_23.md) 与 [发布记录](Docs/Audits/RELEASE_0_2_0_BETA_7.md)。
 
-**发布后的服务端审核结果仍需观察。** 本版补齐发帖/回复请求中遗漏的真实账号显示名，用户已确认修复后的一次文字加表情回复成功并可见。此前曾出现“涉嫌异常行为”删除通知；本次成功不等于后续审核始终通过，也尚不能证明显示名遗漏就是删帖原因。新帖、不同回复目标及多图实网发送的覆盖仍不完整。自动化只使用 Mock，不发送真实内容；Live 发送由用户自行决定。
+## 当前界面
 
-参与投票、签到、私信、系统推送及批量离线下载不在本轮。私有 SDK/Passport 接入按用户约定跳过；不能据已实现的业务请求宣称与官方客户端全部行为一致。项目没有获得百度官方认可，第三方资源及生成 Proto 的 App Store/商业二进制分发权利仍未完成确认。
+以下是 2026-10-23 使用 **0.2.1 / Build 20 正常 Live App** 拍摄的模拟器截图，展示公开内容；不是旧版截图或 Fixture 页面。点击图片查看原图。[设备与采集说明](Docs/Screenshots/v0.2.0beta7/README.md)
 
-## 缓存、保存与权限
+| iPhone · 吧首页 | iPhone · 带图回复与楼中楼预览 | iPhone · 独立楼中楼 |
+| --- | --- | --- |
+| <a href="Docs/Screenshots/v0.2.0beta7/iphone-forum.png"><img src="Docs/Screenshots/v0.2.0beta7/iphone-forum.png" alt="iPhone 新版吧首页及帖子列表" width="240"></a> | <a href="Docs/Screenshots/v0.2.0beta7/iphone-thread.png"><img src="Docs/Screenshots/v0.2.0beta7/iphone-thread.png" alt="iPhone 帖子中部的图片回复、楼中楼预览与底部时间地区" width="240"></a> | <a href="Docs/Screenshots/v0.2.0beta7/iphone-subposts.png"><img src="Docs/Screenshots/v0.2.0beta7/iphone-subposts.png" alt="iPhone 独立楼中楼页面" width="240"></a> |
 
-- 吧内主动选择的排序按吧保存，可在设置更改全局默认，也可在吧内恢复跟随全局。
-- 看过的吧/帖内容与阅读位置可在重入或进程重建后恢复；内容缓存按账号和查询条件隔离，过期、权限失效、未缓存页面仍需联网。
-- 内容预载最多两个后台候选任务，队列有上限；前台请求优先，关闭预载、低电量、低数据模式或 App 后台会停止投机预载，不下载所有关注吧或整帖。
-- 内容/图片缓存使用可回收的 Caches 目录（当前预算分别为128 MiB/512 MiB），不是永久离线收藏。草稿、书签、排序等持久资料与缓存清理分离；清缓存不会退出账号。
-- 设置当前提供图片缓存占用和单独清理；正文内容缓存的占用/手动清理入口尚未接入，只按预算、过期和会话规则回收。这是 U06 的剩余缺口。
-- 查看器中的保存使用取得的原编码文件，不保存屏幕截图；原图不可用时明确失败，不悄悄用缩略图代替。分享使用临时图文件，清缓存不会删除正在分享的文件。
-- 保存到相册仅请求添加权限；选择上传图片使用系统选择器，授权由用户决定。放大查看受解码预算限制，导出的文件质量与屏幕显示分辨率分开。
+**iPad · 吧首页**
 
-## 新版截图
+<a href="Docs/Screenshots/v0.2.0beta7/ipad-forum.png"><img src="Docs/Screenshots/v0.2.0beta7/ipad-forum.png" alt="iPad Pro 13 英寸新版吧首页，展示分类、图文帖子与宽屏布局" width="600"></a>
 
-以下为历史 0.2.0 Beta 1 视觉验收时的 iPhone 实际界面，展示公开内容浏览与表情编辑，不代表当前功能验收截图。点击图片可查看原图。
+## 功能
 
-| 动态推荐 | 吧首页 |
+| 场景 | 已实现能力 |
 | --- | --- |
-| <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-feed.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-feed.png" alt="新版动态推荐：真实头像、平面信息流与紧凑图片布局" width="300"></a> | <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-forum.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-forum.png" alt="新版吧首页：吧资料、分类标签与帖子列表" width="300"></a> |
-| 表情编辑 | 贴吧搜索 |
-| <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-composer.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-composer.png" alt="新版回复编辑器：官方表情面板与正文内联显示" width="300"></a> | <a href="Docs/Screenshots/v0.2.0-beta.1/iphone-search.png"><img src="Docs/Screenshots/v0.2.0-beta.1/iphone-search.png" alt="新版搜索：贴吧检索与结果列表" width="300"></a> |
+| 浏览与搜索 | 最近浏览和关注的吧；动态推荐、关注与热榜；吧首页分类、排序与分页。全局搜吧、搜帖、搜人；搜帖可选新帖在前、旧帖在前、相关度。吧内搜索支持只看主题 / 只看评论、新帖 / 相关排序与搜索历史。 |
+| 帖子与讨论 | 楼层分页、热门 / 正序 / 倒序、全部回复 / 只看楼主；这两组选择全局记忆。主帖最多预览 3 条子回复，点预览进入独立楼中楼，再点具体子回复正文打开回复编辑器；普通楼层正文也可直接回复。保留复制、图片及链接独立操作。 |
+| 账号与内容操作 | 可见网页登录、会话恢复；用户主题、关注的吧、关注与粉丝列表。回复我的 / 提到我的及未读计数；发帖、回复、图片与表情选择、按账号和回复目标保存草稿；点赞 / 取消、确认删除本人内容。 |
+| 收藏与媒体 | 云端收藏及同步、本机帖子 / 楼层书签；图片缩放、切图、原图保存与系统分享；帖内原位视频，可选自动或点击播放；语音、GIF / WebP 动画，离屏或后台停止。 |
+| 阅读与适配 | 内容及图片缓存、有限预载、阅读位置恢复；站内链接原生打开、外链使用系统浏览器；淡蓝应用图标、深色模式、阅读字号、Reduce Motion、iPhone / iPad 横竖屏适配。 |
+
+功能表描述当前实现，不代表每个设备、账号或服务端场景全部验收。历史功能验证见 [U15 验收](Docs/Audits/U15_DAILY_USE_ACCEPTANCE.md)，后续修复见 [任务记录](Docs/Progress/TASK_STATE.md)。
+
+## 安装与更新
+
+### SideStore
+
+在 SideStore 的 **Sources** 中添加：
+
+```text
+https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json
+```
+
+已添加源的用户刷新 Sources，再到 **My Apps** 检查 **Update**。签名刷新与安装新版是两个操作；手动导入的旧 App 能否与源关联，取决于 SideStore 的安装记录。源直接使用 GitHub Release 的 IPA，版本、大小和 SHA256 从附件提取并校验。[详细说明](sidestore/README.md)
+
+发布元数据与源更新的验证范围见 [发布记录](Docs/Audits/RELEASE_0_2_0_BETA_7.md)，不将其表述为已经完成所有 SideStore 真机更新提示、签名和覆盖安装流程的验收。
+
+### 手动安装
+
+从 [Release](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta7) 下载完整 ARM64 **未签名 IPA**，使用自己的签名工具安装。沿用原 Apple ID / Team 和签名后的 Bundle ID 覆盖安装，保留账号、草稿及数据；不要先卸载旧版。附件同时提供 `SHA256SUMS`。
+
+## 缓存与权限
+
+- 内容缓存按账号和查询条件隔离；重入可恢复已缓存的内容与阅读位置。过期、权限失效或尚未缓存的页面仍需联网。
+- 内容预载最多两个后台候选，前台请求优先；关闭预载、低电量、低数据模式或进入后台时停止投机预载。
+- 内容 / 图片缓存预算分别为 128 MiB / 512 MiB，使用可回收的 Caches 目录。草稿、书签和设置独立保存；清图片缓存不会退出账号。
+- 图片保存导出取得的原编码文件；原图不可用时明确失败。仅请求相册添加权限；上传图片使用系统选择器。
 
 ## 系统与工具要求
 
@@ -126,29 +135,19 @@ make quality
 `make quality` 是当前完整 RC 门禁，包含 Debug/Release 构建、Unit、iPhone/iPad
 UI smoke、Pager/Media interaction、静态策略、秘密扫描和 Release 隔离。
 
-## Known Limitations
+## 已知限制
 
-- 这是非官方客户端，贴吧私有 API、字段和错误码可能变化；所有服务端错误码尚未
-  覆盖。
-- 头像规则遵循已锁定 Android 源码；用户批准仅 `tb.himg.baidu.com/sys/portrait/item/` 使用原版 HTTP（ADR-0024），图片请求不带登录 Cookie。缺失或失败时使用中性占位。
-- 本地官方表情目录为 132 张；无法取得原图的表情和服务端仅返回的 `[图片]` 文本不能恢复为图片，未知 token 保留原文。
-- iPad 横屏切换“我的”残留旧帖的问题已在 R13 修正，定向回归及用户手工检查通过；完整 Stage Manager 设备矩阵仍未覆盖。
-- GIF/WebP 已实现有界动画，超限或不支持的资源降级为静态帧；保存/分享保留取得的编码文件。未覆盖所有媒体编码，真实贴吧语音样本仍不足；原图查看受4096像素解码预算限制，无全尺寸图片瓦片。
-- iPad 旋转进入分栏后回首楼已在 U06P4 修复，指定回归和 Live 多页帖检查通过；手工窗口调宽、真机相册与完整设备矩阵尚未验收。
-- 真机完整 VoiceOver、iOS 18.x runtime、完整设备/Stage Manager 矩阵尚未验证。
-- logout 实现有确定性测试，但为保留当前会话，本轮未执行真实 logout。
-- App Store、商标、服务条款、Proto 文件级来源以及商业二进制分发权利尚未完成
-  独立确认。
-
-R13 是历史阶段；U01–U14 的验收及失败记录保留在任务记录中。本轮 U15 状态和实际执行结果见功能验收表，不将组合证据描述成一次全绿的 make quality。
+- 贴吧私有接口可能变化；服务端审核、风控与错误码不保证全部覆盖。自动化不发送真实内容，Live 发帖 / 回复由用户自行点击；私有 SDK / Passport 完整接入仍未完成。
+- 参与投票、签到、私信、系统推送和批量离线下载尚未实现。
+- 内容缓存占用 / 手动清理入口尚未接入；现有设置可清理图片缓存。缓存不是永久离线副本。
+- 本地表情目录包含 132 张；服务端仅给出的 `[图片]` 文本无法恢复原图，未知表情保留原文。动图超预算时降级为静态帧；完整媒体编码、真实语音样本与全尺寸图片瓦片未覆盖。
+- 部分模拟器采样仍有短时尖峰，不保证所有场景绝无卡顿。完整 VoiceOver、iOS 18.x runtime 和 Stage Manager 设备矩阵尚未验收。
+- 当前全仓静态策略仍有记录在案的旧失败，本轮无新增；不能将定向回归、构建及用户验收合称为一次全绿的 `make quality`。
 
 ## 许可与来源
 
-项目作者有权许可的原创 iOS 源码采用
-[GNU General Public License v3.0 only](LICENSE)。该许可不重新许可第三方依赖、
-Android reference、生成 Proto 或其他权利归属不明的材料；它们继续适用各自的
-许可证和来源边界，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与
-[来源审计](Docs/Audits/SOURCE_AND_LICENSE_NOTES.md)。
+原创 iOS 源码采用 [GNU General Public License v3.0 only](LICENSE)。本项目为非官方客户端，未获得百度官方认可。
 
-此授权自包含该根许可证的版本起适用；`v0.1.0-beta.1` 与
-`v0.1.0-beta.2` 是保留其各自历史 `LICENSE` 的旧快照，不追溯改写。
+Android 参考、生成 Proto、图片和其他第三方材料继续适用各自的许可证及来源边界，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [来源审计](Docs/Audits/SOURCE_AND_LICENSE_NOTES.md)。App Store / 商业二进制分发权利尚未完成独立确认。头像的已批准 HTTP 例外见 ADR-0024，图片请求不携带登录 Cookie。
+
+根许可证不追溯改写 `v0.1.0-beta.1`、`v0.1.0-beta.2` 的历史许可快照。

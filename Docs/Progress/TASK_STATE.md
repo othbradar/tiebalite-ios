@@ -1,3 +1,9 @@
+# 2026-10-23 — beta7 发布准备（用户授权提交、推送及发布）
+
+- SF-00～08已提交9924674，正常合并远端SideStore自动化为7e537f6，保留双方历史。
+- App版本0.2.1/20，tag计划v0.2.0beta7；完整设备Release归档、隔离及IPA逐项检查通过。用户此前实机已确认候选更顺滑。
+- README更新当前功能及4张正常Live实图，包含iPad；原iPhone/iPad均覆盖安装保留数据。线上发布与SideStore源更新继续执行，详情见Docs/Audits/RELEASE_0_2_0_BETA_7.md。
+
 ## 2026-10-23 SF-00–SF-08 — USER_ACCEPTED_DEVICE / 提交与发布授权
 
 - 用户实机测试确认“确实比之前感觉顺滑”，授权提交推送并发布新IPA；同时要求沿用Issue #1的SideStore源更新。该确认支持此次实机主观体验改善，不把它写成全部设备帧节奏已达标。
