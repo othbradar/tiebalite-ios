@@ -5,6 +5,7 @@ import SwiftUI
 struct AnimatedMediaImage<Content: View>: View {
     let image: UIImage
     let resource: AnimatedImageResource?
+    let targetPixelSize: ImageTargetPixelSize?
     var unavailable = false
     var allowsPlaybackControl = true
     var isCurrent = true
@@ -16,6 +17,15 @@ struct AnimatedMediaImage<Content: View>: View {
     @State private var explicitlyPlaying = false
     @State private var frame: UIImage?
     @State private var failed = false
+    private var maximumDimension: Int {
+        guard let targetPixelSize else { return 0 }
+        return min(1_024, max(targetPixelSize.width, targetPixelSize.height))
+    }
+    private struct PlaybackKey: Hashable {
+        let resource: String?
+        let permitted: Bool
+        let dimension: Int
+    }
 
     private var permitted: Bool {
         resource != nil && visible && isCurrent && scenePhase == .active
@@ -44,16 +54,23 @@ struct AnimatedMediaImage<Content: View>: View {
                     .accessibilityIdentifier("media.animation.toggle")
                 }
             }
-            .task(id: "\(resource?.id ?? "static").\(permitted)") {
-                guard permitted, let resource else { frame = nil; return }
+            // Decode sizing belongs to the stable outer viewport, never the current frame's intrinsic size.
+            .task(id: PlaybackKey(resource: resource?.id, permitted: permitted, dimension: maximumDimension)) {
+                guard !Task.isCancelled else { return }
+                frame = nil
+                guard permitted, maximumDimension > 0, let resource else { return }
+                let decoder = AnimatedImageDecoder(resource: resource)
                 failed = false
                 do {
                     var index = 0
                     var loops = 0
                     while !Task.isCancelled {
-                        let next = try await resource.frame(at: index, maximumDimension: 1_024)
+                        let next = try await decoder.frame(at: index, maximumDimension: maximumDimension)
                         try Task.checkCancellation()
                         frame = next.image
+                        #if UITESTING
+                        ScrollWorkMetrics.count("gif.frame")
+                        #endif
                         // Media timing from the encoded frame, not a UI/state synchronization delay.
                         try await Task.sleep(for: .seconds(next.delay))
                         index += 1
@@ -66,6 +83,7 @@ struct AnimatedMediaImage<Content: View>: View {
                 } catch is CancellationError {
                     return
                 } catch {
+                    guard !Task.isCancelled else { return }
                     frame = nil
                     failed = true
                 }

@@ -7,9 +7,9 @@ struct ThreadVoicePlayerView: View {
     let source: MediaPlaybackSource?
     @State private var playback = MediaPlaybackController.shared
 
-    private var isOwner: Bool { playback.state.owner == owner }
-    private var active: Bool { isOwner && [.playing, .loading].contains(playback.state.phase) }
-    private var failed: Bool { isOwner && playback.state.phase == .failed }
+    private var isOwner: Bool { playback.status.owner == owner }
+    private var active: Bool { isOwner && [.playing, .loading].contains(playback.status.phase) }
+    private var failed: Bool { isOwner && playback.status.phase == .failed }
 
     var body: some View {
         Button {
@@ -17,7 +17,7 @@ struct ThreadVoicePlayerView: View {
         } label: {
             HStack(spacing: Spacing.medium) {
                 Image(systemName: failed ? "arrow.clockwise" : (active ? "pause.fill" : "play.fill"))
-                ProgressView(value: isOwner ? playback.state.fraction : 0)
+                ProgressView(value: isOwner ? playback.progress.fraction : 0)
                     .tint(SemanticColor.primaryText)
                 Text(timeLabel).monospacedDigit().font(Typography.font(.caption))
             }
@@ -40,8 +40,8 @@ struct ThreadVoicePlayerView: View {
     private var timeLabel: String {
         if source == nil { return "不可用" }
         if failed { return "重试" }
-        guard isOwner, playback.state.duration > 0 else { return "语音" }
-        return "\(Int(playback.state.elapsed)) / \(Int(playback.state.duration.rounded(.up))) 秒"
+        guard isOwner, playback.progress.duration > 0 else { return "语音" }
+        return "\(Int(playback.progress.elapsed)) / \(Int(playback.progress.duration.rounded(.up))) 秒"
     }
 }
 
@@ -54,7 +54,7 @@ struct ThreadVideoPlayerView: View {
     var sourceOverride: MediaPlaybackSource?
     @State private var playback = MediaPlaybackController.shared
     @State private var poster: UIImage?
-    private var isOwner: Bool { playback.state.owner == owner }
+    private var isOwner: Bool { playback.status.owner == owner }
     private var source: MediaPlaybackSource? {
         sourceOverride ?? content.videoTarget.flatMap { MediaPlaybackSource.video($0.absoluteString) }
     }
@@ -64,7 +64,7 @@ struct ThreadVideoPlayerView: View {
             .aspectRatio(content.dimensions.layoutAspectRatio, contentMode: .fit)
             .background(SemanticColor.surface)
             .overlay {
-                if isOwner, playback.state.phase != .failed, let player = playback.player {
+                if isOwner, playback.status.phase != .failed, let player = playback.player {
                     SystemMediaPlayer(player: player)
                         .accessibilityIdentifier("media.video.inline.\(owner)")
                 } else {
@@ -92,7 +92,7 @@ struct ThreadVideoPlayerView: View {
     }
 
     private var playButton: some View {
-        let failed = isOwner && playback.state.phase == .failed
+        let failed = isOwner && playback.status.phase == .failed
         return Button {
             if let source { playback.play(owner: owner, source: source) } else if let intent = content.externalIntent {
                 onOpenExternalLink(intent)

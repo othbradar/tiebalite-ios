@@ -251,11 +251,17 @@ enum ImageLoadingError: Error, Equatable, Sendable {
 }
 
 protocol ImageLoading: Sendable {
+    var renderingIdentity: ObjectIdentifier? { get }
     func load(_ request: ImageRequest) async throws -> ImagePayload
     func loadLocalPhoto(_ photo: ComposerPhoto) async throws -> ImagePayload
 }
 
+extension ImageLoading where Self: AnyObject {
+    var renderingIdentity: ObjectIdentifier? { ObjectIdentifier(self) }
+}
+
 extension ImageLoading {
+    var renderingIdentity: ObjectIdentifier? { nil }
     func loadLocalPhoto(_ photo: ComposerPhoto) async throws -> ImagePayload { throw ImageLoadingError.unavailable }
 }
 

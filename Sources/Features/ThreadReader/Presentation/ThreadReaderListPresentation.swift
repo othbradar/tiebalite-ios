@@ -27,6 +27,8 @@ struct ThreadReaderSubpostRowModel: Identifiable, Equatable, Sendable {
     let metadata: String
     let document: ThreadContentDocument
 
+    let previewRuns: [TiebaRichTextRun]
+
     init(_ subpost: ThreadReaderSubpost) {
         id = subpost.id
         authorName = subpost.author.displayName
@@ -34,6 +36,10 @@ struct ThreadReaderSubpostRowModel: Identifiable, Equatable, Sendable {
         replyToDisplayName = subpost.replyToDisplayName
         metadata = subpost.metadata
         document = subpost.document
+        let content = TiebaRichText.runs(nodes: subpost.document.nodes)
+        previewRuns = [.text(subpost.author.displayName + ": ", bold: true)]
+            + [.text(subpost.replyToDisplayName.map { "回复 \($0)：" } ?? "")]
+            + (content.isEmpty ? [.text("回复内容暂不可用")] : content)
     }
 }
 
@@ -43,6 +49,7 @@ struct ThreadReaderPostRowModel: Equatable, Sendable {
     let authorName: String
     let metadata: String
     let document: ThreadContentDocument
+    let preparedBlocks: [PreparedThreadContentBlock]
     var inlineSubposts: [ThreadReaderSubpostRowModel]
     var remainingSubpostCount: Int
     var totalSubpostCount: Int
@@ -63,6 +70,7 @@ struct ThreadReaderPostRowModel: Equatable, Sendable {
         authorName = post.author.displayName
         metadata = TiebaDateText.monthDay(seconds: post.createdAtUnixSeconds, fallback: post.metadata)
         document = post.document
+        preparedBlocks = PreparedThreadContentBlock.make(post.document)
         inlineSubposts = post.subposts.prefix(3).map(
             ThreadReaderSubpostRowModel.init
         )

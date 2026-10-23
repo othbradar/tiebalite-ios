@@ -101,7 +101,7 @@ private struct ThreadReaderPostView: View {
                 if let title = post.title {
                     Text(title).font(Typography.font(.headline)).textSelection(.enabled)
                 }
-                ThreadContentRenderer(document: post.document, imageLoader: imageLoader,
+                ThreadContentRenderer(document: post.document, imageLoader: imageLoader, preparedBlocks: post.preparedBlocks,
                                       readingTextSize: readingTextSize, onOpenMedia: onOpenMedia,
                                       onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser,
                                       onBodyTap: { onReply(post) })
@@ -204,16 +204,9 @@ private struct ThreadReaderSubpostPreview: View {
     let onOpenSubposts: () -> Void
 
     var body: some View {
-        TiebaRichTextView(runs: runs, fontSize: 15, lineLimit: 4,
+        TiebaRichTextView(runs: subpost.previewRuns, fontSize: 15, lineLimit: 4,
                           onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser, onBodyTap: onOpenSubposts)
             .accessibilityIdentifier(ThreadReaderAccessibilityID.subpost(subpost.document.source))
-    }
-
-    private var runs: [TiebaRichTextRun] {
-        let prefix: [TiebaRichTextRun] = [.text(subpost.authorName + ": ", bold: true)]
-            + [.text(subpost.replyToDisplayName.map { "回复 \($0)：" } ?? "")]
-        let content = TiebaRichText.runs(nodes: subpost.document.nodes)
-        return prefix + (content.isEmpty ? [.text("回复内容暂不可用")] : content)
     }
 
 }

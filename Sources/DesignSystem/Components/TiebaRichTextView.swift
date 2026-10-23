@@ -62,6 +62,9 @@ private struct TiebaRichTextRepresentable: UIViewRepresentable {
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: TiebaSelectableTextView, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        #if UITESTING
+        ScrollWorkMetrics.count("text.proposal")
+        #endif
         let size = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
         return CGSize(width: width, height: ceil(size.height))
     }
@@ -73,6 +76,41 @@ final class TiebaSelectableTextView: UITextView, UITextViewDelegate {
     var onOpenUser: (UserProfileRoute) -> Void = { _ in }
     private var currentRuns: [TiebaRichTextRun] = []
     private var currentSize: CGFloat = 0
+    private var measuredSizes: [(TextSizeKey, CGSize)] = []
+
+    private struct TextSizeKey: Equatable {
+        let proposal: CGSize
+        let inset: UIEdgeInsets
+        let contentInset: UIEdgeInsets
+        let padding: CGFloat
+        let lines: Int
+        let breakMode: NSLineBreakMode
+        let direction: UIUserInterfaceLayoutDirection
+        let category: UIContentSizeCategory
+        let selectable: Bool
+    }
+
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        let key = TextSizeKey(proposal: size, inset: textContainerInset, contentInset: contentInset,
+                              padding: textContainer.lineFragmentPadding, lines: textContainer.maximumNumberOfLines,
+                              breakMode: textContainer.lineBreakMode, direction: effectiveUserInterfaceLayoutDirection,
+                              category: traitCollection.preferredContentSizeCategory, selectable: isSelectable)
+        if let cached = measuredSizes.first(where: { $0.0 == key }) {
+            #if UITESTING
+            ScrollWorkMetrics.count("text.cacheHit")
+            #endif
+            return cached.1
+        }
+        #if UITESTING
+        ScrollWorkMetrics.count("text.measure")
+        #endif
+        let measured = super.sizeThatFits(size)
+        if size.width.isFinite, size.width > 0, measured.height.isFinite {
+            if measuredSizes.count == 4 { measuredSizes.removeFirst() }
+            measuredSizes.append((key, measured))
+        }
+        return measured
+    }
     var onBodyTap: (() -> Void)? {
         didSet { bodyTap.update(in: self, enabled: onBodyTap != nil) }
     }
@@ -90,17 +128,25 @@ final class TiebaSelectableTextView: UITextView, UITextViewDelegate {
         adjustsFontForContentSizeCategory = false // SwiftUI ScaledMetric owns the selected reading size.
         dataDetectorTypes = []
         delegate = self
+        NotificationCenter.default.addObserver(self, selector: #selector(invalidateMeasuredText),
+                                               name: NSTextStorage.didProcessEditingNotification, object: textStorage)
         setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         linkTextAttributes = [.foregroundColor: UIColor.systemBlue]
     }
 
     required init?(coder: NSCoder) { nil }
 
+    @objc private func invalidateMeasuredText() { measuredSizes.removeAll(keepingCapacity: true) }
+    override var attributedText: NSAttributedString! { didSet { invalidateMeasuredText() } }
+    override var text: String! { didSet { invalidateMeasuredText() } }
+    deinit { NotificationCenter.default.removeObserver(self) }
+
     func apply(runs: [TiebaRichTextRun], pointSize: CGFloat, lineLimit: Int, interactive: Bool) {
         isSelectable = interactive
         isUserInteractionEnabled = interactive
         if textContainer.maximumNumberOfLines != lineLimit { textContainer.maximumNumberOfLines = lineLimit }
         guard runs != currentRuns || pointSize != currentSize else { return }
+        measuredSizes.removeAll(keepingCapacity: true)
         currentRuns = runs
         currentSize = pointSize
         attributedText = TiebaRichTextBuilder.build(runs: runs, font: .systemFont(ofSize: pointSize))

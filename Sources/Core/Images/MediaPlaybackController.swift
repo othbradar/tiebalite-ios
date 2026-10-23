@@ -7,7 +7,12 @@ import UIKit
 @MainActor @Observable
 final class MediaPlaybackController {
     static let shared = MediaPlaybackController()
-    private(set) var state = MediaPlaybackState()
+    @ObservationIgnored private(set) var state = MediaPlaybackState() {
+        didSet { presentation.update(state) }
+    }
+    let presentation = MediaPlaybackPresentation()
+    var status: MediaPlaybackPresentation.Status { presentation.status }
+    var progress: MediaPlaybackPresentation.Progress { presentation.progress }
     private(set) var player: AVPlayer?
     @ObservationIgnored private var itemObservation: NSKeyValueObservation?
     @ObservationIgnored private var playbackObservation: NSKeyValueObservation?

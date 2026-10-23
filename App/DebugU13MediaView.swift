@@ -12,7 +12,7 @@ struct DebugU13MediaView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.large) {
-                Text("\(playback.state.owner ?? "none") \(String(describing: playback.state.phase))")
+                Text("\(playback.status.owner ?? "none") \(String(describing: playback.status.phase))")
                     .accessibilityIdentifier("u13.state")
                 ThreadVoicePlayerView(owner: "fixture.voice1", source: local("voice.m4a"))
                 ThreadVoicePlayerView(owner: "fixture.voice2", source: local("voice.m4a"))
@@ -21,6 +21,7 @@ struct DebugU13MediaView: View {
                 ForEach(["gif", "webp"], id: \.self) { ext in
                     if let payload = images[ext], let image = payload.displayImage() {
                         AnimatedMediaImage(image: image, resource: payload.animation,
+                                           targetPixelSize: .init(width: 480, height: 320),
                                            unavailable: payload.animationUnavailable, reduceMotionOverride: reduceMotion) { frame in
                             Image(uiImage: frame).resizable().scaledToFit()
                         }

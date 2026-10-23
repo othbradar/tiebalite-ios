@@ -148,7 +148,9 @@ struct ThreadReaderView: View {
                     ThreadReaderAccessibilityID.scroll(snapshot.threadID),
                 restoredAnchor: store.readAnchor,
                 contentVersion: VirtualListContentRevision(owner: ObjectIdentifier(store), revision: store.listRevision,
-                                                           configuration: readingTextSize),
+                                                           configuration: ThreadReaderVisibilityConfiguration(
+                    textSize: readingTextSize, removals: ContentRemovalVisibility.shared.revision,
+                    users: LocalUserVisibility.shared.revision)),
                 initialRestorationScope: AnyHashable(ThreadReaderRestorationScope(
                     threadID: store.threadID, context: store.cacheContext, query: store.query)),
                 onPrefetch: { rowIDs in
@@ -164,8 +166,9 @@ struct ThreadReaderView: View {
                     if readingSession == store.readingSession { store.setReadAnchor(anchor) }
                 },
                 onRefresh: { if readingSession == store.readingSession { await store.reload() } },
+                refreshUnchangedContent: { $0.refreshActions(from: $1) },
                 rowContent: { configuredRow in
-                    ThreadReaderRowView(
+                    ThreadReaderVirtualRow(ThreadReaderRowView(
                         readingControls: store, replyPreferences: replyPreferences,
                         row: configuredRow.row,
                         imageLoader: imageLoader,
@@ -180,7 +183,7 @@ struct ThreadReaderView: View {
                         favoriteStore: favorites, bookmarkStore: bookmarks,
                         bookmarkTitle: snapshot.title, bookmarkForum: snapshot.forumName,
                         requestNextPage: requestNextPage
-                    ).environment(\.contentActions, contentActions)
+                    ), contentActions: contentActions)
                 }
             )
             .id(readingSession) // Only an explicit mode/page navigation starts a new list session.
@@ -242,7 +245,15 @@ struct ThreadReaderConfiguredRow: Identifiable, Equatable, Sendable {
     }
 }
 
+struct ThreadReaderProjectedRow {
+    let source: ThreadReaderRowModel
+    let presentedAt: Date
+    let displayed: ThreadReaderRowModel?
+}
+
 struct ThreadReaderConfiguredRows {
+    let projections: [ThreadReaderRowID: ThreadReaderProjectedRow]
+    let removedFloors: Int
     let revision: UInt64
     let textSize: ReadingTextSizePreference
     let rows: [ThreadReaderConfiguredRow]
@@ -334,4 +345,10 @@ private struct ThreadReaderRestorationScope: Hashable {
     let threadID: Int64
     let context: ContentCacheContext
     let query: ThreadReadingQuery
+}
+
+struct ThreadReaderVisibilityConfiguration: Hashable {
+    let textSize: ReadingTextSizePreference
+    let removals: UInt64
+    let users: UInt64
 }

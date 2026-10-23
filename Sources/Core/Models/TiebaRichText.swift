@@ -72,7 +72,10 @@ enum TiebaRichText {
     }
 
     static func runs(nodes: [ThreadContentNode]) -> [TiebaRichTextRun] {
-        nodes.flatMap { node -> [TiebaRichTextRun] in
+        #if UITESTING
+        ScrollWorkMetrics.count("text.runs")
+        #endif
+        return nodes.flatMap { node -> [TiebaRichTextRun] in
             switch node.payload {
             case let .text(text): parse(text.value)
             case let .emoji(emoji):

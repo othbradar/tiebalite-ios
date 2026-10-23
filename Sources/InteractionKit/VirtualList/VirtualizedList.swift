@@ -91,6 +91,7 @@ final class VirtualizedTableView: UITableView {
 
 @MainActor
 final class VirtualListHostingCell: UITableViewCell {
+    var configuredEnvironment: VirtualListUpdateVersion.Environment?
     var hasHostedContent = false
     var rowID: AnyHashable?
     var isDisplayed = false
@@ -135,6 +136,7 @@ where Item: Identifiable & Equatable & Sendable,
     let onScrollSettled: (Item.ID?) -> Void
     let onRefresh: (@MainActor () async -> Void)?
     let pendingRefresh: VirtualListRefreshCommit<Item>?
+    let refreshUnchangedContent: ((RowContent, RowContent) -> Bool)?
     @ViewBuilder let rowContent: (Item) -> RowContent
 
     init(
@@ -148,6 +150,7 @@ where Item: Identifiable & Equatable & Sendable,
         onScrollSettled: @escaping (Item.ID?) -> Void = { _ in },
         onRefresh: (@MainActor () async -> Void)? = nil,
         pendingRefresh: VirtualListRefreshCommit<Item>? = nil,
+        refreshUnchangedContent: ((RowContent, RowContent) -> Bool)? = nil,
         @ViewBuilder rowContent: @escaping (Item) -> RowContent
     ) {
         self.contentVersion = contentVersion
@@ -160,6 +163,7 @@ where Item: Identifiable & Equatable & Sendable,
         self.onScrollSettled = onScrollSettled
         self.onRefresh = onRefresh
         self.pendingRefresh = pendingRefresh
+        self.refreshUnchangedContent = refreshUnchangedContent
         self.rowContent = rowContent
     }
 

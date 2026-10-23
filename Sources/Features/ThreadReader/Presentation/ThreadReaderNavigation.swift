@@ -6,15 +6,32 @@ extension ThreadReaderStore {
         let removals = ContentRemovalVisibility.shared
         let removalChanged = removals.readerChanged(self)
         let changed = visibility.readerChanged(self) || removalChanged
-        let removedFloors = (listPresentation?.rows ?? []).filter { $0.post.map { removals.contains($0.source) } == true }.count
         if !changed, let cached = configuredRowsCache, cached.revision == listRevision, cached.textSize == textSize { return cached.rows }
+        let removedFloors = (listPresentation?.rows ?? []).reduce(into: 0) { count, row in
+            #if UITESTING
+            ScrollWorkMetrics.count("row.removalScan")
+            #endif
+            if row.post.map({ removals.contains($0.source) }) == true { count += 1 }
+        }
+        let previous = !changed && configuredRowsCache?.removedFloors == removedFloors ? configuredRowsCache?.projections : nil
+        var projections: [ThreadReaderRowID: ThreadReaderProjectedRow] = [:]
         let rows = (listPresentation?.rows ?? []).compactMap { row -> ThreadReaderConfiguredRow? in
+            let presentedAt = row.post.map { listPresentation?.presentedAt(postID: $0.source.postID) ?? .distantPast } ?? .distantPast
+            if let cached = previous?[row.id], cached.source == row, cached.presentedAt == presentedAt {
+                projections[row.id] = cached
+                return cached.displayed.map { ThreadReaderConfiguredRow(row: $0, readingTextSize: textSize) }
+            }
             var displayed = row
             if case var .post(post) = row.content {
-                guard !visibility.ids.contains(post.author.rawUserID), !removals.contains(post.source) else { return nil }
+                #if UITESTING
+                ScrollWorkMetrics.count("row.projection")
+                #endif
+                guard !visibility.ids.contains(post.author.rawUserID), !removals.contains(post.source) else {
+                    projections[row.id] = .init(source: row, presentedAt: presentedAt, displayed: nil)
+                    return nil
+                }
                 if let count = post.replyCount { post.replyCount = max(0, count - Int32(removedFloors)) }
                 let visibleRemoved = post.inlineSubposts.filter { removals.contains($0.document.source) }.map { $0.document.source.postID }
-                let presentedAt = listPresentation?.presentedAt(postID: post.source.postID) ?? .distantPast
                 let removedReplies = Set(visibleRemoved).union(removals.removedSubposts(
                     thread: post.source.threadID, parent: post.source.postID, after: presentedAt
                 ))
@@ -24,9 +41,11 @@ extension ThreadReaderStore {
                 post.inlineSubposts.removeAll { visibility.ids.contains($0.author.rawUserID) }
                 displayed = .init(id: row.id, content: .post(post))
             }
+            projections[row.id] = .init(source: row, presentedAt: presentedAt, displayed: displayed)
             return ThreadReaderConfiguredRow(row: displayed, readingTextSize: textSize)
         }
-        configuredRowsCache = .init(revision: listRevision, textSize: textSize, rows: rows)
+        configuredRowsCache = .init(projections: projections, removedFloors: removedFloors, revision: listRevision,
+                                    textSize: textSize, rows: rows)
         configuredRowsBuildCount += 1
         return rows
     }

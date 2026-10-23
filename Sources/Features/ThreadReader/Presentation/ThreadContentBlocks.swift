@@ -13,6 +13,9 @@ enum ThreadContentBlock: Identifiable, Equatable, Sendable {
     }
 
     static func make(_ nodes: [ThreadContentNode]) -> [Self] {
+        #if UITESTING
+        ScrollWorkMetrics.count("text.blocks")
+        #endif
         var blocks: [Self] = []
         var images: [ThreadContentNode] = []
         var inline: [ThreadContentNode] = []
@@ -39,5 +42,19 @@ enum ThreadContentBlock: Identifiable, Equatable, Sendable {
         guard let source = nodes.first?.id.source else { return nil }
         return ThreadContentDocument(source: source, availability: .available, nodes: nodes, poll: nil)
             .mediaIntent(selecting: id)
+    }
+}
+
+/// Owned by the immutable presentation row; text parsing is independent of fonts and callbacks.
+struct PreparedThreadContentBlock: Identifiable, Equatable, Sendable {
+    let block: ThreadContentBlock
+    let runs: [TiebaRichTextRun]
+    var id: ThreadContentNodeID? { block.id }
+    static func make(_ document: ThreadContentDocument) -> [Self] {
+        ThreadContentBlock.make(document.nodes).map { block in
+            let runs: [TiebaRichTextRun]
+            if case let .richText(nodes) = block { runs = TiebaRichText.runs(nodes: nodes) } else { runs = [] }
+            return Self(block: block, runs: runs)
+        }
     }
 }

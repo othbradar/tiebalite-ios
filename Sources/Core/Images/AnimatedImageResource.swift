@@ -34,26 +34,9 @@ struct AnimatedImageResource: Sendable {
     }
 
     func frame(at index: Int, maximumDimension: Int) async throws -> AnimatedImageFrame {
-        try await ImageDecodeExecutor.run {
-            guard (0..<frameCount).contains(index),
-                  let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
-                  let image = CGImageSourceCreateThumbnailAtIndex(source, index, [
-                    kCGImageSourceCreateThumbnailFromImageAlways: true,
-                    kCGImageSourceCreateThumbnailWithTransform: true,
-                    kCGImageSourceShouldCacheImmediately: true,
-                    kCGImageSourceThumbnailMaxPixelSize: min(1_024, max(1, maximumDimension))
-                  ] as CFDictionary) else { throw ImageLoadingError.decodingFailed }
-            let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any]
-            let timing = properties?[kCGImagePropertyGIFDictionary] as? [CFString: Any]
-                ?? properties?[kCGImagePropertyWebPDictionary] as? [CFString: Any]
-            let delay = timing?[kCGImagePropertyGIFUnclampedDelayTime] as? NSNumber
-                ?? timing?[kCGImagePropertyWebPUnclampedDelayTime] as? NSNumber
-                ?? timing?[kCGImagePropertyGIFDelayTime] as? NSNumber
-                ?? timing?[kCGImagePropertyWebPDelayTime] as? NSNumber
-            let seconds = delay?.doubleValue ?? 0.1
-            return AnimatedImageFrame(image: UIImage(cgImage: image), delay: seconds >= 0.02 ? seconds : 0.1)
-        }
+        try await AnimatedImageDecoder(resource: self).frame(at: index, maximumDimension: maximumDimension)
     }
+
 }
 
 struct AnimatedImageFrame: Sendable {

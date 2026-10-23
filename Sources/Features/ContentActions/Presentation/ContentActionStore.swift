@@ -18,6 +18,10 @@ final class ContentActionStore {
     @ObservationIgnored private let account: @MainActor () async throws -> Int64
     @ObservationIgnored private let visibility: ContentRemovalVisibility
     @ObservationIgnored private var scope: ContentCacheContext?
+    private struct PreparationKey: Hashable { let target: ContentActionTarget; let authorID: Int64 }
+    @ObservationIgnored private var preparations: [PreparationKey: (id: UInt64, task: Task<Void, Never>)] = [:]
+    @ObservationIgnored private var preparedNonOwners = Set<PreparationKey>()
+    @ObservationIgnored private var preparationSequence: UInt64 = 0
     @ObservationIgnored private var tasks: [ContentActionTarget: Task<Void, Never>] = [:]
 
     init(repository: any ContentActionRepository, ledger: ContentRemovalRepository,
@@ -35,20 +39,53 @@ final class ContentActionStore {
     func sessionChanged() {
         guard scope != context() else { return }
         tasks.values.forEach { $0.cancel() }; tasks = [:]; busy = []
+        preparations.values.forEach { $0.task.cancel() }; preparations = [:]; preparedNonOwners = []
         likes = [:]; permissions = [:]; uncertain = []; pendingDeletion = nil; feedback = nil; needsLogin = false
         scope = context()
     }
     /// Cached author UID only narrows candidates; fresh native inspection grants permission.
     func prepareDeletion(_ target: ContentActionTarget, authorID: Int64) async {
         sessionChanged()
-        guard authorID > 0, permissions[target] == nil, !visibility.targets.contains(target) else { return }
-        await run(target, silent: true) {
-            guard try await self.account() == authorID else { return }
-            let info = try await self.repository.inspect(target)
-            try self.validateAccount(info)
-            if info.canDelete { self.permissions[target] = info }
+        let key = PreparationKey(target: target, authorID: authorID)
+        guard !Task.isCancelled, target.isValid, authorID > 0, permissions[target] == nil, !busy.contains(target),
+              !visibility.targets.contains(target), !preparedNonOwners.contains(key) else { return }
+        if let existing = preparations[key] {
+            #if UITESTING
+            ScrollWorkMetrics.count("preparation.join")
+            #endif
+            await existing.task.value
+            return
         }
+        let expected = context()
+        preparationSequence &+= 1
+        let sequence = preparationSequence
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { if preparations[key]?.id == sequence { preparations[key] = nil } }
+            do {
+                let accountID = try await account()
+                try Task.checkCancellation()
+                guard scope == expected, context() == expected else { return }
+                guard accountID == authorID else {
+                    if preparedNonOwners.count >= 512 { preparedNonOwners.removeAll(keepingCapacity: true) }
+                    preparedNonOwners.insert(key)
+                    return
+                }
+                let info = try await repository.inspect(target)
+                try validateAccount(info)
+                guard scope == expected else { return }
+                if info.canDelete, !busy.contains(target), !visibility.targets.contains(target) { permissions[target] = info }
+            } catch {
+                // Read-only candidate preparation is silent; cancellation/errors remain retryable.
+                return
+            }
+        }
+        preparations[key] = (sequence, task)
+        // Store-owned read-only preparation survives one row disappearing while another
+        // consumer still needs it. Session changes cancel it; writes keep their own busy lifetime.
+        await task.value
     }
+
     func askToDelete(_ target: ContentActionTarget) {
         sessionChanged()
         guard !busy.contains(target), !uncertain.contains(target), let info = permissions[target], info.canDelete else { return }

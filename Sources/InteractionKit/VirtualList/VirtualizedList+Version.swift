@@ -51,6 +51,18 @@ extension VirtualizedList.Coordinator {
 
     func configure(_ cell: VirtualListHostingCell, with item: Item) {
         let content = parent.rowContent(item)
+        let environment = applyingVersion?.environment ?? completedVersion?.environment
+        if cell.rowID == AnyHashable(item.id), cell.hasCurrentConfiguration?() == true,
+           cell.configuredEnvironment == environment,
+           let holder = cell.hostedContent as? VirtualListCellContent<RowContent>,
+           let binding = holder.binding, binding.rowID == AnyHashable(item.id),
+           parent.refreshUnchangedContent?(binding.content, content) == true {
+            #if UITESTING
+            ScrollWorkMetrics.count("cell.actionsOnly")
+            #endif
+            return
+        }
+        cell.configuredEnvironment = environment
         cell.rowID = AnyHashable(item.id)
         cell.hasCurrentConfiguration = { [weak self] in self?.itemsByID[item.id] == item }
         let holder: VirtualListCellContent<RowContent>
@@ -64,6 +76,9 @@ extension VirtualizedList.Coordinator {
         let binding = holder.bind(rowID: AnyHashable(item.id), content: content)
         // Publishing through an observed holder defers the new row's geometry.
         // A compatible value configuration updates the existing host before sizing.
+        #if UITESTING
+        ScrollWorkMetrics.count("cell.hostConfiguration")
+        #endif
         cell.contentConfiguration = UIHostingConfiguration { VirtualListCellRoot(binding: binding) }
             .margins(.all, 0)
             .background { Color.clear }

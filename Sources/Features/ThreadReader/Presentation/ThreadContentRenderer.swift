@@ -8,6 +8,7 @@ private enum ThreadContentLayout {
 @MainActor
 struct ThreadContentRenderer: View {
     let document: ThreadContentDocument
+    let preparedBlocks: [PreparedThreadContentBlock]
     let imageLoader: any ImageLoading
     let readingTextSize: ReadingTextSizePreference
     let onOpenMedia: (ThreadMediaIntent) -> Void
@@ -18,6 +19,7 @@ struct ThreadContentRenderer: View {
     init(
         document: ThreadContentDocument,
         imageLoader: any ImageLoading,
+        preparedBlocks: [PreparedThreadContentBlock]? = nil,
         readingTextSize: ReadingTextSizePreference = .standard,
         onOpenMedia: @escaping (ThreadMediaIntent) -> Void = { _ in },
         onOpenExternalLink: @escaping (ExternalLinkIntent) -> Void = { _ in },
@@ -25,6 +27,7 @@ struct ThreadContentRenderer: View {
         onBodyTap: (() -> Void)? = nil
     ) {
         self.document = document
+        self.preparedBlocks = preparedBlocks ?? PreparedThreadContentBlock.make(document)
         self.imageLoader = imageLoader
         self.readingTextSize = readingTextSize
         self.onOpenMedia = onOpenMedia
@@ -60,8 +63,8 @@ struct ThreadContentRenderer: View {
         if document.isVisiblyEmpty {
             ThreadEmptyContentView()
         } else {
-            ForEach(ThreadContentBlock.make(document.nodes)) { block in
-                switch block {
+            ForEach(preparedBlocks) { prepared in
+                switch prepared.block {
                 case let .node(node):
                     ThreadContentNodeView(
                         node: node, document: document, imageLoader: imageLoader,
@@ -70,7 +73,7 @@ struct ThreadContentRenderer: View {
                     )
                 case let .richText(nodes):
                     TiebaRichTextView(
-                        runs: TiebaRichText.runs(nodes: nodes), fontSize: readingFontSize,
+                        runs: prepared.runs, fontSize: readingFontSize,
                         onOpenExternalLink: onOpenExternalLink, onOpenUser: onOpenUser, onBodyTap: onBodyTap
                     )
                     .accessibilityIdentifier(nodes.first.map { ThreadContentAccessibilityID.node($0.id) } ?? "thread-content.text")
@@ -304,7 +307,8 @@ private struct ThreadContentImageView: View {
     private var phaseContent: some View {
         switch currentRenderState {
         case let .rendered(_, image, animation, unavailable):
-            AnimatedMediaImage(image: image, resource: animation, unavailable: unavailable, allowsPlaybackControl: false) { frame in
+            AnimatedMediaImage(image: image, resource: animation, targetPixelSize: targetPixelSize,
+                               unavailable: unavailable, allowsPlaybackControl: false) { frame in
                 Image(uiImage: frame).resizable().scaledToFit()
             }
         case .failedToFetch, .failedToDecode:

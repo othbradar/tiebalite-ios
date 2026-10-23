@@ -82,7 +82,8 @@ struct MediaViewerPage: View {
             )
         case .rendered:
             if let image {
-                AnimatedMediaImage(image: image, resource: imageState.animation, unavailable: imageState.animationUnavailable,
+                AnimatedMediaImage(image: image, resource: imageState.animation, targetPixelSize: targetPixelSize,
+                                   unavailable: imageState.animationUnavailable,
                                    isCurrent: isCurrent, reduceMotionOverride: reduceMotion) { frame in
                 MediaZoomImageView(
                     mediaID: item.id,
