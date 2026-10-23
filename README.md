@@ -6,12 +6,6 @@
 
 [下载 IPA](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta7) · [SideStore 订阅源](https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json) · [更新说明](Docs/Releases/v0.2.0beta7.md) · [反馈问题](https://github.com/othbradar/tiebalite-ios/issues)
 
-## 本版更新
-
-改善帖子楼层的慢速滚动：修复 Cell 复用期间的半秒停顿和带图楼层位置跳动，减少正文、楼中楼及媒体的重复处理。用户已在实机安装候选包，反馈比此前顺滑。本版保留已验收的回复方式、搜索、缓存和图片保存，发送协议未改动。
-
-App 真实版本递增至 **0.2.1**，让 SideStore 可以识别旧版 **0.2.0** 到新版的更新。完整验证范围见 [滚动修复审计](Docs/Audits/THREAD_SCROLL_FLUENCY_FIX_2026_10_23.md) 与 [发布记录](Docs/Audits/RELEASE_0_2_0_BETA_7.md)。
-
 ## 当前界面
 
 以下是 2026-10-23 使用 **0.2.1 / Build 20 正常 Live App** 拍摄的模拟器截图，展示公开内容；不是旧版截图或 Fixture 页面。点击图片查看原图。[设备与采集说明](Docs/Screenshots/v0.2.0beta7/README.md)

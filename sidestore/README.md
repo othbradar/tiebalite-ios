@@ -16,16 +16,16 @@ https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.
 
 首个版本为 `v0.2.0beta6`，IPA 内实际 `CFBundleShortVersionString=0.2.0`、`CFBundleVersion=19`。源如实使用 `version=0.2.0`、`buildVersion=19`，没有修改发布附件。Release 标签只用于显示及定位下载，不作为 IPA 版本。
 
-后续每个公开 Beta **也必须递增数值型 MARKETING_VERSION**，并增加 Build。例如 beta7 的 IPA 可为 `0.2.1 / 20`，下个 Beta 为 `0.2.2 / 21`，之后正式版采用更高版本（如 `0.3.0`）。标签可继续叫 `v0.2.0beta7`，但发布说明应明确实际 App 版本。不要重复 `0.2.0` 仅增加 Build，不要只改 JSON 为 `0.2.0-beta.7` 或 `0.2.0+20`：前者不触发可靠更新，后者与 IPA 不符会被校验拒绝。
+当前发布为 **v0.2.0beta7，实际 App 版本 `0.2.1 / 20`**，源中保留beta6的 `0.2.0 / 19` 历史。每个后续公开 Beta **也必须递增数值型 MARKETING_VERSION**，并增加 Build，例如下个Beta为 `0.2.2 / 21`，之后正式版采用更高版本（如 `0.3.0`）。Release标签与实际App版本分别列明。不要重复 `0.2.0` 仅增加 Build，不要只改 JSON 为 `0.2.0-beta.7` 或 `0.2.0+20`：前者不触发可靠更新，后者与 IPA 不符会被校验拒绝。
 
-目前源中的 beta6 对已安装同营销版本的 beta5 **不保证显示更新**；可通过源中的安装操作尝试覆盖为 beta6。beta6 到下一次真实 `0.2.1` 的更新在已核对代码路径上可被检测。无需也不应该重打包旧版解决这个历史限制。
+beta5和beta6历史上使用同一营销版本，因此两者之间不保证显示更新。本次beta7的真实 `0.2.1` 大于旧版 `0.2.0`，满足已核对代码路径的版本更新条件；刷新Sources后可在My Apps检查Update。无需重打包旧版解决历史限制。
 
 ## 更新源
 
 使用 Python 3.12+，无第三方运行依赖：
 
 ```bash
-python scripts/update_sidestore_source.py --tag v0.2.0beta6
+python scripts/update_sidestore_source.py --tag v0.2.0beta7
 python scripts/update_sidestore_source.py --check
 python -m unittest discover -s scripts -p test_sidestore_source.py -v
 ```
@@ -38,4 +38,4 @@ python -m unittest discover -s scripts -p test_sidestore_source.py -v
 
 ## 验证边界
 
-实际验证及上游源码定位见 [SideStore 发布审计](../Docs/Audits/SIDESTORE_SOURCE.md)。已验证 IPA 字节、JSON、版本顺序、幂等和更新规则；没有连接物理 iPhone/iPad，没有执行 Apple ID 签名、安装、覆盖保留数据或 SideStore 原生 CoreData 解码测试。测试中对更新判断的验证是针对已核对源码的数值版本分支，并非运行 SideStore App。
+实现及上游源码定位见 [SideStore 发布审计](../Docs/Audits/SIDESTORE_SOURCE.md)，当前发布与线上回读见 [beta7 发布记录](../Docs/Audits/RELEASE_0_2_0_BETA_7.md)。已验证线上 IPA 字节、JSON、版本顺序、幂等、更新规则及Release触发的源更新任务。本轮未在物理设备执行SideStore的Apple ID签名、源关联、安装或更新，也未运行SideStore原生CoreData解码测试；数值版本分支验证不等于实机更新提示已亲测。

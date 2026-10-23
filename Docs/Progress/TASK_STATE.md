@@ -1,8 +1,9 @@
-# 2026-10-23 — beta7 发布准备（用户授权提交、推送及发布）
+# 2026-10-23 — beta7 已提交、推送并发布
 
 - SF-00～08已提交9924674，正常合并远端SideStore自动化为7e537f6，保留双方历史。
-- App版本0.2.1/20，tag计划v0.2.0beta7；完整设备Release归档、隔离及IPA逐项检查通过。用户此前实机已确认候选更顺滑。
-- README更新当前功能及4张正常Live实图，包含iPad；原iPhone/iPad均覆盖安装保留数据。线上发布与SideStore源更新继续执行，详情见Docs/Audits/RELEASE_0_2_0_BETA_7.md。
+- 发布源码与标签v0.2.0beta7为9883efc；App实际版本0.2.1/20，完整设备Release归档、隔离及IPA逐项检查通过。GitHub Pre-release已公开，线上IPA与本地逐字节一致：5,029,123 bytes，SHA256 cb66f3c67e7ba39ad7103ac77a2347efe08ebf19708f2324b5529e39986c1042。用户此前实机已确认候选更顺滑。
+- README已更新当前功能及3张iPhone、1张iPad正常Live实图，在线渲染已检查；原iPhone/iPad均覆盖安装保留数据。Release触发的SideStore任务成功，机器人提交ec10eda已同步原源地址，0.2.1/20排首位且保留0.2.0/19。在线源与本地一致，两次基于线上IPA的更新均零diff，--check及7项回归通过；未声称已实测物理设备SideStore更新提示。
+- 按用户追加要求删除README的“本版更新”整段，变更说明保留在Release页面。发布及来源回执见[beta7审计](../Audits/RELEASE_0_2_0_BETA_7.md)。本轮复用已验收72项Unit及19项UI，未重跑全历史quality；既有forbidden失败边界保留。无新增生产手势/动画/overlay/依赖、无发送协议修改、无真实贴吧写操作。用户无关未跟踪资料保留，不进入其他阶段。
 
 ## 2026-10-23 SF-00–SF-08 — USER_ACCEPTED_DEVICE / 提交与发布授权
 
