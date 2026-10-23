@@ -28,6 +28,12 @@
 - 本轮15秒 Live sample 命令成功，但 CUA 输入进入楼中楼/编辑器、未维持主帖慢拖窗口，整份排除，不用于性能结论。已取消空编辑器并返回原帖，无输入/发送。没有新增有效真机FPS；未运行 Unit/UI/构建/quality，因为仅写文档。`make secret-scan`、`git diff --check` 已通过；审计新文件额外检查在交付记录中列明。
 - 仅改审计与本进度记录。生产/测试/协议、用户未跟踪资料和现有正常 App 保持；无新动画、手势、overlay、依赖，没有暂存、提交、推送、清数据或新阶段实施。下一步按任务表先建立当前版本的定向计数/回归，再单项修复。
 
+## 2026-10-21 SideStore — 源实现与发布验证
+
+- 当前任务授权实现/发布软件源及回复Issue #1；新增sidestore/source.json、维护说明、Python更新/7项回归和Release/手动/定时Actions。首版保留原beta6 IPA，真实0.2.0/19，不修改既有发布或业务代码。
+- 已核对SideStore develop及latest 0.7.0-alpha更新逻辑：仅增加Build不能可靠触发；维护脚本拒绝同营销版本的新附件，后续IPA必须使用更大的数值营销版本（如0.2.1/20）。源字段不能伪造beta版本。
+- 实际下载beta6并校验大小/SHA256/Info.plist，JSON及7项定向测试通过；quality-fast/quality因现有技能配置缺失在instructions失败。真机签名安装、关联与更新按钮NOT_TESTED，详见Docs/Audits/SIDESTORE_SOURCE.md。无新增动画、手势、overlay或生产依赖。
+
 ## 2026-10-21 P05 — USER_ACCEPTED / 本地提交授权
 
 - 用户明确要求“现在提交”。本次纳入已验收的 Cell 绑定/释放与行高估算修复、对应直接回归、契约/ADR和审计记录，共17个文件；其他未跟踪提示词、技能配置、缓存与ignored IPA产物保留原状。提交范围不含推送、发布或下一阶段。

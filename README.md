@@ -4,6 +4,10 @@ TiebaLite iOS 是一个非官方的 iOS/iPadOS 贴吧客户端，提供阅读、
 
 本轮发布 v0.2.0beta6，更新与安装方式见 [版本说明](Docs/Releases/v0.2.0beta6.md)。此前收藏、媒体及内容操作更新见 [Beta 5 版本说明](Docs/Releases/v0.2.0beta5.md)，当前验证进度见 [任务记录](Docs/Progress/TASK_STATE.md)。
 
+## SideStore 安装与更新
+
+在 SideStore 的 Sources 中添加 [订阅源](https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json)。支持 iOS/iPadOS 18.0+，直接使用 GitHub Release 未签名 IPA。安装、覆盖更新与版本规则见 [使用说明](sidestore/README.md)。真机签名/安装尚未完成本轮验证。
+
 ## 已实现
 
 - 用户可见的 WKWebView 登录、Keychain 会话保存和冷启动恢复；
