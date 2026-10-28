@@ -1,6 +1,6 @@
 # v0.2.0beta8 发布记录
 
-状态：READY_TO_PUBLISH，2026-10-28。用户明确授权提交、推送与发布新IPA；完成线上回读后另记最终回执。
+状态：PUBLISHED / VERIFIED，2026-10-28。用户明确授权提交、推送与发布新IPA；发布、附件回下载和SideStore源更新校验已完成。
 
 ## 范围与来源
 
@@ -33,4 +33,16 @@ IPA：`TiebaLite-0.2.0beta8-ios18-arm64-unsigned.ipa`，5,050,044 bytes，SHA256
 
 - GitHub连接器没有Release/二进制附件发布工具；gh未登录。jshook尝试连接现有Chrome返回DevToolsActivePort缺失，未改浏览器权限或读取凭据；使用已登录Chrome原生界面完成发布。
 - 定稿Release正文并上传完整IPA+SHA256SUMS后再发布Pre-release；源脚本将正文也作为不可变版本元数据，发布后不随意修改。
-- 线上IPA、源与机器人提交在发布后核验；未在物理设备执行SideStore签名、关联及Update按钮流程。无新增手势、动画、overlay、依赖，不扩张发送协议。
+- 线上IPA、源与机器人提交已在发布后核验；未在物理设备执行SideStore签名、关联及Update按钮流程。无新增手势、动画、overlay、依赖，不扩张发送协议。
+
+
+## 公开发布回执
+
+- 修复与发布准备提交 `311dfa407afbcd0a6c6083c794b30c935aad0212`，注释标签 `v0.2.0beta8`，通过SSH原子推送到main及远端tag。806项生产构建输入逐一匹配该提交，见committed-source-proof.json；标签不随后续文档移动。
+- [GitHub Release](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta8)于2026-10-28 13:03:23 UTC公开，Release ID426675896，draft=false、prerelease=true。发布页确认标签、提交和正文；附件均为uploaded，发布说明规范化换行后与本地定稿一致。
+- 线上IPA和SHA256SUMS重新下载后与本地逐字节一致。IPA大小5,050,044 bytes、SHA256如上，包内真实版本0.2.2/21，ZIP CRC通过。SHA256SUMS大小112 bytes，SHA256 `4d6adf7621f724fb464cabf58b51d9f38383a3cc42e78bc5f6b97ab6639ba14b`。GitHub附件digest与本地计算一致，证据为published-release.json、published-asset-verification.json及downloaded/。
+- Release触发的[SideStore任务40692991742](https://github.com/othbradar/tiebalite-ios/actions/runs/40692991742)已成功，机器人提交 `5ddd529`仅更新sidestore/source.json；本地fetch后fast-forward同步，未重写历史。
+- [原线上源](https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json)回读与本地相同。首项0.2.2/21的下载URL、大小、SHA256、系统要求取自公开IPA，保留0.2.1/20和0.2.0/19；顶层兼容字段同步。
+- 使用公开Release JSON及回下载IPA运行源生成两次均exit0、两次git diff --exit-code均0；--check与7项Python回归再次通过。source-verification.json记录结果。未亲测物理设备SideStore更新提示或签名。
+- 首次发布表单在推送前已缓存旧标签列表，刷新后正确选择beta8；macOS附件对话框首次粘贴路径未生效，改用AX setValue明确路径并核对两个选中文件后上传。未上传日志、archive、私人资料或不相关文件。
+- 本轮所有任务改动已获用户提交/推送授权；无关未跟踪提示词和缓存继续保留。无发送协议修改、真实贴吧写入、清数据、卸载或新阶段工作。
