@@ -210,10 +210,9 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
             let page = try await load()
             try Task.checkCancellation()
             guard await isValid(ticket), revocations[key, default: 0] == revision else { throw CancellationError() }
-            let locator = (page as? ThreadReaderSnapshot).flatMap { snapshot in
-                locator.page == 0 && locator.postID > 0
-                    ? ReadingPageLocator(page: snapshot.currentPage, postID: locator.postID) : nil
-            } ?? locator
+            // A PID lookup is a location window, not an authoritative page. Keep it
+            // out of the ordinary page manifest; the reader loads the canonical page next.
+            if page is ThreadReaderSnapshot, locator.page == 0, locator.postID > 0 { return page }
             if priority == .speculative {
                 let existing = await manifest(key)
                 // A speculative refresh cannot invalidate the locator/chain used by a saved reading session.
@@ -269,11 +268,9 @@ actor CachedReadingRepository: ReadingContentCacheAccess, ThreadContentPrefetchi
             } else { runs.append([page]) }
         }
         guard await isValid(ticket), let pages = runs.first(where: { run in
-            run.contains { $0.locator == manifest.position?.locator }
+            run.contains { $0.restoredPosition(from: manifest.position) != nil }
         }) ?? runs.first else { return nil }
-        let position = manifest.position.flatMap { position in
-            pages.contains { $0.locator == position.locator } ? position : nil
-        }
+        let position = pages.lazy.compactMap { $0.restoredPosition(from: manifest.position) }.first
         await scheduler.cacheHit()
         return .init(pages: pages, position: position, ticket: ticket,
                      isFresh: pages.allSatisfy { now.timeIntervalSince($0.fetchedAt) < 300 })

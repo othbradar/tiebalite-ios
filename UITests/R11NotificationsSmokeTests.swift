@@ -37,7 +37,7 @@ final class R11NotificationsSmokeTests: XCTestCase {
             add(hierarchy)
             let target = reader.textViews["thread-reader.content.node.t8001.p9001.spost.n0"]
             XCTAssertTrue(target.isHittable)
-            XCTAssertLessThan(target.frame.minY, reader.frame.minY + 180, "Reply must scroll near the top")
+            assertTargetAlignedOrAtEnd(target, in: reader)
             let firstPost = app.textViews["thread-reader.content.node.t8001.p18001.sfirstPost.n0"]
             for _ in 0..<5 {
                 if firstPost.exists, !firstPost.frame.isEmpty, reader.frame.contains(firstPost.frame), firstPost.isHittable { break }
@@ -141,6 +141,17 @@ final class R11NotificationsSmokeTests: XCTestCase {
                 list.swipeUp()
             }
         }
+    }
+
+    @MainActor private func assertTargetAlignedOrAtEnd(_ target: XCUIElement, in reader: XCUIElement) {
+        XCTAssertTrue(reader.frame.contains(target.frame), "The exact reply body must be visible")
+        if target.frame.minY < reader.frame.minY + 180 { return }
+        // On the tall iPad viewport, page 1 ends before floor 7 can reach the top.
+        // Prove UIKit reached the real content end; merely being hittable is insufficient.
+        let end = reader.cells.containing(.button, identifier: "thread-reader.pagination.load-more.t8001").firstMatch
+        XCTAssertTrue(end.exists && end.isHittable, "A lower target is valid only when the page end is visible")
+        XCTAssertEqual(end.frame.maxY, reader.frame.maxY, accuracy: 1,
+                       "Reply must align near the top or be clamped exactly to the page end")
     }
 
     @MainActor private func reveal(_ row: XCUIElement, in list: XCUIElement) {

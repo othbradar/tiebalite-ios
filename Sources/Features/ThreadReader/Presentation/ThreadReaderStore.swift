@@ -50,6 +50,7 @@ final class ThreadReaderStore {
     @ObservationIgnored var cacheTicket: ReadingCacheTicket?
     @ObservationIgnored private var checkpointTask: Task<Void, Never>?
     @ObservationIgnored var loadedPages: [(ReadingPageLocator, ThreadReaderSnapshot)] = []
+    @ObservationIgnored var pagesNeedingConfirmation: [Int: ThreadReaderSnapshot] = [:]
     @ObservationIgnored var contentContext: ContentCacheContext
     @ObservationIgnored private var refreshing = false
     @ObservationIgnored private var restoring = false
@@ -88,7 +89,6 @@ final class ThreadReaderStore {
     }
 
 }
-
 extension ThreadReaderStore {
     func loadIfNeeded() async {
         if contentContext != cacheContext {
@@ -98,6 +98,7 @@ extension ThreadReaderStore {
             listPresentation = nil
             readAnchor = nil
             loadedPages = []
+            pagesNeedingConfirmation = [:]
             loadedPostIDs = []
             cacheTicket = nil
             followedReceipt = nil
@@ -105,6 +106,8 @@ extension ThreadReaderStore {
             hasCompletedInitialLoad = false
             hasClaimedDisplayedThread = false
         }
+        if hasCompletedInitialLoad, !restoring, activeGeneration == nil,
+           await repairLegacyLocatedPagesIfNeeded() { return }
         guard !hasCompletedInitialLoad, !restoring,
               activeGeneration == nil else {
             return
@@ -121,6 +124,7 @@ extension ThreadReaderStore {
             restoring = false
             if let reading, let last = reading.pages.last {
                 loadedPages = reading.pages.map { ($0.locator, $0.value) }
+                rememberUnconfirmedPages(reading)
                 replyPosts = reading.replyPosts
                 let snapshot = assembledPages(metadata: last.value)
                 loadedPostIDs = Set(snapshot.posts.map(\.id.postID))
@@ -131,17 +135,18 @@ extension ThreadReaderStore {
                     readAnchor = listPresentation?.rows.first { $0.post?.source.postID == position.postID }?.id
                 }
                 hasCompletedInitialLoad = true
+                if await repairLegacyLocatedPagesIfNeeded() { return }
                 if !reading.isFresh { await reload() }
                 return
             }
         }
         await replaceInitialLoad()
     }
-
     func reload() async {
         replyTask?.cancel()
         replyTask = nil
         prefetch?.cancel()
+        if await repairLegacyLocatedPagesIfNeeded() { return }
         guard let retained = state.snapshot else { await replaceInitialLoad(); return }
         loadTask?.cancel()
         refreshing = true
@@ -150,7 +155,6 @@ extension ThreadReaderStore {
         await startLoad(request: .init(threadID: threadID, pageNumber: locator.page, postID: locator.postID, query: query),
                         retained: retained, loadingState: .loaded(retained))
     }
-
     func loadNextPage() async {
         guard !isNavigating, activeGeneration == nil, replyTask == nil,
               let retained = state.snapshot,

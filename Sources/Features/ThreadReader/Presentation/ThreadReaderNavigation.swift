@@ -89,6 +89,25 @@ extension ThreadReaderStore {
         await navigate(query: .init(), page: 0, postID: postID)
     }
 
+    private func completeLocatedPage(_ window: ThreadReaderSnapshot, postID: Int64, query: ThreadReadingQuery,
+                                     ticket: ReadingCacheTicket?) async throws -> (ReadingPageLocator, ThreadReaderSnapshot) {
+        guard window.threadID == threadID, window.currentPage > 0,
+              window.posts.contains(where: { $0.id.postID == postID }) else { throw ThreadReaderLoadFailure.unavailable }
+        let cache = repository as? any ReadingContentCacheAccess
+        try Task.checkCancellation()
+        if let ticket, await cache?.isValid(ticket) != true { throw CancellationError() }
+        let locator = ReadingPageLocator(page: window.currentPage == 1 ? 0 : window.currentPage, postID: 0)
+        let request = ThreadReaderPageRequest(threadID: threadID, pageNumber: locator.page, postID: 0, query: query)
+        var value = try await repository.loadPage(request)
+        if !value.posts.contains(where: { $0.id.postID == postID }), let cache {
+            // A newly received reply may be newer than the cached ordinary page.
+            try Task.checkCancellation()
+            if let ticket, await cache.isValid(ticket) != true { throw CancellationError() }
+            value = try await cache.refreshThread(request)
+        }
+        return (locator, value)
+    }
+
     private func navigate(query newQuery: ThreadReadingQuery, page: Int?, postID: Int64 = 0) async {
         cancel()
         let token = nextGeneration
@@ -109,9 +128,11 @@ extension ThreadReaderStore {
                     pages = reading.pages.map { ($0.locator, $0.value) }
                 } else {
                     var locator = ReadingPageLocator(page: page ?? 0, postID: postID)
-                    let value = try await repository.loadPage(.init(threadID: threadID, pageNumber: locator.page,
+                    var value = try await repository.loadPage(.init(threadID: threadID, pageNumber: locator.page,
                                                                     postID: postID, query: newQuery))
-                    if postID > 0 { locator = .init(page: value.currentPage, postID: postID) }
+                    if postID > 0 {
+                        (locator, value) = try await completeLocatedPage(value, postID: postID, query: newQuery, ticket: ticket)
+                    }
                     guard value.threadID == threadID, value.currentPage == locator.responsePage,
                           postID == 0 || value.posts.contains(where: { $0.id.postID == postID }) else {
                         throw ThreadReaderLoadFailure.unavailable
@@ -125,6 +146,7 @@ extension ThreadReaderStore {
                 query = newQuery
                 cacheTicket = ticket
                 loadedPages = pages
+                rememberUnconfirmedPages(reading)
                 replyPosts = reading?.replyPosts
                 let snapshot = assembledPages(metadata: last.1)
                 state = .loaded(snapshot)
@@ -147,5 +169,6 @@ extension ThreadReaderStore {
         }
         navigationTask = task
         await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
+        await resumePageConfirmation(generation: token)
     }
 }

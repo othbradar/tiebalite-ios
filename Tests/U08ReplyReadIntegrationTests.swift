@@ -109,6 +109,8 @@ struct U08ReplyReadIntegrationTests {
         #expect(store.state.snapshot?.posts.map(\.id.postID) == [10, 30])
         #expect(store.state.snapshot?.currentPage == 1 && store.state.snapshot?.hasMore == true)
         #expect(await adapter.restoreThread(101)?.position?.postID == 10)
+        await store.loadIfNeeded()
+        #expect(await source.pages == [1], "A freshly accepted reply is not a legacy PID window")
         await store.loadNextPage()
         #expect(store.state.snapshot?.posts.map(\.id.postID) == [10, 20, 30])
         #expect(store.listPresentation?.rows.compactMap { $0.post?.source.postID } == [10, 20, 30])
@@ -116,6 +118,25 @@ struct U08ReplyReadIntegrationTests {
         #expect(store.state.snapshot?.currentPage == 3 && store.state.snapshot?.hasMore == false)
         #expect(store.state.snapshot?.posts.map(\.id.postID) == [10, 20, 30])
         #expect(store.readAnchor == anchor)
+    }
+
+    @Test func nativeReplyPageRestoresWithoutExtraLegacyConfirmationRead() async throws {
+        let source = U08ReplyPageSource()
+        let adapter = CachedReadingRepository(threads: source, subposts: FixtureSubpostsRepository(), cache: .init(directory: nil))
+        let http = HarnessMockHTTPClient()
+        let store = ThreadReaderStore(threadID: 101, repository: adapter, replyFollowup: U08ReplyLoader(http: http))
+        await store.loadIfNeeded()
+        let task = Task { await store.replySucceeded(.init(threadID: 101, postID: 30), entry: .search) }
+        try await complete(http, page: U08ReplyReadFixture.page(3, ids: [30], hasMore: false))
+        await task.value
+        let anchor = ThreadReaderRowID.post(threadID: 101, postID: 30)
+        store.setReadAnchor(anchor)
+        await store.saveReadingPosition()
+        let reopened = ThreadReaderStore(threadID: 101, repository: adapter)
+        await reopened.loadIfNeeded()
+        #expect(reopened.state.snapshot?.posts.map(\.id.postID) == [30])
+        #expect(reopened.readAnchor == anchor)
+        #expect(await source.pages == [1])
     }
 
     @Test func cacheClearOrLeavingPageRejectsLateReplyReadWithoutFallbackRequest() async throws {

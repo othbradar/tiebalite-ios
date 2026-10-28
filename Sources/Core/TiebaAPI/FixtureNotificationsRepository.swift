@@ -45,7 +45,8 @@ enum FixtureNotificationThreadPages {
                          ], poll: nil))
         }
         return .init(threadID: 8_001, title: "一段可以返回的主题", forumName: "固定样本吧", author: author,
-                     replyCount: 34, posts: posts, currentPage: page, totalPage: 3, hasMore: page < 3,
+                     replyCount: 34, posts: request.isPostLookup ? posts.filter { $0.id.postID == request.postID } : posts,
+                     currentPage: page, totalPage: 3, hasMore: page < 3,
                      nextPostID: page < 3 ? posts.last?.id.postID : nil)
     }
 }

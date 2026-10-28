@@ -2,9 +2,9 @@
 
 一个原生 iOS / iPadOS 非官方贴吧客户端，面向日常看帖、楼中楼讨论、搜索与收藏，延续 TiebaLite 的简洁界面。
 
-**当前版本：[v0.2.0beta7](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta7)** · App **0.2.1 / Build 20** · iOS / iPadOS **18.0+**
+**当前版本：[v0.2.0beta8](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta8)** · App **0.2.2 / Build 21** · iOS / iPadOS **18.0+**
 
-[下载 IPA](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta7) · [SideStore 订阅源](https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json) · [更新说明](Docs/Releases/v0.2.0beta7.md) · [反馈问题](https://github.com/othbradar/tiebalite-ios/issues)
+[下载 IPA](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta8) · [SideStore 订阅源](https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.json) · [更新说明](Docs/Releases/v0.2.0beta8.md) · [反馈问题](https://github.com/othbradar/tiebalite-ios/issues)
 
 ## 当前界面
 
@@ -42,11 +42,11 @@ https://raw.githubusercontent.com/othbradar/tiebalite-ios/main/sidestore/source.
 
 已添加源的用户刷新 Sources，再到 **My Apps** 检查 **Update**。签名刷新与安装新版是两个操作；手动导入的旧 App 能否与源关联，取决于 SideStore 的安装记录。源直接使用 GitHub Release 的 IPA，版本、大小和 SHA256 从附件提取并校验。[详细说明](sidestore/README.md)
 
-发布元数据与源更新的验证范围见 [发布记录](Docs/Audits/RELEASE_0_2_0_BETA_7.md)，不将其表述为已经完成所有 SideStore 真机更新提示、签名和覆盖安装流程的验收。
+发布元数据与源更新的验证范围见 [发布记录](Docs/Audits/RELEASE_0_2_0_BETA_8.md)，不将其表述为已经完成所有 SideStore 真机更新提示、签名和覆盖安装流程的验收。
 
 ### 手动安装
 
-从 [Release](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta7) 下载完整 ARM64 **未签名 IPA**，使用自己的签名工具安装。沿用原 Apple ID / Team 和签名后的 Bundle ID 覆盖安装，保留账号、草稿及数据；不要先卸载旧版。附件同时提供 `SHA256SUMS`。
+从 [Release](https://github.com/othbradar/tiebalite-ios/releases/tag/v0.2.0beta8) 下载完整 ARM64 **未签名 IPA**，使用自己的签名工具安装。沿用原 Apple ID / Team 和签名后的 Bundle ID 覆盖安装，保留账号、草稿及数据；不要先卸载旧版。附件同时提供 `SHA256SUMS`。
 
 ## 缓存与权限
 

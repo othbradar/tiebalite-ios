@@ -1,3 +1,18 @@
+# 2026-10-28 — beta8 发布准备 / 用户授权提交、推送与发布
+
+- 用户在通知上下文修复交付后明确要求提交并推送GitHub、发布新IPA。本轮以当前a5ad3eb和已验收候选差异继续，不清数据、不改发送协议；保留无关未跟踪提示词、技能配置与缓存。
+- App真实版本递增0.2.2/21，准备v0.2.0beta8；完整设备Release archive、隔离和IPA包校验已通过，806项生产输入归档前后保持一致。IPA为5,050,044 bytes，SHA256 `68d8ba63f333378216ec651b31ddc06480aae37cf4c7e42a34675b2eaf3eb298`。
+- 复用代码不变的49项Unit和iPhone/iPad通知UI证据；SwiftLint645文件零违规、发送冻结23项、secret-scan、diff及SideStore7项回归通过。make lint被既有protoc动态库缺失阻断；quality-fast/quality仍被旧beta5归档AGENTS长度阻断，未修改门禁或宣称全绿。
+- README仅更新版本/下载/说明链接，保留原截图采集版本说明；本次变更写入Release说明。发布完成后核对线上IPA和SideStore源并另记回执。[beta8发布记录](../Audits/RELEASE_0_2_0_BETA_8.md)。
+
+# 2026-10-28 — 回复通知整页上下文修复 / 待用户验收，未提交
+
+- 从当前a5ad3eb继续。单条PID定位窗口被当完整页并覆盖共享缓存，固定样本三次复现；本轮没有用户真实错误响应抓包。修复后先确认目标页再取普通页，旧普通页缺新回复时定向刷新，定位窗口不持久成整页。
+- 增加缓存可选来源标记，旧窗口按原快照确认并保留既有阅读位置；失败可重试、取消可恢复，不清数据。新native回显不会被误确认；回复成功、上传、参数和回执函数保持HEAD正文。用户明确批准登记3项整文件只读差异，原始SHA保留，发送冻结23项通过。
+- 49项/7 suites直接Unit回归、iPhone2项通知UI（完整页面/定位/回首楼3次、楼中楼父楼、分页/返回位置）、SwiftLint、secret-scan、diff通过。iPad消息/旋转回归通过；短页目标靠顶旧断言因页尾clamp失败，按实际几何边界补充严格断言后3次循环通过。
+- make generate受本机protoc缺旧abseil动态库阻断；直接XcodeGen及原SwiftPM锁生成成功。quality-fast/quality受旧beta5归档AGENTS链长度阻断；forbidden为既有5组policy命中，未改门禁、工具或删文件。中间失败和实际验证范围见[通知上下文审计](../Audits/NOTIFICATION_THREAD_CONTEXT_FIX_2026_10_28.md)。
+- 正常Simulator Release构建/签名/隔离通过，覆盖安装原iPhone/iPad并无参数启动，两台原账号和关注吧可见。iPhone6份原草稿/书签SHA一致；Live真实消息→目标父楼及相邻楼→向上到主楼→引用重开同帖已可见核对。最终那条新消息和物理设备待用户复核。无新手势、动画、overlay或依赖；无真实发送、未暂存/提交/推送。
+
 # 2026-10-23 — beta7 已提交、推送并发布
 
 - SF-00～08已提交9924674，正常合并远端SideStore自动化为7e537f6，保留双方历史。

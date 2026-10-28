@@ -31,6 +31,26 @@ struct CachedReadingPage<Page: Codable & Sendable>: Codable, Sendable {
     let locator: ReadingPageLocator
     let fetchedAt: Date
     let value: Page
+    // New writers exclude PID lookup windows; absent in legacy JSON.
+    var hasKnownPageOrigin: Bool? = true
+
+    var requiresPageConfirmation: Bool {
+        hasKnownPageOrigin != true && locator.postID > 0 &&
+            (value as? ThreadReaderSnapshot)?.posts.contains { $0.id.postID == locator.postID } == true
+    }
+
+    /// An ordinary page can replace an old PID window without losing the existing
+    /// reading position. Never transfer a position to a different page or missing post.
+    func restoredPosition(from position: ReadingPosition?) -> ReadingPosition? {
+        guard let position else { return nil }
+        if position.locator == locator { return position }
+        guard position.locator.responsePage == locator.responsePage,
+              let thread = value as? ThreadReaderSnapshot,
+              thread.threadID == position.identity.threadID,
+              thread.posts.contains(where: { $0.id.postID == position.postID }) else { return nil }
+        return .init(identity: position.identity, postID: position.postID,
+                     locator: locator, floorNumber: position.floorNumber)
+    }
 }
 
 struct CachedReading<Page: Codable & Sendable>: Sendable {
